@@ -1,0 +1,13 @@
+{% extends "01-molecules/blocks/block.twig" %}
+
+{% block content %}
+  {% if post.get_thumbnail %}
+    <picture class="c-block__image">
+      <img src="{{ post.thumbnail.src|resize(600,450) }}" />
+    </picture>
+  {% endif %}
+  <div class="c-block__content">
+    <h2><a href="{{ post.link }}">{{ post.title }}</a></h2>
+    <p>{{ post.get_preview }}</p>
+  </div>
+{% endblock %}

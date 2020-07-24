@@ -1,0 +1,12 @@
+<div class="c-social-links u-spacing--quarter--left">
+  {% if options.facebook_url %}
+    <a href="{{ options.facebook_url }}" class="c-social-links__item o-icon" target="_blank" rel="noopener">
+      {% include "00-atoms/icons/facebook.twig" %}
+    </a>
+  {% endif %}
+  {% if options.instagram_url %}
+    <a href="{{ options.instagram_url }}" class="c-social-links__item o-icon" target="_blank" rel="noopener">
+      {% include "00-atoms/icons/instagram.twig" %}
+    </a>
+  {% endif %}
+</div>

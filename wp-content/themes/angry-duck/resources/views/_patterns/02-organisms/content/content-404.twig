@@ -1,0 +1,12 @@
+<section class="c-content c-content-404 u-spacing">
+  <h1>Something's gone wrong!</h1>
+  <p>Not to worry, why don't you try the link below:</p>
+  {% include "00-atoms/buttons/button.twig"
+    with {
+      button: {
+        url: '/',
+        text: 'Go to homepage'
+      }
+    }
+  %}
+</section>

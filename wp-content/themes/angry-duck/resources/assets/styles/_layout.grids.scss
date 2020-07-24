@@ -1,0 +1,140 @@
+/* ------------------------------------ *\
+    $GRIDS
+\* ------------------------------------ */
+
+.l-grid {
+  display: grid;
+  grid-template-rows: auto;
+  grid-column-gap: $space;
+  grid-row-gap: $space;
+
+  @media all and (-ms-high-contrast: none) {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-left: -$space;
+    margin-right: -$space;
+
+    > * {
+      margin: $space;
+    }
+  }
+
+  &-item {
+    position: relative;
+  }
+
+  &--large-gutters {
+    grid-column-gap: $space-quad;
+    grid-row-gap: $space-quad;
+  }
+
+  &--2up {
+    @include media(">small") {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+
+    @media all and (-ms-high-contrast: none) {
+      > * {
+        width: calc(50% - #{$space-double});
+      }
+    }
+
+    &--flex {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 0 calc(#{$space} * -1);
+
+      > * {
+        width: 100%;
+        padding-left: $space;
+        padding-right: $space;
+        margin-top: $space * 2;
+
+        @include media(">small") {
+          width: 50%;
+        }
+      }
+    }
+  }
+
+  &--3up {
+    @include media(">small") {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+
+    @include media(">large") {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+
+    @media all and (-ms-high-contrast: none) {
+      > * {
+        width: calc(33.333% - #{$space-double});
+      }
+    }
+  }
+
+  &--4up {
+    grid-template-columns: repeat(minmax(200px, 1fr));
+
+    @include media(">xsmall") {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+
+    @include media(">medium") {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+
+    @include media(">xlarge") {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+
+    @media all and (-ms-high-contrast: none) {
+      > * {
+        width: calc(25% - #{$space-double});
+      }
+    }
+  }
+
+  &--4up--at-medium {
+    grid-template-columns: repeat(2, 1fr);
+
+    @include media(">small") {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+
+    @include media(">medium") {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+
+    @media all and (-ms-high-contrast: none) {
+      > * {
+        width: calc(25% - #{$space-double});
+      }
+    }
+  }
+
+  &--5up {
+    grid-row-gap: $space * 2;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+
+    @include media(">large") {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
+
+    @media all and (-ms-high-contrast: none) {
+      > * {
+        width: calc(20% - #{$space-double});
+      }
+    }
+  }
+}

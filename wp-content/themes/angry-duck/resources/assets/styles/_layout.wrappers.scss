@@ -1,0 +1,52 @@
+/* ------------------------------------ *\
+    $WRAPPERS & CONTAINERS
+\* ------------------------------------ */
+
+/**
+ * Wrapping element to keep content contained and centered.
+ */
+.l-wrap {
+  margin: 0 auto;
+  padding-left: $space;
+  padding-right: $space;
+  width: 100%;
+  position: relative;
+
+  @include media(">xxlarge") {
+    padding-left: $space-double;
+    padding-right: $space-double;
+  }
+}
+
+/**
+ * Layout containers - keep content centered and within a maximum width. Also
+ * adjusts left and right padding as the viewport widens.
+ */
+
+.l-container {
+  max-width: $max-width;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+
+  &--xl {
+    max-width: $max-width-xl;
+  }
+}
+
+/**
+ * Grid classes
+ */
+@for $i from 1 through $grid-columns {
+  .l-container--#{$i}col {
+    @if $i == 1 {
+      max-width: $col-width * $i + $gutter * $i + px;
+    }
+    @else if $i == 2 {
+      max-width: $col-width * $i + $gutter * 1 + px;
+    }
+    @else {
+      max-width: $col-width * $i + $gutter * ($i - 2) + px;
+    }
+  }
+}

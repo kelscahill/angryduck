@@ -1,0 +1,7 @@
+{% extends "03-templates/base.twig" %}
+
+{% block content %}
+  <article class="l-container l-article l-article--{{ post.post_type }}">
+    {% include "02-organisms/content/content-post.twig" %}
+  </article>
+{% endblock %}

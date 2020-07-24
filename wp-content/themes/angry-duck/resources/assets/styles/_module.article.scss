@@ -1,0 +1,22 @@
+/* ------------------------------------ *\
+    $ARTICLE & RELATED COMPONENTS
+\* ------------------------------------ */
+
+.page-id-5 {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: $c-primary;
+
+  .c-main-header {
+    background: url("../images/header-bkg.png") center bottom no-repeat;
+    background-size: cover;
+  }
+}
+
+.l-article--landing {
+  padding: 0 0 $space-double 0;
+  max-width: $small;
+  text-align: center;
+}

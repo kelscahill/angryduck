@@ -1,0 +1,8 @@
+<section class="c-content c-content-post">
+  <h1>{{ post.title }}</h1>
+  {% include "00-atoms/text/byline.twig" %}
+  <img src="{{ post.thumbnail.src|resize(1200, 300) }}">
+  <div class="o-rte-text">
+    {{ post.content }}
+  </div>
+</section>

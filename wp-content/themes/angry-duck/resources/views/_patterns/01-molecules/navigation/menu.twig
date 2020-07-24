@@ -1,0 +1,12 @@
+{% if menu %}
+  <nav class="c-menu" role="navigation">
+    <ul class="c-menu__list">
+      {% for item in menu.get_items %}
+        <li class="{{ item.classes | join(' c-menu__') }}">
+          <a class="c-menu__link" target="{{ item.target }}" href="{{ item.link }}">{{ item.title }}</a>
+          {% include "01-molecules/navigation/menu.twig" with { 'menu': item.get_children } %}
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+{% endif %}

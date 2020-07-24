@@ -1,0 +1,13 @@
+/* ------------------------------------ *\
+    $FOOTER
+\* ------------------------------------ */
+
+.c-main-footer {
+  background-color: $c-secondary;
+  color: $c-white;
+
+  &--inner {
+    padding: $space-half 0;
+    text-align: center;
+  }
+}

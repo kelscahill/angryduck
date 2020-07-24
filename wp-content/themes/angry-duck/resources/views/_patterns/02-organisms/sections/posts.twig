@@ -1,0 +1,11 @@
+{% if posts %}
+  <div class="c-posts">
+    <div class="l-grid l-grid--4up">
+      {% for post in posts %}
+        <div class="l-grid-item">
+          {% include ['01-molecules/blocks/block-'~post.post_type~'.twig', '01-molecules/blocks/block.twig'] %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

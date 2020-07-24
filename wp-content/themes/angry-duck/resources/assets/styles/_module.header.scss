@@ -1,0 +1,19 @@
+/* ------------------------------------ *\
+    $HEADER
+\* ------------------------------------ */
+
+.o-logo {
+  margin: $space-double $space $space-quad $space;
+
+  img {
+    width: 100%;
+    height: auto;
+    max-width: $xsmall;
+    margin: 0 auto;
+    position: relative;
+
+    @include media(">medium") {
+      left: -15px;
+    }
+  }
+}
