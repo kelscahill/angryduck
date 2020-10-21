@@ -104,7 +104,7 @@ class acf_field_flexible_content extends acf_field {
 		
 		// parse
 		$layout = wp_parse_args($layout, array(
-			'key'			=> uniqid(),
+			'key'			=> uniqid('layout_'),
 			'name'			=> '',
 			'label'			=> '',
 			'display'		=> 'block',
@@ -363,13 +363,14 @@ class acf_field_flexible_content extends acf_field {
 		$order = 0;
 		$el = 'div';
 		$sub_fields = $layout['sub_fields'];
-		$prefix = $field['name'] . '[' . $i .  ']';
+		$id = ( $i === 'acfcloneindex' ) ? 'acfcloneindex' : "row-$i";
+		$prefix = $field['name'] . '[' . $id .  ']';
 		
 		
 		// div
 		$div = array(
 			'class'			=> 'layout',
-			'data-id'		=> $i,
+			'data-id'		=> $id,
 			'data-layout'	=> $layout['name']
 		);
 		
@@ -410,8 +411,9 @@ class acf_field_flexible_content extends acf_field {
 	
 	<div class="acf-fc-layout-controls">
 		<a class="acf-icon -plus small light acf-js-tooltip" href="#" data-name="add-layout" title="<?php _e('Add layout','acf'); ?>"></a>
+		<a class="acf-icon -duplicate small light acf-js-tooltip" href="#" data-name="duplicate-layout" title="<?php _e('Duplicate layout','acf'); ?>"></a>
 		<a class="acf-icon -minus small light acf-js-tooltip" href="#" data-name="remove-layout" title="<?php _e('Remove layout','acf'); ?>"></a>
-		<a class="acf-icon -collapse small acf-js-tooltip" href="#" data-name="collapse-layout" title="<?php _e('Click to toggle','acf'); ?>"></a>
+		<a class="acf-icon -collapse small -clear acf-js-tooltip" href="#" data-name="collapse-layout" title="<?php _e('Click to toggle','acf'); ?>"></a>
 	</div>
 	
 <?php if( !empty($sub_fields) ): ?>
@@ -599,7 +601,7 @@ class acf_field_flexible_content extends acf_field {
 			</li>
 			<li class="acf-fc-meta-display">
 				<div class="acf-input-prepend"><?php _e('Layout','acf'); ?></div>
-				<div class="acf-input-wrap select">
+				<div class="acf-input-wrap">
 					<?php 
 					
 					acf_render_field(array(
@@ -607,6 +609,7 @@ class acf_field_flexible_content extends acf_field {
 						'name'		=> 'display',
 						'prefix'	=> $layout_prefix,
 						'value'		=> $layout['display'],
+						'class'		=> 'acf-is-prepended',
 						'choices'	=> array(
 							'table'			=> __('Table','acf'),
 							'block'			=> __('Block','acf'),
@@ -1624,71 +1627,46 @@ class acf_field_flexible_content extends acf_field {
 	
 	function prepare_field_for_import( $field ) {
 		
-		// bail early if no layouts
-		if( empty($field['layouts']) ) return $field;
+		// Bail early if no layouts
+		if( empty($field['layouts']) ) {
+			return $field;
+		}
 		
-		
-		// var
+		// Storage for extracted fields.
 		$extra = array();
 		
-		
-		// loop
-		foreach( array_keys($field['layouts']) as $i ) {
+		// Loop over layouts.
+		foreach( $field['layouts'] as &$layout ) {
 			
-			// extract layout
-			$layout = acf_extract_var( $field['layouts'], $i );
+			// Ensure layout is valid.
+			$layout = $this->get_valid_layout( $layout );
 			
+			// Extract sub fields.
+			$sub_fields = acf_extract_var( $layout, 'sub_fields' );
 			
-			// get valid layout (fixes ACF4 export code bug undefined index 'key')
-			if( empty($layout['key']) ) $layout['key'] = uniqid();
-			
-			
-			// extract sub fields
-			$sub_fields = acf_extract_var( $layout, 'sub_fields');
-			
-			
-			// validate sub fields
-			if( !empty($sub_fields) ) {
-				
-				// loop over sub fields
-				foreach( array_keys($sub_fields) as $j ) {
+			// Modify and append sub fields to $extra.
+			if( $sub_fields ) {
+				foreach( $sub_fields as $i => $sub_field ) {
 					
-					// extract sub field
-					$sub_field = acf_extract_var( $sub_fields, $j );
-					
-					
-					// attributes
+					// Update atttibutes
 					$sub_field['parent'] = $field['key'];
 					$sub_field['parent_layout'] = $layout['key'];
+					$sub_field['menu_order'] = $i;
 					
-					
-					// append to extra
+					// Append to extra.
 					$extra[] = $sub_field;
-					
 				}
-				
 			}
-			
-			
-			// append to layout
-			$field['layouts'][ $i ] = $layout;
-		
 		}
 		
-		
-		// extra
-		if( !empty($extra) ) {
-			
+		// Merge extra sub fields.
+		if( $extra ) {
 			array_unshift($extra, $field);
-			
 			return $extra;
-			
 		}
 		
-		
-		// return
+		// Return field.
 		return $field;
-		
 	}
 	
 	
