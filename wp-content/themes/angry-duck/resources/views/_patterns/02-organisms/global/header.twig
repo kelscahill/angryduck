@@ -1,5 +1,21 @@
-<header class="c-main-header">
-  {% block header %}
-    {% include "00-atoms/images/logo.twig" %}
-  {% endblock %}
+{% include "01-molecules/components/alert.twig" %}
+<header class="c-header">
+  <div class="c-header__social">
+    {% include "01-molecules/components/social-links.twig" %}
+  </div>
+  <div class="c-header__logo">
+    {% include "00-atoms/images/logo-text.twig" %}
+  </div>
+  <div class="c-header__menu-icons">
+    <a href="/cart" class="o-icon u-icon--s">
+      {% if cart_count > 0 %}
+        <span class="o-cart-count">{{ cart_count }}</span>
+      {% endif %}
+      {% include "00-atoms/icons/cart.twig" %}
+    </a>
+    <button class="o-icon u-icon--s js-toggle" data-toggle="c-menu" data-prefix="this" aria-role="Menu">
+      {% include "00-atoms/icons/menu.twig" %}
+    </button>
+  </div>
+  {% include "01-molecules/navigation/menu.twig" %}
 </header>

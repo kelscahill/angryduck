@@ -4,6 +4,106 @@ export default {
   init() {
     // JavaScript to be fired on all pages
 
+    // Expires after one day
+    var setCookie = function(name, value) {
+      var date = new Date(),
+          expires = 'expires=';
+      date.setDate(date.getDate() + 1);
+      expires += date.toGMTString();
+      document.cookie = name + '=' + value + '; ' + expires + '; path=/; SameSite=Strict;';
+    }
+
+    var getCookie = function(name) {
+      var allCookies = document.cookie.split(';'),
+        cookieCounter = 0,
+        currentCookie = '';
+      for (cookieCounter = 0; cookieCounter < allCookies.length; cookieCounter++) {
+        currentCookie = allCookies[cookieCounter];
+        while (currentCookie.charAt(0) === ' ') {
+          currentCookie = currentCookie.substring(1, currentCookie.length);
+        }
+        if (currentCookie.indexOf(name + '=') === 0) {
+          return currentCookie.substring(name.length + 1, currentCookie.length);
+        }
+      }
+      return false;
+    }
+
+    $('.js-alert-close').click(function(e) {
+      e.preventDefault();
+      $('.js-alert').addClass('is-hidden');
+      setCookie('alert', 'true');
+    });
+
+    var showAlert = function() {
+      $('.js-alert').fadeIn();
+      $('.js-alert').removeClass('is-hidden');
+    }
+
+    var hideAlert = function() {
+      $('.js-alert').fadeOut();
+      $('.js-alert').addClass('is-hidden');
+    }
+
+    if (getCookie('alert')) {
+      hideAlert();
+    } else {
+      showAlert();
+    }
+
+    // Smooth scrolling on anchor clicks
+    $(function() {
+      $('a[href*="#"]:not([href="#"])').click(function() {
+        $('.nav__primary, .nav-toggler').removeClass('main-nav-is-active');
+        if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
+          var target = $(this.hash);
+          target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+          if (target.length) {
+            $('html, body').animate({
+              scrollTop: target.offset().top - 50
+            }, 1000);
+            return false;
+          }
+        }
+      });
+    });
+
+    /**
+     * Slick sliders
+     */
+    $('.js-slick-testimonials').slick({
+      prevArrow: '<span class="o-icon__arrow o-icon__arrow-prev"></span>',
+      nextArrow: '<span class="o-icon__arrow o-icon__arrow-next"></span>',
+      dots: true,
+      infinite: false,
+      speed: 300,
+      slidesToShow: 4,
+      slidesToScroll: 4,
+      responsive: [
+        {
+          breakpoint: 700,
+          settings: {
+            slidesToShow: 3,
+            slidesToScroll: 3,
+          }
+        },
+        {
+          breakpoint: 500,
+          settings: {
+            slidesToShow: 2,
+            slidesToScroll: 2,
+          }
+        },
+        {
+          breakpoint: 375,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+          }
+        }
+      ]
+    });
+
     /**
      * General helper function to support toggle functions.
      */

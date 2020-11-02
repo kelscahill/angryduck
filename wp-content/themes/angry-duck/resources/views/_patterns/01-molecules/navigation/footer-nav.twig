@@ -1,0 +1,7 @@
+{% if footer_nav.theme_location == "footer_navigation" %}
+  <nav class="c-footer-nav">
+    {% for item in footer_nav.get_items %}
+      <a class="c-footer-nav__link" target="{{ item.target }}" href="{{ item.link }}">{{ item.title }}</a>
+    {% endfor %}
+  </nav>
+{% endif %}

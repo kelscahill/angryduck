@@ -85,6 +85,7 @@ $tests: false;
 /* ------------------------------------ *\
     $BASE
 \* ------------------------------------ */
+@import "base.blueprint";
 @import "base.fonts";
 @import "base.forms";
 @import "base.headings";
@@ -98,7 +99,6 @@ $tests: false;
 /* ------------------------------------ *\
     $LAYOUT
 \* ------------------------------------ */
-@import "layout.grids";
 @import "layout.wrappers";
 
 /* ------------------------------------ *\
@@ -123,12 +123,12 @@ $tests: false;
 @import "objects.lists";
 @import "objects.navs";
 @import "objects.media";
+@import "objects.components";
 
 /* ------------------------------------ *\
     $PAGE STRUCTURE
 \* ------------------------------------ */
 @import "module.article";
-@import "module.gallery";
 @import "module.footer";
 @import "module.header";
 @import "module.main";
@@ -144,6 +144,8 @@ $tests: false;
 /* ------------------------------------ *\
     $VENDORS
 \* ------------------------------------ */
+@import "vendor.slick-theme";
+@import "vendor.slick";
 
 /* ------------------------------------ *\
     $TRUMPS

@@ -26,4 +26,18 @@ $post = new TimberPost();
 $context['post'] = $post;
 $context['is_front_page'] = 'true';
 
+$featured_products_args = array(
+  'post_type' => 'product',
+  'posts_per_page' => 4,
+  'post_status' => 'publish'
+);
+$context['featured_products'] = Timber::query_posts($featured_products_args);
+
+$testimonials_args = array(
+  'post_type' => 'testimonial',
+  'posts_per_page' => -1,
+  'post_status' => 'publish'
+);
+$context['testimonials'] = Timber::query_posts($testimonials_args);
+
 Timber::render(array('04-pages/page-' . $post->post_name . '.twig', '04-pages/front-page.twig'), $context);

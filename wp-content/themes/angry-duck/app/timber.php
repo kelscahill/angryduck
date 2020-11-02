@@ -36,8 +36,15 @@ class SageTimberTheme extends TimberSite {
 
 	function add_to_context( $context ) {
 
-		/* Menu */
-		$context['menu'] = new TimberMenu();
+		/* WooCommerce */
+		global $woocommerce;
+		$context['woocommerce'] = $woocommerce;
+		$context['cart_count'] = $woocommerce->cart->cart_contents_count;
+
+		/* Navigation Menus */
+		$context['menu'] = new TimberMenu('primary_navigation');
+		$context['footer_nav'] = new TimberMenu('footer_navigation');
+
 
 		/* Site info */
 		$context['site'] = $this;

@@ -1,0 +1,13 @@
+{% if testimonials %}
+  <section class="c-testimonials u-spacing--quad u-align--center">
+    <div class="c-testimonials__heading u-spacing">
+      <h2 class="o-heading--xl">What's the good word</h2>
+      <h3 class="">See what people are saying about Angry Duck™</h3>
+    </div>
+    <div class="c-testimonials__grid js-slick-testimonials">
+      {% for post in testimonials %}
+        {% include "01-molecules/blocks/block-testimonial.twig" %}
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}

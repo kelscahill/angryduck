@@ -10,9 +10,8 @@ $max-width: 1200px;
 $max-width-xl: 1600px;
 
 // Grid
-$grid-columns: 16;
-$col-width: 65;
-$gutter: 20;
+$grid-columns: 12;
+$gutter: 20px;
 
 /**
  * Theme Colors
@@ -25,9 +24,10 @@ $c-gray: #666;
 $c-gray--dark: #c0c1c5;
 $c-black: #000;
 
-$c-primary: #fbc617;
-$c-secondary: #ef4438;
+$c-primary: #ef4438;
+$c-secondary: #fbc617;
 $c-tertiary: #d1d628;
+$c-quaternary: #787b19;
 
 /**
  * Default Colors
@@ -42,13 +42,13 @@ $c-overlay: rgba($c-black, 0.8);
  * Style Colors
  */
 $c-body-color: $c-black;
-$c-link-color: $c-secondary;
-$c-link-hover-color: darker($c-secondary, 10%);
+$c-link-color: $c-primary;
+$c-link-hover-color: darker($c-primary, 10%);
 $c-button-primary: $c-secondary;
 $c-button-primary-hover: darker($c-secondary, 10%);
 $c-button-secondary: $c-tertiary;
 $c-button-secondary-hover: darker($c-tertiary, 10%);
-$c-border: $c-gray;
+$c-border: $c-black;
 
 /**
  * Typography
@@ -59,8 +59,9 @@ $ff-font--serif: serif;
 $ff-font--monospace: Menlo, Monaco, "Courier New", "Courier", monospace;
 
 // Theme typefaces
-$ff-font--primary: "Go Bold", sans-serif;
-$ff-font--secondary: "Big John", sans-serif;
+$ff-font--primary: "Oswald", sans-serif;
+$ff-font--secondary: "Roboto", arial, sans-serif;
+$ff-font--tertiary: "Go Bold", sans-serif;
 
 /**
  * Icons
@@ -93,10 +94,10 @@ $transition-all: all 0.23s $hard-ease-in;
 /**
  * Border Styles
  */
-$border-radius-curve: 2px;
-$border-radius-curve--hard: 4px;
-$border--standard: 1px solid $c-border;
-$border--standard-light: 2px solid $c-gray--light;
+$border-radius: 3px;
+$border-radius--hard: 6px;
+$border--standard: 2px solid $c-border;
+$border--standard-light: 1px solid $c-gray--light;
 $box-shadow--standard: 0px 4px 12px rgba($c-black, 0.05);
 $box-shadow--thick: 0px 8px 24px rgba($c-black, 0.2);
 

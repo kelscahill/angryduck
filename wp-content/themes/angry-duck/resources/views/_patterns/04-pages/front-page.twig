@@ -1,12 +1,14 @@
 {% extends "03-templates/base.twig" %}
 
 {% block content %}
-  <article class="l-container l-article l-article--front u-spacing--double">
+  {% include "02-organisms/sections/hero.twig" %}
+  <article class="l-container l-article l-article--front u-spacing--quad">
     <section class="c-content c-content-page">
       <div class="o-rte-text u-text-align--center">
         {{ post.content }}
       </div>
     </section>
-    {% include "01-molecules/components/newsletter-signup.twig" %}
+    {% include "02-organisms/sections/featured-products.twig" %}
+    {% include "02-organisms/sections/testimonials.twig" %}
   </article>
 {% endblock %}
