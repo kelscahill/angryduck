@@ -36,16 +36,17 @@ input[type=tel],
 select {
   font-size: 16px;
   font-family: $ff-font;
-  padding: 18px $space;
+  padding: $space-half $space;
   box-shadow: none;
   border: $border--standard;
+  border-radius: $border-radius;
 
   &::placeholder {
     color: $c-gray;
   }
 
   &:focus {
-    outline: 2px solid $c-border;
+    outline-color: $c-gray;
   }
 }
 

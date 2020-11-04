@@ -1,23 +1,26 @@
 <footer class="c-footer">
-  <div class="c-footer__content">
-    <div class="c-footer--inner l-wrap l-container" bp="grid 4@md vertical-center">
-      <div class="c-footer__contact u-spacing">
-        <h3>Get in touch</h3>
-        <div class="c-footer__contact-details">
-          {% if options.phone_number %}
-            <p>{{ options.phone_number }}</p>
-          {% endif %}
-          {% if options.email_address %}
-            <a href="mailto:{{ options.email_address }}">{{ options.email_address }}</a>
-          {% endif %}
-        </div>
-      </div>
-      <div class="c-footer__logo">
+  <div class="c-footer-main">
+    <div class="c-footer--inner l-wrap l-container" bp="grid">
+      <div class="c-footer-main__logo" bp="4@lg">
         {% include "00-atoms/images/logo-badge.twig" %}
       </div>
-      <div class="c-footer__signup u-spacing">
+      <div class="c-footer-main__contact u-spacing" bp="first@lg 6@md 4@lg">
+        <h3>Get in touch</h3>
+        <div class="c-footer-main__contact-details u-spacing">
+          <p>
+            {% if options.phone_number %}
+              <a href="tel:{{ options.phone_number }}">{{ options.phone_number }}</a><br />
+            {% endif %}
+            {% if options.email_address %}
+              <a href="mailto:{{ options.email_address }}">{{ options.email_address }}</a>
+            {% endif %}
+          </p>
+          {% include "01-molecules/components/social-links.twig" %}
+        </div>
+      </div>
+      <div class="c-footer-main__signup u-spacing" bp="6@md 4@lg">
         <h3>Join our list</h3>
-        <div class="c-footer__signup-details">
+        <div class="c-footer-main__signup-details u-spacing">
           {% if options.newsletter_signup_details %}
             <p>{{ options.newsletter_signup_details }}</p>
           {% endif %}
@@ -26,12 +29,12 @@
       </div>
     </div>
   </div>
-  <div class="c-footer__legal">
-    <div class="c-footer--inner l-wrap l-container" bp="grid 4@md vertical-center">
-      <div class="c-footer__copyright">
+  <div class="c-footer-legal">
+    <div class="c-footer--inner l-wrap l-container" bp="grid 6@md gap-row-none vertical-center">
+      <div class="c-footer-legal__copyright">
         <p>Copyright {{"now"|date('Y')}}. All Rights Reserved.</p>
       </div>
-      <div class="c-footer__nav">
+      <div class="c-footer-legal__nav">
         {% include "01-molecules/navigation/footer-nav.twig" %}
       </div>
     </div>

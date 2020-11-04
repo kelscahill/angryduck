@@ -42,7 +42,7 @@ class SageTimberTheme extends TimberSite {
 		$context['cart_count'] = $woocommerce->cart->cart_contents_count;
 
 		/* Navigation Menus */
-		$context['menu'] = new TimberMenu('primary_navigation');
+		$context['primary_nav'] = new TimberMenu('primary_navigation');
 		$context['footer_nav'] = new TimberMenu('footer_navigation');
 
 

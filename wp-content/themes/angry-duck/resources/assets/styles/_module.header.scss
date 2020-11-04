@@ -11,13 +11,15 @@
   background: $c-white;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   border-bottom: $border--standard-light;
 
   &__social {
     a {
       border: 0;
       border-radius: 0;
+      background: none;
+      margin: 0;
 
       &:hover,
       &:focus {
@@ -51,9 +53,10 @@
 
     .o-icon {
       padding: 0;
-      border: 0;
       outline: 0;
-      background-color: transparent;
+      border: 0;
+      border-radius: 0;
+      background: none;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -80,17 +83,4 @@
       font-weight: bold;
     }
   }
-}
-
-.c-menu {
-  display: block;
-  width: 100%;
-  height: 100vh;
-  max-width: 400px;
-  background-color: $c-secondary;
-  color: $c-white;
-  position: fixed;
-  z-index: 9999;
-  top: 0;
-  right: 0;
 }

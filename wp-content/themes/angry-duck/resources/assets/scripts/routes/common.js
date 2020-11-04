@@ -4,6 +4,15 @@ export default {
   init() {
     // JavaScript to be fired on all pages
 
+    /**
+    * Remove Active Classes when clicking outside menus and modals
+    */
+    $(document).click(function(event) {
+      if (!$(event.target).closest(".c-menu").length) {
+        $("html").find(".menu-is-active").removeClass("menu-is-active");
+      }
+    });
+
     // Expires after one day
     var setCookie = function(name, value) {
       var date = new Date(),

@@ -19,8 +19,8 @@ $gutter: 20px;
 
 // Neutrals
 $c-white: #fff;
-$c-gray--light: #f0f0f0;
-$c-gray: #666;
+$c-gray--light: #adadad;
+$c-gray: #5f5f5f;
 $c-gray--dark: #c0c1c5;
 $c-black: #000;
 
@@ -36,7 +36,7 @@ $c-error: #f00;
 $c-valid: #089e00;
 $c-warning: #fff664;
 $c-information: #000db5;
-$c-overlay: rgba($c-black, 0.8);
+$c-overlay: rgba($c-black, 0.6);
 
 /**
  * Style Colors
@@ -88,8 +88,8 @@ $breakpoints: ("xsmall": $xsmall, "small": $small, "medium": $medium, "large": $
 /**
  * Animation
  */
-$hard-ease-in: cubic-bezier(0.86, 0, 0.07, 1);
-$transition-all: all 0.23s $hard-ease-in;
+$transition-effect: cubic-bezier(0.86, 0, 0.07, 1);
+$transition-all: all 0.23s $transition-effect;
 
 /**
  * Border Styles

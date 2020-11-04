@@ -9,7 +9,8 @@
   align-items: center;
   transition: $transition-all;
   text-decoration: none;
-  border-radius: 0;
+  border: $border--standard;
+  border-radius: $border-radius;
   font-size: $body-font-size;
   font-family: $ff-font--primary;
   font-weight: bold;
@@ -17,9 +18,8 @@
   line-height: 1;
   white-space: nowrap;
   appearance: none;
-  border: none;
   cursor: pointer;
-  padding: $space $space-double;
+  padding: $space-half $space;
   text-transform: uppercase;
 }
 
@@ -27,13 +27,16 @@
  * Button Primary
  */
 @mixin o-button--primary {
-  background-color: $c-secondary;
-  color: $c-white;
-  filter: brightness(100%);
+  color: $c-black;
+  background: linear-gradient(to left, transparent 50%, $c-primary 50%);
+  background-size: 200% 100%;
+  background-position: right bottom;
 
   &:hover,
   &:focus {
-    filter: brightness(120%);
+    color: $c-white;
+    border-color: $c-primary;
+    background-position: left bottom;
   }
 }
 

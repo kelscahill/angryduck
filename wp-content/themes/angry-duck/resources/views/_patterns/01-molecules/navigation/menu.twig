@@ -1,12 +1,11 @@
-{% if menu %}
-  <nav class="c-menu" role="navigation">
-    <ul class="c-menu__list">
-      {% for item in menu.get_items %}
-        <li class="{{ item.classes | join(' c-menu__') }}">
-          <a class="c-menu__link" target="{{ item.target }}" href="{{ item.link }}">{{ item.title }}</a>
-          {% include "01-molecules/navigation/menu.twig" with { 'menu': item.get_children } %}
-        </li>
-      {% endfor %}
-    </ul>
-  </nav>
-{% endif %}
+<div class="c-menu">
+  <button class="c-menu__toggle js-toggle" data-toggled="l-body" data-prefix="menu" aria-label="Close">
+    <span class="o-icon u-icon--s">{% include "00-atoms/icons/close.twig" %}</span>
+  </button>
+  <div class="c-menu__nav">
+    {% include "01-molecules/navigation/primary-nav.twig" %}
+  </div>
+  <div class="c-menu__social">
+    {% include "01-molecules/components/social-links.twig" %}
+  </div>
+</div>
