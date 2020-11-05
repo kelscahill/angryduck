@@ -1,4 +1,6 @@
 /* eslint-disable */
+let Rellax = require('rellax');
+let rellax = new Rellax('.js-rellax');
 
 export default {
   init() {
@@ -81,8 +83,7 @@ export default {
      * Slick sliders
      */
     $('.js-slick-testimonials').slick({
-      prevArrow: '<span class="o-icon__arrow o-icon__arrow-prev"></span>',
-      nextArrow: '<span class="o-icon__arrow o-icon__arrow-next"></span>',
+      arrows: false,
       dots: true,
       infinite: false,
       speed: 300,
@@ -90,21 +91,21 @@ export default {
       slidesToScroll: 4,
       responsive: [
         {
-          breakpoint: 700,
+          breakpoint: 1100,
           settings: {
             slidesToShow: 3,
             slidesToScroll: 3,
           }
         },
         {
-          breakpoint: 500,
+          breakpoint: 900,
           settings: {
             slidesToShow: 2,
             slidesToScroll: 2,
           }
         },
         {
-          breakpoint: 375,
+          breakpoint: 700,
           settings: {
             slidesToShow: 1,
             slidesToScroll: 1,

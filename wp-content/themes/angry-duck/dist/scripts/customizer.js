@@ -61,7 +61,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "b6a598b9c36475bae983"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "1d82055f3508a4489a94"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -722,7 +722,7 @@
 /******/ 	__webpack_require__.h = function() { return hotCurrentHash; };
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return hotCreateRequire(30)(__webpack_require__.s = 30);
+/******/ 	return hotCreateRequire(34)(__webpack_require__.s = 34);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -2233,7 +2233,11 @@ module.exports = function(hash, moduleMap, options) {
 /* 27 */,
 /* 28 */,
 /* 29 */,
-/* 30 */
+/* 30 */,
+/* 31 */,
+/* 32 */,
+/* 33 */,
+/* 34 */
 /*!***************************************************************************!*\
   !*** multi ./build/util/../helpers/hmr-client.js ./scripts/customizer.js ***!
   \***************************************************************************/
@@ -2242,11 +2246,11 @@ module.exports = function(hash, moduleMap, options) {
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! /Users/kelseycahill/Sites/Angry Duck/wp-content/themes/angry-duck/resources/assets/build/util/../helpers/hmr-client.js */1);
-module.exports = __webpack_require__(/*! ./scripts/customizer.js */31);
+module.exports = __webpack_require__(/*! ./scripts/customizer.js */35);
 
 
 /***/ }),
-/* 31 */
+/* 35 */
 /*!*******************************!*\
   !*** ./scripts/customizer.js ***!
   \*******************************/

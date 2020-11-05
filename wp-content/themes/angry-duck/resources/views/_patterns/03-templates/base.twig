@@ -3,11 +3,13 @@
   {% include "02-organisms/global/head.twig" %}
   <body class="{{ body_class }}" data-template="base.twig">
     {% include "02-organisms/global/header.twig" %}
+    {% block sections_before %}{% endblock %}
     <div class="l-wrap" role="document">
       <main class="l-main">
         {% block content %}{% endblock %}
       </main>
     </div>
+    {% block sections_after %}{% endblock %}
     {% include "02-organisms/global/footer.twig" %}
     {{ function('wp_footer') }}
   </body>

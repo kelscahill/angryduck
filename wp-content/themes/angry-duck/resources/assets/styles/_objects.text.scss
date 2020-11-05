@@ -102,26 +102,10 @@
     @include p;
   }
 
-  > h1,
-  > h2,
-  > h3,
-  > h4,
-  > h5,
-  > h6 {
-    padding-top: $space;
-    margin-bottom: -$space-half;
-  }
-
   h2:empty,
   h3:empty,
   p:empty {
     display: none;
-  }
-
-  // Heading + subheading lockup
-  > h2 + h3 {
-    margin-top: 0;
-    padding-top: $space-half;
   }
 
   a {
