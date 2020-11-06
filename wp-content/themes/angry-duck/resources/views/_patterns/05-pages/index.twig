@@ -1,0 +1,8 @@
+{% extends "04-templates/base.twig" %}
+
+{% block content %}
+  <article class="l-container l-article l-article--{{ post.post_type }} u-spacing--double">
+    {% include "03-organisms/content/content-page.twig" %}
+    {% include "03-organisms/sections/posts.twig" %}
+  </article>
+{% endblock %}

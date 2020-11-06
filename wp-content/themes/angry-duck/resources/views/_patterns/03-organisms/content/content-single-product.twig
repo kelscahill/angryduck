@@ -1,0 +1,18 @@
+<section id="{{post.id}}" class="c-content c-content-post">
+  {% do action('woocommerce_before_single_product') %}
+  <h1>{{ post.title }}</h1>
+  <img src="{{ post.thumbnail.src|resize(1200, 300) }}">
+  <div class="o-rte-text">
+    {# {{ post.content|apply_filters('woocommerce_short_description') }} #}
+
+    {# {{ dump(post) }} #}
+
+    {{ '$' ~ post._regular_price }}
+    {{ '$' ~ post._sale_price }}
+    <form class="o-add-to-cart" action="{{ post.link|apply_filters('woocommerce_add_to_cart_form_action') }}" method="post" enctype='multipart/form-data'>
+      {{ fn('woocommerce_quantity_input') }}
+      <button type="submit" name="add-to-cart" value="{{ post.id }}" class="o-button">Add to Cart</button>
+    </form>
+
+  </div>
+</section>

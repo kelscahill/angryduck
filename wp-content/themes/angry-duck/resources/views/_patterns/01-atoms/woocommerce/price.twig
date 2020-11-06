@@ -1,0 +1,11 @@
+{% if post._regular_price or post._sale_price %}
+  <div class="o-price">
+    {% if post._sale_price %}
+      <span class="o-price__regular o-heading--m"><s>{{ '$' ~ post._regular_price }}</s></span>
+      <span class="o-price__sale u-space--quarter--left">{{ '$' ~ post._sale_price }}</span>
+    {% else %}
+      <span class="o-price__regular o-heading--m">{{ '$' ~ post._regular_price }}</span>
+    {% endif %}
+    <div class="o-price__minimum u-font--xs"><em>*minimum order of 2</em></div>
+  </div>
+{% endif %}

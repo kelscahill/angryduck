@@ -40,4 +40,4 @@ $testimonials_args = array(
 );
 $context['testimonials'] = Timber::query_posts($testimonials_args);
 
-Timber::render(array('04-pages/page-' . $post->post_name . '.twig', '04-pages/front-page.twig'), $context);
+Timber::render(array('05-pages/page-' . $post->post_name . '.twig', '05-pages/front-page.twig'), $context);

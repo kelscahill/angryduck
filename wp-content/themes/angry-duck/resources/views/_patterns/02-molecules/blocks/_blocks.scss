@@ -1,0 +1,110 @@
+/* ------------------------------------ *\
+    $BLOCKS
+\* ------------------------------------ */
+
+/**
+ * Featured product
+ */
+.c-block-featured-product {
+  padding: $space-double;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 100vw;
+
+  @include media('>medium') {
+    width: 50%;
+    min-height: 50vw;
+  }
+
+  a {
+    color: $c-black;
+  }
+
+  &__image {
+    margin-right: $space-double;
+
+    img {
+      width: auto;
+      height: auto;
+    }
+  }
+
+  &:nth-child(4n + 2),
+  &:nth-child(4n + 3) {
+    color: $c-white;
+
+    a {
+      color: $c-white;
+    }
+
+    hr {
+      background-color: $c-white;
+    }
+
+    button {
+      color: $c-white;
+      border-color: $c-white;
+      background: linear-gradient(to left, transparent 50%, $c-white 50%);
+      background-size: 200% 100%;
+      background-position: right bottom;
+
+      &:hover,
+      &:focus {
+        color: $c-black;
+        border-color: $c-white;
+        background-position: left bottom;
+      }
+    }
+  }
+
+  &:nth-child(4n + 1) {
+    background-color: $c-secondary;
+  }
+
+  &:nth-child(4n + 2) {
+    background-color: $c-primary;
+  }
+
+  &:nth-child(4n + 3) {
+    background-color: $c-quaternary;
+  }
+
+  &:nth-child(4n + 4) {
+    background-color: $c-tertiary;
+  }
+}
+
+/**
+ * Testimonial
+ */
+.c-block-testimonial {
+  padding: 0 $space-double;
+
+  &::before {
+    content: '';
+    margin: $space;
+    height: 40px;
+    width: 40px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  &:nth-child(4n + 1)::before {
+    @include icon-quotes('%23ef4438');
+  }
+
+  &:nth-child(4n + 2)::before {
+    @include icon-quotes('%23fbc617');
+  }
+
+  &:nth-child(4n + 3)::before {
+    @include icon-quotes('%23d1d628');
+  }
+
+  &:nth-child(4n + 4)::before {
+    @include icon-quotes('%23787b19');
+  }
+}

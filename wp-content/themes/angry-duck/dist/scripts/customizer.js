@@ -61,7 +61,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "1d82055f3508a4489a94"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "fbf6ee53b1d212f6b8b1"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -722,7 +722,7 @@
 /******/ 	__webpack_require__.h = function() { return hotCurrentHash; };
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return hotCreateRequire(34)(__webpack_require__.s = 34);
+/******/ 	return hotCreateRequire(33)(__webpack_require__.s = 33);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -2236,8 +2236,7 @@ module.exports = function(hash, moduleMap, options) {
 /* 30 */,
 /* 31 */,
 /* 32 */,
-/* 33 */,
-/* 34 */
+/* 33 */
 /*!***************************************************************************!*\
   !*** multi ./build/util/../helpers/hmr-client.js ./scripts/customizer.js ***!
   \***************************************************************************/
@@ -2246,11 +2245,11 @@ module.exports = function(hash, moduleMap, options) {
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(/*! /Users/kelseycahill/Sites/Angry Duck/wp-content/themes/angry-duck/resources/assets/build/util/../helpers/hmr-client.js */1);
-module.exports = __webpack_require__(/*! ./scripts/customizer.js */35);
+module.exports = __webpack_require__(/*! ./scripts/customizer.js */34);
 
 
 /***/ }),
-/* 35 */
+/* 34 */
 /*!*******************************!*\
   !*** ./scripts/customizer.js ***!
   \*******************************/
