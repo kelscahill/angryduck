@@ -30,14 +30,6 @@
     .o-link {
       color: $c-white;
       border-bottom: 1px solid $c-white;
-      margin-left: $space-half;
-      white-space: nowrap;
-      transform: scale(1);
-
-      &:hover,
-      &:focus {
-        transform: scale(1.1);
-      }
     }
   }
 

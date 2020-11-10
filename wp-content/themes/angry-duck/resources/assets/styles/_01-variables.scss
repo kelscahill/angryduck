@@ -97,7 +97,7 @@ $ff-font--tertiary: "Go Bold", sans-serif;
   --font-size-xs: 14px;
   --font-size-s: 16px;
   --font-size-m: 18px;
-  --font-size-l: 22px;
+  --font-size-l: 20px;
   --font-size-xl: 26px;
   --font-size-xxl: 40px;
 }
@@ -105,7 +105,7 @@ $ff-font--tertiary: "Go Bold", sans-serif;
 // Medium Breakpoint
 @media screen and (min-width: 700px) {
   :root {
-    --font-size-l: 32px;
+    --font-size-l: 25px;
     --font-size-xl: 36px;
     --font-size-xxl: 60px;
   }
@@ -114,7 +114,7 @@ $ff-font--tertiary: "Go Bold", sans-serif;
 // xLarge Breakpoint
 @media screen and (min-width: 1200px) {
   :root {
-    --font-size-l: 36px;
+    --font-size-l: 30px;
     --font-size-xl: 40px;
     --font-size-xxl: 120px;
   }
@@ -124,7 +124,7 @@ $body-font-size: var(--body-font-size, 16px);
 $font-size-xs: var(--font-size-xs, 14px);
 $font-size-s: var(--font-size-s, 16px);
 $font-size-m: var(--font-size-m, 18px);
-$font-size-l: var(--font-size-l, 36px);
+$font-size-l: var(--font-size-l, 30px);
 $font-size-xl: var(--font-size-xl, 40px);
 $font-size-xxl: var(--font-size-xxl, 120px);
 

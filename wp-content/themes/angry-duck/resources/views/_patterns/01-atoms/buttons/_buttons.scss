@@ -20,6 +20,7 @@
   cursor: pointer;
   padding: $space-half $space;
   text-transform: uppercase;
+  outline: 0;
 }
 
 /**
@@ -82,7 +83,21 @@ a {
   color: $c-link-color;
   transition: $transition-all;
 
-  &:hover {
+  &:hover,
+  &:focus {
     color: $c-link-hover-color;
+  }
+}
+
+.o-link {
+  color: $c-link-color;
+  border-bottom: 1px solid $c-link-color;
+  margin-left: $space-half;
+  white-space: nowrap;
+  transform: scale(1);
+
+  &:hover,
+  &:focus {
+    transform: scale(1.1);
   }
 }

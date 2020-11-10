@@ -23,11 +23,17 @@
   }
 
   &__image {
-    margin-right: $space-double;
+    margin-right: $space;
+    min-width: 33.33%;
+
+    @include media('>medium') {
+      margin-right: $space-double;
+    }
 
     img {
       width: auto;
       height: auto;
+      margin: 0 auto;
     }
   }
 
@@ -73,6 +79,46 @@
 
   &:nth-child(4n + 4) {
     background-color: $c-tertiary;
+  }
+
+  &.is-coming-soon {
+    .c-block-featured-product__image {
+      position: relative;
+
+      img {
+        opacity: 0.5;
+        position: relative;
+        z-index: 1;
+      }
+
+      &::before {
+        @include o-heading--xxl;
+        content: "Coming Soon";
+        position: absolute;
+        top: 32%;
+        left: calc(50% - 0.5vw);
+        right: 0;
+        margin: auto;
+        transform: translateX(-50%) rotate(-270deg);
+        transform-origin: top left;
+        white-space: nowrap;
+        font-size: 10vw;
+        color: $c-white;
+        height: 0;
+        width: 0;
+        z-index: 2;
+
+        @include media('>medium') {
+          font-size: 5vw;
+          left: calc(50% - 1.5vw);
+        }
+
+        @include media('>xxlarge') {
+          font-size: 4vw;
+          left: calc(50% - 2.5vw);
+        }
+      }
+    }
   }
 }
 

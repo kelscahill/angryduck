@@ -1,4 +1,7 @@
-<article class="c-block-featured-product">
+{% if post._stock_status == "outofstock" %}
+  {% set classes = " is-coming-soon" %}
+{% endif %}
+<article class="c-block-featured-product{{ classes }}">
   {% if post.get_thumbnail %}
     <picture class="c-block-featured-product__image">
       <img src="{{ post.thumbnail.src|resize(200,715) }}" />
@@ -15,7 +18,7 @@
     <hr class="o-hr--small" />
     <div class="c-block-featured-product__body u-spacing">
       <p>{{ post.post_content }}</p>
-      {% if post._stock_status == 'instock' and post._regular_price %}
+      {% if post._stock_status == "instock" and post._regular_price %}
         {% include "01-atoms/woocommerce/price.twig" %}
         {% include "01-atoms/woocommerce/add-to-cart.twig" %}
       {% else %}

@@ -91,21 +91,21 @@ export default {
       slidesToScroll: 4,
       responsive: [
         {
-          breakpoint: 1100,
+          breakpoint: 1200,
           settings: {
             slidesToShow: 3,
             slidesToScroll: 3,
           }
         },
         {
-          breakpoint: 900,
+          breakpoint: 1000,
           settings: {
             slidesToShow: 2,
             slidesToScroll: 2,
           }
         },
         {
-          breakpoint: 700,
+          breakpoint: 850,
           settings: {
             slidesToShow: 1,
             slidesToScroll: 1,

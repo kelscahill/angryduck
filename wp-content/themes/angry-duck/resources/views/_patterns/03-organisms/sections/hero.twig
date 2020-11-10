@@ -1,3 +1,13 @@
-<section class="c-hero">
+{% if post.thumbnail %}
+  {% set img_id = Image(post.thumbnail).id %}
+  {% set image_class = ' u-background--cover o-background-image--' ~ img_id %}
+  {% set img_src = Image(post.thumbnail).src|resize(900,900) %}
+  <style>
+    .o-background-image--{{ img_id }} {
+      background-image: url({{ img_src }});
+    }
+  </style>
+{% endif %}
+<section class="c-hero{{ image_class }}{{ is_front_page ? ' c-hero--front' : '' }}">
   {% include "01-atoms/images/logo.twig" %}
 </section>

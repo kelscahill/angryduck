@@ -105,9 +105,13 @@
     bottom: 0;
     margin: auto;
     background: url('../images/footer-bkg.svg') top center no-repeat;
-    background-size: auto 110%;
+    background-size: auto 100%;
     opacity: 0.05;
     z-index: -1;
+
+    @include media('>large') {
+      background-size: auto 150%;
+    }
   }
 
   &--inner {
@@ -116,10 +120,12 @@
     margin: 0 auto;
     text-align: center;
     z-index: 1;
-    grid-gap: $space-double;
+    grid-column-gap: 0;
+    grid-row-gap: $space-double;
 
     @include media('>large') {
       align-items: center;
+      grid-column-gap: $space-double;
     }
   }
 
@@ -127,10 +133,19 @@
     margin: $space-double 0;
 
     &__logo {
+      transition: $transition-effect;
+
       .o-logo {
         max-width: 200px;
         margin: 0 auto;
         display: block;
+        transform: scale(1);
+      }
+
+      &:hover {
+        .o-logo {
+          transform: scale(1.02);
+        }
       }
     }
 

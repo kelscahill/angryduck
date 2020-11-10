@@ -39,7 +39,7 @@
   padding-left: $space;
   padding-right: $space;
 
-  @include media(">xxlarge") {
+  @include media(">xlarge") {
     padding-left: $space-double;
     padding-right: $space-double;
   }

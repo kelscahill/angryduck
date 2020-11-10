@@ -68,23 +68,13 @@
   display: none;
 }
 
-.u-full-width {
-  width: 100%;
-}
-
-.u-align-center {
+.u-align--center {
   text-align: center;
 }
 
-.u-reversed-out {
-  color: $c-white;
-
-  p,
-  h1 a,
-  h2 a,
-  h3 a {
-    color: $c-white;
-  }
+.u-background--cover {
+  background-size: cover;
+  background-position: center center;
 }
 
 /**
@@ -98,10 +88,6 @@
 /**
  * Active on/off states
  */
-.u-active--off {
-  display: none;
-}
-
 [class*="-is-active"].js-toggle-parent,
 [class*="-is-active"].js-toggle {
   .u-active--on {
@@ -116,41 +102,5 @@
 [class*="-is-active"] {
   .u-hide-on-active {
     display: none;
-  }
-}
-
-/**
- * Breakout content
- */
-.u-breakout {
-  margin-right: -$space;
-  margin-left: -$space;
-
-  @include media(">xxlarge") {
-    margin-left: -$space-double;
-    margin-right: -$space-double;
-  }
-}
-
-/**
- * Justify left/right content
- */
-.u-split-content {
-  display: flex;
-
-  @include media("<=xsmall") {
-    flex-wrap: wrap;
-    flex-direction: column-reverse;
-    justify-content: flex-end;
-
-    > * + * {
-      margin-bottom: $space;
-    }
-  }
-
-
-  @include media(">xsmall") {
-    justify-content: space-between;
-    align-items: flex-start;
   }
 }

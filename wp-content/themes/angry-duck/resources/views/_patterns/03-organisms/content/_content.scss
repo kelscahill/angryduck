@@ -4,6 +4,16 @@
 
 .l-article--front {
   .c-content {
+    @include media('>medium') {
+      padding-top: 35vh;
+    }
+
+    h1 {
+      @include media('>medium') {
+        padding-top: $space-double;
+      }
+    }
+
     p {
       max-width: $large;
       margin-left: auto;
