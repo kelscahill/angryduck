@@ -169,6 +169,7 @@
 
     .c-footer--inner {
       padding: $space-quarter $space;
+      grid-row-gap: 0;
     }
 
     &__copyright {

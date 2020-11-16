@@ -48,7 +48,7 @@ select {
   }
 
   &:focus {
-    outline-color: $c-gray;
+    border-color: $c-gray;
   }
 }
 
@@ -63,6 +63,10 @@ input[type="number"] {
   line-height: 40px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 20.41'%3E%3Cpath d='M.15,5.06a.5.5,0,0,1,0-.71L4.5,0,8.85,4.35a.5.5,0,0,1,0,.71.48.48,0,0,1-.7,0L4.5,1.41.85,5.06A.48.48,0,0,1,.15,5.06Zm8,10.29L4.5,19,.85,15.35a.5.5,0,0,0-.7,0,.5.5,0,0,0,0,.71L4.5,20.41l4.35-4.35a.5.5,0,0,0,0-.71A.5.5,0,0,0,8.15,15.35Z' fill='%23000'/%3E%3C/svg%3E") center right 5px no-repeat;
   background-size: 10px 40px;
+
+  &:focus {
+    border-color: $c-black;
+  }
 }
 
 /* Spin Buttons modified */
@@ -163,6 +167,11 @@ select {
   padding-right: $space-and-half;
 }
 
+label {
+  font-weight: bold;
+  font-size: $font-size-xs;
+}
+
 /**
  * Validation
  */
@@ -172,4 +181,41 @@ select {
 
 .is-valid {
   border-color: $c-valid !important;
+}
+
+@mixin c-form--inline {
+  display: flex;
+  flex-direction: column;
+
+  @include media(">medium") {
+    flex-direction: row;
+  }
+
+
+  input[type=email] {
+    width: 100%;
+    border: $border--standard;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  input[type=submit],
+  button {
+    width: 100%;
+    margin-top: $space-half;
+    padding-left: $space;
+    padding-right: $space;
+
+    @include media(">medium") {
+      width: auto;
+      margin-top: 0;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      margin-left: -2px;
+    }
+  }
+}
+
+.c-form--inline {
+  @include c-form--inline;
 }

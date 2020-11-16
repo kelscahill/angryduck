@@ -5,7 +5,7 @@
 table {
   border-collapse: collapse;
   border-spacing: 0;
-  border: 1px solid $c-gray;
+  border: 1px solid transparent;
   width: 100%;
 }
 
@@ -31,25 +31,19 @@ td {
  * Responsive Table
  */
 .c-table--responsive {
-  border: 1px solid $c-gray;
   border-collapse: collapse;
+  border-radius: $border-radius;
   padding: 0;
   width: 100%;
 
-  tr {
-    border: 1px solid $c-gray;
-    background-color: $c-gray--light;
+  th {
+    background-color: $c-gray--lighter;
   }
 
   th,
   td {
     padding: $space / 2;
-  }
-
-  th {
-    font-size: $font-size-xs;
-    text-transform: uppercase;
-    border-bottom: 1px solid $c-gray;
+    border-bottom: $border--standard-light;
   }
 
   @include media("<=medium") {
@@ -67,9 +61,11 @@ td {
     }
 
     tr {
-      border-bottom: 3px solid $c-gray;
       display: block;
       margin-bottom: $space / 2;
+      border: 1px solid $c-gray--light;
+      border-radius: $border-radius;
+      overflow: hidden;
 
       &.this-is-active {
         td:not(:first-child) {
@@ -82,15 +78,23 @@ td {
       }
     }
 
+    th,
     td {
-      border-bottom: 1px solid $c-gray;
+      border-bottom: 1px solid $c-white;
+      background-color: $c-gray--lighter;
+    }
+
+    td {
+      border-bottom: $border--standard-light;
       display: flex;
       align-items: center;
       justify-content: space-between;
       min-height: 40px;
+      text-align: right;
 
       &:first-child {
         cursor: pointer;
+        background-color: $c-gray--lighter;
 
         &::before {
           content: "+ " attr(data-label);
@@ -103,6 +107,8 @@ td {
 
       &:not(:first-child) {
         display: none;
+        margin: 0 $space-half;
+        background-color: $c-white;
       }
 
       &::before {
@@ -114,3 +120,4 @@ td {
     }
   }
 }
+

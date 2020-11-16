@@ -83,13 +83,21 @@ abbr {
   @include o-heading--xs;
 }
 
+/**
+ * Page title
+ */
+.o-page-title {
+  text-align: center;
+  padding: 0 $space;
+}
 
 /**
  * Rich text editor text
  */
 .o-rte-text {
   width: 100%;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
 
   & > * + * {
     margin-top: $space;
@@ -109,8 +117,17 @@ abbr {
     display: none;
   }
 
-  a {
-    text-decoration: underline;
+  .o-button,
+  .o-link {
+    text-decoration: none;
+  }
+
+  // a:not(.o-button){
+  //   @include o-link;
+  // }
+
+  a:not(.o-button--secondary) {
+    @include o-link;
   }
 
   hr {

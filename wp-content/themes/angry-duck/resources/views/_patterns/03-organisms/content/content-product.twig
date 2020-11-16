@@ -1,0 +1,10 @@
+<article class="c-content c-content-product u-spacing--double">
+  {# {% do action('woocommerce_before_single_product_summary') %} #}
+  <h1 class="o-page-title">{{ post.title }}</h1>
+  <div class="l-container">
+    {# <img src="{{ post.thumbnail.src('shop_single') }}" /> #}
+    {% do action('woocommerce_single_product_summary') %}
+  </div>
+  {# {% do action('woocommerce_after_single_product_summary') %} #}
+</article>
+

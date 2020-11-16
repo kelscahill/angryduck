@@ -2,14 +2,20 @@
     $PAGE SECTIONS
 \* ------------------------------------ */
 
-.c-featured-products {
+/**
+ * Featured Products
+ */
+.c-section-featured-products {
   display: flex;
   flex-wrap: wrap;
 }
 
-.c-hero {
+/**
+ * Hero
+ */
+.c-section-hero {
   background-color: $c-secondary;
-  min-height: 80vh;
+  min-height: 70vh;
   position: relative;
   display: flex;
   align-items: center;
@@ -43,6 +49,11 @@
 
     @include media('>medium') {
       margin-bottom: -35vh;
+    }
+
+    + .l-wrap,
+    + .l-wrap .l-main {
+      padding: 0;
     }
   }
 }

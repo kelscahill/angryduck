@@ -14,12 +14,12 @@
     z-index: 9998;
   }
 
-  .c-menu {
+  .c-nav-drawer {
     right: 0;
   }
 }
 
-.c-menu {
+.c-nav-drawer {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -94,7 +94,7 @@
 /**
  * Primary nav
  */
-.c-primary-nav {
+.c-nav-primary {
   &__menu-item {
     margin: 0 $space;
   }
@@ -133,7 +133,7 @@
 /**
  * Footer nav
  */
-.c-footer-nav {
+.c-nav-footer {
   display: flex;
   align-items: center;
   justify-content: center;

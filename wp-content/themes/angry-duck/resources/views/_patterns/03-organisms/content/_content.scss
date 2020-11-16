@@ -2,22 +2,25 @@
     $CONTENT
 \* ------------------------------------ */
 
-.l-article--front {
-  .c-content {
+.c-content-front {
+  @include media('>medium') {
+    padding-top: 35vh;
+  }
+
+  h1 {
+    padding-left: $space;
+    padding-right: $space;
+
     @include media('>medium') {
-      padding-top: 35vh;
+      padding-top: $space-double;
     }
+  }
 
-    h1 {
-      @include media('>medium') {
-        padding-top: $space-double;
-      }
-    }
-
-    p {
-      max-width: $large;
-      margin-left: auto;
-      margin-right: auto;
-    }
+  p {
+    max-width: $large;
+    padding-left: $space;
+    padding-right: $space;
+    margin-left: auto;
+    margin-right: auto;
   }
 }

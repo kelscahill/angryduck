@@ -4,7 +4,7 @@
 <article class="c-block-featured-product{{ classes }}">
   {% if post.get_thumbnail %}
     <picture class="c-block-featured-product__image">
-      <img src="{{ post.thumbnail.src|resize(200,715) }}" />
+      <img src="{{ Image(post.product_featured_image).src|resize(200,715) }}" />
     </picture>
   {% endif %}
   <div class="c-block-featured-product__content u-spacing">

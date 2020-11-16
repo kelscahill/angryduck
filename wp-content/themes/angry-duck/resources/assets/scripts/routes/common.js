@@ -10,7 +10,7 @@ export default {
     * Remove Active Classes when clicking outside menus and modals
     */
     $(document).click(function(event) {
-      if (!$(event.target).closest(".c-menu").length) {
+      if (!$(event.target).closest(".c-nav-drawer").length) {
         $("html").find(".menu-is-active").removeClass("menu-is-active");
       }
     });

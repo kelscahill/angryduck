@@ -43,15 +43,12 @@
   font-size: $font-size-xl;
 }
 
-.u-font--xxl {
-  font-size: $font-size-xxl;
-}
-
 /**
  * Completely remove from the flow but leave available to screen readers.
  */
 .is-vishidden,
-.visually-hidden {
+.visually-hidden,
+.screen-reader-text {
   position: absolute !important;
   overflow: hidden;
   width: 1px;

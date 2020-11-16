@@ -49,6 +49,29 @@
  * Button Secondary
  */
 @mixin o-button--secondary {
+  color: $c-white;
+  background: linear-gradient(to left, $c-black 50%, $c-primary 50%);
+  background-size: 200% 100%;
+  background-position: right bottom;
+  border-color: $c-black;
+
+  &:hover,
+  &:focus {
+    color: $c-white;
+    border-color: $c-primary;
+    background-position: left bottom;
+  }
+}
+
+.o-button--secondary {
+  @include o-button;
+  @include o-button--secondary;
+}
+
+/**
+ * Button Tertiary
+ */
+@mixin o-button--teritary {
   color: $c-black;
   background: linear-gradient(to left, transparent 50%, $c-black 50%);
   background-size: 200% 100%;
@@ -62,10 +85,11 @@
   }
 }
 
-.o-button--secondary {
+.o-button--teritary {
   @include o-button;
-  @include o-button--secondary;
+  @include o-button--teritary;
 }
+
 
 button,
 input[type="submit"],
@@ -89,15 +113,38 @@ a {
   }
 }
 
-.o-link {
+@mixin o-link {
+  display: inline-flex;
+  position: relative;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  border-radius: 0;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
+  appearance: none;
+  cursor: pointer;
+  padding: 0;
+  text-transform: inherit;
+  border: 0;
+  outline: 0;
+  font-weight: normal;
+  font-family: $ff-font;
+  font-size: $body-font-size;
+  letter-spacing: normal;
+  background: transparent;
   color: $c-link-color;
   border-bottom: 1px solid $c-link-color;
-  margin-left: $space-half;
-  white-space: nowrap;
-  transform: scale(1);
 
   &:hover,
   &:focus {
-    transform: scale(1.1);
+    background: transparent;
+    color: $c-link-hover-color;
+    border-bottom-color: $c-link-hover-color;
   }
+}
+
+.o-link {
+  @include o-link;
 }
