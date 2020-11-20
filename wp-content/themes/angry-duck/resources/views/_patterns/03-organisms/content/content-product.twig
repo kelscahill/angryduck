@@ -1,10 +1,48 @@
-<article class="c-content c-content-product u-spacing--double">
-  {# {% do action('woocommerce_before_single_product_summary') %} #}
-  <h1 class="o-page-title">{{ post.title }}</h1>
-  <div class="l-container">
-    {# <img src="{{ post.thumbnail.src('shop_single') }}" /> #}
-    {% do action('woocommerce_single_product_summary') %}
+<article class="c-content c-content-product">
+  <div class="l-container u-spacing--quad">
+    <div class="c-product">
+      <div class="c-product__images">
+        {% if product.get_gallery_image_ids %}
+          <div class="c-product__gallery">
+            <div class="c-product__gallery-nav">
+              <div class="js-product-gallery-nav">
+                {% for image in product.get_gallery_image_ids %}
+                  <img src="{{ Image(image).src|resize(150,150) }}" alt="{{ Image(image).alt }}" />
+                {% endfor %}
+              </div>
+            </div>
+            <div class="c-product__gallery-image">
+              <div class="js-product-gallery">
+                {% for image in product.get_gallery_image_ids %}
+                  <img src="{{ Image(image).src|resize(600,600) }}" alt="{{ Image(image).alt }}" />
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% elseif post.thumbnail %}
+          <img src="{{ post.thumbnail.src|resize(600,600) }}" alt="{{ post.thumbnail.alt }}" />
+        {% endif %}
+      </div>
+      <div class="c-product__content u-spacing">
+        <div class="c-product__heading u-spacing--half">
+          {% if post._sale_price %}
+            <div class="o-eyebrow">On Sale!</div>
+          {% endif %}
+          <h2 class="o-heading--xl">{{ post.title }}</h2>
+          <p class="u-font--m"><strong>{{ post.get_preview(999, false, NULL, false, '')|striptags }}</strong></p>
+        </div>
+        <hr class="o-hr--small" />
+        <div class="c-product__body u-spacing">
+          <p>{{ post.post_content }}</p>
+          {% if post._stock_status == "instock" and post._regular_price %}
+            {% include "01-atoms/woocommerce/price.twig" %}
+            {% include "01-atoms/woocommerce/add-to-cart.twig" %}
+          {% else %}
+            <p><em>Coming soon!</em></p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% include "03-organisms/sections/section-related-products.twig" %}
   </div>
-  {# {% do action('woocommerce_after_single_product_summary') %} #}
 </article>
-

@@ -16,17 +16,17 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+  exit;
 }
 
 if ( ! $notices ) {
-	return;
+  return;
 }
 
 ?>
 
 <?php foreach ( $notices as $notice ) : ?>
-	<div class="l-wrap l-container"<?php echo wc_get_notice_data_attr( $notice ); ?> role="alert">
-		<div class="o-message"><?php echo wc_kses_notice( $notice['notice'] ); ?></div>
-	</div>
+  <div class="o-notice o-notice--success"<?php echo wc_get_notice_data_attr( $notice ); ?> role="alert">
+    <div class="o-notice__message"><?php echo wc_kses_notice( $notice['notice'] ); ?></div>
+  </div>
 <?php endforeach; ?>

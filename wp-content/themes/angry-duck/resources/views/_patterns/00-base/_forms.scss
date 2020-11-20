@@ -35,10 +35,12 @@ input[type=email],
 input[type=search],
 input[type=tel],
 input[type="number"],
-select {
-  font-size: 16px;
+select,
+textarea,
+.select2-container .select2-selection--single {
+  font-size: $body-font-size;
   font-family: $ff-font;
-  padding: $space-half $space;
+  padding: $space-half;
   box-shadow: none;
   border: $border--standard;
   border-radius: $border-radius;
@@ -48,7 +50,7 @@ select {
   }
 
   &:focus {
-    border-color: $c-gray;
+    border-color: $c-tertiary;
   }
 }
 
@@ -85,11 +87,11 @@ input[type=radio],
 input[type=checkbox] {
   outline: none;
   margin: 0;
-  margin-right: $space-quarter;
-  height: 18px;
-  width: 18px;
+  margin-right: $space-half;
+  height: 30px;
+  width: 30px;
   line-height: 1;
-  background-size: 18px;
+  background-size: 30px;
   background-repeat: no-repeat;
   background-position: 0 0;
   cursor: pointer;
@@ -100,6 +102,8 @@ input[type=checkbox] {
   user-select: none;
   appearance: none;
   background-color: $c-white;
+  top: -5px;
+  position: relative;
 }
 
 input[type=radio] + label,
@@ -108,14 +112,17 @@ input[type=checkbox] + label {
   cursor: pointer;
   position: relative;
   margin-bottom: 0;
+  font-size: $body-font-size;
+  width: calc(100% - 40px);
 }
 
 input[type=radio]:checked,
 input[type=checkbox]:checked {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M26.08,3.56l-2,1.95L10.61,19l-5-4L3.47,13.29,0,17.62l2.17,1.73L9.1,24.9,11,26.44l1.77-1.76L28.05,9.43,30,7.48Z' fill='#{url-friendly-color($c-secondary)}'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M26.08,3.56l-2,1.95L10.61,19l-5-4L3.47,13.29,0,17.62l2.17,1.73L9.1,24.9,11,26.44l1.77-1.76L28.05,9.43,30,7.48Z' fill='#{url-friendly-color($c-white)}'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: 10px;
+  background-size: 15px;
+  background-color: $c-black;
 }
 
 input[type=radio] {
@@ -124,6 +131,15 @@ input[type=radio] {
 
 input[type=checkbox] {
   border-radius: $border-radius;
+}
+
+.o-form-item__checkbox,
+.o-form-item__radio {
+  &::after {
+    content: "";
+    display: block;
+    clear: left;
+  }
 }
 
 input[type=submit] {
@@ -159,12 +175,36 @@ input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px white inset;
 }
 
-select {
+select,
+.select2-container .select2-selection--single {
   background-color: $c-white;
   appearance: none;
   position: relative;
   width: 100%;
   padding-right: $space-and-half;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11.7 7.21'%3E%3Ctitle%3ESmall Arrow%3C/title%3E%3Cpath d='M5.79,7.21.29,1.71A1,1,0,0,1,1.71.29l4.1,4.1L10,.29a1,1,0,0,1,1.41,0,1,1,0,0,1,0,1.41Z' fill='#{url-friendly-color($c-gray)}'/%3E%3C/svg%3E") $c-white center right 10px no-repeat;
+  background-size: 10px 10px;
+}
+
+.select2-container .select2-selection--single {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: $space-half;
+  height: 43px;
+
+  .select2-selection__rendered {
+    height: 40px;
+    line-height: 40px;
+    padding: 0;
+  }
+
+  .select2-selection__arrow {
+    display: none;
+  }
+
+  .select2-dropdown {
+    border: $border--standard;
+  }
 }
 
 label {
@@ -191,12 +231,18 @@ label {
     flex-direction: row;
   }
 
-
+  input[type=text],
   input[type=email] {
     width: 100%;
     border: $border--standard;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+    background-color: transparent;
+
+    &:hover,
+    &:focus {
+      border-color: $c-black;
+    }
   }
 
   input[type=submit],

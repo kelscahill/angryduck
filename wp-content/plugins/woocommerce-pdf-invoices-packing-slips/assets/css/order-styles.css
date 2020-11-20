@@ -1,6 +1,6 @@
 /* Order list buttons: */
 .type-shop_order .column-wc_actions a.button.wpo_wcpdf {
-	padding: 2px !important;
+	padding: 3px 2px 1px 1px !important;
 }
 
 .type-shop_order .column-wc_actions a.button.wpo_wcpdf.exists::after {

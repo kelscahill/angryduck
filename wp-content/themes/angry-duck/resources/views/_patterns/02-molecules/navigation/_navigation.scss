@@ -148,5 +148,10 @@
     color: $c-white;
     padding: $space-quarter $space-half;
     text-decoration: underline;
+
+    &:hover,
+    &:focus {
+      color: $c-white;
+    }
   }
 }

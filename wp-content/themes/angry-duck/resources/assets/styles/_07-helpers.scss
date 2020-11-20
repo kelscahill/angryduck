@@ -3,6 +3,21 @@
 \* ------------------------------------ */
 
 /**
+ * Colors
+ */
+.u-color--primary {
+  color: $c-primary;
+}
+
+.u-color--secondary {
+  color: $c-secondary;
+}
+
+.u-color--tertiary {
+  color: $c-tertiary;
+}
+
+/**
  * Font Families
  */
 .u-font {

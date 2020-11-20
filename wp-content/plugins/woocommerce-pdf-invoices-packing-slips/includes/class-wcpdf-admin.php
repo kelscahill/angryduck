@@ -194,11 +194,9 @@ class Admin {
 		$listing_actions = apply_filters( 'wpo_wcpdf_listing_actions', $listing_actions, $order );			
 
 		foreach ($listing_actions as $action => $data) {
-			?>
-			<a href="<?php echo $data['url']; ?>" class="button tips wpo_wcpdf <?php echo $data['exists'] == true ? "exists " . $action : $action; ?>" target="_blank" alt="<?php echo $data['alt']; ?>" data-tip="<?php echo $data['alt']; ?>">
+			?><a href="<?php echo $data['url']; ?>" class="button tips wpo_wcpdf <?php echo $data['exists'] == true ? "exists " . $action : $action; ?>" target="_blank" alt="<?php echo $data['alt']; ?>" data-tip="<?php echo $data['alt']; ?>">
 				<img src="<?php echo $data['img']; ?>" alt="<?php echo $data['alt']; ?>" width="16">
-			</a>
-			<?php
+			</a><?php
 		}
 	}
 	
@@ -623,15 +621,15 @@ class Admin {
 			$order = wc_get_order( $post_id );
 			$action = wc_clean( $_POST['wpo_wcpdf_send_emails'] );
 			if ( strstr( $action, 'send_email_' ) ) {
+				$email_to_send = str_replace( 'send_email_', '', $action );
 				// Switch back to the site locale.
 				wc_switch_to_site_locale();
-				do_action( 'woocommerce_before_resend_order_emails', $order );
+				do_action( 'woocommerce_before_resend_order_emails', $order, $email_to_send );
 				// Ensure gateways are loaded in case they need to insert data into the emails.
 				WC()->payment_gateways();
 				WC()->shipping();
 				// Load mailer.
 				$mailer = WC()->mailer();
-				$email_to_send = str_replace( 'send_email_', '', $action );
 				$mails = $mailer->get_emails();
 				if ( ! empty( $mails ) ) {
 					foreach ( $mails as $mail ) {

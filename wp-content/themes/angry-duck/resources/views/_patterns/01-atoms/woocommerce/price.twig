@@ -6,6 +6,8 @@
     {% else %}
       <span class="o-price__regular o-heading--m">{{ '$' ~ post._regular_price }}</span>
     {% endif %}
-    <div class="o-price__minimum u-font--xs"><em>*minimum order of 2</em></div>
+    {% if post.minimum_allowed_quantity %}
+      <div class="o-price__minimum u-font--xs"><em>*minimum order of {{ post.minimum_allowed_quantity }}</em></div>
+    {% endif %}
   </div>
 {% endif %}

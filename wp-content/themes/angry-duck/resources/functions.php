@@ -146,9 +146,6 @@ add_filter('acf/settings/save_json', 'my_acf_json_save_point');
 // Disable Woocommerce default css.
 add_filter('woocommerce_enqueue_styles', '__return_empty_array');
 
-// Remove the default image.
-remove_action('woocommerce_before_shop_loop_item_title', 'woocommerce_template_loop_product_thumbnail');
-
 /**
  * Register custom content types
  */

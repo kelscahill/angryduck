@@ -90,26 +90,26 @@ $generated_i18n_strings = array(
 	// Reference: js/src/components/PrePublish.js:48
 	__( 'Improve your post with Yoast SEO', 'wordpress-seo' ),
 
-	// Reference: js/src/components/Indexation.js:211
+	// Reference: js/src/components/Indexation.js:234
 	__( 'This feature includes and replaces the Text Link Counter and Internal Linking Analysis', 'wordpress-seo' ),
 
-	// Reference: js/src/components/Indexation.js:233
-	__( 'SEO data optimization is disabled for non-production environments.', 'wordpress-seo' ),
-
-	// Reference: js/src/components/Indexation.js:239
-	__( 'SEO data optimization complete', 'wordpress-seo' ),
-
-	// Reference: js/src/components/Indexation.js:253
-	__( 'Optimizing SEO data... This may take a while.', 'wordpress-seo' ),
-
-	// Reference: js/src/components/Indexation.js:259
-	__( 'Oops, something has gone wrong and we couldn\'t complete the optimization of your SEO data. Please click the button again to re-start the process.', 'wordpress-seo' ),
-
-	// Reference: js/src/components/Indexation.js:270
+	// Reference: js/src/components/Indexation.js:263
 	__( 'Stop SEO data optimization', 'wordpress-seo' ),
 
-	// Reference: js/src/components/Indexation.js:276
+	// Reference: js/src/components/Indexation.js:279
 	__( 'Start SEO data optimization', 'wordpress-seo' ),
+
+	// Reference: js/src/components/Indexation.js:283
+	__( 'SEO data optimization is disabled for non-production environments.', 'wordpress-seo' ),
+
+	// Reference: js/src/components/Indexation.js:302
+	__( 'Optimizing SEO data... This may take a while.', 'wordpress-seo' ),
+
+	// Reference: js/src/components/Indexation.js:314
+	__( 'Oops, something has gone wrong and we couldn\'t complete the optimization of your SEO data. Please click the button again to re-start the process.', 'wordpress-seo' ),
+
+	// Reference: js/src/components/Indexation.js:349
+	__( 'SEO data optimization complete', 'wordpress-seo' ),
 
 	// Reference: js/src/components/LocalSEOUpsell.js:76
 	__( 'Serving local customers?', 'wordpress-seo' ),
@@ -477,13 +477,13 @@ $generated_i18n_strings = array(
 	// Reference: js/src/help-scout-beacon.js:208
 	__( 'When you click OK we will open our HelpScout beacon where you can find answers to your questions. This beacon will load our support data and also potentially set cookies.', 'wordpress-seo' ),
 
-	// Reference: js/src/initializers/block-editor-integration.js:140
+	// Reference: js/src/initializers/block-editor-integration.js:151
 	__( 'Yoast SEO', 'wordpress-seo' ),
 
-	// Reference: js/src/initializers/block-editor-integration.js:53
+	// Reference: js/src/initializers/block-editor-integration.js:54
 	__( 'Marking links with nofollow/sponsored has been disabled for WordPress installs < 5.4.', 'wordpress-seo' ),
 
-	// Reference: js/src/initializers/block-editor-integration.js:56
+	// Reference: js/src/initializers/block-editor-integration.js:57
 	__( 'Please upgrade your WordPress version or install the Gutenberg plugin to get this %1$s feature.', 'wordpress-seo' ),
 
 	// Reference: js/src/inline-links/edit-link.js:106

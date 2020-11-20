@@ -3,28 +3,47 @@
 \* ------------------------------------ */
 
 table {
-  border-collapse: collapse;
   border-spacing: 0;
-  border: 1px solid transparent;
+  border: $border--standard-light;
+  border-radius: $border-radius;
+  overflow: hidden;
   width: 100%;
+
+  label {
+    font-size: $body-font-size;
+  }
 }
 
 th {
   text-align: left;
   border: 1px solid transparent;
-  padding: ($space / 2) 0;
-  text-transform: uppercase;
+  padding: $space-half 0;
   vertical-align: top;
-  font-weight: bold;
+
+  @include o-heading--xs;
 }
 
 tr {
   border: 1px solid transparent;
 }
 
+th,
 td {
   border: 1px solid transparent;
-  padding: $space / 2;
+  padding: $space-half;
+  border-bottom: $border--standard-light;
+}
+
+thead th {
+  background-color: $c-gray--lighter;
+}
+
+tfoot th {
+  @include p;
+
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: bold;
 }
 
 /**
@@ -42,7 +61,7 @@ td {
 
   th,
   td {
-    padding: $space / 2;
+    padding: $space-half;
     border-bottom: $border--standard-light;
   }
 

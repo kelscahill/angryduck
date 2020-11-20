@@ -25,15 +25,34 @@
   &__image {
     margin-right: $space;
     min-width: 33.33%;
-
-    @include media('>medium') {
-      margin-right: $space-double;
-    }
+    position: relative;
+    overflow: visible;
+    padding: $space;
 
     img {
       width: auto;
       height: auto;
       margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    &::after {
+      z-index: 0;
+      content: "";
+      display: block;
+      position: absolute;
+      bottom: -5px;
+      right: 0;
+      left: 0;
+      margin: auto;
+      width: 100%;
+      max-width: 240px;
+      height: 100%;
+      background: url('../images/shadow.png') bottom center no-repeat;
+      background-size: 100% auto;
+      background-blend-mode: multiply;
+      opacity: 0.3;
     }
   }
 
@@ -125,7 +144,35 @@
           left: calc(50% - 2.5vw);
         }
       }
+
+      &::after {
+        opacity: 0.1;
+      }
     }
+  }
+}
+
+/**
+ * Product
+ */
+.c-block-product {
+  position: relative;
+  color: $c-black;
+  border: 1px solid transparent;
+  border-radius: $border-radius;
+  overflow: hidden;
+  transition: $transition-all;
+  top: 0;
+
+  &:hover,
+  &:focus {
+    color: $c-black;
+    border: $border--standard-light;
+    top: -5px;
+  }
+
+  &__content {
+    padding: $space;
   }
 }
 

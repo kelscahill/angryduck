@@ -24,7 +24,7 @@ defined( 'ABSPATH' ) || exit;
 <div class="o-cart-empty u-spacing u-align--center">
   <?php do_action( 'woocommerce_cart_is_empty' ); ?>
   <?php if ( wc_get_page_id( 'shop' ) > 0 ) : ?>
-    <a class="o-button" href="<?php echo esc_url( apply_filters( 'woocommerce_return_to_shop_redirect', wc_get_page_permalink( 'home' ) ) ); ?>">
+    <a class="o-button--secondary" href="/shop">
       <?php
         /**
          * Filter "Return To Shop" text.

@@ -1,10 +1,8 @@
 {% if posts %}
   <div class="c-section-posts">
-    <div class="l-grid l-grid--4up">
+    <div class="c-section-posts__grid l-container" bp="grid 4@sm 3@lg">
       {% for post in posts %}
-        <div class="l-grid-item">
-          {% include ['02-molecules/blocks/block-'~post.post_type~'.twig', '02-molecules/blocks/block.twig'] %}
-        </div>
+        {% include ['02-molecules/blocks/block-'~post.post_type~'.twig', '02-molecules/blocks/block.twig'] %}
       {% endfor %}
     </div>
   </div>

@@ -114,6 +114,30 @@ export default {
       ]
     });
 
+    var $slickGalleryImages = $('.js-product-gallery');
+    var $slickGalleryNav = $('.js-product-gallery-nav');
+    if ($slickGalleryImages.length) {
+      $slickGalleryImages.slick({
+        speed: 500,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        arrows: false,
+        fade: true,
+        dots: true,
+        asNavFor: $slickGalleryNav
+      });
+
+      $slickGalleryNav.slick({
+        slidesToShow: 4,
+        slidesToScroll: 1,
+        asNavFor: $slickGalleryImages,
+        vertical: true,
+        verticalSwiping: true,
+        draggable: true,
+        focusOnSelect: true,
+      });
+    }
+
     /**
      * General helper function to support toggle functions.
      */

@@ -95,3 +95,18 @@
     }
   }
 }
+
+/* Contact Form 7 */
+.wpcf7 {
+  form {
+    & > * + * {
+      margin-top: $space;
+    }
+
+    input[type="submit"] {
+      width: auto;
+
+      @include o-button--secondary;
+    }
+  }
+}

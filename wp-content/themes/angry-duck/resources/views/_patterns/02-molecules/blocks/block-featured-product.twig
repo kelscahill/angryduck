@@ -2,9 +2,9 @@
   {% set classes = " is-coming-soon" %}
 {% endif %}
 <article class="c-block-featured-product{{ classes }}">
-  {% if post.get_thumbnail %}
+  {% if post.product_featured_image %}
     <picture class="c-block-featured-product__image">
-      <img src="{{ Image(post.product_featured_image).src|resize(200,715) }}" />
+      <img src="{{ Image(post.product_featured_image).src|resize(200,715) }}" alt="{{ Image(post.product_featured_image).alt }}" />
     </picture>
   {% endif %}
   <div class="c-block-featured-product__content u-spacing">
