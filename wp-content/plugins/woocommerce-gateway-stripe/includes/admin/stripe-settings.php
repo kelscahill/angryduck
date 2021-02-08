@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( wc_stripe()->connect->is_connected() ) {
+if ( woocommerce_gateway_stripe()->connect->is_connected() ) {
 	$reset_link = add_query_arg(
 		array(
 			'_wpnonce'                     => wp_create_nonce( 'reset_stripe_api_credentials' ),
@@ -20,7 +20,7 @@ if ( wc_stripe()->connect->is_connected() ) {
 		'</span>'
 	);
 } else {
-	$oauth_url = wc_stripe()->connect->get_oauth_url();
+	$oauth_url = woocommerce_gateway_stripe()->connect->get_oauth_url();
 
 	if ( ! is_wp_error( $oauth_url ) ) {
 		$api_credentials_text = sprintf(
@@ -130,7 +130,7 @@ return apply_filters(
 		'statement_descriptor'          => array(
 			'title'       => __( 'Statement Descriptor', 'woocommerce-gateway-stripe' ),
 			'type'        => 'text',
-			'description' => __( 'Statement descriptors are limited to 22 characters, cannot use the special characters >, <, ", \, \', *, and must not consist solely of numbers. This will appear on your customer\'s statement in capital letters.', 'woocommerce-gateway-stripe' ),
+			'description' => __( 'Statement descriptors are limited to 22 characters, cannot use the special characters >, <, ", \, \', *, /, (, ), {, }, and must not consist solely of numbers. This will appear on your customer\'s statement in capital letters.', 'woocommerce-gateway-stripe' ),
 			'default'     => '',
 			'desc_tip'    => true,
 		),

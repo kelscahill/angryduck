@@ -304,10 +304,16 @@ abstract class Order_Document {
 		do_action( 'wpo_wcpdf_delete_document', $this, $order );
 	}
 
-	public function regenerate( $order = null ) {
+	public function regenerate( $order = null, $data = null ) {
 		$order = empty( $order ) ? $this->order : $order;
 		if ( empty( $order ) ) {
 			return; //Nothing to update
+		}
+
+		// pass data to setter functions
+		if( ! empty( $data ) ) {
+			$this->set_data( $data, $order );
+			$this->save();
 		}
 
 		//Get most current settings
@@ -768,7 +774,7 @@ abstract class Order_Document {
 		if ( get_post_type( $this->order_id ) == 'shop_order_refund' ) {
 			$number = $this->order_id;
 		} else {
-			$number = method_exists( $this->order, 'get_order_number' ) ? $this->order->get_order_number() : '';
+			$number = is_callable( array( $this->order, 'get_order_number' ) ) ? $this->order->get_order_number() : '';
 		}
 
 		if ( $order_count == 1 ) {

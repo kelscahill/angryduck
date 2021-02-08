@@ -2,7 +2,7 @@
 
 $handler = MailChimp_WooCommerce_Admin::connect();
 
-// if we don't have valid campaign defaults we need to redirect back to the 'campaign_defaults' tab.
+// if we don't have a valid api key we need to redirect back to the 'api_key' tab.
 if (!$handler->hasValidApiKey()) {
     wp_redirect('admin.php?page=mailchimp-woocommerce&tab=api_key&error_notice=missing_api_key');
 }
@@ -113,12 +113,12 @@ if (!$handler->hasValidApiKey()) {
 
                 echo sprintf(
                     /* translators: %1$s - The Currency name and format (ex: USD | US Dollar) %2$s - Timezone name or offset (ex: America/New_York or UTC-4:00) %3$s and %5$s- <a> tag open %4$s - </a> tag close*/
-                    __('We\'ve detected that your WooCommerce store\'s currency is <b>%1$s</b> (%3$schange%4$s), and the WordPress timezone is <b>%2$s</b> (%5$schange%4$s). <br/>.', 'mailchimp-for-woocommerce'),
+                    __('We\'ve detected that your WooCommerce store\'s currency is <b>%1$s</b> (%3$schange%4$s), and the WordPress timezone is <b>%2$s</b> (%5$schange%4$s).', 'mailchimp-for-woocommerce'),
                     isset($current_currency_data) ? $current_currency . ' | ' .  $current_currency_data['name']: $current_currency,
                     mailchimp_get_timezone(true),
-                    '<a href="' . admin_url( 'options-general.php') .'" title="'.__( 'WooCommerce Settings' ).'">',
+                    '<a href="' . admin_url( 'admin.php?page=wc-settings#woocommerce_currency') .'" title="'.__( 'General Settings' ).'">',
                     '</a>',
-                    '<a href="' . admin_url( 'admin.php/?page=wc-settings') .'" title="'.__( 'General Settings' ).'">'
+                    '<a href="' . admin_url( 'options-general.php#timezone_string') .'" title="'.__( 'WooCommerce Settings' ).'">'
                 );
             ?>
         </p>
@@ -153,11 +153,9 @@ if (!$handler->hasValidApiKey()) {
     <?php 
         // Only admins should see mailchimp_permission_cap radio buttons
         if (current_user_can('manage_options')) : ?>
-        
-        <div class="box optional-settings-label" >
-            <span><?php esc_html_e('Optional Store Settings', 'mailchimp-for-woocommerce');?></span>
+        <div class="box fieldset-header" >
+            <h3 style="padding-top: 1em;"><?= __('Permission Settings', 'mailchimp-for-woocommerce');?></h3>   
         </div>
-
         <div class="optional-settings-content">
             <div class="box box-half margin-large">
                 <label>

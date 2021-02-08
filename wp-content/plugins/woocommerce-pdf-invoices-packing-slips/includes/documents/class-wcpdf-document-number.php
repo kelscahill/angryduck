@@ -141,7 +141,7 @@ class Document_Number {
 		$document_year	= $document_date->date_i18n( 'Y' );
 		$document_month	= $document_date->date_i18n( 'm' );
 		$document_day	= $document_date->date_i18n( 'd' );
-		$order_number	= method_exists($order, 'get_order_number') ? $order->get_order_number() : '';
+		$order_number	= is_callable( array( $order, 'get_order_number' ) ) ? $order->get_order_number() : '';
 
 		// make replacements
 		foreach ($formats as $key => $value) {
@@ -173,8 +173,17 @@ class Document_Number {
 		}
 
 		// Padding
-		if ( ctype_digit( (string)$this->padding ) ) {
-			$number = sprintf('%0'.$this->padding.'d', $number);
+		$padding_string = '';
+		if ( function_exists('ctype_digit') ) { // requires the Ctype extension
+			if ( ctype_digit( (string) $this->padding ) ) {
+				$padding_string = (string) $this->padding;
+			}
+		} elseif ( !empty( $this->padding ) ) {
+			$padding_string = (string) absint($this->padding);
+		}
+
+		if ( !empty( $padding_string ) ) {
+			$number = sprintf('%0'.$padding_string.'d', $number);
 		}
 
 		// Add prefix & suffix

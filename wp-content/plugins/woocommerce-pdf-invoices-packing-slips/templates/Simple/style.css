@@ -73,7 +73,6 @@ table {
 th, td {
 	vertical-align: top;
 	text-align: left;
-	word-wrap: break-word;
 }
 
 table.container {
@@ -123,8 +122,22 @@ table.order-data-addresses {
 	margin-bottom: 10mm;
 }
 
+table.order-data-addresses td.address {
+	word-wrap: break-word;
+}
+
 td.order-data {
 	width: 40%;
+}
+
+td.order-data table {
+	width: 100%;
+}
+
+td.order-data table th {
+	font-weight: normal;
+	padding-right: 2mm;
+	width: 50%;
 }
 
 .invoice .shipping-address {
@@ -133,11 +146,6 @@ td.order-data {
 
 .packing-slip .billing-address {
 	width: 30%;
-}
-
-td.order-data table th {
-	font-weight: normal;
-	padding-right: 2mm;
 }
 
 /* Order details */
@@ -230,6 +238,7 @@ dd:after {
 table.totals {
 	width: 100%;
 	margin-top: 5mm;
+	table-layout: fixed;
 }
 
 table.totals th,

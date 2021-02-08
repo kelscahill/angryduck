@@ -3,9 +3,9 @@ Contributors: pomegranate
 Donate link: https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-bundle/
 Tags: woocommerce, pdf, invoices, packing slips, print, delivery notes, invoice, packing slip, export, email, bulk, automatic
 Requires at least: 3.5
-Tested up to: 5.5
-Requires PHP: 5.3
-Stable tag: 2.7.1
+Tested up to: 5.6
+Requires PHP: 7.1
+Stable tag: 2.8.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -101,6 +101,40 @@ There's a setting on the Status tab of the settings page that allows you to togg
 6. Set shop name, address, header logo, etc.
 
 == Changelog ==
+
+= 2.8.2 =
+* Fix: Layout issues with totals for documents with more than 1 page
+* Fix: Allow setting an Invoice number and date manually
+* Fix: Prevent errors on PHP8.0 when order not loaded for a document
+
+= 2.8.1 =
+* Fix: Images and fonts loading from custom locations for uploads and temporary folders
+
+= 2.8.0 =
+* Fix: Support for PHP8.0, deprecating support for PHP7.0 or older (separate addon available for backwards compatibility)
+* Fix: Setup wizard crash when 3rd party plugins/themes check screen object
+* Dev: Use internal date formatting function, allowing easier PDF specific date format overrides 
+* Dev: Introduced new action hook `wpo_wcpdf_document_created_manually`
+* Marked tested up to WooCommerce 5.0
+
+= 2.7.4 =
+* New: Show notice if incompatible MailPoet mailing service is used
+* New: WooCommerce webhook topic for document saves
+* Fix: Don't reverse order of bulk document if already sorted oldest to newest
+* Marked tested up to WooCommerce 4.9
+
+= 2.7.3 =
+* New: Support for line breaks in invoice notes
+* Fix: Only pass opened edit fields when regenerating document
+* Fix: Words in table headers could be broken up
+* Deprecated: legacy translations (pre-2.0) are no longer read automatically (can be enabled in the Status tab)
+
+= 2.7.2 =
+* Fix: Update invoice number and date when regenerating document from edit mode
+* Fix: Prevent infinite loop when temporary folder is not writable
+* Fix: Prevent layout issues when custom order data exceeds column width
+* Fix: Error when PHP Ctype extension is not installed
+* Tested up to WooCommerce 4.8 & WP 5.6
 
 = 2.7.1 =
 * New: Redesigned action buttons

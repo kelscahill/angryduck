@@ -108,7 +108,6 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 	 */
 	public function enqueue_styles($hook) {
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/mailchimp-woocommerce-admin.css', array(), $this->version.'.21', 'all' );
-		wp_enqueue_style( $this->plugin_name . 'checkbox', plugin_dir_url( __FILE__ ) . 'css/checkbox.min.css', array(), $this->version, 'all' );
 
 		if ( strpos($hook, 'page_mailchimp-woocommerce') !== false ) {
 			if ( get_bloginfo( 'version' ) < '5.3') {
@@ -126,6 +125,10 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 	 */
 	public function enqueue_scripts($hook) {
 		if ( strpos($hook, 'page_mailchimp-woocommerce') !== false ) {
+			$label = $this->getOption('newsletter_label');
+            if ($label == '') $label = __('Subscribe to our newsletter', 'mailchimp-for-woocommerce');
+			$options = get_option($this->plugin_name, array());
+			$checkbox_default_settings = (array_key_exists('mailchimp_checkbox_defaults', $options) && !is_null($options['mailchimp_checkbox_defaults'])) ? $options['mailchimp_checkbox_defaults'] : 'check';
 			wp_register_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/mailchimp-woocommerce-admin.js', array( 'jquery', 'swal' ), $this->version.'.21', false );
 			wp_localize_script(
 				$this->plugin_name,
@@ -137,9 +140,21 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 						'log_delete_subtitle' => __('You will not be able to revert.', 'mailchimp-for-woocommerce'),
 						'log_delete_confirm' => __('Yes, delete it!', 'mailchimp-for-woocommerce'),
 						'no_cancel' => __('No, cancel!', 'mailchimp-for-woocommerce'),
+						'please_wait' => __('Please wait', 'mailchimp-for-woocommerce'),
 						'store_disconnect_subtitle' => __('You are about to disconnect your store from Mailchimp.', 'mailchimp-for-woocommerce'),
 						'store_disconnect_confirm' => __('Yes, disconnect.', 'mailchimp-for-woocommerce'),
+						'try_again' => __('Try again', 'mailchimp-for-woocommerce'),
+						'resync_in_progress' => __('Resync request in progress', 'mailchimp-for-woocommerce'),
+						'resync_failed' => __('Could not resync orders, please try again.', 'mailchimp-for-woocommerce'),
+						'store_disconnect_in_progress' => __('Disconnecting store in progress', 'mailchimp-for-woocommerce'),
+						'login_popup_blocked' => __('Login Popup is blocked!', 'mailchimp-for-woocommerce'),
+						'login_popup_blocked_desc' => __('Please allow your browser to show popups for this page', 'mailchimp-for-woocommerce'),
+						'support_message_sending' => __('Sending support request', 'mailchimp-for-woocommerce'),
+						'support_message_ok' => __('Message received', 'mailchimp-for-woocommerce'),
+						'support_message_desc' => __('Thanks, your message has been received.', 'mailchimp-for-woocommerce'),
+						'subscribe_newsletter' => $label
 					),
+					'current_optin_state' => $checkbox_default_settings,
 				)
 			);
 			wp_enqueue_script( $this->plugin_name);
@@ -243,7 +258,8 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
         if ($pagenow == 'admin.php' && isset($_GET) && isset($_GET['page']) && 'mailchimp-woocommerce' === $_GET['page']) {
             $this->handle_abandoned_cart_table();
             $this->update_db_check();
-            if (get_option('mailchimp-woocommerce-sync.initial_sync') == 1 && get_option('mailchimp-woocommerce-sync.completed_at') > 0 ) {
+			$active_tab = isset($_GET['tab']) ? $_GET['tab'] : ($this->getOption('active_tab') ? $this->getOption('active_tab') : 'api_key');
+			if ($active_tab == 'sync' && get_option('mailchimp-woocommerce-sync.initial_sync') == 1 && get_option('mailchimp-woocommerce-sync.completed_at') > 0 ) {
                 $this->mailchimp_show_initial_sync_message();
             }
 			if (isset($_GET['log_removed']) && $_GET['log_removed'] == "1") {
@@ -258,69 +274,20 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 	 */
 	public function initial_notice() {
 		if (!mailchimp_is_configured()) {
-			// If WC_Admin_Notes doesn't exist, show normal wordpress admin notice...
-			if ( ! class_exists( '\Automattic\WooCommerce\Admin\Notes\WC_Admin_Notes' ) ) {
-				$class = 'notice notice-warning is-dismissible';
-				$message = sprintf(
-					/* translators: Placeholders %1$s - opening strong HTML tag, %2$s - closing strong HTML tag, %3$s - opening link HTML tag, %4$s - closing link HTML tag */
-					esc_html__(
-						'%1$sMailchimp for Woocommerce%2$s is not yet connected to a Mailchimp account. To complete the connection, %3$svisit the plugin settings page%4$s.',
-						'mailchimp-for-woocommerce'
-					),
-					'<strong>',
-					'</strong>',
-					'<a href="' . admin_url( 'admin.php?page=') . $this->plugin_name . '">',
-					'</a>'
-				);
-				printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message ); 
-			}
-			// else show the WooCoomerce admin inbox note.
-			else {
-				if ( ! class_exists( 'WC_Data_Store' ) ) {
-					return;
-				}
-		
-				$data_store = WC_Data_Store::load( 'admin-note' );
-		
-				// First, see if we've already created this kind of note so we don't do it again.
-				$note_ids = $data_store->get_notes_with_name( 'mailchimp-for-woocommerce-incomplete-install' );
-				foreach( (array) $note_ids as $note_id ) {
-					$note         = \Automattic\WooCommerce\Admin\Notes\WC_Admin_Notes::get_note( $note_id );
-					$content_data = $note->get_content_data();
-					if ( property_exists( $content_data, 'getting_started' ) ) {
-						return;
-					}
-				}
-		
-				// Otherwise, add the note
-				$activated_time = current_time( 'timestamp', 0 );
-				$activated_time_formatted = date( 'F jS', $activated_time );
-				$note = new \Automattic\WooCommerce\Admin\Notes\WC_Admin_Note();
-				$note->set_title( __( 'Mailchimp For WooCommerce', 'mailchimp-for-woocommerce' ) );
-				$note->set_content(
-					esc_html__(
-						'Plugin is not yet connected to a Mailchimp account. To complete the connection, open the settings page.',
-						'mailchimp-for-woocommerce'
-					)
-				);
-				$note->set_content_data( (object) array(
-					'getting_started'     => true,
-					'activated'           => $activated_time,
-					'activated_formatted' => $activated_time_formatted,
-				) );
-				$note->set_type( \Automattic\WooCommerce\Admin\Notes\WC_Admin_Note::E_WC_ADMIN_NOTE_WARNING );
-				$note->set_name( 'mailchimp-for-woocommerce-incomplete-install' );
-				$note->set_source( 'mailchimp-for-woocommerce' );
-				if (method_exists($note, 'set_layout')) $note->set_layout('plain');
-                if (method_exists($note, 'set_image')) $note->set_image('');
-				$note->add_action(
-					'settings',
-					__( 'Open Settings', 'mailchimp-for-woocommerce' ),
-					admin_url( 'admin.php?page=') . $this->plugin_name
-				);
-				$note->save();
-			}
-		}
+            $class = 'notice notice-warning is-dismissible';
+            $message = sprintf(
+            /* translators: Placeholders %1$s - opening strong HTML tag, %2$s - closing strong HTML tag, %3$s - opening link HTML tag, %4$s - closing link HTML tag */
+                esc_html__(
+                    '%1$sMailchimp for Woocommerce%2$s is not yet connected to a Mailchimp account. To complete the connection, %3$svisit the plugin settings page%4$s.',
+                    'mailchimp-for-woocommerce'
+                ),
+                '<strong>',
+                '</strong>',
+                '<a href="' . admin_url( 'admin.php?page=') . $this->plugin_name . '">',
+                '</a>'
+            );
+            printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message );
+        }
 	}
 
 	/**
@@ -565,7 +532,8 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 		}
 
 		if (get_site_transient('mailchimp_disconnecting_store')) {
-            return array(
+			delete_site_transient('mailchimp_disconnecting_store');
+			return array(
                 'active_tab' => 'api_key',
                 'mailchimp_api_key' => null,
                 'mailchimp_list' => null,
@@ -582,32 +550,13 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 				$data = $this->validatePostStoreInfo($input);
 				break;
 
-			case 'campaign_defaults' :
-				$data = $this->validatePostCampaignDefaults($input);
-				break;
-
 			case 'newsletter_settings':
 				$data = $this->validatePostNewsletterSettings($input);
 				break;
 
 			case 'sync':
-				// case disconnect
-				if ($this->is_disconnecting()) {
-					// Disconnect store!
-					if ($this->disconnect_store()) {
-					    return array(
-                            'active_tab' => 'api_key',
-                            'mailchimp_api_key' => null,
-                            'mailchimp_list' => null,
-                        );
-						add_settings_error('mailchimp_store_settings', '', __('Store Disconnected', 'mailchimp-for-woocommerce'), 'info');
-					} else {
-						$data['active_tab'] = 'sync';
-						add_settings_error('mailchimp_store_settings', '', __('Store Disconnect Failed', 'mailchimp-for-woocommerce'), 'warning');
-					}	
-				}
 				//case sync
-				elseif ($this->is_resyncing()) {
+				if ($this->is_resyncing()) {
 
 					// remove all the pointers to be sure
 					$service = new MailChimp_Service();
@@ -634,7 +583,25 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
                     exit();
                 }
 
-                break;
+				break;
+			case 'plugin_settings':
+
+				// case disconnect
+				if ($this->is_disconnecting()) {
+					// Disconnect store!
+					if ($this->disconnect_store()) {
+					    return array(
+                            'active_tab' => 'api_key',
+                            'mailchimp_api_key' => null,
+                            'mailchimp_list' => null,
+                        );
+						add_settings_error('mailchimp_store_settings', '', __('Store Disconnected', 'mailchimp-for-woocommerce'), 'info');
+					} else {
+						$data['active_tab'] = 'plugin_settings';
+						add_settings_error('mailchimp_store_settings', '', __('Store Disconnect Failed', 'mailchimp-for-woocommerce'), 'warning');
+					}	
+				}
+				break;
 		}
 
 		// if no API is provided, check if the one saved on the database is still valid, ** only not if disconnect store is issued **.
@@ -717,6 +684,27 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
         }
         else wp_send_json_error( $response );
         
+	}
+	
+	/**
+     * Mailchimp OAuth connection status
+     */
+    public function mailchimp_woocommerce_ajax_oauth_status()
+    {   
+		$url = $_POST['url'];
+		// set the default headers to NOTHING because the oauth server will block
+		// any non standard header that it was not expecting to receive and it was
+		// preventing folks from being able to connect.
+        $pload = array(
+            'headers' => array(),
+        );
+
+		$response = wp_remote_post($url, $pload);
+		
+        if ($response['response']['code'] == 200 && isset($response['body'])){
+			wp_send_json_success(json_decode($response['body']));
+        }
+        else wp_send_json_error( $response );
     }
 
 	/**
@@ -902,7 +890,7 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 			}
 		}
 		
-		$data['active_tab'] = 'campaign_defaults';
+		$data['active_tab'] = 'newsletter_settings';
 		$data['store_currency_code'] = get_woocommerce_currency();
 		
 		return $data;
@@ -1013,43 +1001,6 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 	/**
 	 * STEP 3.
 	 *
-	 * Handle the 'campaign_defaults' tab post.
-	 *
-	 * @param $input
-	 * @return array
-	 */
-	protected function validatePostCampaignDefaults($input)
-	{
-		$data = array(
-			'campaign_from_name' => isset($input['campaign_from_name']) ? $input['campaign_from_name'] : false,
-			'campaign_from_email' => isset($input['campaign_from_email']) && is_email($input['campaign_from_email']) ? $input['campaign_from_email'] : false,
-			'campaign_subject' => isset($input['campaign_subject']) ? $input['campaign_subject'] : get_option('blogname'),
-			'campaign_language' => isset($input['campaign_language']) ? $input['campaign_language'] : 'en',
-			'campaign_permission_reminder' => isset($input['campaign_permission_reminder']) ? $input['campaign_permission_reminder'] : sprintf(/* translators: %s - plugin name. */esc_html__( 'You were subscribed to the newsletter from %s', 'mailchimp-for-woocommerce' ),get_option('blogname')),
-		);
-
-		if (!$this->hasValidCampaignDefaults($data)) {
-			$this->setData('validation.campaign_defaults', false);
-			add_settings_error('mailchimp_list_settings', '', __('One or more fields were not updated', 'mailchimp-for-woocommerce'));
-			return array('active_tab' => 'campaign_defaults');
-		}
-
-		$this->setData('validation.campaign_defaults', true);
-
-        $data['active_tab'] = 'newsletter_settings';
-
-        $list_id = mailchimp_get_list_id();
-
-        if (!empty($list_id)) {
-            $this->updateMailChimpList(array_merge($this->getOptions(), $data), $list_id);
-        }
-
-		return $data;
-	}
-
-	/**
-	 * STEP 4.
-	 *
 	 * Handle the 'newsletter_settings' tab post.
 	 *
 	 * @param $input
@@ -1077,13 +1028,31 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 
 		$data = array(
 			'mailchimp_list' => isset($input['mailchimp_list']) ? $input['mailchimp_list'] : $this->getOption('mailchimp_list', ''),
-			'newsletter_label' => (isset($input['newsletter_label']) && $input['newsletter_label'] != '') ? wp_kses($input['newsletter_label'], $allowed_html) : $this->getOption('newsletter_label', __('Subscribe to our newsletter', 'mailchimp-for-woocommerce')),
+			'newsletter_label' => (isset($input['newsletter_label'])) ? wp_kses($input['newsletter_label'], $allowed_html) : $this->getOption('newsletter_label', __('Subscribe to our newsletter', 'mailchimp-for-woocommerce')),
 			'mailchimp_auto_subscribe' => isset($input['mailchimp_auto_subscribe']) ? (bool) $input['mailchimp_auto_subscribe'] : false,
 			'mailchimp_checkbox_defaults' => $checkbox,
 			'mailchimp_checkbox_action' => isset($input['mailchimp_checkbox_action']) ? $input['mailchimp_checkbox_action'] : $this->getOption('mailchimp_checkbox_action', 'woocommerce_after_checkout_billing_form'),
 			'mailchimp_user_tags' => isset($input['mailchimp_user_tags']) ? implode(",",$sanitized_tags) : $this->getOption('mailchimp_user_tags'),
-            'mailchimp_product_image_key' => isset($input['mailchimp_product_image_key']) ? $input['mailchimp_product_image_key'] : 'medium',
-        );
+			'mailchimp_product_image_key' => isset($input['mailchimp_product_image_key']) ? $input['mailchimp_product_image_key'] : 'medium',
+			'campaign_from_name' => isset($input['campaign_from_name']) ? $input['campaign_from_name'] : false,
+			'campaign_from_email' => isset($input['campaign_from_email']) && is_email($input['campaign_from_email']) ? $input['campaign_from_email'] : false,
+			'campaign_subject' => isset($input['campaign_subject']) ? $input['campaign_subject'] : get_option('blogname'),
+			'campaign_language' => isset($input['campaign_language']) ? $input['campaign_language'] : 'en',
+			'campaign_permission_reminder' => isset($input['campaign_permission_reminder']) ? $input['campaign_permission_reminder'] : sprintf(/* translators: %s - plugin name. */esc_html__( 'You were subscribed to the newsletter from %s', 'mailchimp-for-woocommerce' ),get_option('blogname')),
+		);
+
+		if (!$this->hasValidCampaignDefaults($data)) {
+			$this->setData('validation.newsletter_settings', false);
+			add_settings_error('mailchimp_list_settings', '', __('One or more fields were not updated', 'mailchimp-for-woocommerce'));
+			return array('active_tab' => 'newsletter_settings');
+		}
+		$this->setData('validation.newsletter_settings', true);
+
+		$list_id = mailchimp_get_list_id();
+
+		if (!empty($list_id)) {
+			$this->updateMailChimpList(array_merge($this->getOptions(), $data), $list_id);
+		}
 		
 		//if we don't have any audience on the account, create one
 		if ($data['mailchimp_list'] === 'create_new') {
@@ -1553,7 +1522,7 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
             mailchimp_update_connected_site_script();
 
 			// we need to update the list again with the campaign defaults
-			$this->updateMailChimpList(null, $list_id);
+			$this->updateMailChimpList($data, $list_id);
 
 			return true;
 
@@ -1700,20 +1669,14 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 	        $order_count = mailchimp_get_order_count();
         }
 
-		$text = '<b>' . __('Your store is synced with Mailchimp!', 'mailchimp-for-woocommerce').'</b></br>'.
-		'<p id="sync-status-message">'.
+		$text = '<p id="sync-status-message">'.
 			/* translators: %1$s: Number of synced orders %2$s: Audience name */	
-			sprintf(__('We\'ve successfully synced %1$s orders to your Audience %2$s, that\'s awesome!', 'mailchimp-for-woocommerce'),
+			sprintf(__('We successfully synced %1$s orders to your Audience, %2$s. If you’re happy with this integration, leave a 5-star review. It helps our community know we’re working hard to make it better each day.', 'mailchimp-for-woocommerce'),
                 $order_count,
 				$this->getListName()
 			).
 		'</p>'.
-
-		'<p id="sync-status-message">'.
-			/* translators: %s - Wordpress.org plugin review URL. */	
-			sprintf(wp_kses( __( 'Could you please do us a favor and leave the plugin a 5-star <a href=%s target=\'_blank\'>rating on Wordpress.org</a>? It helps our community know that we\'re working hard to make it better each day.', 'mailchimp-for-woocommerce' ), array(  'a' => array( 'href' => array(), 'target' => '_blank' ) ) ), esc_url( 'https://wordpress.org/support/plugin/mailchimp-for-woocommerce/reviews/' ) ).
-		'</p>'.
-		'<a style="display:inline align-right" class="button" href="https://wordpress.org/support/plugin/mailchimp-for-woocommerce/reviews/" target=_blank>'.
+		'<a style="display:inline align-right" class="button mc-review-button" href="https://wordpress.org/support/plugin/mailchimp-for-woocommerce/reviews/" target=_blank>'.
 			esc_html__('Leave a Review', 'mailchimp-for-woocommerce').
         '</a>';
 		
@@ -1784,6 +1747,18 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
             'body'        => json_encode($post_data),
 		));
 	}
+
+    public function mailchimp_woocommerce_ajax_delete_log_file() {
+        if (isset($_POST['log_file']) && !empty($_POST['log_file'])) {
+            $requested_log_file = $_POST['log_file'];
+        }
+        else {
+            return wp_send_json_error(  __('No log file provided', 'mailchimp-for-woocommerce'));
+        }
+        $log_handler = new WC_Log_Handler_File();
+        $removed = $log_handler->remove(str_replace('-log', '.log', $requested_log_file));
+        wp_send_json_success(array('success' => $removed));
+    }
 
 	public function mailchimp_woocommerce_ajax_load_log_file() {
 		if (isset($_POST['log_file']) && !empty($_POST['log_file'])) {

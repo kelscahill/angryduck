@@ -1,10 +1,10 @@
 === WooCommerce Shipping & Tax ===
 Contributors: woocommerce, automattic, woothemes, allendav, kellychoffman, jkudish, jeffstieler, nabsul, robobot3000, danreylop, mikeyarce, shaunkuschel, orangesareorange, pauldechov, dappermountain, radogeorgiev, bor0, royho, cshultz88, bartoszbudzanowski, harriswong, ferdev, superdav42
-Tags: shipping, stamps, usps, woocommerce, taxes, payment, stripe, dhl, labels
+Tags: shipping, stamps, usps, woocommerce, taxes, payment, dhl, labels
 Requires at least: 4.6
 Requires PHP: 5.3
-Tested up to: 5.5
-Stable tag: 1.25.2
+Tested up to: 5.6
+Stable tag: 1.25.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,16 +17,13 @@ WooCommerce Shipping & Tax makes basic eCommerce features like shipping more rel
 With WooCommerce Shipping & Tax, critical services are hosted on Automattic’s best-in-class infrastructure, rather than relying on your store’s hosting. That means your store will be more stable and faster.
 To use the features, simply install this plugin and activate the ones you want directly in your dashboard. As we add more services, you’ll see more features available directly in WooCommerce – making setup simpler.
 
-NOTE: This extensions was previously referred to as WooCommerce Services.
+NOTE: This extension was previously referred to as WooCommerce Services.
 
 = Print USPS and DHL shipping labels and save up to 90% =
 Ship domestically and internationally right from your WooCommerce dashboard. Print USPS and DHL labels and instantly save up to 90%.
 
 = Collect accurate taxes at checkout =
 We've got taxes for you - no need to enter tax rates manually.
-
-= Be ready to accept payments instantly =
-Have a Stripe account created on your behalf or accept PayPal Checkout payments without having to setup an account.
 
 == Installation ==
 
@@ -45,7 +42,6 @@ This section describes how to install the plugin and get it working.
 
 * USPS and DHL label purchase/printing
 * Automated tax calculation
-* Stripe account provisioning (through WooCommerce setup wizard)
 * PayPal Checkout payment authorization
 
 = Can I buy and print shipping labels for US domestic and international packages? =
@@ -75,11 +71,39 @@ The source code is freely available [in GitHub](https://github.com/Automattic/wo
 2. Setting up custom packages
 3. Selecting your preferred payment method
 4. Enabling automated taxes
-5. Creating a Stripe account from the setup wizard
-6. Checking on the health of WooCommerce Shipping & Tax
-7. Checking and exporting the label purchase reports
+5. Checking on the health of WooCommerce Shipping & Tax
+6. Checking and exporting the label purchase reports
 
 == Changelog ==
+
+= 1.25.6 - 2021-01-26 =
+* Fix 	- Refreshes shipping methods after registering or removing carrier accounts.
+* Tweak	- Changed rates response caching method from cache to transient.
+
+= 1.25.5 - 2021-01-11 =
+* Fix	- Redux DevTools usage update.
+* Add	- Display subscriptions usage.
+* Add	- Subscription activation.
+* Add 	- Uses same DHL logo for all registered DHL accounts.
+* Tweak - Adds WCCom access token and site ID to connect server request headers.
+
+= 1.25.4 - 2020-12-08 =
+* Tweak - Remove Stripe connect functionality.
+* Tweak - Remove unused method in shipping settings view.
+* Fix	- Breaking behavior on account registration page.
+* Add	- Allows registration of additional accounts.
+* Tweak - Carrier description on dynamic carrier registration form.
+* Fix   - Adjust documentation links.
+
+= 1.25.3 - 2020-11-24 =
+* Add   - Initial code for WooCommerce.com subscriptions API.
+* Add   - Dynamic carrier registration form.
+* Fix   - When adding "signature required" to some packages, prices were not updating.
+* Add   - DHL Schedule Pickup link within order notes.
+* Fix   - UI fix for input validation for package dimensions and weights.
+* Fix   - Correct validation for UPS fields in Carrier Account connect form.
+* Tweak - Add message to explain automated tax requires tax-exclusive product pricing.
+* Fix   - Disable USPS refunds for untracked labels only.
 
 = 1.25.2 - 2020-11-10 =
 * Tweak - Add ZIP code validation to UPS(beta) signup form.
@@ -105,56 +129,3 @@ The source code is freely available [in GitHub](https://github.com/Automattic/wo
 * Tweak - Update carrier logo
 * Tweak - Plugin rename
 * Add   - Link to print the customs form for all shipments that need it
-
-= 1.24.3 - 2020-09-16 =
-* Fix   - Asset paths incompatible with some hosts
-* Fix   - Select all posts checkbox not working
-* Fix   - Use of deprecated jQuery.load
-* Tweak - Updating carrier logo and tracking links
-
-= 1.24.2 - 2020-09-03 =
-* Fix   - Optional preloading for wc-admin install compatibility
-* Fix   - Remove duplicate rate errors
-* Fix   - Compatibility with WooCommerce order page install prompt
-* Add   - Introduce 'wc_connect_meta_box_payload' filter for modifying order data
-* Tweak - Update UPS failed connection error message
-
-= 1.24.1 - 2020-08-19 =
-* Tweak - Zip/Postcode/Postal code messaging consistency
-* Fix   - Services management CSS table layout
-* Fix   - Carrier "disconnect modal" layout
-* Fix   - Primary button busy state updated to match color
-* Fix   - Remove padding from notice bar
-* Fix   - Add missing box in rate step for how much customer paid for shipping
-* Tweak - Bump WP tested version to 5.5
-* Fix   - Issue with dismiss modal popup blocking access to edit order
-
-= 1.24.0 - 2020-07-30 =
-* Fix   - PHP 7.4 notice for taxes at checkout.
-* Add   - Carrier logos next to rates.
-* Tweak - Remove spinner from create shipping label button
-* Add   - Upgrade React to 16.13
-* Add   - Optimize bundle
-* Fix   - Fix svg images not showing on dev
-* Fix   - Fix 404 taxjar.js on new order page
-* Add   - Add e2e tests for toggling shipping label
-* Add   - Add e2e tests for label refund
-* Fix   - Show which nexus automatted taxes will work with and link to doc
-* Fix   - Fix localization issues
-* Tweak - Improve service listing readability
-* Add   - Support UPS as a carrier (beta)
-
-= 1.23.2 - 2020-06-12 =
-* Fix   - Refund not possible on order page.
-
-= 1.23.1 - 2020-06-10 =
-* Tweak - Update WooCommerce compatibility to 4.2
-* Fix	- Taxjar broken in admin's new order page
-* Fix   - Tax recalculation on admin order screen missing street address.
-
-= 1.23.0 - 2020-04-08 =
-* Fix   - Hide paper selection until valid payment method is selected.
-* Tweak - Shipping banner wording improvements.
-* Add   - Link to carrier's schedule pickup page.
-* Add   - Improved shipping service feature descriptions.
-* Add   - Option to mark order complete when label is printed.

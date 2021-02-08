@@ -87,7 +87,7 @@ function mailchimp_environment_variables() {
     return (object) array(
         'repo' => 'master',
         'environment' => 'production', // staging or production
-        'version' => '2.4.7',
+        'version' => '2.5.0',
         'php_version' => phpversion(),
         'wp_version' => (empty($wp_version) ? 'Unknown' : $wp_version),
         'wc_version' => function_exists('WC') ? WC()->version : null,
@@ -319,7 +319,7 @@ function mailchimp_get_store_id() {
 /**
  * @return array
  */
-function mailchimp_get_user_tags_to_update($email = null) {
+function mailchimp_get_user_tags_to_update($email = null, $order = null) {
     $tags = mailchimp_get_option('mailchimp_user_tags');
     $formatted_tags = array();
     
@@ -332,7 +332,7 @@ function mailchimp_get_user_tags_to_update($email = null) {
     }
 
     // apply filter to user custom tags addition/removal
-    $formatted_tags = apply_filters('mailchimp_user_tags', $formatted_tags, $email);
+    $formatted_tags = apply_filters('mailchimp_user_tags', $formatted_tags, $email, $order);
     
     if (empty($formatted_tags)){
         return false;
@@ -1050,7 +1050,8 @@ function mailchimp_has_started_syncing() {
 function mailchimp_is_done_syncing() {
     $sync_started_at = get_option('mailchimp-woocommerce-sync.started_at');
     $sync_completed_at = get_option('mailchimp-woocommerce-sync.completed_at');
-    return ($sync_completed_at >= $sync_started_at);
+    if ($sync_completed_at == false) return false;
+    else return ($sync_completed_at >= $sync_started_at);
 }
 
 function run_mailchimp_woocommerce() {
@@ -1154,7 +1155,21 @@ function mailchimp_remove_activity_panel_inbox_notes() {
         return;
     }
 
-    \Automattic\WooCommerce\Admin\Notes\WC_Admin_Notes::delete_notes_with_name( 'mailchimp-for-woocommerce-incomplete-install' );
+    // if we can't use woocommerce for some reason - just return null
+    if (!function_exists('WC')) {
+        return;
+    }
+
+    // if we do not have the ability to use notes, just cancel out here.
+    if (!method_exists(WC(), 'is_wc_admin_active') || !WC()->is_wc_admin_active()) {
+        return;
+    }
+
+    try {
+        \Automattic\WooCommerce\Admin\Notes\WC_Admin_Notes::delete_notes_with_name( 'mailchimp-for-woocommerce-incomplete-install' );
+    } catch (\Exception $e) {
+        // do nothing.
+    }
 }
 
 // Print notices outside woocommerce admin bar

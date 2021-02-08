@@ -59,8 +59,8 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		 * @return bool|WP_Error
 		 */
 		public function validate_service_settings( $service_slug, $service_settings ) {
-			// Make sure the service slug only contains underscores or letters
-			if ( 1 === preg_match( '/[^a-z_]/i', $service_slug ) ) {
+			// Make sure the service slug only contains dashes, underscores or letters
+			if ( 1 === preg_match( '/[^a-z_\-]/i', $service_slug ) ) {
 				return new WP_Error( 'invalid_service_slug', __( 'Invalid WooCommerce Shipping & Tax service slug provided', 'woocommerce-services' ) );
 			}
 
@@ -312,6 +312,15 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
+		 * Get a list of the subscriptions for WooCommerce.com linked account.
+		 * @param $body
+		 * @param object|WP_Error
+		 */
+		public function get_wccom_subscriptions() {
+			return $this->request( 'POST', '/subscriptions' );
+		}
+
+		/**
 		 * Get all carriers we support for registration. This end point
 		 * returns a list of "fields" that we use to register the carrier
 		 * account.
@@ -357,42 +366,26 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			return $new_is_alive;
 		}
 
-		public function get_stripe_account_details() {
-			return $this->request( 'GET', '/stripe/account' );
-		}
-
-		public function get_stripe_oauth_init( $return_url ) {
-			$address = $this->wc_connect_loader->get_service_settings_store()->get_origin_address();
-			$current_user = wp_get_current_user();
-
-			$request = array(
-				'returnUrl' => $return_url,
-				'businessData' => array(
-					'url' => get_site_url(),
-					'country' => $address['country'],
-					'phone' => $address['phone'],
-					'business_name' => $address['company'],
-					'first_name' => $current_user->user_firstname,
-					'last_name' => $current_user->user_lastname,
-					'street_address' => $address['address'],
-					'city' => $address['city'],
-					'state' => $address['state'],
-					'zip' => $address['postcode'],
-					'currency' => get_woocommerce_currency(),
-				),
+		/**
+		 * Activate a subscrption with WCCOM API.
+		 *
+		 * @param  string $subscription_key Product Key on WCCOM.
+		 * @return WP_Error|Array  API Response.
+		 */
+		public function activate_subscription( $subscription_key ) {
+			$activation_response = WC_Helper_API::post(
+				'activate',
+				array(
+					'authenticated' => true,
+					'body'          => wp_json_encode(
+						array(
+							'product_key' => $subscription_key,
+						)
+					),
+				)
 			);
-			return $this->request( 'POST', '/stripe/oauth-init', $request );
-		}
 
-		public function get_stripe_oauth_keys( $code ) {
-			$request = array(
-				'code' => $code,
-			);
-			return $this->request( 'POST', '/stripe/oauth-keys', $request );
-		}
-
-		public function deauthorize_stripe_account() {
-			return $this->request( 'POST', '/stripe/account/deauthorize' );
+			return $activation_response;
 		}
 
 		/**
@@ -447,30 +440,31 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			$default_body = array(
 				'settings' => array(),
 			);
-			$body = array_merge( $default_body, $initial_body );
+			$body         = array_merge( $default_body, $initial_body );
 
 			// Add interesting fields to the body of each request
 			$body[ 'settings' ] = wp_parse_args( $body[ 'settings' ], array(
-				'store_guid' => $this->get_guid(),
-				'base_city' => WC()->countries->get_base_city(),
-				'base_country' => WC()->countries->get_base_country(),
-				'base_state' => WC()->countries->get_base_state(),
-				'base_postcode' => WC()->countries->get_base_postcode(),
-				'currency' => get_woocommerce_currency(),
-				'dimension_unit' => strtolower( get_option( 'woocommerce_dimension_unit' ) ),
-				'weight_unit' => strtolower( get_option( 'woocommerce_weight_unit' ) ),
-				'wcs_version' => WC_Connect_Loader::get_wcs_version(),
-				'jetpack_version' => JETPACK__VERSION,
-				'is_atomic' => WC_Connect_Jetpack::is_atomic_site(),
-				'wc_version' => WC()->version,
-				'wp_version' => get_bloginfo( 'version' ),
+				'store_guid'           => $this->get_guid(),
+				'base_city'            => WC()->countries->get_base_city(),
+				'base_country'         => WC()->countries->get_base_country(),
+				'base_state'           => WC()->countries->get_base_state(),
+				'base_postcode'        => WC()->countries->get_base_postcode(),
+				'currency'             => get_woocommerce_currency(),
+				'dimension_unit'       => strtolower( get_option( 'woocommerce_dimension_unit' ) ),
+				'weight_unit'          => strtolower( get_option( 'woocommerce_weight_unit' ) ),
+				'wcs_version'          => WC_Connect_Loader::get_wcs_version(),
+				'jetpack_version'      => JETPACK__VERSION,
+				'is_atomic'            => WC_Connect_Jetpack::is_atomic_site(),
+				'wc_version'           => WC()->version,
+				'wp_version'           => get_bloginfo( 'version' ),
 				'last_services_update' => WC_Connect_Options::get_option( 'services_last_update', 0 ),
-				'last_heartbeat' => WC_Connect_Options::get_option( 'last_heartbeat', 0 ),
-				'last_rate_request' => WC_Connect_Options::get_option( 'last_rate_request', 0 ),
-				'active_services' => $this->wc_connect_loader->get_active_services(),
-				'disable_stats' => WC_Connect_Jetpack::is_staging_site(),
-				'taxes_enabled' => wc_tax_enabled() && 'yes' === get_option( 'wc_connect_taxes_enabled' ),
-			) );
+				'last_heartbeat'       => WC_Connect_Options::get_option( 'last_heartbeat', 0 ),
+				'last_rate_request'    => WC_Connect_Options::get_option( 'last_rate_request', 0 ),
+				'active_services'      => $this->wc_connect_loader->get_active_services(),
+				'disable_stats'        => WC_Connect_Jetpack::is_staging_site(),
+				'taxes_enabled'        => wc_tax_enabled() && 'yes' === get_option( 'wc_connect_taxes_enabled' ),
+				)
+			);
 
 			return $body;
 		}
@@ -494,6 +488,13 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			$headers[ 'Content-Type' ] = 'application/json; charset=utf-8';
 			$headers[ 'Accept' ] = 'application/vnd.woocommerce-connect.v' . static::API_VERSION;
 			$headers[ 'Authorization' ] = $authorization;
+
+			$wc_helper_auth_info = WC_Connect_Functions::get_wc_helper_auth_info();
+			if ( ! is_wp_error( $wc_helper_auth_info ) ) {
+				$headers[ 'X-Woo-Signature' ]    = $this->request_signature_wccom( $wc_helper_auth_info['access_token_secret'], 'subscriptions', 'GET', array() );
+				$headers[ 'X-Woo-Access-Token' ] = $wc_helper_auth_info['access_token'];
+				$headers[ 'X-Woo-Site-Id' ]      = $wc_helper_auth_info['site_id'];
+			}
 			return $headers;
 		}
 
@@ -539,6 +540,31 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 
 			$authorization = 'X_JP_Auth ' . join( ' ', $header_pieces );
 			return $authorization;
+		}
+
+		/**
+		 * Generate a signature for WCCOM API request validation.
+		 *
+		 * @param string $token_secret
+		 * @param string $endpoint
+		 * @param string $method
+		 * @param array $body
+		 * @return string
+		 */
+		protected function request_signature_wccom( $token_secret, $endpoint, $method, $body = array() ) {
+			$request_url = WC_Helper_API::url( $endpoint );
+
+			$data = array(
+				'host'        => parse_url( $request_url, PHP_URL_HOST ), // host URL.
+				'request_uri' => parse_url( $request_url, PHP_URL_PATH ), // endpoint URL.
+				'method'      => $method,
+			);
+
+			if ( ! empty( $body ) ) {
+				$data['body'] = $body;
+			}
+
+			return hash_hmac( 'sha256', wp_json_encode( $data ), $token_secret );
 		}
 
 		protected function request_signature( $token_key, $token_secret, $timestamp, $nonce, $time_diff ) {

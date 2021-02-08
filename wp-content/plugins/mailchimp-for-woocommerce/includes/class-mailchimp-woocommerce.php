@@ -259,6 +259,7 @@ class MailChimp_WooCommerce
 
         // Mailchimp oAuth
         $this->loader->add_action( 'wp_ajax_mailchimp_woocommerce_oauth_start', $plugin_admin, 'mailchimp_woocommerce_ajax_oauth_start' );
+        $this->loader->add_action( 'wp_ajax_mailchimp_woocommerce_oauth_status', $plugin_admin, 'mailchimp_woocommerce_ajax_oauth_status' );
         $this->loader->add_action( 'wp_ajax_mailchimp_woocommerce_oauth_finish', $plugin_admin, 'mailchimp_woocommerce_ajax_oauth_finish' );
 
         // Create new mailchimp Account methods
@@ -274,6 +275,9 @@ class MailChimp_WooCommerce
 
         // Load log file via ajax
         $this->loader->add_action( 'wp_ajax_mailchimp_woocommerce_load_log_file', $plugin_admin, 'mailchimp_woocommerce_ajax_load_log_file' );
+
+        // delete log file via ajax
+        $this->loader->add_action( 'wp_ajax_mailchimp_woocommerce_delete_log_file', $plugin_admin, 'mailchimp_woocommerce_ajax_delete_log_file' );
     }
 
 	/**

@@ -7,10 +7,8 @@
 namespace Automattic\WooCommerce\Admin\Features;
 
 use \Automattic\WooCommerce\Admin\Loader;
-use \Automattic\WooCommerce\Admin\Notes\WC_Admin_Notes_Onboarding_Profiler;
 use \Automattic\WooCommerce\Admin\PluginsHelper;
 use \Automattic\WooCommerce\Admin\Features\OnboardingSetUpShipping;
-use \Automattic\WooCommerce\Admin\Features\OnboardingAutomateTaxes;
 
 /**
  * Contains backend logic for the onboarding profile and checklist feature.
@@ -63,16 +61,12 @@ class Onboarding {
 			OnboardingTasks::get_instance();
 		}
 
-		// Add onboarding notes.
-		new WC_Admin_Notes_Onboarding_Profiler();
-
 		// Add actions and filters.
 		$this->add_actions();
 		$this->add_filters();
 
 		// Hook up dependent classes.
 		new OnboardingSetUpShipping();
-		new OnboardingAutomateTaxes();
 	}
 
 	/**
@@ -361,7 +355,7 @@ class Onboarding {
 	 * @return bool
 	 */
 	public static function should_show_tasks() {
-		return 'no' === get_option( 'woocommerce_task_list_hidden', 'no' );
+		return 'no' === get_option( 'woocommerce_task_list_hidden', 'no' ) || 'no' === get_option( 'woocommerce_extended_task_list_hidden', 'no' );
 	}
 
 	/**
@@ -580,7 +574,11 @@ class Onboarding {
 		}
 
 		foreach ( $themes as $theme ) {
-			$directory = new \RecursiveDirectoryIterator( $theme->theme_root . '/' . $theme->stylesheet );
+			$stylesheet_file = $theme->theme_root . '/' . $theme->stylesheet;
+			if ( ! file_exists( $stylesheet_file ) ) {
+				continue;
+			}
+			$directory = new \RecursiveDirectoryIterator( $stylesheet_file );
 			$iterator  = new \RecursiveIteratorIterator( $directory );
 			$files     = new \RegexIterator( $iterator, '/^.+\.php$/i', \RecursiveRegexIterator::GET_MATCH );
 
@@ -690,6 +688,8 @@ class Onboarding {
 		$options[] = 'woocommerce_task_list_complete';
 		$options[] = 'woocommerce_task_list_do_this_later';
 		$options[] = 'woocommerce_task_list_hidden';
+		$options[] = 'woocommerce_extended_task_list_complete';
+		$options[] = 'woocommerce_extended_task_list_hidden';
 
 		if ( ! self::should_show_tasks() && ! self::should_show_profiler() ) {
 			return $options;
@@ -713,6 +713,7 @@ class Onboarding {
 		$options[] = 'woocommerce_bacs_accounts';
 		$options[] = 'woocommerce_woocommerce_payments_settings';
 		$options[] = 'woocommerce_eway_settings';
+		$options[] = 'woocommerce_razorpay_settings';
 
 		return $options;
 	}
@@ -743,6 +744,7 @@ class Onboarding {
 			array(
 				'facebook-for-woocommerce'            => 'facebook-for-woocommerce/facebook-for-woocommerce.php',
 				'mailchimp-for-woocommerce'           => 'mailchimp-for-woocommerce/mailchimp-woocommerce.php',
+				'creative-mail-by-constant-contact'   => 'creative-mail-by-constant-contact/creative-mail-plugin.php',
 				'kliken-marketing-for-google'         => 'kliken-marketing-for-google/kliken-marketing-for-google.php',
 				'jetpack'                             => 'jetpack/jetpack.php',
 				'woocommerce-services'                => 'woocommerce-services/woocommerce-services.php',
@@ -755,6 +757,7 @@ class Onboarding {
 				'woocommerce-payfast-gateway'         => 'woocommerce-payfast-gateway/gateway-payfast.php',
 				'woocommerce-payments'                => 'woocommerce-payments/woocommerce-payments.php',
 				'woocommerce-gateway-eway'            => 'woocommerce-gateway-eway/woocommerce-gateway-eway.php',
+				'woo-razorpay'                        => 'woo-razorpay/woo-razorpay.php',
 			)
 		);
 		return array_merge( $plugins, $onboarding_plugins );
@@ -922,7 +925,7 @@ class Onboarding {
 			'id'    => 'woocommerce_onboard_tab',
 		);
 
-		$task_list_hidden = get_option( 'woocommerce_task_list_hidden', 'no' );
+		$task_list_hidden = get_option( 'woocommerce_task_list_hidden', 'no' ) || get_option( 'woocommerce_extended_task_list_hidden', 'no' );
 
 		$help_tab['content'] = '<h2>' . __( 'WooCommerce Onboarding', 'woocommerce' ) . '</h2>';
 
@@ -931,13 +934,13 @@ class Onboarding {
 			'<p><a href="' . wc_admin_url( '&path=/setup-wizard' ) . '" class="button button-primary">' . __( 'Setup wizard', 'woocommerce' ) . '</a></p>';
 
 		$help_tab['content'] .= '<h3>' . __( 'Task List', 'woocommerce' ) . '</h3>';
-		$help_tab['content'] .= '<p>' . __( 'If you need to enable or disable the task list, please click on the button below.', 'woocommerce' ) . '</p>' .
+		$help_tab['content'] .= '<p>' . __( 'If you need to enable or disable the task lists, please click on the button below.', 'woocommerce' ) . '</p>' .
 		( 'yes' === $task_list_hidden
 			? '<p><a href="' . wc_admin_url( '&reset_task_list=1' ) . '" class="button button-primary">' . __( 'Enable', 'woocommerce' ) . '</a></p>'
 			: '<p><a href="' . wc_admin_url( '&reset_task_list=0' ) . '" class="button button-primary">' . __( 'Disable', 'woocommerce' ) . '</a></p>'
 		);
 
-		if ( Loader::is_feature_enabled( 'devdocs' ) && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 			$help_tab['content'] .= '<h3>' . __( 'Calypso / WordPress.com', 'woocommerce' ) . '</h3>';
 			if ( class_exists( 'Jetpack' ) ) {
 				$help_tab['content'] .= '<p>' . __( 'Quickly access the Jetpack connection flow in Calypso.', 'woocommerce' ) . '</p>';
@@ -1068,6 +1071,7 @@ class Onboarding {
 
 		$task_list_hidden = 1 === absint( $_GET['reset_task_list'] ) ? 'no' : 'yes'; // phpcs:ignore CSRF ok.
 		update_option( 'woocommerce_task_list_hidden', $task_list_hidden );
+		update_option( 'woocommerce_extended_task_list_hidden', $task_list_hidden );
 
 		wc_admin_record_tracks_event(
 			'tasklist_toggled',

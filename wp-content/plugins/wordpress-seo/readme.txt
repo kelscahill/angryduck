@@ -4,8 +4,8 @@ Donate link: https://yoa.st/1up
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 Tags: SEO, XML sitemap, Content analysis, Readability, Schema
-Tested up to: 5.5.1
-Stable tag: 15.3
+Tested up to: 5.6
+Stable tag: 15.7
 Requires PHP: 5.6.20
 
 Improve your WordPress SEO: Write better content and have a fully optimized WordPress site using the Yoast SEO plugin.
@@ -42,7 +42,7 @@ We know content is king, that's why Yoast SEO is famous for its **state-of-the-a
 
 * **SEO analysis**: an invaluable tool while writing SEO-friendly content with the right (focus) keyphrases in mind.
 * **Readability analysis**: ensures that humans and search engines can read and understand your content.
-* **Full language support** for: English, German, French, Dutch, Spanish, Italian, Russian, Indonesian, Polish, Portuguese, Arabic, Swedish and Hebrew.
+* **Full language support** for: English, German, French, Dutch, Spanish, Italian, Russian, Indonesian, Polish, Portuguese, Arabic, Swedish, Hebrew, Hungarian and Turkish.
 * **A Google preview**, which shows what your listings will look like in the search results. Even on mobile devices!
 * **Innovative Schema blocks** for the WordPress block editor, so that your FAQ and HowTo content can be shown directly in the search results.
 * **[Premium] Internal linking blocks** to easily improve the structure of your content. Easily add a **table of contents block**, a **related links block**, a **subpages** block, or **siblings block**! Plus, we’ll keep adding these easy-to-add blocks to improve your site structure.
@@ -106,6 +106,8 @@ Yoast SEO integrates seamlessly into a range of themes and plugins. We work part
 * The official [AMP](https://wordpress.org/plugins/amp/) plugin, which changes your templates to use the ‘AMP’ HTML format.
 * Google’s [Web Stories](https://wordpress.org/plugins/web-stories/) plugin, which helps you to create ‘[web stories](https://amp.dev/about/stories/)’.
 * The [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/) plugin, when you also activate the [ACF Content Analysis for Yoast SEO](https://wordpress.org/plugins/acf-content-analysis-for-yoast-seo/) plugin.
+* The [Elementor](https://wordpress.org/plugins/elementor/) website builder.
+* [Zapier](https://zapier.com/apps/yoast-seo/integrations), which helps you automate your publishing flow.
 
 ### BUG REPORTS
 
@@ -232,70 +234,74 @@ Your question has most likely been answered on our knowledge base: [kb.yoast.com
 
 == Changelog ==
 
-= 15.3 =
-Release Date: November 17th, 2020
+= 15.7 =
+Release Date: January 26th, 2021
 
-Out now: Yoast SEO 15.3! In this release, you’ll find full language support for Hebrew in our analysis! This makes it a lot more natural to optimize your posts and it lets you focus on the writing part. Read more about what’s new in Yoast SEO 15.3 in [our release post](https://yoa.st/release-15-3)!
-
-Bugfixes:
-
-* Fixes a bug where no notification to reindex your site would be shown when the indexing process failed.
-* Fixes a bug where no notification to reindex your site would be shown when changing the permalink structure, category base or home URL multiple times in a row and hiding the notification in between.
-* Fixes a bug where a fatal error would be thrown when there is no ctype extension loaded and `ctype_digit` had been polyfilled before.
-* Fixes a bug where reindexing via the WP-CLI would not always repopulate the indexables tables.
-* Fixes a bug where unfiltered HTML could be inserted in taxonomy descriptions by administrators and editors.
-* Fixes a bug where the indexable permalinks could have an incorrect taxonomy base.
-* Fixes a bug where the SEO optimization process sometimes had to be run twice before everything was correctly indexed.
+Meet Yoast SEO 15.7! For this release, we thought we’d remind you of the powerful content analysis in Yoast SEO - it helps you write awesome content that ranks! Read more about what’s new in Yoast SEO 15.7 in [our release post](https://yoa.st/release-15-7)!
 
 Enhancements:
 
-* Adds the following assessments for Hebrew:
-   * Consecutive sentences assessment.
-   * Sentence length assessment.
-   * Transition words assessment.
-   * Passive voice assessment.
-* Does not mark the words 'annoyed', 'depressed', 'disappointed', and 'upset' as passives in English anymore, since most of the time they are closer to adjectives rather than passive verbs in meaning.
-* Improves the results for the keyphrase distribution assessment for Swedish, Indonesian, Arabic, Hebrew and Farsi by allowing a partial match (instead of a full match) for long keyphrases (4 or more content words).
-
-Other:
-
-* Prevents the SEO optimization process from restarting automatically when the optimization tool is started via the link in the dashboard notification and the Yoast SEO Tools page is reloaded during indexing.
-
-= 15.2.1 =
-Release Date: November 2nd, 2020
+* Expands the readability analysis for Turkish:
+    * Adds the transition words assessment.
+    * Adds the consecutive sentences beginnings assessment.
+    * Adds the sentence length assessment.
+    * Adds the passive voice assessment.
+* Improves keyphrase recognition in Turkish by filtering out function words such as `birinci`, `i̇kinci`, `üçüncü`.
+* Adds the advanced snippet variables to the Social previews of our Elementor integration.
 
 Bugfixes:
 
-* Fixes a bug where AMP and W3C validation would break because Twitter meta tags would contain 'value' attributes instead of 'content' attributes.
-* Fixes a bug where the Yoast metabox could not be loaded in the post editor when the `configuration-wizard-1520.js` JavaScript file is blocked from loading.
+* Fixes a bug where empty author archive pages would be indexed when the author had published a custom post-type that was not shown on his/her author archive page. Props to [stodorovic](https://github.com/stodorovic).
 
-= 15.2 =
-Release Date: October 27th, 2020
+Other:
 
-Today, we are releasing Yoast SEO 15.2 into the wild. In this release, we've added an interesting improvement for Slack users — better visibility for your content when your URL is shared on Slack. We also improved the performance of the plugin in the backend due to us loading less JavaScript. Read more about what’s new in 15.2 in [our release post](https://yoa.st/release-15-2)!
+* Changes the wording on the `my.yoast.com` connect error shown in Health Check when a Yoast premium plugin is enabled, to lead with what the user's problem is.
+* Removes the release notification as the added benefit of having it is minimal.
+
+= 15.6.2 =
+Release Date: January 12th, 2021
+
+Bugfixes:
+
+* Fixes a bug where notifications in the notification center would not be dismissible on sites using FastCGI.
+
+= 15.6.1 =
+Release Date: January 12th, 2021
+
+Bugfixes:
+
+ * Fixes a bug where the estimated reading time would not be shown when posts that were created before Yoast SEO 15.6 were shared on Slack.
+
+Other:
+
+ * Adjusts the default words per minute for the estimated reading time from 250 words per minute to 200 words per minute.
+
+= 15.6 =
+Release Date: January 12th, 2021
+
+Say hi to Yoast SEO 15.6! In the latest version of Yoast SEO, you’ll find a number of bug fixes and performance enhancements. Happy updating! Read more about what’s new in Yoast SEO 15.6 in [our release post](https://yoa.st/release-15-6)!
 
 Enhancements:
 
-* Adds an Open Graph integration for The Events Calendar plugin. Props to [Luehrsen](https://github.com/Luehrsen).
-* Sets the default schema type for Web Stories to Article. Props to [swissspidy](https://github.com/swissspidy).
-* Adds enhanced Slack sharing tags on posts and pages.
-* Adds a toggle for the above enhanced Slack sharing feature.
-* Flushes the permalinks from the indexable tables when a custom taxonomy base changes, and shows a reindex notification in that case.
-* Improves the loading times of admin pages where Yoast SEO is present.
+ * Improves keyphrase recognition in Norwegian by filtering out function words such as 'tredje', 'deres' and 'noen'.
+ * Improves the performance of the taxonomy sitemap generation. Props to [mikeyarce](https://github.com/mikeyarce).
+ * Adds the Tag, Category and Primary Category snippet variables in the Google preview of our Elementor integration.
+ * Adds advanced snippet variables to the Google preview of our Elementor integration.
+ * Ensures that there's always a meta description for Web Stories. Props to [swissspidy](https://github.com/swissspidy).
+ * Extends the plugin conflict list.
 
 Bugfixes:
 
-* Fixes a bug where we linked to Google's Structured Data Test, which is deprecated. We now link to Google's Rich Results Test. Props to [wormeyman](https://github.com/wormeyman).
-* Fixes a bug where the styling of the General tab in the network admin dashboard was broken.
-* Fixes a bug where the German passive voice assessment would show an error when the text contained a participle enclosed within curly quotation marks (e.g., `"getan"`).
-* Fixes a bug where the WooCommerce product permalinks were not updated after a permalink structure change.
-* Fixes a bug where the replacement variable dropdown menu was partially hidden for the description inputs in all preview modals.
-* Fixes a bug where a fatal error would be thrown on sites that did have curl installed but did not have the PHP curl extension installed.
+ * Fixes a bug where the non-indexable custom post types `elementor_library` and `oembed_cache` would be saved to the indexable table.
+ * Fixes a bug where the SEMrush modal would trigger errors and wouldn't display a chart when all the Trend values were zero.
+ * Fixes a bug where very large WordPress installations would experience time-outs because the database would be overloaded with duplicate indexable IDs.
+ * Fixes a bug where the social preview placeholders and info text would not be translatable.
 
 Other:
 
-* Removes the "Remind me in 7 days" link from the SEO data optimization notification on the Yoast SEO dashboard, which was shown for large sites with more than 2500 unindexed indexables. The notification can still be hidden by clicking the default dismiss button.
-* Adds the `wpseo_image_data` filter to enable the filtering of image metadata. Props to [spacedmonkey](https://github.com/spacedmonkey).
+ * Deprecates the `WPSEO_Validator` class because it was not used anymore. Props to [rafaelbernard](https://github.com/rafaelbernard).
+ * Fixes the URL to the Travis badge on our open source GitHub repository. Props to [rodrigoprime](https://github.com/rodrigoprimo).
+ * Makes the integration with Web Stories for WordPress more robust. Props to [swissspidy](https://github.com/swissspidy).
 
 = Earlier versions =
 For the changelog of earlier versions, please refer to [the changelog on yoast.com](https://yoa.st/yoast-seo-changelog).
