@@ -25,11 +25,32 @@ $context = Timber::get_context();
 $post = new TimberPost();
 $context['post'] = $post;
 
-$products_args = array(
+$sauce_args = array(
   'post_type' => 'product',
   'posts_per_page' => -1,
-  'post_status' => 'publish'
+  'post_status' => 'publish',
+  'tax_query' => array(
+    array(
+      'taxonomy' => 'product_cat',
+      'field' => 'slug',
+      'terms' => 'sauce',
+    )
+  )
 );
-$context['posts'] = Timber::query_posts($products_args);
+$context['sauce'] = Timber::query_posts($sauce_args);
+
+$swag_args = array(
+  'post_type' => 'product',
+  'posts_per_page' => -1,
+  'post_status' => 'publish',
+  'tax_query' => array(
+    array(
+      'taxonomy' => 'product_cat',
+      'field' => 'slug',
+      'terms' => 'swag',
+    )
+  )
+);
+$context['swag'] = Timber::query_posts($swag_args);
 
 Timber::render(array('05-pages/page-' . $post->post_name . '.twig', '05-pages/page.twig'), $context);

@@ -112,12 +112,6 @@ if (function_exists('acf_add_options_page')) {
   ));
 }
 
-function acf_timber_context( $context ) {
-  $context['options'] = get_fields('option');
-  return $context;
-}
-add_filter('timber_context', 'acf_timber_context');
-
 /**
  * ACF Save json files
  */

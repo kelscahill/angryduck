@@ -2,6 +2,12 @@
     $HELPER/TRUMP CLASSES
 \* ------------------------------------ */
 
+@for $i from 1 to 10 {
+  .u-animation__delay *:nth-child(#{$i}) {
+    animation-delay: $i * 0.25s + 0.5s;
+  }
+}
+
 /**
  * Colors
  */
@@ -15,6 +21,10 @@
 
 .u-color--tertiary {
   color: $c-tertiary;
+}
+
+.u-color--gray {
+  color: $c-gray;
 }
 
 /**

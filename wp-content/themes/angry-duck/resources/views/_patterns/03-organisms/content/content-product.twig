@@ -1,26 +1,30 @@
 <article class="c-content c-content-product">
   <div class="l-container u-spacing--quad">
-    <div class="c-product">
+    <div class="c-product u-spacing">
       <div class="c-product__images">
         {% if product.get_gallery_image_ids %}
           <div class="c-product__gallery">
             <div class="c-product__gallery-nav">
               <div class="js-product-gallery-nav">
                 {% for image in product.get_gallery_image_ids %}
-                  <img src="{{ Image(image).src|resize(150,150) }}" alt="{{ Image(image).alt }}" />
+                  <div class="o-gallery-item">
+                    <img src="{{ Image(image).src|resize(150,150) }}" alt="{{ Image(image).alt }}" />
+                  </div>
                 {% endfor %}
               </div>
             </div>
             <div class="c-product__gallery-image">
               <div class="js-product-gallery">
                 {% for image in product.get_gallery_image_ids %}
-                  <img src="{{ Image(image).src|resize(600,600) }}" alt="{{ Image(image).alt }}" />
+                  <div class="o-gallery-item">
+                    <img src="{{ Image(image).src|resize(900,900) }}" alt="{{ Image(image).alt }}" />
+                  </div>
                 {% endfor %}
               </div>
             </div>
           </div>
         {% elseif post.thumbnail %}
-          <img src="{{ post.thumbnail.src|resize(600,600) }}" alt="{{ post.thumbnail.alt }}" />
+          <img src="{{ post.thumbnail.src|resize(900,900) }}" alt="{{ post.thumbnail.alt }}" />
         {% endif %}
       </div>
       <div class="c-product__content u-spacing">
@@ -33,13 +37,23 @@
         </div>
         <hr class="o-hr--small" />
         <div class="c-product__body u-spacing">
-          <p>{{ post.post_content }}</p>
+          <div class="o-rte-text u-spacing">
+            {{ post.post_content|wpautop }}
+            {% if post.product_ingredients %}
+              {{ post.product_ingredients|wpautop }}
+            {% endif %}
+          </div>
           {% if post._stock_status == "instock" and post._regular_price %}
-            {% include "01-atoms/woocommerce/price.twig" %}
-            {% include "01-atoms/woocommerce/add-to-cart.twig" %}
+            {% if product.get_available_variations %}
+              {% do action('woocommerce_variable_add_to_cart') %}
+            {% else %}
+              {% include "01-atoms/woocommerce/price.twig" %}
+              {% include "01-atoms/woocommerce/add-to-cart.twig" %}
+            {% endif %}
           {% else %}
             <p><em>Coming soon!</em></p>
           {% endif %}
+          {% do action('woocommerce_archive_description') %}
         </div>
       </div>
     </div>

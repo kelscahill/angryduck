@@ -9,7 +9,7 @@
   <div class="c-header__meno-icons">
     <a href="/cart" class="o-icon o-icon--s">
       {% if cart_count > 0 %}
-        <span class="o-add-to-cart-count">{{ cart_count }}</span>
+        <span class="o-add-to-cart-count" data-animation="animate__animated animate__swing">{{ cart_count }}</span>
       {% endif %}
       {% include "01-atoms/icons/cart.twig" %}
     </a>

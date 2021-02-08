@@ -19,8 +19,7 @@ th {
   border: 1px solid transparent;
   padding: $space-half 0;
   vertical-align: top;
-
-  @include o-heading--xs;
+  font-weight: bold;
 }
 
 tr {
@@ -36,6 +35,8 @@ td {
 
 thead th {
   background-color: $c-gray--lighter;
+
+  @include o-heading--xs;
 }
 
 tfoot th {
@@ -139,4 +140,3 @@ tfoot th {
     }
   }
 }
-

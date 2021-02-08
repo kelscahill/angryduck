@@ -3,6 +3,7 @@
 *.lock
 .htaccess
 wp-config.php
+wp-config-local.php
 wp-content/advanced-cache.php
 wp-content/backup-db/
 wp-content/backups/

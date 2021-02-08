@@ -54,14 +54,10 @@
     display: flex;
     flex-wrap: nowrap;
     flex-direction: row;
-    margin-bottom: $space-double;
-
-    @include media(">medium") {
-      margin-bottom: 0;
-    }
-
+    margin-bottom: 0;
 
     img {
+      display: block;
       width: 100%;
       height: auto;
     }
@@ -93,6 +89,7 @@
 
     &-nav {
       width: 50px;
+      height: 100%;
       order: 1;
 
       @include media(">medium") {

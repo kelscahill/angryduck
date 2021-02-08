@@ -29,7 +29,14 @@ $context['is_front_page'] = 'true';
 $featured_products_args = array(
   'post_type' => 'product',
   'posts_per_page' => 4,
-  'post_status' => 'publish'
+  'post_status' => 'publish',
+  'tax_query' => array(
+    array(
+      'taxonomy' => 'product_cat',
+      'field' => 'slug',
+      'terms' => 'sauce',
+    )
+  )
 );
 $context['featured_products'] = Timber::query_posts($featured_products_args);
 

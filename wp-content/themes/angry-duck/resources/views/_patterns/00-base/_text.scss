@@ -133,6 +133,11 @@ abbr {
     margin-bottom: $space-double;
   }
 
+  hr.o-hr--small {
+    margin-top: $space;
+    margin-bottom: $space;
+  }
+
   code,
   pre {
     font-size: 125%;

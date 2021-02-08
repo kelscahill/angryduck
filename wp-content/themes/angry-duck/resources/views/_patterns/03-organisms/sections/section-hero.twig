@@ -1,7 +1,7 @@
 {% if post.thumbnail %}
   {% set img_id = Image(post.thumbnail).id %}
   {% set image_class = ' u-background--cover o-background-image--' ~ img_id %}
-  {% set img_src = Image(post.thumbnail).src|resize(900,900) %}
+  {% set img_src = Image(post.thumbnail).src|resize(1600,900) %}
   <style>
     .o-background-image--{{ img_id }} {
       background-image: url({{ img_src }});

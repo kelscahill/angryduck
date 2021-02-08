@@ -1,10 +1,24 @@
 /* eslint-disable */
 let Rellax = require('rellax');
 let rellax = new Rellax('.js-rellax');
+import inView from 'in-view';
 
 export default {
   init() {
     // JavaScript to be fired on all pages
+
+    /**
+    * Add inview class on scroll if has-animation class.
+    */
+    $(document).scroll(function() {
+      $("*[data-animation]").each(function() {
+        var animation = $(this).attr('data-animation');
+        if (inView.is(this)) {
+          $(this).addClass("is-inview");
+          $(this).addClass(animation);
+        }
+      });
+    });
 
     /**
     * Remove Active Classes when clicking outside menus and modals
@@ -87,18 +101,11 @@ export default {
       dots: true,
       infinite: false,
       speed: 300,
-      slidesToShow: 4,
-      slidesToScroll: 4,
+      slidesToShow: 3,
+      slidesToScroll: 3,
       responsive: [
         {
           breakpoint: 1200,
-          settings: {
-            slidesToShow: 3,
-            slidesToScroll: 3,
-          }
-        },
-        {
-          breakpoint: 1000,
           settings: {
             slidesToShow: 2,
             slidesToScroll: 2,

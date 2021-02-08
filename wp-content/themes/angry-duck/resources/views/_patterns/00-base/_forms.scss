@@ -90,6 +90,8 @@ input[type=checkbox] {
   margin-right: $space-half;
   height: 30px;
   width: 30px;
+  min-width: 30px;
+  min-height: 30px;
   line-height: 1;
   background-size: 30px;
   background-repeat: no-repeat;
@@ -114,6 +116,13 @@ input[type=checkbox] + label {
   margin-bottom: 0;
   font-size: $body-font-size;
   width: calc(100% - 40px);
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    display: block;
+    clear: left;
+  }
 }
 
 input[type=radio]:checked,
@@ -201,10 +210,10 @@ select,
   .select2-selection__arrow {
     display: none;
   }
+}
 
-  .select2-dropdown {
-    border: $border--standard;
-  }
+.select2-container .select2-dropdown {
+  border: $border--standard !important;
 }
 
 label {

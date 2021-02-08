@@ -24,7 +24,7 @@
   &::after {
     content: "";
     display: block;
-    background: url('../images/hero-overlay.svg') bottom center no-repeat;
+    background: url("../images/hero-overlay.svg") bottom center no-repeat;
     background-size: 100% auto;
     position: absolute;
     bottom: 0;
@@ -42,14 +42,17 @@
     left: -15px;
     top: -$space-double;
     position: relative;
+    transform-origin: center center;
+    animation: scale 2s $transition-effect 1 alternate;
   }
 
   &--front {
     z-index: -1;
 
-    @include media('>medium') {
+    @include media(">medium") {
       margin-bottom: -35vh;
     }
+
 
     + .l-wrap,
     + .l-wrap .l-main {
