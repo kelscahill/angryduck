@@ -75,7 +75,7 @@ twentytwenty.touchEnabled = {
 
 	init: function() {
 		var matchMedia = function() {
-			// Include the 'heartz' as a way to have a non matching MQ to help terminate the join. See <https://git.io/vznFH>.
+			// Include the 'heartz' as a way to have a non-matching MQ to help terminate the join. See <https://git.io/vznFH>.
 			var prefixes = [ '-webkit-', '-moz-', '-o-', '-ms-' ];
 			var query = [ '(', prefixes.join( 'touch-enabled),(' ), 'heartz', ')' ].join( '' );
 			return window.matchMedia && window.matchMedia( query ).matches;
@@ -676,6 +676,9 @@ twentytwentyDomReady( function() {
 /* Toggle an attribute ----------------------- */
 
 function twentytwentyToggleAttribute( element, attribute, trueVal, falseVal ) {
+	if ( element.classList.contains( 'close-search-toggle' ) ) {
+		return;
+	}
 	if ( trueVal === undefined ) {
 		trueVal = true;
 	}

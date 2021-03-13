@@ -1,0 +1,193 @@
+/* ------------------------------------ *\
+    $BLOCKS
+\* ------------------------------------ */
+
+/**
+ * Featured product
+ */
+.c-block-featured-product {
+  padding: $space-double;
+  display: flex;
+  justify-content: stretch;
+  align-items: stretch;
+  width: 100%;
+
+  @include media(">medium") {
+    width: 50%;
+  }
+
+  @include media(">xxlarge") {
+    width: 33.33%;
+  }
+
+
+  a {
+    color: $c-black;
+  }
+
+  &__link {
+    img {
+      transform: translateY(0);
+      transition: $transition-all;
+    }
+
+    &:hover {
+      img {
+        transform: translateY(-5px);
+      }
+    }
+  }
+
+  &__image {
+    margin-right: $space;
+    min-width: 33.33%;
+    position: relative;
+    overflow: visible;
+
+    @include media(">large") {
+      padding: $space-half;
+    }
+
+    img {
+      width: auto;
+      height: auto;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    &::after {
+      z-index: 0;
+      content: "";
+      display: block;
+      position: absolute;
+      bottom: -10px;
+      right: 0;
+      left: 0;
+      margin: auto;
+      width: 100%;
+      max-width: 240px;
+      height: 100%;
+      background: url("../images/shadow.png") bottom center no-repeat;
+      background-size: 100% auto;
+      background-blend-mode: multiply;
+      opacity: 0.3;
+    }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 66.67%;
+  }
+
+  &:nth-child(4n + 2),
+  &:nth-child(4n + 3) {
+    color: $c-white;
+
+    a {
+      color: $c-white;
+    }
+
+    hr {
+      background-color: $c-white;
+    }
+
+    button {
+      color: $c-white;
+      border-color: $c-white;
+      background: linear-gradient(to left, transparent 50%, $c-white 50%);
+      background-size: 200% 100%;
+      background-position: right bottom;
+
+      &:hover,
+      &:focus {
+        color: $c-black;
+        border-color: $c-white;
+        background-position: left bottom;
+      }
+    }
+
+    input[type="number"] {
+      border-color: $c-white;
+      color: $c-white;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 20.41'%3E%3Cpath d='M.15,5.06a.5.5,0,0,1,0-.71L4.5,0,8.85,4.35a.5.5,0,0,1,0,.71.48.48,0,0,1-.7,0L4.5,1.41.85,5.06A.48.48,0,0,1,.15,5.06Zm8,10.29L4.5,19,.85,15.35a.5.5,0,0,0-.7,0,.5.5,0,0,0,0,.71L4.5,20.41l4.35-4.35a.5.5,0,0,0,0-.71A.5.5,0,0,0,8.15,15.35Z' fill='%23fff'/%3E%3C/svg%3E") center right 5px no-repeat;
+      background-size: 10px 40px;
+    }
+  }
+
+  &:nth-child(4n + 1) {
+    background-color: $c-secondary;
+  }
+
+  &:nth-child(4n + 2) {
+    background-color: $c-primary;
+  }
+
+  &:nth-child(4n + 3) {
+    background-color: $c-quaternary;
+  }
+
+  &:nth-child(4n + 4) {
+    background-color: $c-tertiary;
+  }
+}
+
+/**
+ * Product
+ */
+.c-block-product {
+  position: relative;
+  color: $c-black;
+  border: 1px solid transparent;
+  border-radius: $border-radius;
+  overflow: hidden;
+  transition: $transition-all;
+  top: 0;
+
+  &:hover,
+  &:focus {
+    color: $c-black;
+    border: $border--standard-light;
+    // top: -5px;
+  }
+
+  &__content {
+    padding: $space;
+  }
+}
+
+/**
+ * Testimonial
+ */
+.c-block-testimonial {
+  padding: 0 $space-double;
+
+  &::before {
+    content: '';
+    margin: $space;
+    height: 40px;
+    width: 40px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  &:nth-child(4n + 1)::before {
+    @include icon-quotes("%23ef4438");
+  }
+
+  &:nth-child(4n + 2)::before {
+    @include icon-quotes("%23fbc617");
+  }
+
+  &:nth-child(4n + 3)::before {
+    @include icon-quotes("%23d1d628");
+  }
+
+  &:nth-child(4n + 4)::before {
+    @include icon-quotes("%23787b19");
+  }
+}

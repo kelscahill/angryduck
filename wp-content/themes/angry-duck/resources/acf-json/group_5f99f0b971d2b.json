@@ -1,0 +1,81 @@
+{
+    "key": "group_5f99f0b971d2b",
+    "title": "Testimonial",
+    "fields": [
+        {
+            "key": "field_5f99f0be18d70",
+            "label": "Testimonial Body",
+            "name": "testimonial_body",
+            "type": "textarea",
+            "instructions": "Enter the quote from the customer the wrote the testimonial.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "maxlength": "",
+            "rows": "",
+            "new_lines": "wpautop"
+        },
+        {
+            "key": "field_5f99f0ed18d71",
+            "label": "Testimonial Name",
+            "name": "testimonial_name",
+            "type": "text",
+            "instructions": "Enter the name of the customer whom wrote the testimonial.",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "maxlength": ""
+        },
+        {
+            "key": "field_601458c43b834",
+            "label": "Testimonial Description",
+            "name": "testimonial_description",
+            "type": "text",
+            "instructions": "Enter a position title or social media handle (Optional)",
+            "required": 0,
+            "conditional_logic": 0,
+            "wrapper": {
+                "width": "",
+                "class": "",
+                "id": ""
+            },
+            "default_value": "",
+            "placeholder": "",
+            "prepend": "",
+            "append": "",
+            "maxlength": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "testimonial"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "hide_on_screen": "",
+    "active": true,
+    "description": "",
+    "modified": 1611946329
+}

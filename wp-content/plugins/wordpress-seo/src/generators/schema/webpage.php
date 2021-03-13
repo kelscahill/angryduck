@@ -1,9 +1,4 @@
 <?php
-/**
- * WPSEO plugin file.
- *
- * @package Yoast\WP\SEO\Generators\Schema
- */
 
 namespace Yoast\WP\SEO\Generators\Schema;
 
@@ -67,6 +62,10 @@ class WebPage extends Abstract_Schema_Piece {
 			];
 		}
 
+		if ( ! empty( $this->context->main_entity_of_page ) ) {
+			$data['mainEntity'] = $this->context->main_entity_of_page;
+		}
+
 		$data = $this->helpers->schema->language->add_piece_language( $data );
 		$data = $this->add_potential_action( $data );
 
@@ -106,15 +105,11 @@ class WebPage extends Abstract_Schema_Piece {
 	 * @return bool
 	 */
 	private function add_breadcrumbs() {
-		if ( $this->context->indexable->object_type === 'home-page' || $this->helpers->current_page->is_home_static_page() ) {
+		if ( $this->context->indexable->object_type === 'system-page' && $this->context->indexable->object_sub_type === '404' ) {
 			return false;
 		}
 
-		if ( $this->context->breadcrumbs_enabled ) {
-			return true;
-		}
-
-		return false;
+		return true;
 	}
 
 	/**
@@ -125,10 +120,6 @@ class WebPage extends Abstract_Schema_Piece {
 	 * @return array $data The WebPage data with the potential action added.
 	 */
 	private function add_potential_action( $data ) {
-		if ( $this->context->generate_schema_page_type() !== 'WebPage' ) {
-			return $data;
-		}
-
 		/**
 		 * Filter: 'wpseo_schema_webpage_potential_action_target' - Allows filtering of the schema WebPage potentialAction target.
 		 *

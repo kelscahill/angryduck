@@ -1,6 +1,7 @@
 {
   "entry": {
     "main": [
+      "./scripts/plugins.js",
       "./scripts/main.js",
       "./styles/main.scss"
     ],

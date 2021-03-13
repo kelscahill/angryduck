@@ -12,4 +12,5 @@
 $context = Timber::get_context();
 $post = Timber::query_post();
 $context['post'] = $post;
-Timber::render( array( '04-pages/single-' . $post->ID . '.twig', '04-pages/single-' . $post->post_type . '.twig', '04-pages/single.twig' ), $context );
+
+Timber::render(array('05-pages/single-' . $post->ID . '.twig', '05-pages/single-' . $post->post_type . '.twig', '05-pages/single.twig'), $context);

@@ -13,12 +13,9 @@
  * @since   Timber 0.1
  */
 
- $context = Timber::get_context();
- $context['posts'] = Timber::get_posts();
- $post = Timber::query_post();
- $context['post'] = new TimberPost();
- $templates = array( '04-pages/index.twig' );
- if ( is_home() ) {
-   array_unshift( $templates, '04-pages/index.twig' );
- }
- Timber::render( $templates, $context );
+$context = Timber::get_context();
+$context['posts'] = Timber::get_posts();
+$post = Timber::query_post();
+$context['post'] = new TimberPost();
+
+Timber::render(array('05-pages/index.twig'), $context);

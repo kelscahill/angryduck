@@ -112,12 +112,6 @@ if (function_exists('acf_add_options_page')) {
   ));
 }
 
-function acf_timber_context( $context ) {
-  $context['options'] = get_fields('option');
-  return $context;
-}
-add_filter('timber_context', 'acf_timber_context');
-
 /**
  * ACF Save json files
  */
@@ -127,50 +121,65 @@ function my_acf_json_save_point($path) {
 }
 add_filter('acf/settings/save_json', 'my_acf_json_save_point');
 
-/**
- * Post Type: Members.
- */
-function cptui_register_my_cpts() {
+/*
+* Add WooCommerce Support.
+*/
+// function theme_add_woocommerce_support() {
+//   add_theme_support('woocommerce');
+// }
+// add_action('after_setup_theme', 'theme_add_woocommerce_support');
 
-  $member_labels = array(
-    "name" => __('Members', 'sage'),
-    "singular_name" => __('Member', 'sage'),
-    "menu_name" => __('Members', 'sage'),
-    "all_items" => __('All Members', 'sage'),
-    "add_new" => __('Add New Member', 'sage'),
-    "add_new_item" => __('Add New Member', 'sage'),
-    "edit_item" => __('Edit Member', 'sage'),
-    "new_item" => __('New Member', 'sage'),
-    "view_item" => __('View Member', 'sage'),
-    "view_items" => __('View Members', 'sage'),
-    "search_items" => __('Search Members', 'sage'),
-    "not_found" => __('No Members Found', 'sage'),
-    "not_found_in_trash" => __('No Members found in Trash', 'sage'),
+// function timber_set_product($post) {
+//   global $product;
+
+//   if (is_woocommerce()) {
+//     $product = wc_get_product( $post->ID );
+//   }
+// }
+
+// Disable Woocommerce default css.
+add_filter('woocommerce_enqueue_styles', '__return_empty_array');
+
+/**
+ * Register custom content types
+ */
+
+function register_custom_post_types() {
+  /*
+   * Post Type: Testimonials.
+   */
+
+  $labels = array(
+    "name" => __('Testimonials', 'sage'),
+    "singular_name" => __('Testimonial', 'sage'),
   );
 
-  $member_args = array(
-    "label" => __('Members', 'sage'),
-    "labels" => $member_labels,
-    "description" => 'Members',
-    "public" => true,
+  $args = array(
+    "label" => __("Testimonials", "sage"),
+    "labels" => $labels,
+    "description" => "",
+    "public" => false,
     "publicly_queryable" => true,
     "show_ui" => true,
+    "delete_with_user" => false,
     "show_in_rest" => true,
-    "rest_base" => '',
+    "rest_base" => "",
+    "rest_controller_class" => "WP_REST_Posts_Controller",
     "has_archive" => false,
     "show_in_menu" => true,
+    "show_in_nav_menus" => true,
     "exclude_from_search" => false,
-    "capability_type" => 'post',
+    "capability_type" => "post",
+    "menu_icon" => "dashicons-format-quote",
     "map_meta_cap" => true,
-    "hierarchical" => false,
-    "rewrite" => array('slug' => 'member', 'with_front' => true),
-    "query_var" => false,
-    "menu_position" => 4,
-    "menu_icon" => 'dashicons-groups',
-    "supports" => array('title', "editor", 'thumbnail', 'page-attributes'),
-    "taxonomies" => array('category'),
+    "hierarchical" => true,
+    "rewrite" => array("slug" => "testimonial", "with_front" => true),
+    "query_var" => true,
+    "menu_position" => 20,
+    "supports" => array("title")
   );
 
-  register_post_type('members', $member_args);
+  register_post_type("testimonial", $args);
 }
-add_action('init', 'cptui_register_my_cpts');
+
+add_action('init', 'register_custom_post_types');

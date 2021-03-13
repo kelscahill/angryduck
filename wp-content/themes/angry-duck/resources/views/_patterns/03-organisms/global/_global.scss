@@ -1,0 +1,187 @@
+/* ------------------------------------ *\
+    $HEADER
+\* ------------------------------------ */
+
+.c-header {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 $space-half;
+  background: $c-white;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: $border--standard-light;
+
+  &__social {
+    a {
+      border: 0;
+      border-radius: 0;
+      background: none;
+      margin: 0;
+
+      &:hover,
+      &:focus {
+        svg path {
+          fill: $c-primary;
+        }
+      }
+    }
+  }
+
+  &__logo {
+    max-width: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    a {
+      padding: 0 $space;
+    }
+
+    svg {
+      width: 100%;
+    }
+  }
+
+  &__menu-icons {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    height: 100%;
+
+    .o-icon {
+      padding: 0;
+      outline: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+
+      svg {
+        margin: 0 $space-half;
+      }
+    }
+
+    .o-add-to-cart-count {
+      position: absolute;
+      bottom: 3px;
+      right: 5px;
+      z-index: 2;
+      border-radius: 15px;
+      height: 15px;
+      width: 15px;
+      line-height: 15px;
+      background-color: $c-primary;
+      color: $c-white;
+      font-size: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+  }
+}
+
+/* ------------------------------------ *\
+    $FOOTER
+\* ------------------------------------ */
+
+.c-footer {
+  position: relative;
+  z-index: 1;
+
+  &::after {
+    content: "";
+    display: block;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    background: url('../images/footer-bkg.svg') top center no-repeat;
+    background-size: auto 100%;
+    opacity: 0.05;
+    z-index: -1;
+
+    @include media('>large') {
+      background-size: auto 150%;
+    }
+  }
+
+  &--inner {
+    padding: 0 $space;
+    max-width: $max-width;
+    margin: 0 auto;
+    text-align: center;
+    z-index: 1;
+    grid-column-gap: 0;
+    grid-row-gap: $space-double;
+
+    @include media('>large') {
+      align-items: center;
+      grid-column-gap: $space-double;
+    }
+  }
+
+  &-main {
+    margin: $space-double 0;
+
+    &__logo {
+      transition: $transition-effect;
+
+      .o-logo {
+        max-width: 200px;
+        margin: 0 auto;
+        display: block;
+        transform: scale(1);
+      }
+
+      &:hover {
+        .o-logo {
+          transform: scale(1.02);
+        }
+      }
+    }
+
+    &__contact {
+      a {
+        color: $c-black;
+
+        &:hover,
+        &:focus {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  &-legal {
+    background-color: $c-primary;
+    color: $c-white;
+    width: 100%;
+    font-size: $font-size-xs;
+
+    .c-footer--inner {
+      padding: $space-quarter $space;
+      grid-row-gap: 0;
+    }
+
+    &__copyright {
+      @include media('>medium') {
+        text-align: left;
+      }
+    }
+
+    &__nav {
+      @include media('>medium') {
+        text-align: right;
+      }
+    }
+  }
+}
