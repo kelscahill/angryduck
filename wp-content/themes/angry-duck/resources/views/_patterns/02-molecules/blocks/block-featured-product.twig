@@ -1,7 +1,4 @@
-{% if post._stock_status == "outofstock" %}
-  {% set classes = " is-coming-soon" %}
-{% endif %}
-<article class="c-block-featured-product{{ classes }}" data-animation="animate__animated {{ loop.index == 1 or loop.index == 3 ? 'animate__fadeInLeft' :'animate__fadeInRight' }}">
+<article class="c-block-featured-product js-inview" data-animation="animate__animated animate__fadeInUp">
   {% if post.product_featured_image %}
     <a href="{{ post.link }}" class="c-block-featured-product__link">
       <picture class="c-block-featured-product__image">

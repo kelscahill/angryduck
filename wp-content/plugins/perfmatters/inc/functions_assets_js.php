@@ -29,7 +29,7 @@ function perfmatters_assets_js_init() {
 	if($defer_check || $delay_check) {
 
 		//check if its ok to continue
-		if(!is_admin() && !wp_doing_ajax() && !isset($_GET['perfmatters']) && !isset($_GET['fl_builder']) && !isset($_GET['et_fb']) && !isset($_GET['ct_builder']) && !is_embed() && !is_feed()) {
+		if(!is_admin() && !wp_doing_ajax() && !isset($_GET['perfmatters']) && !perfmatters_is_page_builder() && !is_embed() && !is_feed()) {
 
 			//actions + filters
 			add_filter('perfmatters_output_buffer', 'perfmatters_defer_js', 2);

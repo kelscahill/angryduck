@@ -1,7 +1,7 @@
 {% if post._stock_status == "outofstock" %}
   {% set classes = " is-coming-soon" %}
 {% endif %}
-<a href="{{ post.link }}" class="c-block-product{{ classes }}">
+<a href="{{ post.link }}" class="c-block-product{{ classes }} js-inview" data-animation="animate__animated animate__fadeInUp">
   {% if post.get_thumbnail %}
     <picture class="c-block-product__image">
       <img src="{{ Image(post.get_thumbnail).src|resize(900,900) }}" />
@@ -17,10 +17,10 @@
     </div>
     <hr class="o-hr--small" />
     <div class="c-block-product__body u-spacing">
-      {% if post._stock_status == "instock" and post._regular_price %}
-        {% include "01-atoms/woocommerce/price.twig" %}
-      {% else %}
+      {% if post._stock_status == "outofstock" %}
         <p><em>Coming soon!</em></p>
+      {% else %}
+        {% include "01-atoms/woocommerce/price.twig" %}
       {% endif %}
     </div>
   </div>

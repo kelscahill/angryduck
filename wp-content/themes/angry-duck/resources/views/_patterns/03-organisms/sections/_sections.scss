@@ -11,6 +11,13 @@
 }
 
 /**
+ * Testimonials
+ */
+.c-section-testimonials {
+  overflow: visible;
+}
+
+/**
  * Hero
  */
 .c-section-hero {
@@ -39,11 +46,15 @@
     max-width: 600px;
     margin: auto;
     padding: $space-double;
-    left: -15px;
+    left: 0;
     top: -$space-double;
     position: relative;
     transform-origin: center center;
     animation: scale 2s $transition-effect 1 alternate;
+
+    @include media(">small") {
+      left: -15px;
+    }
   }
 
   &--front {

@@ -9,7 +9,7 @@ function perfmatters_lazy_load_init() {
 		$exclude_lazy_loading = perfmatters_get_post_meta('perfmatters_exclude_lazy_loading');
 
 		//check if its ok to lazy load
-		if(!$exclude_lazy_loading && !is_admin() && !wp_doing_ajax() && !isset($_GET['fl_builder']) && !isset($_GET['et_fb']) && !isset($_GET['ct_builder']) && !is_embed() && !is_feed()) {
+		if(!$exclude_lazy_loading && !is_admin() && !wp_doing_ajax() && !isset($_GET['perfmatters']) && !perfmatters_is_page_builder() && !is_embed() && !is_feed()) {
 
 			//don't lazy load on amp
 			if(function_exists('is_amp_endpoint') && is_amp_endpoint()) {
@@ -210,7 +210,7 @@ function perfmatters_lazy_load_background_images($html, $buffer) {
 
 	//match all elements with inline styles
 	//preg_match_all('#<(?<tag>div|figure|section|span|li)(\s+[^>]+[\'"\s]?style\s*=\s*[\'"].*?background-image.*?[\'"][^>]*)>#is', $buffer, $elements, PREG_SET_ORDER); //alternate to possibly filter some out that don't have background images???
-	preg_match_all('#<(?<tag>div|figure|section|span|li)(\s+[^>]+[\'"\s]?style\s*=\s*[\'"].*?[\'"][^>]*)>#is', $buffer, $elements, PREG_SET_ORDER);
+	preg_match_all('#<(?<tag>div|figure|section|span|li)(\s+[^>]*[\'"\s]?style\s*=\s*[\'"].*?[\'"][^>]*)>#is', $buffer, $elements, PREG_SET_ORDER);
 
 	if(!empty($elements)) {
 
@@ -467,7 +467,7 @@ function perfmatters_lazy_load_youtube_iframe($iframe) {
 	//finished youtube lazy output
 	$youtube_lazyload = '<div class="perfmatters-lazy-youtube" data-src="' . esc_attr($youtube_url) . '" data-id="' . esc_attr($youtube_id) . '" data-query="' . esc_attr($query) . '" onclick="perfmattersLazyLoadYouTube(this);">';
 		$youtube_lazyload.= '<div>';
-			$youtube_lazyload.= '<img class="perfmatters-lazy" data-src="https://i.ytimg.com/vi/' . esc_attr($youtube_id) .'/' . $resolution . '.jpg" alt="" width="' . $resolutions[$resolution]['width'] . '" height="' . $resolutions[$resolution]['height'] . '">';
+			$youtube_lazyload.= '<img class="perfmatters-lazy" src="data:image/svg+xml,%3Csvg%20xmlns=\'http://www.w3.org/2000/svg\'%20viewBox=\'0%200%20' . $resolutions[$resolution]['width'] . '%20' . $resolutions[$resolution]['height'] . '%3E%3C/svg%3E" data-src="https://i.ytimg.com/vi/' . esc_attr($youtube_id) .'/' . $resolution . '.jpg" alt="YouTube ' . __('video', 'perfmatters') . '" width="' . $resolutions[$resolution]['width'] . '" height="' . $resolutions[$resolution]['height'] . '" data-pin-nopin="true">';
 			$youtube_lazyload.= '<div class="play"></div>';
 		$youtube_lazyload.= '</div>';
 	$youtube_lazyload.= '</div>';
@@ -634,10 +634,12 @@ function perfmatters_lazyload_excluded($string, $excluded) {
 function perfmatters_print_lazy_load_js() {
 	global $perfmatters_options;
 
-	$output = '<script type="text/javascript">';
+	$threshold = apply_filters('perfmatters_lazyload_threshold', '200%');
+
+	$output = '<script>';
 
 		//initialize lazy loader
-		$output.= 'var lazyLoadInstance=new LazyLoad({elements_selector:"[loading=lazy],.perfmatters-lazy",thresholds:"200% 0px",callback_loaded:function(element){if(element.tagName==="IFRAME"){if(element.classList.contains("loaded")){if(typeof window.jQuery!="undefined"){if(jQuery.fn.fitVids){jQuery(element).parent().fitVids()}}}}}});';
+		$output.= 'var lazyLoadInstance=new LazyLoad({elements_selector:"[loading=lazy],.perfmatters-lazy",thresholds:"' . $threshold . ' 0px",callback_loaded:function(element){if(element.tagName==="IFRAME"){if(element.classList.contains("loaded")){if(typeof window.jQuery!="undefined"){if(jQuery.fn.fitVids){jQuery(element).parent().fitVids()}}}}}});';
 
 		//dom monitoring
 		if(!empty($perfmatters_options['lazy_loading_dom_monitoring'])) { 
@@ -656,12 +658,6 @@ function perfmatters_print_lazy_load_js() {
 //print lazy load styles
 function perfmatters_print_lazy_load_css() {
 ?>
-	<noscript>
-		<style type="text/css">
-			.perfmatters-lazy[data-src]{
-				display:none !important;
-			}
-		</style>
-	</noscript>
+	<noscript><style>.perfmatters-lazy[data-src]{display:none !important;}</style></noscript>
 <?php
 }

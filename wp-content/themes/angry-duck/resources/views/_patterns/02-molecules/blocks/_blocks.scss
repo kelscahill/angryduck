@@ -8,14 +8,16 @@
 .c-block-featured-product {
   padding: $space-double;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: stretch;
+  align-items: stretch;
   width: 100%;
-  min-height: 100vw;
 
   @include media(">medium") {
     width: 50%;
-    min-height: 50vw;
+  }
+
+  @include media(">xxlarge") {
+    width: 33.33%;
   }
 
 
@@ -70,11 +72,15 @@
       background-size: 100% auto;
       background-blend-mode: multiply;
       opacity: 0.3;
-
-      @include media(">large") {
-        bottom: -10px;
-      }
     }
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 66.67%;
   }
 
   &:nth-child(4n + 2),
@@ -127,53 +133,6 @@
   &:nth-child(4n + 4) {
     background-color: $c-tertiary;
   }
-
-  &.is-coming-soon {
-    .c-block-featured-product__image {
-      position: relative;
-
-      img {
-        opacity: 0.5;
-        position: relative;
-        z-index: 1;
-      }
-
-      &::before {
-        @include o-heading--xl;
-
-        content: "Coming Soon";
-        position: absolute;
-        top: 30%;
-        font-size: 10vw;
-        left: calc(50% - 2.5vw);
-        right: 0;
-        margin: auto;
-        transform: rotate(-270deg);
-        transform-origin: top left;
-        white-space: nowrap;
-        color: $c-white;
-        height: 0;
-        width: 0;
-        z-index: 2;
-
-        @include media(">medium") {
-          top: 35%;
-          font-size: 4vw;
-          left: calc(50% - 2vw);
-        }
-
-        @include media(">xlarge") {
-          top: 30%;
-          font-size: 5vw;
-          left: calc(50% - 1.5vw);
-        }
-      }
-
-      &::after {
-        opacity: 0.1;
-      }
-    }
-  }
 }
 
 /**
@@ -192,7 +151,7 @@
   &:focus {
     color: $c-black;
     border: $border--standard-light;
-    top: -5px;
+    // top: -5px;
   }
 
   &__content {

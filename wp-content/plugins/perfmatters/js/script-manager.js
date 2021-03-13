@@ -99,7 +99,7 @@ document.addEventListener("DOMContentLoaded", function() {
 	});
 
 	//set changed status of selected inputs
-	var inputs = document.querySelectorAll("#pmsm-main-form input");
+	var inputs = document.querySelectorAll("#pmsm-main-form input, #pmsm-main-form select");
 
 	inputs.forEach(function(input) {
 
@@ -115,7 +115,6 @@ document.addEventListener("DOMContentLoaded", function() {
 				var checkboxes = checkboxContainer.querySelectorAll('input');
 
 				checkboxes.forEach(function(checkbox) {
-
 					checkbox.classList.add('pmsm-changed');
 				});
 			}
@@ -133,7 +132,7 @@ document.addEventListener("DOMContentLoaded", function() {
 			e.preventDefault();
 
 			//disable any inputs that weren't touched
-		    var inputs = e.target.querySelectorAll('input:not(.pmsm-changed)');
+		    var inputs = e.target.querySelectorAll('input:not(.pmsm-changed), select:not(.pmsm-changed)');
 		    inputs.forEach(function(input) {
 		    	input.disabled = true;
 		    });
@@ -152,7 +151,8 @@ document.addEventListener("DOMContentLoaded", function() {
 	    	var request = new XMLHttpRequest();
 
 	    	request.open('POST', pmsm.ajaxURL, true);
-	    	request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;');
+	    	request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+	    	request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 		    request.onload = function() {
 
 		    	//successful request
@@ -261,6 +261,40 @@ document.addEventListener("DOMContentLoaded", function() {
 			var confirmCheck = confirm(resetForm.getAttribute('pmsm-confirm'));
 			if(confirmCheck) {
 				resetForm.submit();
+			}
+		});
+	}
+
+	//menu toggle
+	var menuToggle = document.getElementById('pmsm-menu-toggle');
+	if(menuToggle) {
+		menuToggle.addEventListener('click', function(ev) {
+			ev.preventDefault();
+			var header = document.getElementById('perfmatters-script-manager-header');
+
+			if(window.innerWidth > 782) {
+				if(!header.classList.contains('pmsm-header-minimal')) {
+					header.classList.add('pmsm-header-minimal');
+				}
+				else {
+					header.classList.remove('pmsm-header-minimal');
+				}
+			}
+			else {
+				if(!header.classList.contains('pmsm-header-expanded')) {
+					header.classList.add('pmsm-header-expanded');
+				}
+				else {
+					header.classList.remove('pmsm-header-expanded');
+				}
+			}
+			
+			
+		});
+		window.addEventListener('click', function(e) {
+			var header = document.getElementById('perfmatters-script-manager-header');
+			if(!header.contains(e.target)) {
+				header.classList.remove('pmsm-header-expanded');
 			}
 		});
 	}

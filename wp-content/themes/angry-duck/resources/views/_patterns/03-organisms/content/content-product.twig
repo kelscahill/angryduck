@@ -43,15 +43,15 @@
               {{ post.product_ingredients|wpautop }}
             {% endif %}
           </div>
-          {% if post._stock_status == "instock" and post._regular_price %}
+          {% if post._stock_status == "outofstock" %}
+            <p><em>Coming soon!</em></p>
+          {% else %}
+            {% include "01-atoms/woocommerce/price.twig" %}
             {% if product.get_available_variations %}
               {% do action('woocommerce_variable_add_to_cart') %}
             {% else %}
-              {% include "01-atoms/woocommerce/price.twig" %}
               {% include "01-atoms/woocommerce/add-to-cart.twig" %}
             {% endif %}
-          {% else %}
-            <p><em>Coming soon!</em></p>
           {% endif %}
           {% do action('woocommerce_archive_description') %}
         </div>

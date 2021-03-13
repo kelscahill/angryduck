@@ -3,7 +3,7 @@
 Plugin Name: Perfmatters
 Plugin URI: https://perfmatters.io/
 Description: Perfmatters is a lightweight performance plugin developed to speed up your WordPress site.
-Version: 1.6.5
+Version: 1.6.8
 Author: forgemedia
 Author URI: https://forgemedia.io/
 License: GPLv2 or later
@@ -18,7 +18,7 @@ Domain Path: /languages
 define('PERFMATTERS_STORE_URL', 'https://perfmatters.io/');
 define('PERFMATTERS_ITEM_ID', 696);
 define('PERFMATTERS_ITEM_NAME', 'perfmatters');
-define('PERFMATTERS_VERSION', '1.6.5');
+define('PERFMATTERS_VERSION', '1.6.8');
 
 //load translations
 function perfmatters_load_textdomain() {
@@ -296,16 +296,34 @@ function perfmatters_uninstall() {
 		'perfmatters_edd_license_status'
 	);
 
+	//meta options
+	$perfmatters_meta_options = array(
+		'perfmatters_exclude_defer_js',
+		'perfmatters_exclude_lazy_loading',
+		'perfmatters_exclude_instant_page'
+	);
+
 	if(is_multisite()) {
 		$perfmatters_network = get_site_option('perfmatters_network');
 		if(!empty($perfmatters_network['clean_uninstall']) && $perfmatters_network['clean_uninstall'] == 1) {
+
+			global $wpdb;
+
+			//remove network option
 			delete_site_option('perfmatters_network');
 
 			$sites = array_map('get_object_vars', get_sites(array('deleted' => 0)));
 			if(is_array($sites) && $sites !== array()) {
 				foreach($sites as $site) {
+
+					//remove options
 					foreach($perfmatters_options as $option) {
 						delete_blog_option($site['blog_id'], $option);
+					}
+
+					//remove meta options
+					foreach($perfmatters_meta_options as $option) {
+						$wpdb->delete($wpdb->get_blog_prefix($site['blog_id']) . 'postmeta', array('meta_key' => $option));
 					}
 				}
 			}
@@ -317,8 +335,17 @@ function perfmatters_uninstall() {
 	else {
 		$perfmatters_extras = get_option('perfmatters_extras');
 		if(!empty($perfmatters_extras['clean_uninstall']) && $perfmatters_extras['clean_uninstall'] == 1) {
+
+			global $wpdb;
+
+			//remove options
 			foreach($perfmatters_options as $option) {
 				delete_option($option);
+			}
+
+			//remove meta options
+			foreach($perfmatters_meta_options as $option) {
+				$wpdb->delete($wpdb->prefix . 'postmeta', array('meta_key' => $option));
 			}
 
 			//remove stored version

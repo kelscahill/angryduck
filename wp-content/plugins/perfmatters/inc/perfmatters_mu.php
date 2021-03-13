@@ -3,7 +3,7 @@
 Plugin Name: Perfmatters MU
 Plugin URI: https://perfmatters.io/
 Description: Perfmatters is a lightweight performance plugin developed to speed up your WordPress site.
-Version: 1.6.5
+Version: 1.6.8
 Author: forgemedia
 Author URI: https://forgemedia.io/
 License: GPLv2 or later
@@ -52,6 +52,12 @@ function perfmatters_mu_disable_plugins($plugins) {
 	if(empty($pmsm_settings['mu_mode'])) {
 		return $plugins;
 	}
+
+    //wp login check
+    $perfmatters_options = get_option('perfmatters_options');
+    if((!empty($GLOBALS['pagenow']) && $GLOBALS['pagenow'] == 'wp-login.php') || (!empty($perfmatters_options['login_url']) && !empty($GLOBALS['_SERVER']['REQUEST_URI']) && trim($GLOBALS['_SERVER']['REQUEST_URI'], '/') == $perfmatters_options['login_url'])) {
+        return $plugins;
+    }
 
 	//script manager is being viewed
 	if(isset($_GET['perfmatters'])) {
@@ -108,6 +114,14 @@ function perfmatters_mu_disable_plugins($plugins) {
 				if(!empty($enabled[$handle]['current']) && in_array($currentID, $enabled[$handle]['current'])) {
 					continue;
 				}
+
+                //user status check
+                if(!empty($enabled[$handle]['user_status']) && function_exists('wp_get_current_user')) {
+                    $status = is_user_logged_in();
+                    if(($status && $enabled[$handle]['user_status'] == 'loggedin') || (!$status && $enabled[$handle]['user_status'] == 'loggedout')) {
+                        continue;
+                    }
+                }
 
 				//disable regex check
 				if(!empty($data['regex'])) {
