@@ -264,7 +264,7 @@ class WC_Payment_Token_Data_Store extends WC_Data_Store_WP implements WC_Payment
 		}
 
 		$page           = isset( $args['page'] ) ? absint( $args['page'] ) : 1;
-		$posts_per_page = isset( $args['limit'] ) ? absint( $args['limit'] ) : get_option( 'posts_per_page' );
+		$posts_per_page = absint( isset( $args['limit'] ) ? $args['limit'] : get_option( 'posts_per_page' ) );
 
 		$pgstrt = absint( ( $page - 1 ) * $posts_per_page ) . ', ';
 		$limits = 'LIMIT ' . $pgstrt . $posts_per_page;
@@ -362,7 +362,7 @@ class WC_Payment_Token_Data_Store extends WC_Data_Store_WP implements WC_Payment
 		global $wpdb;
 		$wpdb->update(
 			$wpdb->prefix . 'woocommerce_payment_tokens',
-			array( 'is_default' => $status ),
+			array( 'is_default' => (int) $status ),
 			array(
 				'token_id' => $token_id,
 			)

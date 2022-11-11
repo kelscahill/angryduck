@@ -37,7 +37,7 @@ class WC_Stripe_Helper {
 	 * @param object $order
 	 * @param string $currency
 	 */
-	public static function update_stripe_currency( $order = null, $currency ) {
+	public static function update_stripe_currency( $order, $currency ) {
 		if ( is_null( $order ) ) {
 			return false;
 		}
@@ -77,7 +77,7 @@ class WC_Stripe_Helper {
 	 *
 	 * @since 4.1.0
 	 * @param object $order
-	 * @param float $amount
+	 * @param float  $amount
 	 */
 	public static function update_stripe_fee( $order = null, $amount = 0.0 ) {
 		if ( is_null( $order ) ) {
@@ -136,7 +136,7 @@ class WC_Stripe_Helper {
 	 *
 	 * @since 4.1.0
 	 * @param object $order
-	 * @param float $amount
+	 * @param float  $amount
 	 */
 	public static function update_stripe_net( $order = null, $amount = 0.0 ) {
 		if ( is_null( $order ) ) {
@@ -193,7 +193,7 @@ class WC_Stripe_Helper {
 	public static function get_localized_messages() {
 		return apply_filters(
 			'wc_stripe_localized_messages',
-			array(
+			[
 				'invalid_number'           => __( 'The card number is not a valid credit card number.', 'woocommerce-gateway-stripe' ),
 				'invalid_expiry_month'     => __( 'The card\'s expiration month is invalid.', 'woocommerce-gateway-stripe' ),
 				'invalid_expiry_year'      => __( 'The card\'s expiration year is invalid.', 'woocommerce-gateway-stripe' ),
@@ -205,16 +205,21 @@ class WC_Stripe_Helper {
 				'expired_card'             => __( 'The card has expired.', 'woocommerce-gateway-stripe' ),
 				'incorrect_cvc'            => __( 'The card\'s security code is incorrect.', 'woocommerce-gateway-stripe' ),
 				'incorrect_zip'            => __( 'The card\'s zip code failed validation.', 'woocommerce-gateway-stripe' ),
+				'postal_code_invalid'      => __( 'Invalid zip code, please correct and try again', 'woocommerce-gateway-stripe' ),
 				'invalid_expiry_year_past' => __( 'The card\'s expiration year is in the past', 'woocommerce-gateway-stripe' ),
 				'card_declined'            => __( 'The card was declined.', 'woocommerce-gateway-stripe' ),
 				'missing'                  => __( 'There is no card on a customer that is being charged.', 'woocommerce-gateway-stripe' ),
 				'processing_error'         => __( 'An error occurred while processing the card.', 'woocommerce-gateway-stripe' ),
-				'invalid_sofort_country'   => __( 'The billing country is not accepted by SOFORT. Please try another country.', 'woocommerce-gateway-stripe' ),
+				'invalid_sofort_country'   => __( 'The billing country is not accepted by Sofort. Please try another country.', 'woocommerce-gateway-stripe' ),
 				'email_invalid'            => __( 'Invalid email address, please correct and try again.', 'woocommerce-gateway-stripe' ),
 				'invalid_request_error'    => is_add_payment_method_page()
 					? __( 'Unable to save this payment method, please try again or use alternative method.', 'woocommerce-gateway-stripe' )
 					: __( 'Unable to process this payment, please try again or use alternative method.', 'woocommerce-gateway-stripe' ),
-			)
+				'amount_too_large'         => __( 'The order total is too high for this payment method', 'woocommerce-gateway-stripe' ),
+				'amount_too_small'         => __( 'The order total is too low for this payment method', 'woocommerce-gateway-stripe' ),
+				'country_code_invalid'     => __( 'Invalid country code, please try again with a valid country code', 'woocommerce-gateway-stripe' ),
+				'tax_id_invalid'           => __( 'Invalid Tax Id, please try again with a valid tax id', 'woocommerce-gateway-stripe' ),
+			]
 		);
 	}
 
@@ -225,7 +230,7 @@ class WC_Stripe_Helper {
 	 * @return array $currencies
 	 */
 	public static function no_decimal_currencies() {
-		return array(
+		return [
 			'bif', // Burundian Franc
 			'clp', // Chilean Peso
 			'djf', // Djiboutian Franc
@@ -242,7 +247,7 @@ class WC_Stripe_Helper {
 			'xaf', // Central African Cfa Franc
 			'xof', // West African Cfa Franc
 			'xpf', // Cfp Franc
-		);
+		];
 	}
 
 	/**
@@ -316,41 +321,6 @@ class WC_Stripe_Helper {
 	}
 
 	/**
-	 * Gets the supported card brands, taking the store's base country and currency into account.
-	 * For more information, please see: https://stripe.com/docs/payments/cards/supported-card-brands.
-	 *
-	 * @since 4.9.0
-	 * @version 4.9.0
-	 * @return array
-	 */
-	public static function get_supported_card_brands() {
-		$base_country = wc_get_base_location()['country'];
-		$base_currency = get_woocommerce_currency();
-
-		$supported_card_brands = array( 'visa', 'mastercard' );
-
-		// American Express is not supported in Brazil and Malaysia (https://stripe.com/docs/payments/cards/supported-card-brands).
-		if ( ! in_array( $base_country, array( 'BR', 'MY' ) ) ) {
-			array_push( $supported_card_brands, 'amex' );
-		}
-
-		// Discover and Diners Club are only supported in the US and Canada. If the store is in the US, USD must be used. (https://stripe.com/docs/currencies#presentment-currencies). 
-		if ( 'US' === $base_country && 'USD' === $base_currency || 'CA' === $base_country ) {
-			array_push( $supported_card_brands, 'discover', 'diners' );
-		}
-
-		// See: https://support.stripe.com/questions/accepting-japan-credit-bureau-(jcb)-payments.
-		if ( 'US' === $base_country && 'USD' === $base_currency ||
-			 'JP' === $base_country && 'JPY' === $base_currency ||
-			 in_array( $base_country, array( 'CA', 'AU', 'NZ' ) ) 
-		) {
-			array_push( $supported_card_brands, 'jcb' );
-		}
-
-		return $supported_card_brands;
-	}
-
-	/**
 	 * Gets all the saved setting options from a specific method.
 	 * If specific setting is passed, only return that.
 	 *
@@ -360,23 +330,13 @@ class WC_Stripe_Helper {
 	 * @param string $setting The name of the setting to get.
 	 */
 	public static function get_settings( $method = null, $setting = null ) {
-		$all_settings = null === $method ? get_option( 'woocommerce_stripe_settings', array() ) : get_option( 'woocommerce_stripe_' . $method . '_settings', array() );
+		$all_settings = null === $method ? get_option( 'woocommerce_stripe_settings', [] ) : get_option( 'woocommerce_stripe_' . $method . '_settings', [] );
 
 		if ( null === $setting ) {
 			return $all_settings;
 		}
 
 		return isset( $all_settings[ $setting ] ) ? $all_settings[ $setting ] : '';
-	}
-
-	/**
-	 * Checks if Pre Orders is available.
-	 *
-	 * @since 4.1.0
-	 * @return bool
-	 */
-	public static function is_pre_orders_exists() {
-		return class_exists( 'WC_Pre_Orders_Order' );
 	}
 
 	/**
@@ -484,23 +444,50 @@ class WC_Stripe_Helper {
 	}
 
 	/**
+	 * Sanitize and retrieve the shortened statement descriptor concatenated with the order number.
+	 *
+	 * @param string   $statement_descriptor Shortened statement descriptor.
+	 * @param WC_Order $order Order.
+	 * @param string   $fallback_descriptor (optional) Fallback of the shortened statement descriptor in case it's blank.
+	 * @return string $statement_descriptor Final shortened statement descriptor.
+	 */
+	public static function get_dynamic_statement_descriptor( $statement_descriptor = '', $order = null, $fallback_descriptor = '' ) {
+		$actual_descriptor = ! empty( $statement_descriptor ) ? $statement_descriptor : $fallback_descriptor;
+		$prefix            = self::clean_statement_descriptor( $actual_descriptor );
+		$suffix            = '';
+
+		if ( empty( $prefix ) ) {
+			return '';
+		}
+
+		if ( method_exists( $order, 'get_order_number' ) && ! empty( $order->get_order_number() ) ) {
+			$suffix = '* #' . $order->get_order_number();
+		}
+
+		// Make sure it is limited at 22 characters.
+		$statement_descriptor = substr( $prefix . $suffix, 0, 22 );
+
+		return $statement_descriptor;
+	}
+
+	/**
 	 * Sanitize statement descriptor text.
 	 *
 	 * Stripe requires max of 22 characters and no special characters.
 	 *
 	 * @since 4.0.0
-	 * @param string $statement_descriptor
-	 * @return string $statement_descriptor Sanitized statement descriptor
+	 * @param string $statement_descriptor Statement descriptor.
+	 * @return string $statement_descriptor Sanitized statement descriptor.
 	 */
 	public static function clean_statement_descriptor( $statement_descriptor = '' ) {
-		$disallowed_characters = array( '<', '>', '\\', '*', '"', "'", '/', '(', ')', '{', '}' );
+		$disallowed_characters = [ '<', '>', '\\', '*', '"', "'", '/', '(', ')', '{', '}' ];
 
 		// Strip any tags.
 		$statement_descriptor = strip_tags( $statement_descriptor );
 
 		// Strip any HTML entities.
 		// Props https://stackoverflow.com/questions/657643/how-to-remove-html-special-chars .
-		$statement_descriptor = preg_replace( "/&#?[a-z0-9]{2,8};/i", "", $statement_descriptor );
+		$statement_descriptor = preg_replace( '/&#?[a-z0-9]{2,8};/i', '', $statement_descriptor );
 
 		// Next, remove any remaining disallowed characters.
 		$statement_descriptor = str_replace( $disallowed_characters, '', $statement_descriptor );
@@ -509,5 +496,203 @@ class WC_Stripe_Helper {
 		$statement_descriptor = substr( trim( $statement_descriptor ), 0, 22 );
 
 		return $statement_descriptor;
+	}
+
+	/**
+	 * Converts a WooCommerce locale to the closest supported by Stripe.js.
+	 *
+	 * Stripe.js supports only a subset of IETF language tags, if a country specific locale is not supported we use
+	 * the default for that language (https://stripe.com/docs/js/appendix/supported_locales).
+	 * If no match is found we return 'auto' so Stripe.js uses the browser locale.
+	 *
+	 * @param string $wc_locale The locale to convert.
+	 *
+	 * @return string Closest locale supported by Stripe ('auto' if NONE).
+	 */
+	public static function convert_wc_locale_to_stripe_locale( $wc_locale ) {
+		// List copied from: https://stripe.com/docs/js/appendix/supported_locales.
+		$supported = [
+			'ar',     // Arabic.
+			'bg',     // Bulgarian (Bulgaria).
+			'cs',     // Czech (Czech Republic).
+			'da',     // Danish.
+			'de',     // German (Germany).
+			'el',     // Greek (Greece).
+			'en',     // English.
+			'en-GB',  // English (United Kingdom).
+			'es',     // Spanish (Spain).
+			'es-419', // Spanish (Latin America).
+			'et',     // Estonian (Estonia).
+			'fi',     // Finnish (Finland).
+			'fr',     // French (France).
+			'fr-CA',  // French (Canada).
+			'he',     // Hebrew (Israel).
+			'hu',     // Hungarian (Hungary).
+			'id',     // Indonesian (Indonesia).
+			'it',     // Italian (Italy).
+			'ja',     // Japanese.
+			'lt',     // Lithuanian (Lithuania).
+			'lv',     // Latvian (Latvia).
+			'ms',     // Malay (Malaysia).
+			'mt',     // Maltese (Malta).
+			'nb',     // Norwegian Bokmål.
+			'nl',     // Dutch (Netherlands).
+			'pl',     // Polish (Poland).
+			'pt-BR',  // Portuguese (Brazil).
+			'pt',     // Portuguese (Brazil).
+			'ro',     // Romanian (Romania).
+			'ru',     // Russian (Russia).
+			'sk',     // Slovak (Slovakia).
+			'sl',     // Slovenian (Slovenia).
+			'sv',     // Swedish (Sweden).
+			'th',     // Thai.
+			'tr',     // Turkish (Turkey).
+			'zh',     // Chinese Simplified (China).
+			'zh-HK',  // Chinese Traditional (Hong Kong).
+			'zh-TW',  // Chinese Traditional (Taiwan).
+		];
+
+		// Stripe uses '-' instead of '_' (used in WordPress).
+		$locale = str_replace( '_', '-', $wc_locale );
+
+		if ( in_array( $locale, $supported, true ) ) {
+			return $locale;
+		}
+
+		// The plugin has been fully translated for Spanish (Ecuador), Spanish (Mexico), and
+		// Spanish(Venezuela), and partially (88% at 2021-05-14) for Spanish (Colombia).
+		// We need to map these locales to Stripe's Spanish (Latin America) 'es-419' locale.
+		// This list should be updated if more localized versions of Latin American Spanish are
+		// made available.
+		$lowercase_locale                  = strtolower( $wc_locale );
+		$translated_latin_american_locales = [
+			'es_co', // Spanish (Colombia).
+			'es_ec', // Spanish (Ecuador).
+			'es_mx', // Spanish (Mexico).
+			'es_ve', // Spanish (Venezuela).
+		];
+		if ( in_array( $lowercase_locale, $translated_latin_american_locales, true ) ) {
+			return 'es-419';
+		}
+
+		// Finally, we check if the "base locale" is available.
+		$base_locale = substr( $wc_locale, 0, 2 );
+		if ( in_array( $base_locale, $supported, true ) ) {
+			return $base_locale;
+		}
+
+		// Default to 'auto' so Stripe.js uses the browser locale.
+		return 'auto';
+	}
+
+	/**
+	 * Checks if this page is a cart or checkout page.
+	 *
+	 * @since 5.2.3
+	 * @return boolean
+	 */
+	public static function has_cart_or_checkout_on_current_page() {
+		return is_cart() || is_checkout();
+	}
+
+	/**
+	 * Return true if the current_tab and current_section match the ones we want to check against.
+	 *
+	 * @param string $tab
+	 * @param string $section
+	 * @return boolean
+	 */
+	public static function should_enqueue_in_current_tab_section( $tab, $section ) {
+		global $current_tab, $current_section;
+
+		if ( ! isset( $current_tab ) || $tab !== $current_tab ) {
+			return false;
+		}
+
+		if ( ! isset( $current_section ) || $section !== $current_section ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Returns true if the Stripe JS should be loaded on product pages.
+	 *
+	 * The critical part here is running the filter to allow merchants to disable Stripe's JS to
+	 * improve their store's performance when PRBs are disabled.
+	 *
+	 * @since 5.8.0
+	 * @return boolean True if Stripe's JS should be loaded, false otherwise.
+	 */
+	public static function should_load_scripts_on_product_page() {
+		if ( self::should_load_scripts_for_prb_location( 'product' ) ) {
+			return true;
+		}
+
+		return apply_filters( 'wc_stripe_load_scripts_on_product_page_when_prbs_disabled', true );
+	}
+
+	/**
+	 * Returns true if the Stripe JS should be loaded on the cart page.
+	 *
+	 * The critical part here is running the filter to allow merchants to disable Stripe's JS to
+	 * improve their store's performance when PRBs are disabled.
+	 *
+	 * @since 5.8.0
+	 * @return boolean True if Stripe's JS should be loaded, false otherwise.
+	 */
+	public static function should_load_scripts_on_cart_page() {
+		if ( self::should_load_scripts_for_prb_location( 'cart' ) ) {
+			return true;
+		}
+
+		return apply_filters( 'wc_stripe_load_scripts_on_cart_page_when_prbs_disabled', true );
+	}
+
+	/**
+	 * Returns true if the Stripe JS should be loaded for the provided location.
+	 *
+	 * @since 5.8.1
+	 * @param string $location  Either 'product' or 'cart'. Used to specify which location to check.
+	 * @return boolean True if Stripe's JS should be loaded for the provided location, false otherwise.
+	 */
+	private static function should_load_scripts_for_prb_location( $location ) {
+		// Make sure location parameter is sanitized.
+		$location         = in_array( $location, [ 'product', 'cart' ], true ) ? $location : '';
+		$are_prbs_enabled = self::get_settings( null, 'payment_request' ) ?? 'yes';
+		$prb_locations    = self::get_settings( null, 'payment_request_button_locations' ) ?? [ 'product', 'cart' ];
+
+		// The scripts should be loaded when all of the following are true:
+		//   1. The PRBs are enabled; and
+		//   2. The PRB location settings have an array value (saving an empty option in the GUI results in non-array value); and
+		//   3. The PRBs are enabled at $location.
+		return 'yes' === $are_prbs_enabled && is_array( $prb_locations ) && in_array( $location, $prb_locations, true );
+	}
+
+	/**
+	 * Adds payment intent id and order note to order if payment intent is not already saved
+	 *
+	 * @param $payment_intent_id
+	 * @param $order
+	 */
+	public static function add_payment_intent_to_order( $payment_intent_id, $order ) {
+
+		$old_intent_id = $order->get_meta( '_stripe_intent_id' );
+
+		if ( $old_intent_id === $payment_intent_id ) {
+			return;
+		}
+
+		$order->add_order_note(
+			sprintf(
+			/* translators: $1%s payment intent ID */
+				__( 'Stripe payment intent created (Payment Intent ID: %1$s)', 'woocommerce-gateway-stripe' ),
+				$payment_intent_id
+			)
+		);
+
+		$order->update_meta_data( '_stripe_intent_id', $payment_intent_id );
+		$order->save();
 	}
 }

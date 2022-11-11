@@ -84,7 +84,7 @@ class WC_Discounts {
 			$item->object        = $cart_item;
 			$item->product       = $cart_item['data'];
 			$item->quantity      = $cart_item['quantity'];
-			$item->price         = wc_add_number_precision_deep( $item->product->get_price() * $item->quantity );
+			$item->price         = wc_add_number_precision_deep( (float) $item->product->get_price() * (float) $item->quantity );
 			$this->items[ $key ] = $item;
 		}
 
@@ -540,7 +540,7 @@ class WC_Discounts {
 	 * until the amount is expired, discounting 1 cent at a time.
 	 *
 	 * @since 3.2.0
-	 * @param  WC_Coupon $coupon Coupon object if appliable. Passed through filters.
+	 * @param  WC_Coupon $coupon Coupon object if applicable. Passed through filters.
 	 * @param  array     $items_to_apply Array of items to apply the coupon to.
 	 * @param  int       $amount Fixed discount amount to apply.
 	 * @return int Total discounted.

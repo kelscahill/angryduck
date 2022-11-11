@@ -37,7 +37,7 @@ class ProductsByAttribute extends AbstractProductGrid {
 	 *
 	 * @return array
 	 */
-	protected function get_attributes() {
+	protected function get_block_type_attributes() {
 		return array(
 			'align'             => $this->get_schema_align(),
 			'alignButtons'      => $this->get_schema_boolean( false ),
@@ -67,6 +67,10 @@ class ProductsByAttribute extends AbstractProductGrid {
 			'orderby'           => $this->get_schema_orderby(),
 			'rows'              => $this->get_schema_number( wc_get_theme_support( 'product_blocks::default_rows', 3 ) ),
 			'isPreview'         => $this->get_schema_boolean( false ),
+			'stockStatus'       => array(
+				'type'    => 'array',
+				'default' => array_keys( wc_get_product_stock_status_options() ),
+			),
 		);
 	}
 }

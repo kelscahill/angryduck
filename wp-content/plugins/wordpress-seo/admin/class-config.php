@@ -42,7 +42,6 @@ class WPSEO_Admin_Pages {
 	public function init() {
 		if ( filter_input( INPUT_GET, 'wpseo_reset_defaults' ) && wp_verify_nonce( filter_input( INPUT_GET, 'nonce' ), 'wpseo_reset_defaults' ) && current_user_can( 'manage_options' ) ) {
 			WPSEO_Options::reset();
-			wp_redirect( admin_url( 'admin.php?page=' . WPSEO_Configuration_Page::PAGE_IDENTIFIER ) );
 		}
 
 		add_action( 'admin_enqueue_scripts', [ $this, 'config_page_scripts' ] );
@@ -65,8 +64,9 @@ class WPSEO_Admin_Pages {
 			$this->asset_manager->enqueue_style( 'search-appearance' );
 		}
 
-		if ( $page === 'wpseo_social' ) {
+		if ( $page === 'wpseo_social' || $page === 'wpseo_licenses' ) {
 			$this->asset_manager->enqueue_style( 'monorepo' );
+			$this->asset_manager->enqueue_style( 'tailwind' );
 		}
 	}
 
@@ -78,8 +78,12 @@ class WPSEO_Admin_Pages {
 		wp_enqueue_script( 'dashboard' );
 		wp_enqueue_script( 'thickbox' );
 
+		$alert_dismissal_action = YoastSEO()->classes->get( \Yoast\WP\SEO\Actions\Alert_Dismissal_Action::class );
+		$dismissed_alerts       = $alert_dismissal_action->all_dismissed();
+
 		$script_data = [
 			'userLanguageCode' => WPSEO_Language_Utils::get_language( \get_user_locale() ),
+			'dismissedAlerts'  => $dismissed_alerts,
 		];
 
 		$page = filter_input( INPUT_GET, 'page' );
@@ -110,17 +114,16 @@ class WPSEO_Admin_Pages {
 			 * contenteditable fields.
 			 */
 			remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
-
-			$yoast_components_l10n = new WPSEO_Admin_Asset_Yoast_Components_L10n();
-			$yoast_components_l10n->localize_script( 'settings' );
 		}
 
-		if ( in_array( $page, [ 'wpseo_social', WPSEO_Admin::PAGE_IDENTIFIER, 'wpseo_titles' ], true ) ) {
+		if ( in_array( $page, [ 'wpseo_social', WPSEO_Admin::PAGE_IDENTIFIER, 'wpseo_titles', 'wpseo_workouts' ], true ) ) {
 			wp_enqueue_media();
 
 			$script_data['media'] = [
 				'choose_image' => __( 'Use Image', 'wordpress-seo' ),
 			];
+
+			$script_data['userEditUrl'] = add_query_arg( 'user_id', '{user_id}', admin_url( 'user-edit.php' ) );
 		}
 
 		if ( $page === 'wpseo_tools' ) {
@@ -128,10 +131,30 @@ class WPSEO_Admin_Pages {
 		}
 
 		if ( $page === 'wpseo_social' ) {
-			$script_data['social'] = true;
+			$user_id = WPSEO_Options::get( 'company_or_person_user_id', '' );
+			$user = \get_userdata( $user_id );
+
+			$user_name = '';
+			if ( $user instanceof \WP_User ) {
+				$user_name = $user->get( 'display_name' );
+			}
+
+			$script_data['social'] = [
+				'facebook_url'      => WPSEO_Options::get( 'facebook_site', '' ),
+				'twitter_username'  => WPSEO_Options::get( 'twitter_site', '' ),
+				'other_social_urls' => WPSEO_Options::get( 'other_social_urls', [] ),
+				'company_or_person' => WPSEO_Options::get( 'company_or_person', '' ),
+				'user_id'           => $user_id,
+				'user_name'         => $user_name
+			];
+
+			$script_data['search_appearance_link'] = admin_url( 'admin.php?page=wpseo_titles' );
+
+			$script_data['force_organization'] = ( defined( 'WPSEO_LOCAL_FILE' ) );
 		}
 
 		$this->asset_manager->localize_script( 'settings', 'wpseoScriptData', $script_data );
+		$this->asset_manager->enqueue_user_language_script();
 	}
 
 	/**
@@ -150,6 +173,7 @@ class WPSEO_Admin_Pages {
 			'recommended_replace_vars'     => $recommended_replace_vars->get_recommended_replacevars(),
 			'editor_specific_replace_vars' => $editor_specific_replace_vars->get(),
 			'shared_replace_vars'          => $editor_specific_replace_vars->get_generic( $replace_vars_list ),
+			'hidden_replace_vars'          => $replace_vars->get_hidden_replace_vars(),
 		];
 	}
 
@@ -163,9 +187,7 @@ class WPSEO_Admin_Pages {
 	 * @return bool Whether the Local SEO upsell should be shown.
 	 */
 	private function should_show_local_seo_upsell() {
-		$addon_manager = new WPSEO_Addon_Manager();
-
-		return ! WPSEO_Utils::is_yoast_seo_premium()
+		return ! YoastSEO()->helpers->product->is_premium()
 			&& ! ( defined( 'WPSEO_LOCAL_FILE' ) );
 	}
 

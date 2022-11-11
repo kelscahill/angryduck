@@ -5,40 +5,53 @@ import PropTypes from 'prop-types';
 import { useState, Fragment } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import classnames from 'classnames';
-import { PLACEHOLDER_IMG_SRC } from '@woocommerce/block-settings';
+import { PLACEHOLDER_IMG_SRC } from '@woocommerce/settings';
 import {
 	useInnerBlockLayoutContext,
 	useProductDataContext,
 } from '@woocommerce/shared-context';
 import { withProductDataContext } from '@woocommerce/shared-hocs';
+import { useStoreEvents } from '@woocommerce/base-context/hooks';
 
 /**
  * Internal dependencies
  */
 import ProductSaleBadge from './../sale-badge/block';
 import './style.scss';
+import {
+	useBorderProps,
+	useSpacingProps,
+	useTypographyProps,
+} from '../../../../hooks/style-attributes';
 
 /**
  * Product Image Block Component.
  *
- * @param {Object} props                  Incoming props.
- * @param {string} [props.className]      CSS Class name for the component.
- * @param {string} [props.imageSizing]    Size of image to use.
- * @param {boolean} [props.productLink]   Whether or not to display a link to the product page.
- * @param {boolean} [props.showSaleBadge] Whether or not to display the on sale badge.
- * @param {string} [props.saleBadgeAlign] How should the sale badge be aligned if displayed.
+ * @param {Object}  props                   Incoming props.
+ * @param {string}  [props.className]       CSS Class name for the component.
+ * @param {string}  [props.imageSizing]     Size of image to use.
+ * @param {boolean} [props.showProductLink] Whether or not to display a link to the product page.
+ * @param {boolean} [props.showSaleBadge]   Whether or not to display the on sale badge.
+ * @param {string}  [props.saleBadgeAlign]  How should the sale badge be aligned if displayed.
  * @return {*} The component.
  */
-export const Block = ( {
-	className,
-	imageSizing = 'full-size',
-	productLink: showProductLink = true,
-	showSaleBadge,
-	saleBadgeAlign = 'right',
-} ) => {
+export const Block = ( props ) => {
+	const {
+		className,
+		imageSizing = 'full-size',
+		showProductLink = true,
+		showSaleBadge,
+		saleBadgeAlign = 'right',
+	} = props;
+
 	const { parentClassName } = useInnerBlockLayoutContext();
 	const { product } = useProductDataContext();
 	const [ imageLoaded, setImageLoaded ] = useState( false );
+	const { dispatchStoreEvent } = useStoreEvents();
+
+	const typographyProps = useTypographyProps( props );
+	const borderProps = useBorderProps( props );
+	const spacingProps = useSpacingProps( props );
 
 	if ( ! product.id ) {
 		return (
@@ -46,11 +59,16 @@ export const Block = ( {
 				className={ classnames(
 					className,
 					'wc-block-components-product-image',
-					'wc-block-components-product-image--placeholder',
 					{
 						[ `${ parentClassName }__product-image` ]: parentClassName,
-					}
+					},
+					borderProps.className
 				) }
+				style={ {
+					...typographyProps.style,
+					...borderProps.style,
+					...spacingProps.style,
+				} }
 			>
 				<ImagePlaceholder />
 			</div>
@@ -60,14 +78,18 @@ export const Block = ( {
 	const image = hasProductImages ? product.images[ 0 ] : null;
 	const ParentComponent = showProductLink ? 'a' : Fragment;
 	const anchorLabel = sprintf(
-		/* Translators: %s is referring to the product name */
+		/* translators: %s is referring to the product name */
 		__( 'Link to %s', 'woocommerce' ),
 		product.name
 	);
 	const anchorProps = {
 		href: product.permalink,
-		rel: 'nofollow',
 		...( ! hasProductImages && { 'aria-label': anchorLabel } ),
+		onClick: () => {
+			dispatchStoreEvent( 'product-view-link', {
+				product,
+			} );
+		},
 	};
 
 	return (
@@ -77,8 +99,14 @@ export const Block = ( {
 				'wc-block-components-product-image',
 				{
 					[ `${ parentClassName }__product-image` ]: parentClassName,
-				}
+				},
+				borderProps.className
 			) }
+			style={ {
+				...typographyProps.style,
+				...borderProps.style,
+				...spacingProps.style,
+			} }
 		>
 			<ParentComponent { ...( showProductLink && anchorProps ) }>
 				{ !! showSaleBadge && (
@@ -129,7 +157,7 @@ const Image = ( { image, onLoad, loaded, showFullSize, fallbackAlt } ) => {
 Block.propTypes = {
 	className: PropTypes.string,
 	fallbackAlt: PropTypes.string,
-	productLink: PropTypes.bool,
+	showProductLink: PropTypes.bool,
 	showSaleBadge: PropTypes.bool,
 	saleBadgeAlign: PropTypes.string,
 };

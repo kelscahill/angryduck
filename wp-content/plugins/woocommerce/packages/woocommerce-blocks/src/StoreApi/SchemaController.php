@@ -1,118 +1,75 @@
 <?php
-namespace Automattic\WooCommerce\Blocks\StoreApi;
+namespace Automattic\WooCommerce\StoreApi;
 
-use Exception;
-use Schemas\AbstractSchema;
-use Automattic\WooCommerce\Blocks\Domain\Services\ExtendRestApi;
-
+use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
 
 /**
  * SchemaController class.
- *
- * @internal This API is used internally by Blocks--it is still in flux and may be subject to revisions.
  */
 class SchemaController {
 
 	/**
 	 * Stores schema class instances.
 	 *
-	 * @var AbstractSchema[]
+	 * @var Schemas\V1\AbstractSchema[]
 	 */
 	protected $schemas = [];
 
 	/**
 	 * Stores Rest Extending instance
 	 *
-	 * @var ExtendRestApi
+	 * @var ExtendSchema
 	 */
 	private $extend;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param ExtendRestApi $extend Rest Extending instance.
+	 * @param ExtendSchema $extend Rest Extending instance.
 	 */
-	public function __construct( ExtendRestApi $extend ) {
-		$this->extend = $extend;
-		$this->initialize();
+	public function __construct( ExtendSchema $extend ) {
+		$this->extend  = $extend;
+		$this->schemas = [
+			'v1' => [
+				Schemas\V1\BatchSchema::IDENTIFIER         => Schemas\V1\BatchSchema::class,
+				Schemas\V1\ErrorSchema::IDENTIFIER         => Schemas\V1\ErrorSchema::class,
+				Schemas\V1\ImageAttachmentSchema::IDENTIFIER => Schemas\V1\ImageAttachmentSchema::class,
+				Schemas\V1\TermSchema::IDENTIFIER          => Schemas\V1\TermSchema::class,
+				Schemas\V1\BillingAddressSchema::IDENTIFIER => Schemas\V1\BillingAddressSchema::class,
+				Schemas\V1\ShippingAddressSchema::IDENTIFIER => Schemas\V1\ShippingAddressSchema::class,
+				Schemas\V1\CartShippingRateSchema::IDENTIFIER => Schemas\V1\CartShippingRateSchema::class,
+				Schemas\V1\CartShippingRateSchema::IDENTIFIER => Schemas\V1\CartShippingRateSchema::class,
+				Schemas\V1\CartCouponSchema::IDENTIFIER    => Schemas\V1\CartCouponSchema::class,
+				Schemas\V1\CartFeeSchema::IDENTIFIER       => Schemas\V1\CartFeeSchema::class,
+				Schemas\V1\CartItemSchema::IDENTIFIER      => Schemas\V1\CartItemSchema::class,
+				Schemas\V1\CartSchema::IDENTIFIER          => Schemas\V1\CartSchema::class,
+				Schemas\V1\CartExtensionsSchema::IDENTIFIER => Schemas\V1\CartExtensionsSchema::class,
+				Schemas\V1\CheckoutSchema::IDENTIFIER      => Schemas\V1\CheckoutSchema::class,
+				Schemas\V1\ProductSchema::IDENTIFIER       => Schemas\V1\ProductSchema::class,
+				Schemas\V1\ProductAttributeSchema::IDENTIFIER => Schemas\V1\ProductAttributeSchema::class,
+				Schemas\V1\ProductCategorySchema::IDENTIFIER => Schemas\V1\ProductCategorySchema::class,
+				Schemas\V1\ProductCollectionDataSchema::IDENTIFIER => Schemas\V1\ProductCollectionDataSchema::class,
+				Schemas\V1\ProductReviewSchema::IDENTIFIER => Schemas\V1\ProductReviewSchema::class,
+			],
+		];
 	}
 
 	/**
 	 * Get a schema class instance.
 	 *
-	 * @throws Exception If the schema does not exist.
+	 * @throws \Exception If the schema does not exist.
 	 *
 	 * @param string $name Name of schema.
-	 * @return AbstractSchema
+	 * @param int    $version API Version being requested.
+	 * @return Schemas\V1\AbstractSchema A new instance of the requested schema.
 	 */
-	public function get( $name ) {
-		if ( ! isset( $this->schemas[ $name ] ) ) {
-			throw new Exception( $name . ' schema does not exist' );
-		}
-		return $this->schemas[ $name ];
-	}
+	public function get( $name, $version = 1 ) {
+		$schema = $this->schemas[ "v${version}" ][ $name ] ?? false;
 
-	/**
-	 * Load schema class instances.
-	 */
-	protected function initialize() {
-		$this->schemas = [
-			Schemas\BillingAddressSchema::IDENTIFIER   => new Schemas\BillingAddressSchema(
-				$this->extend
-			),
-			Schemas\ShippingAddressSchema::IDENTIFIER  => new Schemas\ShippingAddressSchema(
-				$this->extend
-			),
-			Schemas\CartShippingRateSchema::IDENTIFIER => new Schemas\CartShippingRateSchema(
-				$this->extend
-			),
-			Schemas\CartSchema::IDENTIFIER             => new Schemas\CartSchema(
-				$this->extend,
-				new Schemas\CartItemSchema(
-					$this->extend,
-					new Schemas\ImageAttachmentSchema( $this->extend )
-				),
-				new Schemas\CartCouponSchema( $this->extend ),
-				new Schemas\CartFeeSchema( $this->extend ),
-				new Schemas\CartShippingRateSchema( $this->extend ),
-				new Schemas\ShippingAddressSchema( $this->extend ),
-				new Schemas\BillingAddressSchema( $this->extend ),
-				new Schemas\ErrorSchema( $this->extend )
-			),
-			Schemas\CartCouponSchema::IDENTIFIER       => new Schemas\CartCouponSchema( $this->extend ),
-			Schemas\CartItemSchema::IDENTIFIER         => new Schemas\CartItemSchema(
-				$this->extend,
-				new Schemas\ImageAttachmentSchema( $this->extend )
-			),
-			Schemas\CartFeeSchema::IDENTIFIER          => new Schemas\CartFeeSchema( $this->extend ),
-			Schemas\CheckoutSchema::IDENTIFIER         => new Schemas\CheckoutSchema(
-				$this->extend,
-				new Schemas\BillingAddressSchema( $this->extend ),
-				new Schemas\ShippingAddressSchema(
-					$this->extend
-				)
-			),
-			Schemas\ProductSchema::IDENTIFIER          => new Schemas\ProductSchema(
-				$this->extend,
-				new Schemas\ImageAttachmentSchema(
-					$this->extend
-				)
-			),
-			Schemas\ProductAttributeSchema::IDENTIFIER => new Schemas\ProductAttributeSchema( $this->extend ),
-			Schemas\ProductCategorySchema::IDENTIFIER  => new Schemas\ProductCategorySchema(
-				$this->extend,
-				new Schemas\ImageAttachmentSchema( $this->extend )
-			),
-			Schemas\ProductCollectionDataSchema::IDENTIFIER => new Schemas\ProductCollectionDataSchema(
-				$this->extend
-			),
-			Schemas\ProductReviewSchema::IDENTIFIER    => new Schemas\ProductReviewSchema(
-				$this->extend,
-				new Schemas\ImageAttachmentSchema( $this->extend )
-			),
-			Schemas\TermSchema::IDENTIFIER             => new Schemas\TermSchema(
-				$this->extend
-			),
-		];
+		if ( ! $schema ) {
+			throw new \Exception( "${name} v{$version} schema does not exist" );
+		}
+
+		return new $schema( $this->extend, $this );
 	}
 }

@@ -9,10 +9,10 @@ import {
 	Placeholder,
 	withSpokenMessages,
 } from '@wordpress/components';
-import { SearchListItem } from '@woocommerce/components';
+import { SearchListItem } from '@woocommerce/editor-components/search-list-control';
 import PropTypes from 'prop-types';
 import ProductControl from '@woocommerce/editor-components/product-control';
-import { Icon, comment } from '@woocommerce/icons';
+import { Icon, commentContent } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -28,10 +28,10 @@ import {
 /**
  * Component to handle edit mode of "Reviews by Product".
  *
- * @param {Object} props Incoming props for the component.
- * @param {Object} props.attributes Incoming block attributes.
+ * @param {Object}            props                Incoming props for the component.
+ * @param {Object}            props.attributes     Incoming block attributes.
  * @param {function(any):any} props.debouncedSpeak
- * @param {function(any):any} props.setAttributes Setter for block attributes.
+ * @param {function(any):any} props.setAttributes  Setter for block attributes.
  */
 const ReviewsByProductEditor = ( {
 	attributes,
@@ -47,18 +47,17 @@ const ReviewsByProductEditor = ( {
 			<SearchListItem
 				{ ...args }
 				countLabel={ sprintf(
-					// Translators: %d is the review count.
+					/* translators: %d is the review count. */
 					_n(
-						'%d Review',
-						'%d Reviews',
+						'%d review',
+						'%d reviews',
 						item.review_count,
 						'woocommerce'
 					),
 					item.review_count
 				) }
-				showCount
 				aria-label={ sprintf(
-					// Translators: %1$s is the item name, and %2$d is the number of reviews for the item.
+					/* translators: %1$s is the item name, and %2$d is the number of reviews for the item. */
 					_n(
 						'%1$s, has %2$d review',
 						'%1$s, has %2$d reviews',
@@ -86,6 +85,7 @@ const ReviewsByProductEditor = ( {
 							setAttributes( { productId: id } );
 						} }
 						renderItem={ renderProductControlItem }
+						isCompact={ true }
 					/>
 				</PanelBody>
 				<PanelBody
@@ -123,7 +123,7 @@ const ReviewsByProductEditor = ( {
 			<Placeholder
 				icon={
 					<Icon
-						icon={ comment }
+						icon={ commentContent }
 						className="block-editor-block-icon"
 					/>
 				}
@@ -162,15 +162,20 @@ const ReviewsByProductEditor = ( {
 		return renderEditMode();
 	}
 
+	const buttonTitle = __(
+		'Edit selected product',
+		'woocommerce'
+	);
+
 	return (
 		<>
-			{ getBlockControls( editMode, setAttributes ) }
+			{ getBlockControls( editMode, setAttributes, buttonTitle ) }
 			{ getInspectorControls() }
 			<EditorContainerBlock
 				attributes={ attributes }
 				icon={
 					<Icon
-						icon={ comment }
+						icon={ commentContent }
 						className="block-editor-block-icon"
 					/>
 				}

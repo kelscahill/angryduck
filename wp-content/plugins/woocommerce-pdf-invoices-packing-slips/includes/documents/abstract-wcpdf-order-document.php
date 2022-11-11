@@ -130,28 +130,29 @@ abstract class Order_Document {
 		$document_settings = get_option( 'wpo_wcpdf_documents_settings_'.$this->get_type() );
 		$settings = (array) $document_settings + (array) $common_settings;
 
-		// return only most current if forced
-		if ( $latest == true ) {
-			return $settings;
-		}
-
-		// get historical settings if enabled
-		if ( !empty( $this->order ) && $this->use_historical_settings() == true ) {
-			$order_settings = WCX_Order::get_meta( $this->order, "_wcpdf_{$this->slug}_settings" );
-			if (!empty($order_settings) && !is_array($order_settings)) {
-				$order_settings = maybe_unserialize( $order_settings );
+		if ( $latest != true ) {
+			// get historical settings if enabled
+			if ( ! empty( $this->order ) && $this->use_historical_settings() == true ) {
+				$order_settings = WCX_Order::get_meta( $this->order, "_wcpdf_{$this->slug}_settings" );
+				if ( ! empty( $order_settings ) && ! is_array( $order_settings ) ) {
+					$order_settings = maybe_unserialize( $order_settings );
+				}
+				if ( ! empty( $order_settings ) && is_array( $order_settings ) ) {
+					// ideally we should combine the order settings with the latest settings, so that new settings will
+					// automatically be applied to existing orders too. However, doing this by combining arrays is not
+					// possible because the way settings are currently stored means unchecked options are not included.
+					// This means there is no way to tell whether an option didn't exist yet (in which case the new
+					// option should be added) or whether the option was simly unchecked (in which case it should not
+					// be overwritten). This can only be address by storing unchecked checkboxes too.
+					$settings = (array) $order_settings + array_intersect_key( (array) $settings, array_flip( $this->get_non_historical_settings() ) );
+				}
 			}
-			if (!empty($order_settings) && is_array($order_settings)) {
-				// not sure what happens if combining with current settings will have unwanted side effects
-				// like unchecked options being enabled because missing = unchecked in historical - disabled for now
-				// $settings = (array) $order_settings + (array) $settings;
-				$settings = $order_settings;
+			if ( $this->storing_settings_enabled() && empty( $order_settings ) && ! empty( $this->order ) ) {
+				// this is either the first time the document is generated, or historical settings are disabled
+				// in both cases, we store the document settings
+				// exclude non historical settings from being saved in order meta
+				WCX_Order::update_meta_data( $this->order, "_wcpdf_{$this->slug}_settings", array_diff_key( $settings, array_flip( $this->get_non_historical_settings() ) ) );
 			}
-		}
-		if ( $this->storing_settings_enabled() && empty( $order_settings ) && !empty( $this->order ) ) {
-			// this is either the first time the document is generated, or historical settings are disabled
-			// in both cases, we store the document settings
-			WCX_Order::update_meta_data( $this->order, "_wcpdf_{$this->slug}_settings", $settings );
 		}
 
 		// display date & display number were checkbox settings but now a select setting that could be set but empty - should behave as 'unchecked'
@@ -174,8 +175,8 @@ abstract class Order_Document {
 		return apply_filters( 'wpo_wcpdf_document_store_settings', false, $this );
 	}
 
-	public function get_setting( $key, $default = '' ) {
-		$non_historical_settings = apply_filters( 'wpo_wcpdf_non_historical_settings', array(
+	public function get_non_historical_settings() {
+		return apply_filters( 'wpo_wcpdf_non_historical_settings', array(
 			'enabled',
 			'attach_to_email_ids',
 			'disable_for_statuses',
@@ -185,8 +186,12 @@ abstract class Order_Document {
 			'invoice_number_column',
 			'paper_size',
 			'font_subsetting',
-		) );
-		if ( in_array( $key, $non_historical_settings ) && isset($this->latest_settings) ) {
+		), $this );
+	}
+
+	public function get_setting( $key, $default = '' ) {
+		$non_historical_settings = $this->get_non_historical_settings();
+		if ( in_array( $key, $non_historical_settings ) && isset( $this->latest_settings ) ) {
 			$setting = isset( $this->latest_settings[$key] ) ? $this->latest_settings[$key] : $default;
 		} else {
 			$setting = isset( $this->settings[$key] ) ? $this->settings[$key] : $default;
@@ -225,9 +230,9 @@ abstract class Order_Document {
 		// pass data to setter functions
 		$this->set_data( array(
 			// always load date before number, because date is used in number formatting
-			'date'			=> WCX_Order::get_meta( $order, "_wcpdf_{$this->slug}_date", true ),
-			'number'		=> $number,
-			'notes'			=> WCX_Order::get_meta( $order, "_wcpdf_{$this->slug}_notes", true ),
+			'date'   => WCX_Order::get_meta( $order, "_wcpdf_{$this->slug}_date", true ),
+			'number' => $number,
+			'notes'  => WCX_Order::get_meta( $order, "_wcpdf_{$this->slug}_notes", true ),
 		), $order );
 
 		return;
@@ -332,8 +337,9 @@ abstract class Order_Document {
 		if ( $this->get_type() == 'credit-note' ) {
 			$refund_id = $order->get_id();
 			$parent_order = wc_get_order( $order->get_parent_id() );
-		}
-		$note = $refund_id ? sprintf( __( '%s (refund #%s) was regenerated.', 'woocommerce-pdf-invoices-packing-slips' ), ucfirst( $this->get_title() ), $refund_id ) : sprintf( __( '%s was regenerated', 'woocommerce-pdf-invoices-packing-slips' ), ucfirst( $this->get_title() ) );
+		} /*translators: 1. credit note title, 2. refund id */
+		$note = $refund_id ? sprintf( __( '%1$s (refund #%2$s) was regenerated.', 'woocommerce-pdf-invoices-packing-slips' ), ucfirst( $this->get_title() ), $refund_id ) : sprintf( __( '%s was regenerated', 'woocommerce-pdf-invoices-packing-slips' ), ucfirst( $this->get_title() ) );
+		$note = wp_kses( $note, 'strip' );
 		$parent_order ? $parent_order->add_order_note( $note ) : $order->add_order_note( $note );
 
 		do_action( 'wpo_wcpdf_regenerate_document', $this );
@@ -415,6 +421,18 @@ abstract class Order_Document {
 
 	public function get_title() {
 		return apply_filters( "wpo_wcpdf_{$this->slug}_title", $this->title, $this );
+	}
+
+	public function get_number_title() {
+		/* translators: %s: document name */
+		$number_title = sprintf( __( '%s Number:', 'woocommerce-pdf-invoices-packing-slips' ), $this->title );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_number_title", $number_title, $this );
+	}
+
+	public function get_date_title() {
+		/* translators: %s: document name */
+		$date_title = sprintf( __( '%s Date:', 'woocommerce-pdf-invoices-packing-slips' ), $this->title );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_date_title", $date_title, $this );
 	}
 
 	/*
@@ -593,13 +611,13 @@ abstract class Order_Document {
 				$attachment_width = $attachment[1];
 				$attachment_height = $attachment[2];
 
-				if ( apply_filters('wpo_wcpdf_use_path', true) && file_exists($attachment_path) ) {
+				if ( apply_filters( 'wpo_wcpdf_use_path', true ) && file_exists( $attachment_path ) ) {
 					$src = $attachment_path;
 				} else {
 					$src = $attachment_src;
 				}
 				
-				$img_element = sprintf('<img src="%1$s" alt="%4$s" />', $src, $attachment_width, $attachment_height, esc_attr( $company ) );
+				$img_element = sprintf('<img src="%1$s" alt="%2$s" />', esc_attr( $src ), esc_attr( $company ) );
 				
 				echo apply_filters( 'wpo_wcpdf_header_logo_img_element', $img_element, $attachment, $this );
 			}
@@ -607,14 +625,28 @@ abstract class Order_Document {
 	}
 
 	public function get_settings_text( $settings_key, $default = false, $autop = true ) {
-		if ( !empty( $this->settings[$settings_key]['default'] ) ) {
-			$text = wptexturize( trim( $this->settings[$settings_key]['default'] ) );
-			if ($autop === true) {
-				$text = wpautop( $text );
-			}
-		} else {
+		$setting = $this->get_setting( $settings_key, $default );
+		// check for 'default' key existence
+		if ( ! empty( $setting ) && is_array( $setting ) && array_key_exists( 'default', $setting ) ) {
+			$text = $setting['default'];
+		// fallback to first array element if default is not present
+		} elseif( ! empty( $setting ) && is_array( $setting ) ) {
+			$text = reset( $setting );
+		}
+
+		// fallback to default
+		if ( empty( $text ) ) {
 			$text = $default;
 		}
+
+		// clean up
+		$text = wptexturize( trim( $text ) );
+
+		// replacements
+		if ( $autop === true ) {
+			$text = wpautop( $text );
+		}
+
 		// legacy filters
 		if ( in_array( $settings_key, array( 'shop_name', 'shop_address', 'footer', 'extra_1', 'extra_2', 'extra_3' ) ) ) {
 			$text = apply_filters( "wpo_wcpdf_{$settings_key}", $text, $this );
@@ -648,7 +680,11 @@ abstract class Order_Document {
 	 * Return/Show shop/company footer imprint, copyright etc.
 	 */
 	public function get_footer() {
-		return $this->get_settings_text( 'footer' );
+		ob_start();
+		do_action( 'wpo_wcpdf_before_footer', $this->get_type(), $this->order );
+		echo $this->get_settings_text( 'footer' );
+		do_action( 'wpo_wcpdf_after_footer', $this->get_type(), $this->order );
+		return ob_get_clean();
 	}
 	public function footer() {
 		echo $this->get_footer();
@@ -702,23 +738,51 @@ abstract class Order_Document {
 		}
 
 		do_action( 'wpo_wcpdf_before_pdf', $this->get_type(), $this );
-		
+
+		// temporarily apply filters that need to be removed again after the pdf is generated
+		$pdf_filters = apply_filters( 'wpo_wcpdf_pdf_filters', array(), $this );
+		$this->add_filters( $pdf_filters );
+
 		$pdf_settings = array(
 			'paper_size'		=> apply_filters( 'wpo_wcpdf_paper_format', $this->get_setting( 'paper_size', 'A4' ), $this->get_type(), $this ),
 			'paper_orientation'	=> apply_filters( 'wpo_wcpdf_paper_orientation', 'portrait', $this->get_type(), $this ),
 			'font_subsetting'	=> $this->get_setting( 'font_subsetting', false ),
 		);
-		$pdf_maker = wcpdf_get_pdf_maker( $this->get_html(), $pdf_settings );
-		$pdf = $pdf_maker->output();
+		$pdf_maker    = wcpdf_get_pdf_maker( $this->get_html(), $pdf_settings );
+		$pdf          = $pdf_maker->output();
 		
 		do_action( 'wpo_wcpdf_after_pdf', $this->get_type(), $this );
+
+		// remove temporary filters
+		$this->remove_filters( $pdf_filters );
+
 		do_action( 'wpo_wcpdf_pdf_created', $pdf, $this );
 
 		return apply_filters( 'wpo_wcpdf_get_pdf', $pdf, $this );
 	}
 
+	public function preview_pdf() {
+		// get last settings
+		$this->settings = ! empty( $this->latest_settings ) ? $this->latest_settings : $this->get_settings( true );
+
+		$pdf_settings = array(
+			'paper_size'		=> apply_filters( 'wpo_wcpdf_paper_format', $this->get_setting( 'paper_size', 'A4' ), $this->get_type(), $this ),
+			'paper_orientation'	=> apply_filters( 'wpo_wcpdf_paper_orientation', 'portrait', $this->get_type(), $this ),
+			'font_subsetting'	=> $this->get_setting( 'font_subsetting', false ),
+		);
+		$pdf_maker    = wcpdf_get_pdf_maker( $this->get_html(), $pdf_settings );
+		$pdf          = $pdf_maker->output();
+		
+		return $pdf;
+	}
+
 	public function get_html( $args = array() ) {
 		do_action( 'wpo_wcpdf_before_html', $this->get_type(), $this );
+
+		// temporarily apply filters that need to be removed again after the html is generated
+		$html_filters = apply_filters( 'wpo_wcpdf_html_filters', array(), $this );
+		$this->add_filters( $html_filters );
+
 		$default_args = array (
 			'wrap_html_content'	=> true,
 		);
@@ -739,6 +803,9 @@ abstract class Order_Document {
 		}
 
 		do_action( 'wpo_wcpdf_after_html', $this->get_type(), $this );
+
+		// remove temporary filters
+		$this->remove_filters( $html_filters );
 
 		return apply_filters( 'wpo_wcpdf_get_html', $html, $this );
 	}
@@ -761,7 +828,7 @@ abstract class Order_Document {
 		}
 
 		$html = $this->render_template( $this->locate_template_file( "html-document-wrapper.php" ), array(
-				'content' => $content,
+				'content' => apply_filters( 'wpo_wcpdf_html_content', $content ),
 			)
 		);
 		return $html;
@@ -801,7 +868,7 @@ abstract class Order_Document {
 		if (empty($file)) {
 			$file = $this->type.'.php';
 		}
-		$path = WPO_WCPDF()->settings->get_template_path( $file );
+		$path = $this->get_template_path();
 		$file_path = "{$path}/{$file}";
 
 		$fallback_file_path = WPO_WCPDF()->plugin_path() . '/templates/Simple/' . $file;
@@ -905,6 +972,214 @@ abstract class Order_Document {
 		return $order_statuses;
 	}
 
+	/**
+	 * Get the Sequential Number Store class that handles invoice number generation/consumption
+	 * 
+	 * @return Sequential_Number_Store
+	 */
+	public function get_sequential_number_store() {
+		$reset_number_yearly = isset( $this->settings['reset_number_yearly'] ) ? true : false;
+		$method              = WPO_WCPDF()->settings->get_sequential_number_store_method();
+		$now                 = new \WC_DateTime( 'now', new \DateTimeZone( 'UTC' ) ); // for settings callback
+	
+		// reset: on
+		if( $reset_number_yearly ) {
+			if( ! ( $date = $this->get_date() ) ) {
+				$date = $now;
+			}
+			$store_name   = $this->get_sequential_number_store_name( $date, $method, $reset_number_yearly );
+			$number_store = new Sequential_Number_Store( $store_name, $method );	
+	
+			if ( $number_store->is_new ) {
+				$number_store->set_next( apply_filters( 'wpo_wcpdf_reset_number_yearly_start', 1, $this ) );
+			}
+		// reset: off
+		} else {
+			$store_name   = $this->get_sequential_number_store_name( $now, $method, $reset_number_yearly );
+			$number_store = new Sequential_Number_Store( $store_name, $method );
+		}
+	
+		return $number_store;
+	}
+
+	/**
+	 * Get the name of the Sequential Number Store, based on the date ('now' or 'document date')
+	 * and whether the number should be reset yearly. When the number is reset yearly, numbered
+	 * stores are used for non-current years, adding the year as the suffix
+	 * 
+	 * @return string $number_store_name
+	 */
+	public function get_sequential_number_store_name( $date, $method, $reset_number_yearly ) {
+		$store_base_name    = $this->order ? apply_filters( 'wpo_wcpdf_document_sequential_number_store', "{$this->slug}_number", $this ) : "{$this->slug}_number";
+		$default_table_name = $this->get_number_store_table_default_name( $store_base_name, $method );
+		$current_store_year = $this->get_number_store_year( $default_table_name );
+		$requested_year     = intval( $date->date_i18n( 'Y' ) );
+
+		// if we don't reset the number yearly, the store name is always the same
+		if ( ! $reset_number_yearly ) {
+			$number_store_name = $store_base_name;
+		} else {
+			// if the current store year doesn't match the year requested, check if we need to retire the store
+			// (meaning that we have entered a new year)
+			if( $requested_year !== $current_store_year ) {
+				$current_store_year = $this->maybe_retire_number_store( $date, $store_base_name, $method );
+			}
+
+			// If it's a non-current year (future or past), append the year to the store name, otherwise use default
+			if( $requested_year !== $current_store_year ) {
+				$number_store_name = "{$store_base_name}_{$requested_year}";
+			} else {
+				$number_store_name = $store_base_name;
+			}
+		}
+	
+		return apply_filters( "wpo_wcpdf_{$this->slug}_number_store_name", $number_store_name, $store_base_name, $date, $method, $this );
+	}
+
+	/**
+	 * Get the default table name of the Sequential Number Store
+	 * @param  string $store_base_name
+	 * @param  string $metod
+	 * 
+	 * @return string $table_name
+	 */
+	public function get_number_store_table_default_name( $store_base_name, $method ) {
+		global $wpdb;
+		return apply_filters( "wpo_wcpdf_number_store_table_name", "{$wpdb->prefix}wcpdf_{$store_base_name}", $store_base_name, $method );
+	}
+
+	/**
+	 * Takes care of the rotation of database tables for the number store, used when 'reset yearly' is enabled:
+	 * 
+	 * The table name for the current year is _always_ "{$wpdb->prefix}wcpdf_{$store_base_name}", e.g. wp_wcpdf_invoice_number
+	 * 
+	 * when a year lapses, the existing table ('last year') is 'retired' by renaming it with the year appended,
+	 * e.g. wp_wcpdf_invoice_number_2021 (when the current/new year is 2022). If there was a table for the new year,
+	 * this will be renamed to the default store name (e.g. wp_wcdpdf_invoice_number)
+	 * 
+	 * returns requested year if any error occurs, so that the current store table will be used
+	 * 
+	 * @return int $year year of the current number store
+	 */
+	public function maybe_retire_number_store( $date, $store_base_name, $method ) {
+		global $wpdb;
+		$was_showing_errors = $wpdb->hide_errors(); // if we encounter errors, we'll log them instead
+		
+		$default_table_name = $this->get_number_store_table_default_name( $store_base_name, $method );
+		$now                = new \WC_DateTime( 'now', new \DateTimeZone( 'UTC' ) );
+		$current_year       = intval( $now->date_i18n( 'Y' ) );
+		$current_store_year = intval( $this->get_number_store_year( $default_table_name ) );
+		$requested_year     = intval( $date->date_i18n( 'Y' ) );
+
+		// nothing to retire if requested year matches current store year or if current store year is not in the past
+		if ( empty( $current_store_year ) || $requested_year == $current_store_year || ! ( $current_store_year < $current_year ) ) {
+			return $current_store_year;
+		}
+		
+		// current store year is in the past: rename table so that we can replace it with the current year
+
+		$retired_table_name      = "{$default_table_name}_{$current_store_year}";
+		$current_year_table_name = "{$default_table_name}_{$current_year}";
+
+		// first, remove last year if it already exists
+		$retired_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$retired_table_name}'" ) == $retired_table_name; 
+		if( $retired_exists ) {
+			$table_removed = $wpdb->query( "DROP TABLE IF EXISTS {$retired_table_name}" );
+
+			if( ! $table_removed ) {
+				wcpdf_log_error( sprintf( 'An error occurred while trying to remove the duplicate number store %s: %s', $retired_table_name, $wpdb->last_error ) );
+				return $requested_year;
+			}
+		}
+
+		// rename current to last year
+		$default_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$default_table_name}'" ) == $default_table_name;
+		if( $default_exists ) {
+			$table_renamed = $wpdb->query( "ALTER TABLE {$default_table_name} RENAME {$retired_table_name}" );
+			
+			if( ! $table_renamed ) {
+				wcpdf_log_error( sprintf( 'An error occurred while trying to rename the number store from %s to %s: %s', $default_table_name, $retired_table_name, $wpdb->last_error ) );
+				return $requested_year;
+			}
+		}
+		
+		// if the current year table name already exists (created earlier as a 'future' year), rename that to default
+		$current_year_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$current_year_table_name}'" ) == $current_year_table_name;
+		if( $current_year_exists ) {
+			$table_renamed = $wpdb->query( "ALTER TABLE {$current_year_table_name} RENAME {$default_table_name}" );
+
+			if( ! $table_renamed ) {
+				wcpdf_log_error( sprintf( 'An error occurred while trying to rename the number store from %s to %s: %s', $current_year_table_name, $default_table_name, $wpdb->last_error ) );
+				return $requested_year;
+			}
+		}
+
+		if( $was_showing_errors ) {
+			$wpdb->show_errors();
+		}
+
+		// current store year has been updated to current year, returning this means no year suffix has to be used
+		return $current_year;
+	}
+
+	/**
+	 * Gets the year from the last row of a number store table
+	 * @param  string $table_name
+	 * 
+	 * @return string
+	 */
+	public function get_number_store_year( $table_name ) {
+		global $wpdb;
+		$was_showing_errors = $wpdb->hide_errors(); // if we encounter errors, we'll log them instead
+
+		$current_year = date_i18n( 'Y' );
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'") == $table_name; 
+		if( $table_exists ) {
+			// get year for the last row
+			$year = $wpdb->get_var( "SELECT YEAR(date) FROM {$table_name} ORDER BY id DESC LIMIT 1" );
+			// default to currenty year if no results
+			if( ! $year ) {
+				$year = $current_year;
+				// if we don't get a result, this could either mean there's an error,
+				// OR that the first number simply has not been created yet (=no rows)
+				// we only log when there's an actual error
+				if( ! empty( $wpdb->last_error ) ) {
+					wcpdf_log_error( sprintf( 'An error occurred while trying to get the current year from the %s table: %s', $table_name, $wpdb->last_error ) );
+				}
+			}
+		} else {
+			$year = $current_year;
+		}
+
+		if( $was_showing_errors ) {
+			$wpdb->show_errors();
+		}
+
+		return intval( $year );
+	}
+
+	protected function add_filters( $filters ) {
+		foreach ( $filters as $filter ) {
+			$filter = $this->normalize_filter_args( $filter );
+			add_filter( $filter['hook_name'], $filter['callback'], $filter['priority'], $filter['accepted_args'] );
+		}
+	}
+
+	protected function remove_filters( $filters ) {
+		foreach ( $filters as $filter ) {
+			$filter = $this->normalize_filter_args( $filter );
+			remove_filter( $filter['hook_name'], $filter['callback'], $filter['priority'] );
+		}
+	}
+
+	protected function normalize_filter_args( $filter ) {
+		$filter = array_values( $filter ); 
+		$hook_name = $filter[0];
+		$callback = $filter[1];
+		$priority = isset( $filter[2] ) ? $filter[2] : 10;
+		$accepted_args = isset( $filter[3] ) ? $filter[3] : 1;
+		return compact( 'hook_name', 'callback', 'priority', 'accepted_args' );
+	}
 
 }
 

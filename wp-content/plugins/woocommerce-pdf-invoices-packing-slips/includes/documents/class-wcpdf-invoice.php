@@ -62,16 +62,18 @@ class Invoice extends Order_Document_Methods {
 			$common_settings = WPO_WCPDF()->settings->get_common_document_settings();
 			$document_settings = get_option( 'wpo_wcpdf_documents_settings_'.$this->get_type() );
 			$settings = (array) $document_settings + (array) $common_settings;
-			WCX_Order::update_meta_data( $this->order, "_wcpdf_{$this->slug}_settings", $settings );
+			// exclude non historical settings from being saved in order meta
+			WCX_Order::update_meta_data( $this->order, "_wcpdf_{$this->slug}_settings", array_diff_key( $settings, array_flip( $this->get_non_historical_settings() ) ) );
 		}
 
 		if ( isset( $this->settings['display_date'] ) && $this->settings['display_date'] == 'order_date' && !empty( $this->order ) ) {
 			$this->set_date( WCX_Order::get_prop( $this->order, 'date_created' ) );
-		} else {
+		} elseif( empty( $this->get_date() ) ) {
 			$this->set_date( current_time( 'timestamp', true ) );
 		}
 
 		$this->init_number();
+
 		do_action( 'wpo_wcpdf_init_document', $this );
 	}
 
@@ -103,21 +105,8 @@ class Invoice extends Order_Document_Methods {
 			return $invoice_number;
 		}
 
-		$number_store_method = WPO_WCPDF()->settings->get_sequential_number_store_method();
-		$number_store_name = apply_filters( 'wpo_wcpdf_document_sequential_number_store', 'invoice_number', $this );
-		$number_store = new Sequential_Number_Store( $number_store_name, $number_store_method );
-		// reset invoice number yearly
-		if ( isset( $this->settings['reset_number_yearly'] ) ) {
-			$current_year = date("Y");
-			$last_number_year = $number_store->get_last_date('Y');
-			// check if we need to reset
-			if ( $current_year != $last_number_year ) {
-				$number_store->set_next( apply_filters( 'wpo_wcpdf_reset_number_yearly_start', 1, $this ) );
-			}
-		}
-
-		$invoice_date = $this->get_date();
-		$invoice_number = $number_store->increment( $this->order_id, $invoice_date->date_i18n( 'Y-m-d H:i:s' ) );
+		$number_store   = $this->get_sequential_number_store();
+		$invoice_number = $number_store->increment( intval( $this->order_id ), $this->get_date()->date_i18n( 'Y-m-d H:i:s' ) );
 
 		$this->set_number( $invoice_number );
 
@@ -133,11 +122,21 @@ class Invoice extends Order_Document_Methods {
 			if ( isset( $this->settings['display_number'] ) && $this->settings['display_number'] == 'invoice_number' ) {
 				$suffix = (string) $this->get_number();
 			} else {
-				if ( empty( $this->order ) ) {
-					$order = WCX::get_order ( $order_ids[0] );
+				if ( empty( $this->order ) && isset( $args['order_ids'][0] ) ) {
+					$order = WCX::get_order ( $args['order_ids'][0] );
 					$suffix = is_callable( array( $order, 'get_order_number' ) ) ? $order->get_order_number() : '';
 				} else {
 					$suffix = is_callable( array( $this->order, 'get_order_number' ) ) ? $this->order->get_order_number() : '';
+				}
+			}
+			// ensure unique filename in case suffix was empty
+			if ( empty( $suffix ) ) {
+				if ( ! empty( $this->order_id ) ) {
+					$suffix = $this->order_id;
+				} elseif ( ! empty( $args['order_ids'] ) && is_array( $args['order_ids'] ) ) {
+					$suffix = reset( $args['order_ids'] );
+				} else {
+					$suffix = uniqid();
 				}
 			}
 		} else {
@@ -187,10 +186,11 @@ class Invoice extends Order_Document_Methods {
 				'callback'		=> 'multiple_checkboxes',
 				'section'		=> 'invoice',
 				'args'			=> array(
-					'option_name'	=> $option_name,
-					'id'			=> 'attach_to_email_ids',
-					'fields' 		=> $this->get_wc_emails(),
-					'description'	=> !is_writable( WPO_WCPDF()->main->get_tmp_path( 'attachments' ) ) ? '<span class="wpo-warning">' . sprintf( __( 'It looks like the temp folder (<code>%s</code>) is not writable, check the permissions for this folder! Without having write access to this folder, the plugin will not be able to email invoices.', 'woocommerce-pdf-invoices-packing-slips' ), WPO_WCPDF()->main->get_tmp_path( 'attachments' ) ).'</span>':'',
+					'option_name'	  => $option_name,
+					'id'			  => 'attach_to_email_ids',
+					'fields_callback' => array( $this, 'get_wc_emails' ),
+					/* translators: directory path */
+					'description'	  => !is_writable( WPO_WCPDF()->main->get_tmp_path( 'attachments' ) ) ? '<span class="wpo-warning">' . sprintf( __( 'It looks like the temp folder (<code>%s</code>) is not writable, check the permissions for this folder! Without having write access to this folder, the plugin will not be able to email invoices.', 'woocommerce-pdf-invoices-packing-slips' ), WPO_WCPDF()->main->get_tmp_path( 'attachments' ) ).'</span>':'',
 				)
 			),
 			array(
@@ -200,12 +200,12 @@ class Invoice extends Order_Document_Methods {
 				'callback'		=> 'select',
 				'section'		=> 'invoice',
 				'args'			=> array(
-					'option_name'		=> $option_name,
-					'id'				=> 'disable_for_statuses',
-					'options' 			=> function_exists('wc_get_order_statuses') ? wc_get_order_statuses() : array(),
-					'multiple'			=> true,
-					'enhanced_select'	=> true,
-					'placeholder'		=> __( 'Select one or more statuses', 'woocommerce-pdf-invoices-packing-slips' ),
+					'option_name'      => $option_name,
+					'id'               => 'disable_for_statuses',
+					'options_callback' => 'wc_get_order_statuses',
+					'multiple'         => true,
+					'enhanced_select'  => true,
+					'placeholder'      => __( 'Select one or more statuses', 'woocommerce-pdf-invoices-packing-slips' ),
 				)
 			),
 			array(
@@ -305,9 +305,9 @@ class Invoice extends Order_Document_Methods {
 				'callback'		=> 'next_number_edit',
 				'section'		=> 'invoice',
 				'args'			=> array(
-					'store'			=> 'invoice_number',
-					'size'			=> '10',
-					'description'	=> __( 'This is the number that will be used for the next document. By default, numbering starts from 1 and increases for every new document. Note that if you override this and set it lower than the current/highest number, this could create duplicate numbers!', 'woocommerce-pdf-invoices-packing-slips' ),
+					'store_callback' => array( $this, 'get_sequential_number_store' ),
+					'size'           => '10',
+					'description'    => __( 'This is the number that will be used for the next document. By default, numbering starts from 1 and increases for every new document. Note that if you override this and set it lower than the current/highest number, this could create duplicate numbers!', 'woocommerce-pdf-invoices-packing-slips' ),
 				)
 			),
 			array(
@@ -369,9 +369,9 @@ class Invoice extends Order_Document_Methods {
 					'custom'		=> array(
 						'type'		=> 'multiple_checkboxes',
 						'args'		=> array(
-							'option_name'	=> $option_name,
-							'id'			=> 'my_account_restrict',
-							'fields'		=> $this->get_wc_order_status_list(),
+							'option_name'     => $option_name,
+							'id'              => 'my_account_restrict',
+							'fields_callback' => array( $this, 'get_wc_order_status_list' ),
 						),
 					),
 				)
@@ -396,6 +396,7 @@ class Invoice extends Order_Document_Methods {
 				'args'			=> array(
 					'option_name'	=> $option_name,
 					'id'			=> 'disable_free',
+					/* translators: zero number */
 					'description'	=> sprintf(__( "Disable document when the order total is %s", 'woocommerce-pdf-invoices-packing-slips' ), function_exists('wc_price') ? wc_price( 0 ) : 0 ),
 				)
 			),
@@ -425,6 +426,7 @@ class Invoice extends Order_Document_Methods {
 					// alternate description for invoice number
 					$invoice_number_desc = __( 'Invoice numbers are created by a third-party extension.', 'woocommerce-pdf-invoices-packing-slips' );
 					if ( $config_link = apply_filters( 'woocommerce_invoice_number_configuration_link', null ) ) {
+						/* translators: link */
 						$invoice_number_desc .= ' '.sprintf(__( 'Configure it <a href="%s">here</a>.', 'woocommerce-pdf-invoices-packing-slips' ), esc_attr( $config_link ) );
 					}
 					$settings_fields[$key]['args']['description'] = '<i>'.$invoice_number_desc.'</i>';
@@ -437,6 +439,22 @@ class Invoice extends Order_Document_Methods {
 		WPO_WCPDF()->settings->add_settings_fields( $settings_fields, $page, $option_group, $option_name );
 		return;
 
+	}
+
+	/**
+	 * Document number title
+	 */
+	public function get_number_title() {
+		$number_title = __( 'Invoice Number:', 'woocommerce-pdf-invoices-packing-slips' );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_number_title", $number_title, $this );
+	}
+
+	/**
+	 * Document date title
+	 */
+	public function get_date_title() {
+		$date_title = __( 'Invoice Date:', 'woocommerce-pdf-invoices-packing-slips' );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_date_title", $date_title, $this );
 	}
 
 }

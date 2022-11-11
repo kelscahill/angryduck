@@ -4,7 +4,7 @@ namespace Automattic\WooCommerce\Blocks\BlockTypes;
 /**
  * AllProducts class.
  */
-class AllProducts extends AbstractDynamicBlock {
+class AllProducts extends AbstractBlock {
 	/**
 	 * Block name.
 	 *
@@ -13,32 +13,27 @@ class AllProducts extends AbstractDynamicBlock {
 	protected $block_name = 'all-products';
 
 	/**
-	 * Registers the block type with WordPress.
+	 * Extra data passed through from server to client for block.
+	 *
+	 * @param array $attributes  Any attributes that currently are available from the block.
+	 *                           Note, this will be empty in the editor context when the block is
+	 *                           not in the post content on editor load.
 	 */
-	public function register_block_type() {
-		register_block_type(
-			$this->namespace . '/' . $this->block_name,
-			array(
-				'render_callback' => array( $this, 'render' ),
-				'editor_script'   => 'wc-' . $this->block_name,
-				'editor_style'    => 'wc-block-editor',
-				'style'           => 'wc-block-style',
-				'script'          => 'wc-' . $this->block_name . '-frontend',
-				'supports'        => [],
-			)
-		);
+	protected function enqueue_data( array $attributes = [] ) {
+		parent::enqueue_data( $attributes );
+		$this->asset_data_registry->add( 'min_columns', wc_get_theme_support( 'product_blocks::min_columns', 1 ), true );
+		$this->asset_data_registry->add( 'max_columns', wc_get_theme_support( 'product_blocks::max_columns', 6 ), true );
+		$this->asset_data_registry->add( 'default_columns', wc_get_theme_support( 'product_blocks::default_columns', 3 ), true );
+		$this->asset_data_registry->add( 'min_rows', wc_get_theme_support( 'product_blocks::min_rows', 1 ), true );
+		$this->asset_data_registry->add( 'max_rows', wc_get_theme_support( 'product_blocks::max_rows', 6 ), true );
+		$this->asset_data_registry->add( 'default_rows', wc_get_theme_support( 'product_blocks::default_rows', 3 ), true );
+		$this->hydrate_from_api();
 	}
 
 	/**
-	 * Append frontend scripts when rendering the Product Categories List block.
-	 *
-	 * @param array  $attributes Block attributes. Default empty array.
-	 * @param string $content    Block content. Default empty string.
-	 * @return string Rendered block type output.
+	 * Hydrate the All Product block with data from the API.
 	 */
-	public function render( $attributes = array(), $content = '' ) {
-		\Automattic\WooCommerce\Blocks\Assets::register_block_script( $this->block_name . '-frontend' );
-
-		return $content;
+	protected function hydrate_from_api() {
+		$this->asset_data_registry->hydrate_api_request( '/wc/store/v1/cart' );
 	}
 }

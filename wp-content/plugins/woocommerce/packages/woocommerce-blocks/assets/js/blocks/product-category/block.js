@@ -18,8 +18,23 @@ import GridContentControl from '@woocommerce/editor-components/grid-content-cont
 import GridLayoutControl from '@woocommerce/editor-components/grid-layout-control';
 import ProductCategoryControl from '@woocommerce/editor-components/product-category-control';
 import ProductOrderbyControl from '@woocommerce/editor-components/product-orderby-control';
+import ProductStockControl from '@woocommerce/editor-components/product-stock-control';
 import { gridBlockPreview } from '@woocommerce/resource-previews';
-import { Icon, folder } from '@woocommerce/icons';
+import { Icon, file } from '@wordpress/icons';
+import { getSetting } from '@woocommerce/settings';
+
+const EmptyPlaceholder = () => (
+	<Placeholder
+		icon={ <Icon icon={ file } /> }
+		label={ __( 'Products by Category', 'woocommerce' ) }
+		className="wc-block-products-grid wc-block-products-category"
+	>
+		{ __(
+			'No products were found that matched your selection.',
+			'woocommerce'
+		) }
+	</Placeholder>
+);
 
 /**
  * Component to handle edit mode of "Products by Category".
@@ -105,6 +120,7 @@ class ProductByCategoryBlock extends Component {
 			orderby,
 			rows,
 			alignButtons,
+			stockStatus,
 		} = attributes;
 
 		return (
@@ -134,6 +150,7 @@ class ProductByCategoryBlock extends Component {
 							setAttributes( changes );
 							this.setChangedAttributes( changes );
 						} }
+						isCompact={ true }
 					/>
 				</PanelBody>
 				<PanelBody
@@ -145,6 +162,10 @@ class ProductByCategoryBlock extends Component {
 						rows={ rows }
 						alignButtons={ alignButtons }
 						setAttributes={ setAttributes }
+						minColumns={ getSetting( 'min_columns', 1 ) }
+						maxColumns={ getSetting( 'max_columns', 6 ) }
+						minRows={ getSetting( 'min_rows', 1 ) }
+						maxRows={ getSetting( 'max_rows', 6 ) }
 					/>
 				</PanelBody>
 				<PanelBody
@@ -165,6 +186,18 @@ class ProductByCategoryBlock extends Component {
 					<ProductOrderbyControl
 						setAttributes={ setAttributes }
 						value={ orderby }
+					/>
+				</PanelBody>
+				<PanelBody
+					title={ __(
+						'Filter by stock status',
+						'woocommerce'
+					) }
+					initialOpen={ false }
+				>
+					<ProductStockControl
+						setAttributes={ setAttributes }
+						value={ stockStatus }
 					/>
 				</PanelBody>
 			</InspectorControls>
@@ -196,7 +229,7 @@ class ProductByCategoryBlock extends Component {
 
 		return (
 			<Placeholder
-				icon={ <Icon srcElement={ folder } /> }
+				icon={ <Icon icon={ file } /> }
 				label={ __(
 					'Products by Category',
 					'woocommerce'
@@ -244,21 +277,7 @@ class ProductByCategoryBlock extends Component {
 					<ServerSideRender
 						block={ name }
 						attributes={ attributes }
-						EmptyResponsePlaceholder={ () => (
-							<Placeholder
-								icon={ <Icon srcElement={ folder } /> }
-								label={ __(
-									'Products by Category',
-									'woocommerce'
-								) }
-								className="wc-block-products-grid wc-block-products-category"
-							>
-								{ __(
-									'No products were found that matched your selection.',
-									'woocommerce'
-								) }
-							</Placeholder>
-						) }
+						EmptyResponsePlaceholder={ EmptyPlaceholder }
 					/>
 				) : (
 					__(
@@ -285,7 +304,10 @@ class ProductByCategoryBlock extends Component {
 						controls={ [
 							{
 								icon: 'edit',
-								title: __( 'Edit' ),
+								title: __(
+									'Edit selected categories',
+									'woocommerce'
+								),
 								onClick: () =>
 									isEditing
 										? this.stopEditing()

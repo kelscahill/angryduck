@@ -7,6 +7,7 @@
  */
 
 use Automattic\Jetpack\Constants;
+use Automattic\WooCommerce\Utilities\ArrayUtil;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -273,6 +274,12 @@ if ( ! class_exists( 'WC_Admin_Settings', false ) ) :
 						}
 						break;
 
+					case 'info':
+						echo '<tr><th scope="row" class="titledesc"/><td style="' . esc_attr( $value['css'] ) . '">';
+						echo wp_kses_post( wpautop( wptexturize( $value['text'] ) ) );
+						echo '</td></tr>';
+						break;
+
 					// Section Ends.
 					case 'sectionend':
 						if ( ! empty( $value['id'] ) ) {
@@ -417,6 +424,7 @@ if ( ! class_exists( 'WC_Admin_Settings', false ) ) :
 					// Radio inputs.
 					case 'radio':
 						$option_value = $value['value'];
+						$disabled_values = ArrayUtil::get_value_or_default($value, 'disabled', array());
 
 						?>
 						<tr valign="top">
@@ -435,6 +443,7 @@ if ( ! class_exists( 'WC_Admin_Settings', false ) ) :
 												name="<?php echo esc_attr( $value['id'] ); ?>"
 												value="<?php echo esc_attr( $key ); ?>"
 												type="radio"
+												<?php if( in_array( $key, $disabled_values ) ) { echo 'disabled'; } ?>
 												style="<?php echo esc_attr( $value['css'] ); ?>"
 												class="<?php echo esc_attr( $value['class'] ); ?>"
 												<?php echo implode( ' ', $custom_attributes ); // WPCS: XSS ok. ?>
@@ -574,6 +583,47 @@ if ( ! class_exists( 'WC_Admin_Settings', false ) ) :
 							</th>
 							<td class="forminp">
 								<?php echo str_replace( ' id=', " data-placeholder='" . esc_attr__( 'Select a page&hellip;', 'woocommerce' ) . "' style='" . $value['css'] . "' class='" . $value['class'] . "' id=", wp_dropdown_pages( $args ) ); // WPCS: XSS ok. ?> <?php echo $description; // WPCS: XSS ok. ?>
+							</td>
+						</tr>
+						<?php
+						break;
+
+					case 'single_select_page_with_search':
+						$option_value = $value['value'];
+						$page         = get_post( $option_value );
+
+						if ( ! is_null( $page ) ) {
+							$page                = get_post( $option_value );
+							$option_display_name = sprintf(
+								/* translators: 1: page name 2: page ID */
+								__( '%1$s (ID: %2$s)', 'woocommerce' ),
+								$page->post_title,
+								$option_value
+							);
+						}
+						?>
+						<tr valign="top" class="single_select_page">
+							<th scope="row" class="titledesc">
+								<label for="<?php echo esc_attr( $value['id'] ); ?>"><?php echo esc_html( $value['title'] ); ?> <?php echo $tooltip_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></label>
+							</th>
+							<td class="forminp forminp-<?php echo esc_attr( sanitize_title( $value['type'] ) ); ?>">
+								<select
+									name="<?php echo esc_attr( $value['id'] ); ?>"
+									id="<?php echo esc_attr( $value['id'] ); ?>"
+									style="<?php echo esc_attr( $value['css'] ); ?>"
+									class="<?php echo esc_attr( $value['class'] ); ?>"
+									<?php echo implode( ' ', $custom_attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+									data-placeholder="<?php esc_attr_e( 'Search for a page&hellip;', 'woocommerce' ); ?>"
+									data-allow_clear="true"
+									data-exclude="<?php echo wc_esc_json( wp_json_encode( $value['args']['exclude'] ) ); ?>"
+									>
+									<option value=""></option>
+									<?php if ( ! is_null( $page ) ) { ?>
+										<option value="<?php echo esc_attr( $option_value ); ?>" selected="selected">
+										<?php echo wp_strip_all_tags( $option_display_name ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+										</option>
+									<?php } ?>
+								</select> <?php echo $description; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							</td>
 						</tr>
 						<?php

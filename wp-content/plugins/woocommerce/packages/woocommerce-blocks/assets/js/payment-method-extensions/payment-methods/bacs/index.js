@@ -19,14 +19,10 @@ const defaultLabel = __(
 const label = decodeEntities( settings.title ) || defaultLabel;
 
 /**
- * @typedef {import('@woocommerce/type-defs/registered-payment-method-props').RegisteredPaymentMethodProps} RegisteredPaymentMethodProps
- */
-
-/**
  * Content component
  */
 const Content = () => {
-	return <div>{ decodeEntities( settings.description || '' ) }</div>;
+	return decodeEntities( settings.description || '' );
 };
 
 /**

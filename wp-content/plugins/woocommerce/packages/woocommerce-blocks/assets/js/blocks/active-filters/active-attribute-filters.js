@@ -1,7 +1,10 @@
 /**
  * External dependencies
  */
-import { useCollection, useQueryStateByKey } from '@woocommerce/base-hooks';
+import {
+	useCollection,
+	useQueryStateByKey,
+} from '@woocommerce/base-context/hooks';
 import { decodeEntities } from '@wordpress/html-entities';
 import { __ } from '@wordpress/i18n';
 
@@ -14,11 +17,11 @@ import { removeAttributeFilterBySlug } from '../../utils/attributes-query';
 /**
  * Component that renders active attribute (terms) filters.
  *
- * @param {Object} props Incoming props for the component.
+ * @param {Object} props                 Incoming props for the component.
  * @param {Object} props.attributeObject The attribute object.
- * @param {Array} props.slugs The slugs for attributes.
- * @param {string} props.operator The operator for the filter.
- * @param {string} props.displayStyle The style used for displaying the filters.
+ * @param {Array}  props.slugs           The slugs for attributes.
+ * @param {string} props.operator        The operator for the filter.
+ * @param {string} props.displayStyle    The style used for displaying the filters.
  */
 const ActiveAttributeFilters = ( {
 	attributeObject = {},
@@ -27,7 +30,7 @@ const ActiveAttributeFilters = ( {
 	displayStyle,
 } ) => {
 	const { results, isLoading } = useCollection( {
-		namespace: '/wc/store',
+		namespace: '/wc/store/v1',
 		resourceName: 'products/attributes/terms',
 		resourceValues: [ attributeObject.id ],
 	} );

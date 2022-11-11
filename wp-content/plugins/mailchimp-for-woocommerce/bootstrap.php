@@ -64,7 +64,8 @@ spl_autoload_register(function($class) {
         'MailChimp_WooCommerce_Single_Product' => 'includes/processes/class-mailchimp-woocommerce-single-product.php',
         'MailChimp_WooCommerce_User_Submit' => 'includes/processes/class-mailchimp-woocommerce-user-submit.php',
         'MailChimp_WooCommerce_Process_Full_Sync_Manager' => 'includes/processes/class-mailchimp-woocommerce-full-sync-manager.php',
-        
+        'MailChimp_WooCommerce_Subscriber_Sync' => 'includes/processes/class-mailchimp-woocommerce-subscriber-sync.php',
+
         'MailChimp_WooCommerce_Public' => 'public/class-mailchimp-woocommerce-public.php',
         'MailChimp_WooCommerce_Admin' => 'admin/class-mailchimp-woocommerce-admin.php',
     );
@@ -87,7 +88,7 @@ function mailchimp_environment_variables() {
     return (object) array(
         'repo' => 'master',
         'environment' => 'production', // staging or production
-        'version' => '2.5.0',
+        'version' => '2.6.2',
         'php_version' => phpversion(),
         'wp_version' => (empty($wp_version) ? 'Unknown' : $wp_version),
         'wc_version' => function_exists('WC') ? WC()->version : null,
@@ -131,7 +132,9 @@ function mailchimp_as_push( Mailchimp_Woocommerce_Job $job, $delay = 0 ) {
         ) : null;
         
         if (!empty($existing_actions)) {
-            as_unschedule_action(get_class($job), array('obj_id' => $job->id), 'mc-woocommerce');
+            try {
+                as_unschedule_action(get_class($job), array('obj_id' => $job->id), 'mc-woocommerce');
+            } catch (\Exception $e) {}
         }
         else {
             $inserted = $wpdb->insert($wpdb->prefix."mailchimp_jobs", $args);
@@ -214,6 +217,36 @@ function mailchimp_get_remaining_jobs_count($job_hook) {
     return count($existing_actions);
 }
 
+function mailchimp_submit_subscribed_only() {
+    return ! (bool) mailchimp_get_option('mailchimp_ongoing_sync_status', '1');
+}
+
+/**
+ * @return bool
+ */
+function mailchimp_carts_disabled() {
+    return mailchimp_get_option('mailchimp_cart_tracking', 'all') === 'disabled';
+}
+
+/**
+ * @return bool
+ */
+function mailchimp_carts_subscribers_only() {
+    return mailchimp_get_option('mailchimp_cart_tracking', 'all') === 'subscribed';
+}
+
+/**
+ * @param $email
+ * @return string|null
+ */
+function mailchimp_get_subscriber_status($email) {
+    try {
+        return mailchimp_get_api()->member(mailchimp_get_list_id(), $email)['status'];
+    } catch (\Exception $e) {
+        return null;
+    }
+}
+
 /**
  * @param bool $force
  * @return bool
@@ -250,6 +283,13 @@ function mailchimp_list_has_double_optin($force = false) {
  */
 function mailchimp_is_configured() {
     return (bool) (mailchimp_get_api_key() && mailchimp_get_list_id());
+}
+
+/**
+ * @return bool
+ */
+function mailchimp_action_scheduler_exists() {
+    return ( did_action( 'plugins_loaded' ) && ! doing_action( 'plugins_loaded' ) && class_exists( 'ActionScheduler', false ) );
 }
 
 /**
@@ -554,14 +594,33 @@ function mailchimp_woocommerce_get_all_image_sizes_list() {
  * This action is documented in includes/class-mailchimp-woocommerce-activator.php
  */
 function activate_mailchimp_woocommerce() {
-    // if we don't have woocommerce we need to display a horrible error message before the plugin is installed.
+
+    // if we don't have any of these dependencies,
+    // we need to display a horrible error message before the plugin is installed.
+    mailchimp_check_curl_is_installed();
+    mailchimp_check_woocommerce_is_installed();
+    // good to go - activate the plugin.
+    MailChimp_WooCommerce_Activator::activate();
+}
+
+function mailchimp_check_curl_is_installed() {
+    if (!function_exists('curl_exec')) {
+        // Deactivate the plugin
+        deactivate_plugins(__FILE__);
+        $error_message = __('The MailChimp For WooCommerce plugin requires <a href="https://www.php.net/manual/en/book.curl.php/">curl</a> to be enabled!', 'woocommerce');
+        wp_die($error_message);
+    }
+    return true;
+}
+
+function mailchimp_check_woocommerce_is_installed() {
     if (!mailchimp_check_woocommerce_plugin_status()) {
         // Deactivate the plugin
         deactivate_plugins(__FILE__);
         $error_message = __('The MailChimp For WooCommerce plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce</a> plugin to be active!', 'woocommerce');
         wp_die($error_message);
     }
-    MailChimp_WooCommerce_Activator::activate();
+    return true;
 }
 
 /**
@@ -1001,7 +1060,9 @@ function mailchimp_delete_as_jobs() {
     
     if (!empty($existing_as_actions)) {
         foreach ($existing_as_actions as $as_action) {
-            as_unschedule_action($as_action->get_hook(), $as_action->get_args(), 'mc-woocommerce');    # code...
+            try {
+                as_unschedule_action($as_action->get_hook(), $as_action->get_args(), 'mc-woocommerce');    # code...
+            } catch (\Exception $e) {}
         }
         return true;
     }
@@ -1191,7 +1252,7 @@ function mailchimp_settings_errors() {
  * @throws MailChimp_WooCommerce_Error
  * @throws MailChimp_WooCommerce_ServerError
  */
-function mailchimp_member_data_update($user_email = null, $language = null, $caller = '', $status_if_new = 'transactional', $order = null, $gdpr_fields = null) {
+function mailchimp_member_data_update($user_email = null, $language = null, $caller = '', $status_if_new = 'transactional', $order = null, $gdpr_fields = null, $update_status = false) {
     mailchimp_debug('debug', "mailchimp_member_data_update", array(
         'user_email' => $user_email,
         'user_language' => $language,
@@ -1229,10 +1290,16 @@ function mailchimp_member_data_update($user_email = null, $language = null, $cal
             }
             $merge_fields = $order ? apply_filters('mailchimp_get_ecommerce_merge_tags', array(), $order) : array();
             if (!is_array($merge_fields)) $merge_fields = array();
-            mailchimp_get_api()->update($list_id, $user_email, $member['status'], $merge_fields, null, $language, $gdpr_fields_to_save);
+
+            if ($update_status && in_array($member['status'], array('unsubscribed', 'cleaned'))) {
+                $member['status'] = $status_if_new;
+            }
+            
+            $result = mailchimp_get_api()->update($list_id, $user_email, $member['status'], $merge_fields, null, $language, $gdpr_fields_to_save);
             // set transient to prevent too many calls to update language
             mailchimp_set_transient($caller . ".member.{$hash}", true, 3600);
-            mailchimp_log($caller . '.member.updated', "Updated {$user_email} subscriber status to {$member['status']} and language to {$language}");
+
+            mailchimp_log($caller . '.member.updated', "Updated {$user_email} subscriber status to {$result['status']} and language to {$language}");
         } catch (\Exception $e) {
             if ($e->getCode() == 404) {
                 $merge_fields = $order ? apply_filters('mailchimp_get_ecommerce_merge_tags', array(), $order) : array();
@@ -1248,6 +1315,48 @@ function mailchimp_member_data_update($user_email = null, $language = null, $cal
         }
     }
 }
+
+/**
+ * @param string $name
+ * @param string $value
+ * @param int $expire
+ * @param string $path
+ * @param string $domain
+ * @param bool $secure
+ * @param bool $httponly
+ * @param string $samesite
+ * @return void
+ */
+function mailchimp_set_cookie($name, $value, $expire, $path, $domain = '', $secure = true, $httponly = false, $samesite = 'Strict') {
+    if (PHP_VERSION_ID < 70300) {
+        @setcookie($name, $value, $expire, $path . '; samesite=' . $samesite, $domain, $secure, $httponly);
+        return;
+    }
+    @setcookie($name, $value, [
+        'expires' => $expire,
+        'path' => $path,
+        'domain' => $domain,
+        'samesite' => $samesite,
+        'secure' => $secure,
+        'httponly' => $httponly,
+    ]);
+}
+
+/**
+ * We will allow people to filter this value - turn it off if they would like.
+ * add_filter( 'mailchimp_allowed_to_use_cookie', 'custom_cookie_callback_function', 10, 1 );
+ * @return bool
+ */
+function mailchimp_allowed_to_use_cookie($cookie) {
+    $result = apply_filters('mailchimp_allowed_to_use_cookie', $cookie);
+    if (is_bool($result)) return $result;
+    return $result === $cookie;
+}
+
+// the cookie name will be whatever we're trying to set, but the most simple
+// return the $cookie_name if you will allow it -
+// otherwise it is going to turn this feature off.
+
 
 
 // Add WP CLI commands

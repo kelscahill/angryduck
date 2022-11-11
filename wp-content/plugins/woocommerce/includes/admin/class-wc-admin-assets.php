@@ -54,6 +54,11 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 			wp_style_add_data( 'woocommerce_admin_marketplace_styles', 'rtl', 'replace' );
 			wp_style_add_data( 'woocommerce_admin_privacy_styles', 'rtl', 'replace' );
 
+			if ( $screen && $screen->is_block_editor() ) {
+				wp_register_style( 'woocommerce-general', WC()->plugin_url() . '/assets/css/woocommerce.css', array(), $version );
+				wp_style_add_data( 'woocommerce-general', 'rtl', 'replace' );
+			}
+
 			// Sitewide menu CSS.
 			wp_enqueue_style( 'woocommerce_admin_menu_styles' );
 
@@ -107,7 +112,6 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 			wp_register_script( 'jquery-tiptip', WC()->plugin_url() . '/assets/js/jquery-tiptip/jquery.tipTip' . $suffix . '.js', array( 'jquery' ), $version, true );
 			wp_register_script( 'round', WC()->plugin_url() . '/assets/js/round/round' . $suffix . '.js', array( 'jquery' ), $version );
 			wp_register_script( 'wc-admin-meta-boxes', WC()->plugin_url() . '/assets/js/admin/meta-boxes' . $suffix . '.js', array( 'jquery', 'jquery-ui-datepicker', 'jquery-ui-sortable', 'accounting', 'round', 'wc-enhanced-select', 'plupload-all', 'stupidtable', 'jquery-tiptip' ), $version );
-			wp_register_script( 'zeroclipboard', WC()->plugin_url() . '/assets/js/zeroclipboard/jquery.zeroclipboard' . $suffix . '.js', array( 'jquery' ), $version );
 			wp_register_script( 'qrcode', WC()->plugin_url() . '/assets/js/jquery-qrcode/jquery.qrcode' . $suffix . '.js', array( 'jquery' ), $version );
 			wp_register_script( 'stupidtable', WC()->plugin_url() . '/assets/js/stupidtable/stupidtable' . $suffix . '.js', array( 'jquery' ), $version );
 			wp_register_script( 'serializejson', WC()->plugin_url() . '/assets/js/jquery-serializejson/jquery.serializejson' . $suffix . '.js', array( 'jquery' ), '2.8.1' );
@@ -145,6 +149,7 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 					'search_products_nonce'     => wp_create_nonce( 'search-products' ),
 					'search_customers_nonce'    => wp_create_nonce( 'search-customers' ),
 					'search_categories_nonce'   => wp_create_nonce( 'search-categories' ),
+					'search_pages_nonce'        => wp_create_nonce( 'search-pages' ),
 				)
 			);
 
@@ -187,6 +192,7 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 					'i18n_sale_less_than_regular_error' => __( 'Please enter in a value less than the regular price.', 'woocommerce' ),
 					'i18n_delete_product_notice'        => __( 'This product has produced sales and may be linked to existing orders. Are you sure you want to delete it?', 'woocommerce' ),
 					'i18n_remove_personal_data_notice'  => __( 'This action cannot be reversed. Are you sure you wish to erase personal data from the selected orders?', 'woocommerce' ),
+					'i18n_confirm_delete'               => __( 'Are you sure you wish to delete this item?', 'woocommerce' ),
 					'decimal_point'                     => $decimal,
 					'mon_decimal_point'                 => wc_get_price_decimal_separator(),
 					'ajax_url'                          => admin_url( 'admin-ajax.php' ),
@@ -299,9 +305,11 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 				);
 			}
 			if ( in_array( str_replace( 'edit-', '', $screen_id ), array_merge( array( 'shop_coupon', 'product' ), wc_get_order_types( 'order-meta-boxes' ) ) ) ) {
-				$post_id            = isset( $post->ID ) ? $post->ID : '';
-				$currency           = '';
-				$remove_item_notice = __( 'Are you sure you want to remove the selected items?', 'woocommerce' );
+				$post_id                = isset( $post->ID ) ? $post->ID : '';
+				$currency               = '';
+				$remove_item_notice     = __( 'Are you sure you want to remove the selected items?', 'woocommerce' );
+				$remove_fee_notice      = __( 'Are you sure you want to remove the selected fees?', 'woocommerce' );
+				$remove_shipping_notice = __( 'Are you sure you want to remove the selected shipping?', 'woocommerce' );
 
 				if ( $post_id && in_array( get_post_type( $post_id ), wc_get_order_types( 'order-meta-boxes' ) ) ) {
 					$order = wc_get_order( $post_id );
@@ -316,6 +324,8 @@ if ( ! class_exists( 'WC_Admin_Assets', false ) ) :
 
 				$params = array(
 					'remove_item_notice'            => $remove_item_notice,
+					'remove_fee_notice'             => $remove_fee_notice,
+					'remove_shipping_notice'        => $remove_shipping_notice,
 					'i18n_select_items'             => __( 'Please select some items.', 'woocommerce' ),
 					'i18n_do_refund'                => __( 'Are you sure you wish to process this refund? This action cannot be undone.', 'woocommerce' ),
 					'i18n_delete_refund'            => __( 'Are you sure you wish to delete this refund? This action cannot be undone.', 'woocommerce' ),

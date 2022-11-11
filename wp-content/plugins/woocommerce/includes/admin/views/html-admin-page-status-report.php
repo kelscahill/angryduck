@@ -5,15 +5,12 @@
  * @package WooCommerce
  */
 
+use Automattic\Jetpack\Constants;
+use Automattic\WooCommerce\Internal\ProductDownloads\ApprovedDirectories\Register as Download_Directories;
+
 defined( 'ABSPATH' ) || exit;
 
 global $wpdb;
-
-if ( ! defined( 'WC_SSR_PLUGIN_UPDATE_RELEASE_VERSION_TYPE' ) ) {
-	// Define if we're checking against major or minor versions.
-	// Since 5.0 all versions are backwards compatible, so there's no more check.
-	define( 'WC_SSR_PLUGIN_UPDATE_RELEASE_VERSION_TYPE', 'none' );
-}
 
 $report             = wc()->api->get_endpoint_data( '/wc/v3/system_status' );
 $environment        = $report['environment'];
@@ -27,7 +24,7 @@ $security           = $report['security'];
 $settings           = $report['settings'];
 $wp_pages           = $report['pages'];
 $plugin_updates     = new WC_Plugin_Updates();
-$untested_plugins   = $plugin_updates->get_untested_plugins( WC()->version, WC_SSR_PLUGIN_UPDATE_RELEASE_VERSION_TYPE );
+$untested_plugins   = $plugin_updates->get_untested_plugins( WC()->version, Constants::get_constant( 'WC_SSR_PLUGIN_UPDATE_RELEASE_VERSION_TYPE' ) );
 ?>
 <div class="updated woocommerce-message inline">
 	<p>
@@ -124,54 +121,6 @@ $untested_plugins   = $plugin_updates->get_untested_plugins( WC()->version, WC_S
 					echo '<mark class="yes"><span class="dashicons dashicons-yes"></span> ' . esc_html( $version ) . ' <code class="private">' . esc_html( $path ) . '</code></mark> ';
 				} else {
 					echo '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . esc_html__( 'Unable to detect the Action Scheduler package.', 'woocommerce' ) . '</mark>';
-				}
-				?>
-			</td>
-		</tr>
-		<tr>
-			<td data-export-label="WC Admin Version"><?php esc_html_e( 'WooCommerce Admin package', 'woocommerce' ); ?>:</td>
-			<td class="help"><?php echo wc_help_tip( esc_html__( 'The WooCommerce Admin package running on your site.', 'woocommerce' ) ); ?></td>
-			<td>
-				<?php
-				$wc_admin_path = null;
-				if ( defined( 'WC_ADMIN_VERSION_NUMBER' ) ) {
-					// Plugin version of WC Admin.
-					$version        = WC_ADMIN_VERSION_NUMBER;
-					$package_active = false;
-				} elseif ( class_exists( '\Automattic\WooCommerce\Admin\Composer\Package' ) ) {
-					if ( WC()->is_wc_admin_active() ) {
-						// Fully active package version of WC Admin.
-						$version        = \Automattic\WooCommerce\Admin\Composer\Package::get_active_version();
-						$package_active = \Automattic\WooCommerce\Admin\Composer\Package::is_package_active();
-					} else {
-						// with WP version < 5.3, package is present, but inactive.
-						$version = sprintf(
-							/* translators: %s: Version number of wc-admin package */
-							__( 'Inactive %s', 'woocommerce' ),
-							\Automattic\WooCommerce\Admin\Composer\Package::VERSION
-						);
-						$package_active = false;
-					}
-					$wc_admin_path = \Automattic\WooCommerce\Admin\Composer\Package::get_path();
-				} else {
-					$version = null;
-				}
-
-				if ( ! is_null( $version ) ) {
-					if ( ! isset( $wc_admin_path ) ) {
-						if ( defined( 'WC_ADMIN_PLUGIN_FILE' ) ) {
-							$wc_admin_path = dirname( WC_ADMIN_PLUGIN_FILE );
-						} else {
-							$wc_admin_path = __( 'Active Plugin', 'woocommerce' );
-						}
-					}
-					if ( WC()->is_wc_admin_active() ) {
-						echo '<mark class="yes"><span class="dashicons dashicons-yes"></span> ' . esc_html( $version ) . ' <code class="private">' . esc_html( $wc_admin_path ) . '</code></mark> ';
-					} else {
-						echo '<span class="dashicons dashicons-no-alt"></span> ' . esc_html( $version ) . ' <code class="private">' . esc_html( $wc_admin_path ) . '</code> ';
-					}
-				} else {
-					echo '<mark class="error"><span class="dashicons dashicons-warning"></span> ' . esc_html__( 'Unable to detect the WC Admin package.', 'woocommerce' ) . '</mark>';
 				}
 				?>
 			</td>
@@ -518,7 +467,7 @@ $untested_plugins   = $plugin_updates->get_untested_plugins( WC()->version, WC_S
 	<tbody>
 		<tr>
 			<td data-export-label="WC Database Version"><?php esc_html_e( 'WooCommerce database version', 'woocommerce' ); ?>:</td>
-			<td class="help"><?php echo wc_help_tip( esc_html__( 'The version of WooCommerce that the database is formatted for. This should be the same as your WooCommerce version.', 'woocommerce' ) ); /* phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped */ ?></td>
+			<td class="help"><?php echo wc_help_tip( esc_html__( 'The database version for WooCommerce. This should be the same as your WooCommerce version.', 'woocommerce' ) ); /* phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped */ ?></td>
 			<td><?php echo esc_html( $database['wc_database_version'] ); ?></td>
 		</tr>
 		<tr>
@@ -807,6 +756,11 @@ if ( 0 < count( $dropins_mu_plugins['mu_plugins'] ) ) :
 			<td data-export-label="Connected to WooCommerce.com"><?php esc_html_e( 'Connected to WooCommerce.com', 'woocommerce' ); ?>:</td>
 			<td class="help"><?php echo wc_help_tip( esc_html__( 'Is your site connected to WooCommerce.com?', 'woocommerce' ) ); /* phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped */ ?></td>
 			<td><?php echo 'yes' === $settings['woocommerce_com_connected'] ? '<mark class="yes"><span class="dashicons dashicons-yes"></span></mark>' : '<mark class="no">&ndash;</mark>'; ?></td>
+		</tr>
+		<tr>
+			<td data-export-label="Enforce Approved Product Download Directories"><?php esc_html_e( 'Enforce Approved Product Download Directories', 'woocommerce' ); ?>:</td>
+			<td class="help"><?php echo wc_help_tip( esc_html__( 'Is your site enforcing the use of Approved Product Download Directories?', 'woocommerce' ) ); /* phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped */ ?></td>
+			<td><?php echo wc_get_container()->get( Download_Directories::class )->get_mode() === Download_Directories::MODE_ENABLED ? '<mark class="yes"><span class="dashicons dashicons-yes"></span></mark>' : '<mark class="no">&ndash;</mark>'; ?></td>
 		</tr>
 	</tbody>
 </table>

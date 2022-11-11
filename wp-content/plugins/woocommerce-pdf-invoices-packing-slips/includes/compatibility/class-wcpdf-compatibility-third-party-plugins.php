@@ -22,12 +22,16 @@ class Third_Party_Plugins {
 			if ( version_compare( \WC_Subscriptions::$version, '2.0', '<' ) ) {
 				add_action( 'woocommerce_subscriptions_renewal_order_created', array( $this, 'woocommerce_subscriptions_renewal_order_created' ), 10, 4 );
 			} else {
-				add_action( 'wcs_renewal_order_created', array( $this, 'wcs_renewal_order_created' ), 10, 2 );
+				add_action( 'wcs_renewal_order_meta', array( $this, 'wcs_renewal_order_meta' ), 10, 3 );
+				add_action( 'wcs_resubscribe_order_meta', array( $this, 'wcs_renewal_order_meta' ), 10, 3 );
 			}
 		}
 
 		// WooCommerce Product Bundles compatibility (add row classes)
 		add_filter( 'wpo_wcpdf_item_row_class', array( $this, 'add_product_bundles_classes' ), 10, 4 );
+
+		// WPC Bundles compatibility (add row classes)
+		add_filter( 'wpo_wcpdf_item_row_class', array( $this, 'add_wpc_product_bundles_classes' ), 10, 4 );
 
 		// WooCommerce Chained Products compatibility (add row classes)
 		add_filter( 'wpo_wcpdf_item_row_class', array( $this, 'add_chained_product_class' ), 10, 4 );
@@ -62,11 +66,6 @@ class Third_Party_Plugins {
 		return $renewal_order;
 	}
 
-	public function wcs_renewal_order_created ( $renewal_order, $subscription ) {
-		$this->reset_invoice_data( $renewal_order );
-		return $renewal_order;
-	}
-
 	public function reset_invoice_data ( $order ) {
 		if ( ! is_object( $order ) ) {
 			$order = wc_get_order( $order );
@@ -80,19 +79,54 @@ class Third_Party_Plugins {
 	}
 
 	/**
+	 * Removes documents meta from WooCommerce Subscriptions renewal order
+	 */
+	public function wcs_renewal_order_meta ( $meta, $to_order, $from_order ) {
+		if ( ! empty( $meta ) ) {
+			$documents      = WPO_WCPDF()->documents->get_documents();
+			$documents_meta = array();
+			
+			foreach ( $documents as $document ) {
+				$document_data_keys = apply_filters( 'wpo_wcpdf_delete_document_data_keys', array( 
+					'settings',
+					'date',
+					'date_formatted',
+					'number',
+					'number_data',
+					'notes',
+					'exists',
+				), $document );
+				
+				$document_meta      = array_map( function ( $data_key ) use ( $document ) {
+					return "_wcpdf_{$document->slug}_{$data_key}";
+				}, $document_data_keys );
+				$document_meta[]    = "_wcpdf_formatted_{$document->slug}_number"; // legacy meta key
+				$documents_meta     = array_merge( $documents_meta, $document_meta );
+			}
+
+			foreach ( $meta as $key => $value ) {
+				if ( in_array( $value['meta_key'], $documents_meta ) ) {
+					unset( $meta[$key] );
+				}
+			}
+		}
+		return $meta;
+	}
+
+	/**
 	 * WooCommerce Product Bundles
 	 * @param string $classes       CSS classes for item row (tr) 
 	 * @param string $document_type PDF Document type
 	 * @param object $order         WC_Order order
 	 * @param int    $item_id       WooCommerce Item ID
 	 */
-	public function add_product_bundles_classes ( $classes, $document_type, $order, $item_id = '' ) {
+	public function add_product_bundles_classes ( $classes, $document_type, $order, $item_id = 0 ) {
 		if ( !class_exists('WC_Bundles') ) {
 			return $classes;
 		}
 
-		$item_id = !empty($item_id) ? $item_id : $this->get_item_id_from_classes( $classes );
-		if ( empty($item_id) ) {
+		$item_id = ! empty( $item_id ) ? $item_id : $this->get_item_id_from_classes( $classes );
+		if ( empty( $item_id ) ) {
 			return $classes;
 		}
 
@@ -113,13 +147,43 @@ class Third_Party_Plugins {
 	}
 
 	/**
-	 * WooCommerce Chanined Products
+	 * WPC Product Bundles
 	 * @param string $classes       CSS classes for item row (tr) 
 	 * @param string $document_type PDF Document type
 	 * @param object $order         WC_Order order
 	 * @param int    $item_id       WooCommerce Item ID
 	 */
-	public function add_chained_product_class ( $classes, $document_type, $order, $item_id = '' ) {
+	public function add_wpc_product_bundles_classes ( $classes, $document_type, $order, $item_id = 0 ) {
+		if ( ! class_exists( 'WPCleverWoosb' ) ) {
+			return $classes;
+		}
+
+		$item_id = ! empty( $item_id ) ? $item_id : $this->get_item_id_from_classes( $classes );
+		if ( empty( $item_id ) ) {
+			return $classes;
+		}
+
+		// Add row classes
+		$refunded_item_id = WCX_Order::get_item_meta( $order, $item_id, '_refunded_item_id', true );
+		$class_item_id = ! empty( $refunded_item_id ) ? $refunded_item_id : $item_id;
+
+		if ( $bundled_by = WCX_Order::get_item_meta( $order, $class_item_id, '_woosb_parent_id', true ) ) {
+			$classes = $classes . ' bundled-item';
+		} elseif ( $bundled_items = WCX_Order::get_item_meta( $order, $class_item_id, '_woosb_ids', true ) ) {
+			$classes = $classes . ' product-bundle';
+		}
+
+		return $classes;
+	}	
+
+	/**
+	 * WooCommerce Chained Products
+	 * @param string $classes       CSS classes for item row (tr) 
+	 * @param string $document_type PDF Document type
+	 * @param object $order         WC_Order order
+	 * @param int    $item_id       WooCommerce Item ID
+	 */
+	public function add_chained_product_class ( $classes, $document_type, $order, $item_id = 0 ) {
 		if ( !class_exists('SA_WC_Chained_Products') && !class_exists('WC_Chained_Products') ) {
 			return $classes;
 		}
@@ -143,7 +207,7 @@ class Third_Party_Plugins {
 	 * @param object $order         WC_Order order
 	 * @param int    $item_id       WooCommerce Item ID
 	 */
-	public function add_composite_product_class ( $classes, $document_type, $order, $item_id = '' ) {
+	public function add_composite_product_class ( $classes, $document_type, $order, $item_id = 0 ) {
 		if ( !function_exists('wc_cp_is_composited_order_item') || !function_exists('wc_cp_is_composite_container_order_item') ) {
 			return $classes;
 		}

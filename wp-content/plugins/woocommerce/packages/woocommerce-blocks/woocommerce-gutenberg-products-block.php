@@ -3,14 +3,14 @@
  * Plugin Name: WooCommerce Blocks
  * Plugin URI: https://github.com/woocommerce/woocommerce-gutenberg-products-block
  * Description: WooCommerce blocks for the Gutenberg editor.
- * Version: 4.4.3
+ * Version: 7.4.3
  * Author: Automattic
  * Author URI: https://woocommerce.com
  * Text Domain:  woo-gutenberg-products-block
- * Requires at least: 5.4
+ * Requires at least: 5.9
  * Requires PHP: 7.0
- * WC requires at least: 4.3
- * WC tested up to: 5.1
+ * WC requires at least: 6.3
+ * WC tested up to: 6.4
  *
  * @package WooCommerce\Blocks
  * @internal This file is only used when running as a feature plugin.
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$minimum_wp_version = '5.4';
+$minimum_wp_version = '5.9';
 
 if ( ! defined( 'WC_BLOCKS_IS_FEATURE_PLUGIN' ) ) {
 	define( 'WC_BLOCKS_IS_FEATURE_PLUGIN', true );
@@ -54,8 +54,8 @@ if ( version_compare( $GLOBALS['wp_version'], $minimum_wp_version, '<' ) ) {
 	function woocommerce_blocks_admin_unsupported_wp_notice() {
 		if ( should_display_compatibility_notices() ) {
 			?>
-			<div class="notice notice-error is-dismissible">
-				<p><?php esc_html_e( 'WooCommerce Blocks requires a more recent version of WordPress and has been paused. Please update WordPress to continue enjoying WooCommerce Blocks.', 'woocommerce' ); ?></p>
+			<div class="notice notice-error">
+				<p><?php esc_html_e( 'The WooCommerce Blocks feature plugin requires a more recent version of WordPress and has been paused. Please update WordPress to continue enjoying WooCommerce Blocks.', 'woocommerce' ); ?></p>
 			</div>
 			<?php
 		}
@@ -91,7 +91,7 @@ if ( woocommerce_blocks_is_development_version() && ! defined( 'JETPACK_AUTOLOAD
 		function() {
 			echo '<div class="error"><p>';
 			printf(
-				/* Translators: %1$s is referring to a php constant name, %2$s is referring to the wp-config.php file. */
+				/* translators: %1$s is referring to a php constant name, %2$s is referring to the wp-config.php file. */
 				esc_html__( 'WooCommerce Blocks development mode requires the %1$s constant to be defined and true in your %2$s file. Otherwise you are loading the blocks package from WooCommerce core.', 'woocommerce' ),
 				'JETPACK_AUTOLOAD_DEV',
 				'wp-config.php'
@@ -172,7 +172,8 @@ function woocommerce_blocks_get_i18n_data_json( $translations, $file, $handle, $
 		return $translations;
 	}
 
-	$handle_filename = basename( $wp_scripts->registered[ $handle ]->src );
+	$handle_src      = explode( '/build/', $wp_scripts->registered[ $handle ]->src );
+	$handle_filename = $handle_src[1];
 	$locale          = determine_locale();
 	$lang_dir        = WP_LANG_DIR . '/plugins';
 
@@ -203,7 +204,22 @@ function woocommerce_blocks_get_i18n_data_json( $translations, $file, $handle, $
 	} )( "{$domain}", {$json_translations} );
 JS;
 
-	printf( "<script type='text/javascript'>\n%s\n</script>\n", $output ); // phpcs:ignore
+	if ( empty( $wp_scripts->done ) ) {
+		// If we hadn't printed any script into the page, let's enqueue the translations.
+		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.NoExplicitVersion
+		wp_register_script( $handle_filename, '', array( 'wp-i18n' ), false, true );
+		wp_enqueue_script( $handle_filename );
+		wp_add_inline_script(
+			$handle_filename,
+			$output
+		);
+	} else {
+		// If we have already printed scripts into the page, there is a chance that
+		// scripts have finished being printed. That means that if we enqueued them here,
+		// they would never be printed. Instead of enqueuing, then, let's print directly
+		// the script tag.
+		printf( "<script type='text/javascript'>\n%s\n</script>\n", $output ); // phpcs:ignore
+	}
 
 	// Finally, short circuit the pre_load_script_translations hook by returning
 	// the translation JSON from the feature plugin, if it exists so this hook

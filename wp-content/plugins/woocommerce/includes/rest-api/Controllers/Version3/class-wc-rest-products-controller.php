@@ -207,10 +207,7 @@ class WC_REST_Products_Controller extends WC_REST_Products_V2_Controller {
 			$args['post_type'] = $this->post_type;
 		}
 
-		$orderby = $request->get_param( 'orderby' );
-		$order   = $request->get_param( 'order' );
-
-		$ordering_args   = WC()->query->get_catalog_ordering_args( $orderby, $order );
+		$ordering_args   = WC()->query->get_catalog_ordering_args( $args['orderby'], $args['order'] );
 		$args['orderby'] = $ordering_args['orderby'];
 		$args['order']   = $ordering_args['order'];
 		if ( $ordering_args['meta_key'] ) {
@@ -551,11 +548,22 @@ class WC_REST_Products_Controller extends WC_REST_Products_V2_Controller {
 					$stock_quantity += wc_stock_amount( $request['inventory_delta'] );
 					$product->set_stock_quantity( wc_stock_amount( $stock_quantity ) );
 				}
+
+				// Low stock amount.
+				// isset() returns false for value null, thus we need to check whether the value has been sent by the request.
+				if ( array_key_exists( 'low_stock_amount', $request->get_params() ) ) {
+					if ( null === $request['low_stock_amount'] ) {
+						$product->set_low_stock_amount( '' );
+					} else {
+						$product->set_low_stock_amount( wc_stock_amount( $request['low_stock_amount'] ) );
+					}
+				}
 			} else {
 				// Don't manage stock.
 				$product->set_manage_stock( 'no' );
 				$product->set_stock_quantity( '' );
 				$product->set_stock_status( $stock_status );
+				$product->set_low_stock_amount( '' );
 			}
 		} elseif ( ! $product->is_type( 'variable' ) ) {
 			$product->set_stock_status( $stock_status );
@@ -985,6 +993,11 @@ class WC_REST_Products_Controller extends WC_REST_Products_V2_Controller {
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
+				'low_stock_amount'       => array(
+					'description' => __( 'Low Stock amount for the product.', 'woocommerce' ),
+					'type'        => array( 'integer', 'null' ),
+					'context'     => array( 'view', 'edit' ),
+				),
 				'sold_individually'     => array(
 					'description' => __( 'Allow one item to be bought in a single order.', 'woocommerce' ),
 					'type'        => 'boolean',
@@ -1207,6 +1220,12 @@ class WC_REST_Products_Controller extends WC_REST_Products_V2_Controller {
 						),
 					),
 				),
+				'has_options'     => array(
+					'description' => __( 'Shows if the product needs to be configured before it can be bought.', 'woocommerce' ),
+					'type'        => 'boolean',
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
 				'attributes'            => array(
 					'description' => __( 'List of attributes.', 'woocommerce' ),
 					'type'        => 'array',
@@ -1367,6 +1386,9 @@ class WC_REST_Products_Controller extends WC_REST_Products_V2_Controller {
 			$fields = $this->get_fields_for_response( $this->request );
 			if ( in_array( 'stock_status', $fields ) ) {
 				$data['stock_status'] = $product->get_stock_status( $context );
+			}
+			if ( in_array( 'has_options', $fields ) ) {
+				$data['has_options'] = $product->has_options( $context );
 			}
 		}
 		return $data;

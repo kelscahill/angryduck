@@ -2,14 +2,14 @@
  * External dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { registerBlockType } from '@wordpress/blocks';
-import { Icon, discussion } from '@woocommerce/icons';
+import { createBlock, registerBlockType } from '@wordpress/blocks';
+import { Icon, postComments } from '@wordpress/icons';
 
 /**
  * Internal dependencies
  */
 import '../editor.scss';
-import Editor from './edit';
+import edit from './edit';
 import sharedAttributes from '../attributes';
 import save from '../save.js';
 import { example } from '../example';
@@ -19,10 +19,15 @@ import { example } from '../example';
  * This block lists all product reviews.
  */
 registerBlockType( 'woocommerce/all-reviews', {
+	apiVersion: 2,
 	title: __( 'All Reviews', 'woocommerce' ),
 	icon: {
-		src: <Icon srcElement={ discussion } />,
-		foreground: '#96588a',
+		src: (
+			<Icon
+				icon={ postComments }
+				className="wc-block-editor-components-block-icon"
+			/>
+		),
 	},
 	category: 'woocommerce',
 	keywords: [ __( 'WooCommerce', 'woocommerce' ) ],
@@ -32,6 +37,12 @@ registerBlockType( 'woocommerce/all-reviews', {
 	),
 	supports: {
 		html: false,
+		color: {
+			background: false,
+		},
+		typography: {
+			fontSize: true,
+		},
 	},
 	example: {
 		...example,
@@ -51,17 +62,27 @@ registerBlockType( 'woocommerce/all-reviews', {
 		},
 	},
 
-	/**
-	 * Renders and manages the block.
-	 *
-	 * @param {Object} props Props to pass to block.
-	 */
-	edit( props ) {
-		return <Editor { ...props } />;
+	transforms: {
+		from: [
+			{
+				type: 'block',
+				blocks: [ 'core/legacy-widget' ],
+				// We can't transform if raw instance isn't shown in the REST API.
+				isMatch: ( { idBase, instance } ) =>
+					idBase === 'woocommerce_recent_reviews' && !! instance?.raw,
+				transform: ( { instance } ) =>
+					createBlock( 'woocommerce/all-reviews', {
+						reviewsOnPageLoad: instance.raw.number,
+						imageType: 'product',
+						showLoadMore: false,
+						showOrderby: false,
+						showReviewDate: false,
+						showReviewContent: false,
+					} ),
+			},
+		],
 	},
 
-	/**
-	 * Save the props to post content.
-	 */
+	edit,
 	save,
 } );

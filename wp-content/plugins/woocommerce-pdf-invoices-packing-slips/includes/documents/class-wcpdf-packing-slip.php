@@ -50,8 +50,8 @@ class Packing_Slip extends Order_Document_Methods {
 			if ( isset( $this->settings['display_number'] ) ) {
 				$suffix = (string) $this->get_number();
 			} else {
-				if ( empty( $this->order ) ) {
-					$order = WCX::get_order ( $order_ids[0] );
+				if ( empty( $this->order ) && isset( $args['order_ids'] ) ) {
+					$order = WCX::get_order ( $args['order_ids'][0] );
 					$suffix = is_callable( array( $order, 'get_order_number' ) ) ? $order->get_order_number() : '';
 				} else {
 					$suffix = is_callable( array( $this->order, 'get_order_number' ) ) ? $this->order->get_order_number() : '';
@@ -153,6 +153,22 @@ class Packing_Slip extends Order_Document_Methods {
 		WPO_WCPDF()->settings->add_settings_fields( $settings_fields, $page, $option_group, $option_name );
 		return;
 
+	}
+
+	/**
+	 * Document number title
+	 */
+	public function get_number_title() {
+		$number_title = __( 'Packing Slip Number:', 'woocommerce-pdf-invoices-packing-slips' );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_number_title", $number_title, $this );
+	}
+
+	/**
+	 * Document date title
+	 */
+	public function get_date_title() {
+		$date_title = __( 'Packing Slip Date:', 'woocommerce-pdf-invoices-packing-slips' );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_date_title", $date_title, $this );
 	}
 
 }

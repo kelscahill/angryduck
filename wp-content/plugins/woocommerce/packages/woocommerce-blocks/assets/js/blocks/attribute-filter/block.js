@@ -3,35 +3,37 @@
  */
 import { __, sprintf } from '@wordpress/i18n';
 import { speak } from '@wordpress/a11y';
+import { usePrevious, useShallowEqual } from '@woocommerce/base-hooks';
 import {
 	useCollection,
 	useQueryStateByKey,
 	useQueryStateByContext,
 	useCollectionData,
-	usePrevious,
-	useShallowEqual,
-} from '@woocommerce/base-hooks';
+} from '@woocommerce/base-context/hooks';
 import { useCallback, useEffect, useState, useMemo } from '@wordpress/element';
 import CheckboxList from '@woocommerce/base-components/checkbox-list';
 import DropdownSelector from '@woocommerce/base-components/dropdown-selector';
+import Label from '@woocommerce/base-components/filter-element-label';
 import FilterSubmitButton from '@woocommerce/base-components/filter-submit-button';
 import isShallowEqual from '@wordpress/is-shallow-equal';
 import { decodeEntities } from '@wordpress/html-entities';
+import { Notice } from '@wordpress/components';
+import classNames from 'classnames';
 
 /**
  * Internal dependencies
  */
 import { getAttributeFromID } from '../../utils/attributes';
 import { updateAttributeFilter } from '../../utils/attributes-query';
-import Label from './label';
 import { previewAttributeObject, previewOptions } from './preview';
+import { useBorderProps } from '../../hooks/style-attributes';
 import './style.scss';
 
 /**
  * Component displaying an attribute filter.
  *
- * @param {Object} props Incoming props for the component.
- * @param {Object} props.attributes Incoming block attributes.
+ * @param {Object}  props            Incoming props for the component.
+ * @param {Object}  props.attributes Incoming block attributes.
  * @param {boolean} props.isEditor
  */
 const AttributeFilterBlock = ( {
@@ -50,6 +52,8 @@ const AttributeFilterBlock = ( {
 			: []
 	);
 
+	const borderProps = useBorderProps( blockAttributes );
+
 	const [ queryState ] = useQueryStateByContext();
 	const [
 		productAttributesQuery,
@@ -60,9 +64,9 @@ const AttributeFilterBlock = ( {
 		results: attributeTerms,
 		isLoading: attributeTermsLoading,
 	} = useCollection( {
-		namespace: '/wc/store',
+		namespace: '/wc/store/v1',
 		resourceName: 'products/attributes/terms',
-		resourceValues: [ attributeObject.id ],
+		resourceValues: [ attributeObject?.id || 0 ],
 		shouldSelect: blockAttributes.attributeId > 0,
 	} );
 
@@ -74,7 +78,7 @@ const AttributeFilterBlock = ( {
 		isLoading: filteredCountsLoading,
 	} = useCollectionData( {
 		queryAttribute: {
-			taxonomy: attributeObject.taxonomy,
+			taxonomy: attributeObject?.taxonomy,
 			queryType: blockAttributes.queryType,
 		},
 		queryState: {
@@ -152,7 +156,7 @@ const AttributeFilterBlock = ( {
 
 		setDisplayedOptions( newOptions );
 	}, [
-		attributeObject.taxonomy,
+		attributeObject?.taxonomy,
 		attributeTerms,
 		attributeTermsLoading,
 		blockAttributes.showCounts,
@@ -161,33 +165,6 @@ const AttributeFilterBlock = ( {
 		checked,
 		queryState.attributes,
 	] );
-
-	// Track checked STATE changes - if state changes, update the query.
-	useEffect( () => {
-		if ( ! blockAttributes.showFilterButton ) {
-			onSubmit( checked );
-		}
-	}, [ blockAttributes.showFilterButton, checked, onSubmit ] );
-
-	const checkedQuery = useMemo( () => {
-		return productAttributesQuery
-			.filter(
-				( { attribute } ) => attribute === attributeObject.taxonomy
-			)
-			.flatMap( ( { slug } ) => slug );
-	}, [ productAttributesQuery, attributeObject.taxonomy ] );
-
-	const currentCheckedQuery = useShallowEqual( checkedQuery );
-	const previousCheckedQuery = usePrevious( currentCheckedQuery );
-	// Track ATTRIBUTES QUERY changes so the block reflects current filters.
-	useEffect( () => {
-		if (
-			! isShallowEqual( previousCheckedQuery, currentCheckedQuery ) && // checked query changed
-			! isShallowEqual( checked, currentCheckedQuery ) // checked query doesn't match the UI
-		) {
-			setChecked( currentCheckedQuery );
-		}
-	}, [ checked, currentCheckedQuery, previousCheckedQuery ] );
 
 	/**
 	 * Returns an array of term objects that have been chosen via the checkboxes.
@@ -228,6 +205,35 @@ const AttributeFilterBlock = ( {
 		]
 	);
 
+	const checkedQuery = useMemo( () => {
+		return productAttributesQuery
+			.filter(
+				( { attribute } ) => attribute === attributeObject?.taxonomy
+			)
+			.flatMap( ( { slug } ) => slug );
+	}, [ productAttributesQuery, attributeObject?.taxonomy ] );
+
+	const currentCheckedQuery = useShallowEqual( checkedQuery );
+	const previousCheckedQuery = usePrevious( currentCheckedQuery );
+	// Track ATTRIBUTES QUERY changes so the block reflects current filters.
+	useEffect( () => {
+		if (
+			! isShallowEqual( previousCheckedQuery, currentCheckedQuery ) && // checked query changed
+			! isShallowEqual( checked, currentCheckedQuery ) // checked query doesn't match the UI
+		) {
+			setChecked( currentCheckedQuery );
+			if ( ! blockAttributes.showFilterButton ) {
+				onSubmit( currentCheckedQuery );
+			}
+		}
+	}, [
+		checked,
+		currentCheckedQuery,
+		previousCheckedQuery,
+		onSubmit,
+		blockAttributes.showFilterButton,
+	] );
+
 	const multiple =
 		blockAttributes.displayStyle !== 'dropdown' ||
 		blockAttributes.queryType === 'or';
@@ -255,7 +261,7 @@ const AttributeFilterBlock = ( {
 				if ( filterAddedName && filterRemovedName ) {
 					speak(
 						sprintf(
-							/* Translators: %1$s and %2$s are attribute terms (for example: 'red', 'blue', 'large'...). */
+							/* translators: %1$s and %2$s are attribute terms (for example: 'red', 'blue', 'large'...). */
 							__(
 								'%1$s filter replaced with %2$s.',
 								'woocommerce'
@@ -267,7 +273,7 @@ const AttributeFilterBlock = ( {
 				} else if ( filterAddedName ) {
 					speak(
 						sprintf(
-							/* Translators: %s attribute term (for example: 'red', 'blue', 'large'...) */
+							/* translators: %s attribute term (for example: 'red', 'blue', 'large'...) */
 							__(
 								'%s filter added.',
 								'woocommerce'
@@ -278,7 +284,7 @@ const AttributeFilterBlock = ( {
 				} else if ( filterRemovedName ) {
 					speak(
 						sprintf(
-							/* Translators: %s attribute term (for example: 'red', 'blue', 'large'...) */
+							/* translators: %s attribute term (for example: 'red', 'blue', 'large'...) */
 							__(
 								'%s filter removed.',
 								'woocommerce'
@@ -313,11 +319,49 @@ const AttributeFilterBlock = ( {
 			}
 
 			setChecked( newChecked );
+			if ( ! blockAttributes.showFilterButton ) {
+				onSubmit( newChecked );
+			}
 		},
-		[ checked, displayedOptions, multiple ]
+		[
+			checked,
+			displayedOptions,
+			multiple,
+			onSubmit,
+			blockAttributes.showFilterButton,
+		]
 	);
 
+	// Short-circuit if no attribute is selected.
+	if ( ! attributeObject ) {
+		if ( isEditor ) {
+			return (
+				<Notice status="warning" isDismissible={ false }>
+					<p>
+						{ __(
+							'Please select an attribute to use this filter!',
+							'woocommerce'
+						) }
+					</p>
+				</Notice>
+			);
+		}
+		return null;
+	}
+
 	if ( displayedOptions.length === 0 && ! attributeTermsLoading ) {
+		if ( isEditor ) {
+			return (
+				<Notice status="warning" isDismissible={ false }>
+					<p>
+						{ __(
+							'The selected attribute does not have any term assigned to products.',
+							'woocommerce'
+						) }
+					</p>
+				</Notice>
+			);
+		}
 		return null;
 	}
 
@@ -327,15 +371,25 @@ const AttributeFilterBlock = ( {
 
 	return (
 		<>
-			{ ! isEditor && blockAttributes.heading && (
-				<TagName>{ blockAttributes.heading }</TagName>
-			) }
-			<div className="wc-block-attribute-filter">
+			{ ! isEditor &&
+				blockAttributes.heading &&
+				displayedOptions.length > 0 && (
+					<TagName className="wc-block-attribute-filter__title">
+						{ blockAttributes.heading }
+					</TagName>
+				) }
+			<div
+				className={ `wc-block-attribute-filter style-${ blockAttributes.displayStyle }` }
+			>
 				{ blockAttributes.displayStyle === 'dropdown' ? (
 					<DropdownSelector
 						attributeLabel={ attributeObject.label }
 						checked={ checked }
-						className={ 'wc-block-attribute-filter-dropdown' }
+						className={ classNames(
+							'wc-block-attribute-filter-dropdown',
+							borderProps.className
+						) }
+						style={ { ...borderProps.style, borderStyle: 'none' } }
 						inputLabel={ blockAttributes.heading }
 						isLoading={ isLoading }
 						multiple={ multiple }

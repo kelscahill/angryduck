@@ -10,7 +10,7 @@ if ( ! defined( 'WOOCOMMERCE_CONNECT_SERVER_URL' ) ) {
 }
 
 if ( ! class_exists( 'WC_Connect_API_Client_Live' ) ) {
-	require_once( plugin_basename( 'class-wc-connect-api-client.php' ) );
+	require_once plugin_basename( 'class-wc-connect-api-client.php' );
 
 	class WC_Connect_API_Client_Live extends WC_Connect_API_Client {
 
@@ -65,19 +65,19 @@ if ( ! class_exists( 'WC_Connect_API_Client_Live' ) ) {
 				wc_set_time_limit( $http_timeout + 10 );
 			}
 			$args = array(
-				'headers' => $headers,
-				'method' => $method,
-				'body' => $body,
+				'headers'     => $headers,
+				'method'      => $method,
+				'body'        => $body,
 				'redirection' => 0,
-				'compress' => true,
-				'timeout' => $http_timeout,
+				'compress'    => true,
+				'timeout'     => $http_timeout,
 			);
 			$args = apply_filters( 'wc_connect_request_args', $args );
 
-			$response = wp_remote_request( $url, $args );
+			$response      = wp_remote_request( $url, $args );
 			$response_code = wp_remote_retrieve_response_code( $response );
 
-			// If the received response is not JSON, return the raw response
+			// If the received response is not JSON, return the raw response.
 			$content_type = wp_remote_retrieve_header( $response, 'content-type' );
 			if ( false === strpos( $content_type, 'application/json' ) ) {
 				if ( 200 != $response_code ) {
@@ -86,6 +86,9 @@ if ( ! class_exists( 'WC_Connect_API_Client_Live' ) ) {
 						sprintf(
 							__( 'Error: The WooCommerce Shipping & Tax server returned HTTP code: %d', 'woocommerce-services' ),
 							$response_code
+						),
+						array(
+							'response_status_code' => $response_code,
 						)
 					);
 				}
@@ -104,13 +107,18 @@ if ( ! class_exists( 'WC_Connect_API_Client_Live' ) ) {
 						sprintf(
 							__( 'Error: The WooCommerce Shipping & Tax server returned ( %d ) and an empty response body.', 'woocommerce-services' ),
 							$response_code
+						),
+						array(
+							'response_status_code' => $response_code,
 						)
 					);
 				}
 
 				$error   = property_exists( $response_body, 'error' ) ? $response_body->error : '';
 				$message = property_exists( $response_body, 'message' ) ? $response_body->message : '';
-				$data    = property_exists( $response_body, 'data' ) ? $response_body->data : '';
+				$data    = property_exists( $response_body, 'data' ) ? (array) $response_body->data : array();
+
+				$data['response_status_code'] = $response_code;
 
 				return new WP_Error(
 					'wcc_server_error_response',

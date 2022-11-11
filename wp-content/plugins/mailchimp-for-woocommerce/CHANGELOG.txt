@@ -1,4 +1,32 @@
 == Changelog ==
+= 2.6.2 =
+* compatibility for woocommerce 6.3
+* UI/UX updates for situations where Action Scheduler is missing during composer installs (via .gitignore)
+* trigger double opt-in messages for customers who previously unsubscribed
+* improved minification of mailchimp-woocommerce-public.min.js file
+* mailchimp_woocommerce_landing_site URL improvements to reflect which page the customer entered on for the first time
+* better error handling with Google Analytics
+* fixed bug related to Mailchimp API submission when someone was already a list member
+= 2.6 =
+* adds support for selectively syncing subscribers only 
+* updates to action scheduler dependency 
+= 2.5.4 =
+* enhanced api error parsing
+* adds site transient for tracking cart
+* tested for woocommerce v5.8
+= 2.5.3 =
+* remove order_total and total_spent from customer submission
+= 2.5.2 =
+* cache gdpr fields for performance
+* force a currency code when not present
+* allow admins to see a newsletter checkbox if configured
+= 2.5.1 =
+* tested for woocommerce v5.1
+* tested for wordpress v5.7
+* fix for cookies.js samesite error
+* adds sync completion email sent to admin
+* resolves php error for mailchimp_set_user_by_email on checkout page 
+* additional database error handling
 = 2.5 =
 * interface reskin
 * fix for fatal error on disabled WoooCommerce admin

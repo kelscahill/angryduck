@@ -35,19 +35,28 @@ class Sequential_Number_Store {
 	 */
 	public $table_name;
 
+	/**
+	 * If table name not found in database, is new table
+	 * @var Bool
+	 */
+	public $is_new = false;
+
 	public function __construct( $store_name, $method = 'auto_increment' ) {
 		global $wpdb;
 		$this->store_name = $store_name;
-		$this->method = $method;
-		$this->table_name = apply_filters( "wpo_wcpdf_number_store_table_name", "{$wpdb->prefix}wcpdf_{$store_name}", $store_name, $method ); // i.e. wp_wcpdf_invoice_number
+		$this->method     = $method;
+		$this->table_name = apply_filters( "wpo_wcpdf_number_store_table_name", "{$wpdb->prefix}wcpdf_{$store_name}", $store_name, $method ); // e.g. wp_wcpdf_invoice_number
 
 		$this->init();
 	}
 
 	public function init() {
 		global $wpdb;
+
 		// check if table exists
-		if( $wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'") == $this->table_name) {
+		if( ! $this->store_name_exists() ) {
+			$this->is_new = true;
+		} else {
 			// check calculated_number column if using 'calculate' method
 			if ( $this->method == 'calculate' ) {
 				$column_exists = $wpdb->get_var("SHOW COLUMNS FROM `{$this->table_name}` LIKE 'calculated_number'");
@@ -64,15 +73,18 @@ class Sequential_Number_Store {
 $sql = "CREATE TABLE {$this->table_name} (
   id int(16) NOT NULL AUTO_INCREMENT,
   order_id int(16),
-  date datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  date datetime DEFAULT '1000-01-01 00:00:00' NOT NULL,
   calculated_number int (16),
   PRIMARY KEY  (id)
 ) $charset_collate;";
 
 		require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-		$result = dbDelta( $sql );
+		dbDelta( $sql );
+		
+		// catch mysql errors
+		wcpdf_catch_db_object_errors( $wpdb );
 
-		return $result;
+		return;
 	}
 
 	/**
@@ -173,6 +185,21 @@ $sql = "CREATE TABLE {$this->table_name} (
 
 		return $formatted_date;
 	}
+
+	/**
+	 * @return bool
+	 */
+	public function store_name_exists() {
+		global $wpdb;
+
+		// check if table exists
+		if( $wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'") == $this->table_name) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 }
 
 endif; // class_exists

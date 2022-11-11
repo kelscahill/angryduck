@@ -1,12 +1,19 @@
 .wc-block-components-radio-control__option {
 	@include reset-typography();
-	@include with-translucent-border( 0 0 1px );
 	display: block;
-	padding: em($gap) 0 em($gap) em($gap-largest);
+	margin: em($gap) 0;
+	padding: 0 0 0 em($gap-largest);
+	position: relative;
+
+	&:first-child {
+		margin-top: 0;
+	}
+	&:last-child {
+		margin-bottom: 0;
+	}
 }
 
 .wc-block-components-radio-control__option-layout {
-	@include with-translucent-border( 0 0 1px );
 	display: table;
 	width: 100%;
 }
@@ -37,12 +44,12 @@
 	// Currently, max() CSS function calls need to be wrapped with unquote.
 	// See: https://github.com/sass/sass/issues/2378#issuecomment-367490840
 	// These values should be the same as the control input height.
-	line-height: unquote("max(1.5rem, 24px)");
+	line-height: string.unquote("max(1.5rem, 24px)");
 }
 
 .wc-block-components-radio-control__description,
 .wc-block-components-radio-control__secondary-description {
-	@include font-size( small );
+	@include font-size(small);
 	line-height: 20px;
 }
 

@@ -3,8 +3,8 @@
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useCheckoutAddress } from '@woocommerce/base-hooks';
 import { CheckoutProvider } from '@woocommerce/base-context';
+import { useCheckoutAddress } from '@woocommerce/base-context/hooks';
 
 /**
  * Internal dependencies
@@ -21,7 +21,7 @@ const renderInCheckoutProvider = ( ui, options = {} ) => {
 // Countries used in testing addresses must be in the wcSettings global.
 // See: tests/js/setup-globals.js
 const primaryAddress = {
-	country: 'United Kingdom (UK)',
+	country: 'United Kingdom',
 	countryKey: 'GB',
 	city: 'London',
 	state: 'Greater London',
@@ -46,25 +46,22 @@ const cityRegExp = /city/i;
 const stateRegExp = /county|province|state/i;
 const postalCodeRegExp = /postal code|postcode|zip/i;
 
-const inputAddress = ( {
+const inputAddress = async ( {
 	country = null,
 	city = null,
 	state = null,
 	postcode = null,
 } ) => {
 	if ( country ) {
-		const countryButton = screen.getByRole( 'button', {
-			name: countryRegExp,
-		} );
-		userEvent.click( countryButton );
-		userEvent.click( screen.getByRole( 'option', { name: country } ) );
+		const countryInput = screen.getByLabelText( countryRegExp );
+		userEvent.type( countryInput, country + '{arrowdown}{enter}' );
 	}
 	if ( city ) {
 		const cityInput = screen.getByLabelText( cityRegExp );
 		userEvent.type( cityInput, city );
 	}
 	if ( state ) {
-		const stateButton = screen.queryByRole( 'button', {
+		const stateButton = screen.queryByRole( 'combobox', {
 			name: stateRegExp,
 		} );
 		// State input might be a select or a text input.
@@ -86,26 +83,26 @@ describe( 'AddressForm Component', () => {
 	const WrappedAddressForm = ( { type } ) => {
 		const {
 			defaultAddressFields,
-			setShippingFields,
-			shippingFields,
+			setShippingAddress,
+			shippingAddress,
 		} = useCheckoutAddress();
 
 		return (
 			<AddressForm
 				type={ type }
-				onChange={ setShippingFields }
-				values={ shippingFields }
+				onChange={ setShippingAddress }
+				values={ shippingAddress }
 				fields={ Object.keys( defaultAddressFields ) }
 			/>
 		);
 	};
 	const ShippingFields = () => {
-		const { shippingFields } = useCheckoutAddress();
+		const { shippingAddress } = useCheckoutAddress();
 
 		return (
 			<ul>
-				{ Object.keys( shippingFields ).map( ( key ) => (
-					<li key={ key }>{ key + ': ' + shippingFields[ key ] }</li>
+				{ Object.keys( shippingAddress ).map( ( key ) => (
+					<li key={ key }>{ key + ': ' + shippingAddress[ key ] }</li>
 				) ) }
 			</ul>
 		);
@@ -149,6 +146,9 @@ describe( 'AddressForm Component', () => {
 
 		// Verify state input has been removed.
 		expect( screen.queryByText( stateRegExp ) ).not.toBeInTheDocument();
+
+		inputAddress( tertiaryAddress );
+
 		// Verify postal code input label changed.
 		expect( screen.getByLabelText( /Postal code/ ) ).toBeInTheDocument();
 	} );
@@ -159,17 +159,11 @@ describe( 'AddressForm Component', () => {
 		inputAddress( secondaryAddress );
 		// Only update `country` to verify other values are reset.
 		inputAddress( { country: primaryAddress.country } );
-
-		expect( screen.getByLabelText( cityRegExp ).value ).toBe( '' );
 		expect( screen.getByLabelText( stateRegExp ).value ).toBe( '' );
-		expect( screen.getByLabelText( postalCodeRegExp ).value ).toBe( '' );
 
 		// Repeat the test with an address which has a select for the state.
 		inputAddress( tertiaryAddress );
 		inputAddress( { country: primaryAddress.country } );
-
-		expect( screen.getByLabelText( cityRegExp ).value ).toBe( '' );
 		expect( screen.getByLabelText( stateRegExp ).value ).toBe( '' );
-		expect( screen.getByLabelText( postalCodeRegExp ).value ).toBe( '' );
 	} );
 } );

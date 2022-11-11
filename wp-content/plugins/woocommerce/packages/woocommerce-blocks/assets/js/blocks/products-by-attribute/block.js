@@ -13,13 +13,15 @@ import {
 	withSpokenMessages,
 } from '@wordpress/components';
 import { Component } from '@wordpress/element';
-import { Icon, tags } from '@woocommerce/icons';
+import { Icon, category } from '@wordpress/icons';
 import PropTypes from 'prop-types';
 import GridContentControl from '@woocommerce/editor-components/grid-content-control';
 import GridLayoutControl from '@woocommerce/editor-components/grid-layout-control';
 import ProductAttributeTermControl from '@woocommerce/editor-components/product-attribute-term-control';
 import ProductOrderbyControl from '@woocommerce/editor-components/product-orderby-control';
+import ProductStockControl from '@woocommerce/editor-components/product-stock-control';
 import { gridBlockPreview } from '@woocommerce/resource-previews';
+import { getSetting } from '@woocommerce/settings';
 
 /**
  * Component to handle edit mode of "Products by Attribute".
@@ -35,6 +37,7 @@ class ProductsByAttributeBlock extends Component {
 			orderby,
 			rows,
 			alignButtons,
+			stockStatus,
 		} = this.props.attributes;
 
 		return (
@@ -48,6 +51,10 @@ class ProductsByAttributeBlock extends Component {
 						rows={ rows }
 						alignButtons={ alignButtons }
 						setAttributes={ setAttributes }
+						minColumns={ getSetting( 'min_columns', 1 ) }
+						maxColumns={ getSetting( 'max_columns', 6 ) }
+						minRows={ getSetting( 'min_rows', 1 ) }
+						maxRows={ getSetting( 'max_rows', 6 ) }
 					/>
 				</PanelBody>
 				<PanelBody
@@ -71,20 +78,19 @@ class ProductsByAttributeBlock extends Component {
 					<ProductAttributeTermControl
 						selected={ attributes }
 						onChange={ ( value = [] ) => {
-							/* eslint-disable camelcase */
 							const result = value.map(
-								( { id, attr_slug } ) => ( {
+								( { id, attr_slug: attributeSlug } ) => ( {
 									id,
-									attr_slug,
+									attr_slug: attributeSlug,
 								} )
 							);
-							/* eslint-enable camelcase */
 							setAttributes( { attributes: result } );
 						} }
 						operator={ attrOperator }
 						onOperatorChange={ ( value = 'any' ) =>
 							setAttributes( { attrOperator: value } )
 						}
+						isCompact={ true }
 					/>
 				</PanelBody>
 				<PanelBody
@@ -94,6 +100,18 @@ class ProductsByAttributeBlock extends Component {
 					<ProductOrderbyControl
 						setAttributes={ setAttributes }
 						value={ orderby }
+					/>
+				</PanelBody>
+				<PanelBody
+					title={ __(
+						'Filter by stock status',
+						'woocommerce'
+					) }
+					initialOpen={ false }
+				>
+					<ProductStockControl
+						setAttributes={ setAttributes }
+						value={ stockStatus }
 					/>
 				</PanelBody>
 			</InspectorControls>
@@ -115,7 +133,7 @@ class ProductsByAttributeBlock extends Component {
 
 		return (
 			<Placeholder
-				icon={ <Icon srcElement={ tags } /> }
+				icon={ <Icon icon={ category } /> }
 				label={ __(
 					'Products by Attribute',
 					'woocommerce'
@@ -130,14 +148,12 @@ class ProductsByAttributeBlock extends Component {
 					<ProductAttributeTermControl
 						selected={ blockAttributes.attributes }
 						onChange={ ( value = [] ) => {
-							/* eslint-disable camelcase */
 							const result = value.map(
-								( { id, attr_slug } ) => ( {
+								( { id, attr_slug: attributeSlug } ) => ( {
 									id,
-									attr_slug,
+									attr_slug: attributeSlug,
 								} )
 							);
-							/* eslint-enable camelcase */
 							setAttributes( { attributes: result } );
 						} }
 						operator={ blockAttributes.attrOperator }
@@ -168,7 +184,10 @@ class ProductsByAttributeBlock extends Component {
 						controls={ [
 							{
 								icon: 'edit',
-								title: __( 'Edit' ),
+								title: __(
+									'Edit selected attribute',
+									'woocommerce'
+								),
 								onClick: () =>
 									setAttributes( { editMode: ! editMode } ),
 								isActive: editMode,

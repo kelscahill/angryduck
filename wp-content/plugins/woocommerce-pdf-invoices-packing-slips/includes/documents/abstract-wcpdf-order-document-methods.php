@@ -123,6 +123,17 @@ abstract class Order_Document_Methods extends Order_Document {
 	}
 
 	/**
+	 * Check whether the billing address should be shown
+	 */
+	public function show_billing_address() {
+		if( $this->get_type() != 'packing-slip' ) {
+			return true;
+		} else {
+			return ! empty( $this->settings['display_billing_address'] ) && ( $this->ships_to_different_address() || $this->settings['display_billing_address'] == 'always' );
+		}
+	}
+
+	/**
 	 * Return/Show billing email
 	 */
 	public function get_billing_email() {
@@ -141,21 +152,44 @@ abstract class Order_Document_Methods extends Order_Document {
 	}
 	
 	/**
-	 * Return/Show billing phone
+	 * Return/Show phone by type
 	 */
-	public function get_billing_phone() {
-		$billing_phone = WCX_Order::get_prop( $this->order, 'billing_phone', 'view' );
+	public function get_phone( $phone_type = 'billing' ) {
+		$phone_type = "{$phone_type}_phone";
+		$phone      = WCX_Order::get_prop( $this->order, $phone_type, 'view' );
 
-		if ( !$billing_phone && $this->is_refund( $this->order ) ) {
+		// on refund orders
+		if ( ! $phone && $this->is_refund( $this->order ) ) {
 			// try parent
 			$parent_order = $this->get_refund_parent( $this->order );
-			$billing_phone = WCX_Order::get_prop( $parent_order, 'billing_phone', 'view' );
+			$phone        = WCX_Order::get_prop( $parent_order, $phone_type, 'view' );
 		}
 
-		return apply_filters( 'wpo_wcpdf_billing_phone', $billing_phone, $this );
+		return $phone;
 	}
+
+	public function get_billing_phone() {
+		$phone = $this->get_phone( 'billing' );
+
+		return apply_filters( "wpo_wcpdf_billing_phone", $phone, $this );
+	}
+
+	public function get_shipping_phone( $fallback_to_billing = false ) {
+		$phone = $this->get_phone( 'shipping' );
+
+		if( $fallback_to_billing && empty( $phone ) ) {
+			$phone = $this->get_billing_phone();
+		}
+
+		return apply_filters( "wpo_wcpdf_shipping_phone", $phone, $this );
+	}
+
 	public function billing_phone() {
 		echo $this->get_billing_phone();
+	}
+
+	public function shipping_phone( $fallback_to_billing = false ) {
+		echo $this->get_shipping_phone( $fallback_to_billing );
 	}
 	
 	/**
@@ -189,6 +223,17 @@ abstract class Order_Document_Methods extends Order_Document {
 	}
 	public function shipping_address() {
 		echo $this->get_shipping_address();
+	}
+
+	/**
+	 * Check whether the shipping address should be shown
+	 */
+	public function show_shipping_address() {
+		if( $this->get_type() != 'packing-slip' ) {
+			return ! empty( $this->settings['display_shipping_address'] ) && ( $this->ships_to_different_address() || $this->settings['display_shipping_address'] == 'always' );
+		} else {
+			return true;
+		}
 	}
 
 	/**
@@ -548,8 +593,10 @@ abstract class Order_Document_Methods extends Order_Document {
 				// Get the product to add more info
 				if ( is_callable( array( $item, 'get_product' ) ) ) { // WC4.4+
 					$product = $item->get_product();
-				} else {
+				} elseif ( defined( 'WOOCOMMERCE_VERSION' ) && version_compare( WOOCOMMERCE_VERSION, '4.4', '<' ) ) {
 					$product = $this->order->get_product_from_item( $item );
+				} else {
+					$product = null;
 				}
 				
 				// Checking fo existance, thanks to MDesigner0 
@@ -575,9 +622,9 @@ abstract class Order_Document_Methods extends Order_Document {
 				
 				// Set item meta
 				if (function_exists('wc_display_item_meta')) { // WC3.0+
-					$data['meta'] = wc_display_item_meta( $item, array(
+					$data['meta'] = wc_display_item_meta( $item, apply_filters( 'wpo_wcpdf_display_item_meta_args', array(
 						'echo'      => false,
-					) );
+					), $this ) );
 				} else {
 					if ( version_compare( WOOCOMMERCE_VERSION, '2.4', '<' ) ) {
 						$meta = new \WC_Order_Item_Meta( $item['item_meta'], $product );
@@ -688,8 +735,8 @@ abstract class Order_Document_Methods extends Order_Document {
 
 	/**
 	 * Returns the percentage rate (float) for a given tax rate ID.
-	 * @param  int    $rate_id  woocommerce tax rate id
-	 * @return float  $rate     percentage rate
+	 * @param  int         $rate_id  woocommerce tax rate id
+	 * @return float|bool  $rate     percentage rate
 	 */
 	public function get_tax_rate_by_id( $rate_id, $order = null ) {
 		global $wpdb;
@@ -815,7 +862,7 @@ abstract class Order_Document_Methods extends Order_Document {
 			$contextless_site_url = str_replace(array('http://','https://'), '', trailingslashit(WP_CONTENT_URL));
 		}
 		$thumbnail_path = str_replace( $contextless_site_url, trailingslashit( $forwardslash_basepath ), $contextless_thumbnail_url);
-		
+
 		// fallback if thumbnail file doesn't exist
 		if (apply_filters('wpo_wcpdf_use_path', true) && !file_exists($thumbnail_path)) {
 			if ($thumbnail_id = $this->get_thumbnail_id( $product ) ) {
@@ -838,6 +885,17 @@ abstract class Order_Document_Methods extends Order_Document {
 		} else {
 			// load img with http url when filtered
 			$thumbnail = $thumbnail_img_tag_url;
+		}
+
+		/*
+		 * PHP GD library can be installed but 'webp' support could be disabled,
+		 * which turns the function 'imagecreatefromwebp()' inexistent,
+		 * leading to display an error in DOMPDF.
+		 * 
+		 * Check 'System configuration' in the Status tab for 'webp' support.
+		 */
+		if ( 'webp' === wp_check_filetype( $thumbnail_path )['ext'] && ! function_exists( 'imagecreatefromwebp' ) ) {
+			$thumbnail = '';
 		}
 
 		// die($thumbnail);
@@ -1169,7 +1227,7 @@ abstract class Order_Document_Methods extends Order_Document {
 	 */
 	public function get_formatted_item_price ( $item, $type, $tax_display = '' ) {
 		if ( ! isset( $item['line_subtotal'] ) || ! isset( $item['line_subtotal_tax'] ) ) {
-			return;
+			return '';
 		}
 
 		$divide_by = ($type == 'single' && $item['qty'] != 0 )?abs($item['qty']):1; //divide by 1 if $type is not 'single' (thus 'total')
@@ -1222,7 +1280,12 @@ abstract class Order_Document_Methods extends Order_Document {
 	}
 
 	public function document_notes() {
-		echo $this->get_document_notes();
+		$document_notes = $this->get_document_notes();
+		if( $document_notes == strip_tags( $document_notes ) ) {
+			echo nl2br($document_notes);
+		} else {
+			echo $document_notes;
+		}
 	}
 
 

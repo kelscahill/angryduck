@@ -232,17 +232,17 @@ function wpseo_save_all( $what ) {
 /**
  * Insert a new value.
  *
- * @param string $what     Item type (such as title).
- * @param int    $post_id  Post ID.
- * @param string $new      New value to record.
- * @param string $original Original value.
+ * @param string $what      Item type (such as title).
+ * @param int    $post_id   Post ID.
+ * @param string $new_value New value to record.
+ * @param string $original  Original value.
  *
  * @return string
  */
-function wpseo_upsert_new( $what, $post_id, $new, $original ) {
+function wpseo_upsert_new( $what, $post_id, $new_value, $original ) {
 	$meta_key = WPSEO_Meta::$meta_prefix . $what;
 
-	return wpseo_upsert_meta( $post_id, $new, $original, $meta_key, $what );
+	return wpseo_upsert_meta( $post_id, $new_value, $original, $meta_key, $what );
 }
 
 /**
@@ -315,28 +315,6 @@ new WPSEO_Shortcode_Filter();
 new WPSEO_Taxonomy_Columns();
 
 /* ********************* DEPRECATED FUNCTIONS ********************* */
-
-/**
- * Used in the editor to replace vars for the snippet preview.
- *
- * @deprecated 11.9
- * @codeCoverageIgnore
- */
-function wpseo_ajax_replace_vars() {
-	_deprecated_function( __METHOD__, 'WPSEO 11.9' );
-
-	global $post;
-	check_ajax_referer( 'wpseo-replace-vars' );
-
-	$post = get_post( intval( filter_input( INPUT_POST, 'post_id' ) ) );
-	global $wp_query;
-	$wp_query->queried_object    = $post;
-	$wp_query->queried_object_id = $post->ID;
-
-	$omit = [ 'excerpt', 'excerpt_only', 'title' ];
-	echo wpseo_replace_vars( stripslashes( filter_input( INPUT_POST, 'string' ) ), $post, $omit );
-	die;
-}
 
 /**
  * Hides the default tagline notice for a specific user.

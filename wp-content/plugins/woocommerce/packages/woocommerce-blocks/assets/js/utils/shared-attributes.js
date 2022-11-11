@@ -1,7 +1,7 @@
 /**
  * External dependencies
  */
-import { DEFAULT_COLUMNS, DEFAULT_ROWS } from '@woocommerce/block-settings';
+import { getSetting } from '@woocommerce/settings';
 
 export const sharedAttributeBlockTypes = [
 	'woocommerce/product-best-sellers',
@@ -17,7 +17,7 @@ export default {
 	 */
 	columns: {
 		type: 'number',
-		default: DEFAULT_COLUMNS,
+		default: getSetting( 'default_columns', 3 ),
 	},
 
 	/**
@@ -25,7 +25,7 @@ export default {
 	 */
 	rows: {
 		type: 'number',
-		default: DEFAULT_ROWS,
+		default: getSetting( 'default_rows', 3 ),
 	},
 
 	/**
@@ -71,5 +71,13 @@ export default {
 	isPreview: {
 		type: 'boolean',
 		default: false,
+	},
+
+	/**
+	 * Whether to display in stock, out of stock or backorder products.
+	 */
+	stockStatus: {
+		type: 'array',
+		default: Object.keys( getSetting( 'stockStatusOptions', [] ) ),
 	},
 };

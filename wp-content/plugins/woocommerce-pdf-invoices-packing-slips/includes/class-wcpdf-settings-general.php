@@ -62,10 +62,11 @@ class Settings_General {
 				'callback'	=> 'select',
 				'section'	=> 'general_settings',
 				'args'		=> array(
-					'option_name'	=> $option_name,
-					'id'			=> 'template_path',
-					'options' 		=> $this->find_templates(),
-					'description'	=> sprintf( __( 'Want to use your own template? Copy all the files from <code>%s</code> to your (child) theme in <code>%s</code> to customize them' , 'woocommerce-pdf-invoices-packing-slips' ), $plugin_template_path, $theme_template_path),
+					'option_name'      => $option_name,
+					'id'               => 'template_path',
+					'options_callback' => array( $this, 'get_installed_templates_list' ),
+					/* translators: 1,2. template paths */
+					'description'      => sprintf( __( 'Want to use your own template? Copy all the files from <code>%1$s</code> to your (child) theme in <code>%2$s</code> to customize them' , 'woocommerce-pdf-invoices-packing-slips' ), $plugin_template_path, $theme_template_path),
 				)
 			),
 			array(
@@ -157,7 +158,6 @@ class Settings_General {
 				'args'		=> array(
 					'option_name'	=> $option_name,
 					'id'			=> 'shop_name',
-					'size'			=> '72',
 					'translatable'	=> true,
 				)
 			),
@@ -259,18 +259,39 @@ class Settings_General {
 			$hide_hint = get_option( 'wpo_wcpdf_hide_attachments_hint' );
 		}
 
-		if ( $active_tab == 'general' && !$hide_hint ) {
+		if ( $active_tab == 'general' && ! $hide_hint ) {
 			$documents = WPO_WCPDF()->documents->get_documents();
 
-			foreach ($documents as $document) {
+			foreach ( $documents as $document ) {
 				if ( $document->get_type() == 'invoice' ) {
 					$invoice_email_ids = $document->get_attach_to_email_ids();
-					if (empty($invoice_email_ids)) {
+					if ( empty( $invoice_email_ids ) ) {
 						include_once( WPO_WCPDF()->plugin_path() . '/includes/views/attachment-settings-hint.php' );
 					}
 				}
 			}
 		}
+	}
+
+	public function get_installed_templates_list() {
+		$installed_templates = WPO_WCPDF()->settings->get_installed_templates();
+		$template_list = array();
+		foreach ( $installed_templates as $path => $template_id ) {
+			$template_name = basename( $template_id );
+			$group = dirname( $template_id );
+			switch ( $group ) {
+				case 'default':
+				case 'premium_plugin':
+					// no suffix
+					break;
+				case 'theme':
+				default:
+					$template_name = sprintf( '%s (%s)', $template_name, __( 'Custom', 'woocommerce-pdf-invoices-packing-slips' ) );
+					break;
+			}
+			$template_list[$template_id] = $template_name;
+		}
+		return $template_list;
 	}
 
 	/**
@@ -281,7 +302,7 @@ class Settings_General {
 		$installed_templates = array();
 
 		// get base paths
-		$template_base_path = ( defined( 'WC_TEMPLATE_PATH' ) ? WC_TEMPLATE_PATH : $GLOBALS['woocommerce']->template_url );
+		$template_base_path = ( function_exists( 'WC' ) && is_callable( array( 'WC', 'template_path' ) ) ) ? WC()->template_path() : 'woocommerce/';
 		$template_base_path = untrailingslashit( $template_base_path );
 		$template_paths = array (
 			// note the order: child-theme before theme, so that array_unique filters out parent doubles
@@ -292,18 +313,18 @@ class Settings_General {
 
 		$template_paths = apply_filters( 'wpo_wcpdf_template_paths', $template_paths );
 
-		if ( defined('WP_CONTENT_DIR') && strpos( WP_CONTENT_DIR, ABSPATH ) !== false ) {
-			$forwardslash_basepath = str_replace('\\','/', ABSPATH);
+		if ( defined( 'WP_CONTENT_DIR' ) && strpos( WP_CONTENT_DIR, ABSPATH ) !== false ) {
+			$forwardslash_basepath = str_replace( '\\', '/', ABSPATH );
 		} else {
-			$forwardslash_basepath = str_replace('\\','/', WP_CONTENT_DIR);
+			$forwardslash_basepath = str_replace( '\\', '/', WP_CONTENT_DIR );
 		}
 
 		foreach ($template_paths as $template_source => $template_path) {
-			$dirs = (array) glob( $template_path . '*' , GLOB_ONLYDIR);
+			$dirs = (array) glob( $template_path . '*' , GLOB_ONLYDIR );
 			
 			foreach ($dirs as $dir) {
 				// we're stripping abspath to make the plugin settings more portable
-				$forwardslash_dir = str_replace('\\','/', $dir);
+				$forwardslash_dir = str_replace( '\\', '/', $dir );
 				$installed_templates[ str_replace( $forwardslash_basepath, '', $forwardslash_dir ) ] = basename($dir);
 			}
 		}
