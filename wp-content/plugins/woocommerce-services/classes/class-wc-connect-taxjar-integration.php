@@ -756,14 +756,14 @@ class WC_Connect_TaxJar_Integration {
 			if ( is_object( $item ) ) { // Woo 3.0+
 				$id             = $item->get_product_id();
 				$quantity       = $item->get_quantity();
-				$unit_price     = wc_format_decimal( $item->get_subtotal() / $quantity );
+				$unit_price     = empty( $quantity ) ? $item->get_subtotal() : wc_format_decimal( $item->get_subtotal() / $quantity );
 				$discount       = wc_format_decimal( $item->get_subtotal() - $item->get_total() );
 				$tax_class_name = $item->get_tax_class();
 				$tax_status     = $item->get_tax_status();
 			} else { // Woo 2.6
 				$id             = $item['product_id'];
 				$quantity       = $item['qty'];
-				$unit_price     = wc_format_decimal( $item['line_subtotal'] / $quantity );
+				$unit_price     = empty( $quantity ) ? $item['line_subtotal'] : wc_format_decimal( $item['line_subtotal'] / $quantity );
 				$discount       = wc_format_decimal( $item['line_subtotal'] - $item['line_total'] );
 				$tax_class_name = $item['tax_class'];
 				$product        = $order->get_product_from_item( $item );
@@ -885,6 +885,45 @@ class WC_Connect_TaxJar_Integration {
 		}
 
 		return array( $country, $state, $postcode, $city );
+	}
+
+	/**
+	 * This method is used to override the TaxJar result.
+	 *
+	 * @param object $taxjar_resp_tax TaxJar response object.
+	 * @param array  $body            Body of TaxJar request.
+	 *
+	 * @return object
+	 */
+	public function maybe_override_taxjar_tax( $taxjar_resp_tax, $body ) {
+		$new_tax_rate = floatval( apply_filters( 'woocommerce_services_override_tax_rate', $taxjar_resp_tax->rate, $taxjar_resp_tax, $body ) );
+
+		if ( $new_tax_rate === floatval( $taxjar_resp_tax->rate ) ) {
+			return $taxjar_resp_tax;
+		}
+
+		if ( ! empty( $taxjar_resp_tax->breakdown->line_items ) ) {
+			$taxjar_resp_tax->breakdown->line_items = array_map(
+				function( $line_item ) use ( $new_tax_rate ) {
+					$line_item->combined_tax_rate       = $new_tax_rate;
+					$line_item->country_tax_rate        = $new_tax_rate;
+					$line_item->country_tax_collectable = $line_item->country_taxable_amount * $new_tax_rate;
+					$line_item->tax_collectable         = $line_item->taxable_amount * $new_tax_rate;
+
+					return $line_item;
+				},
+				$taxjar_resp_tax->breakdown->line_items
+			);
+		}
+
+		$taxjar_resp_tax->breakdown->combined_tax_rate           = $new_tax_rate;
+		$taxjar_resp_tax->breakdown->country_tax_rate            = $new_tax_rate;
+		$taxjar_resp_tax->breakdown->shipping->combined_tax_rate = $new_tax_rate;
+		$taxjar_resp_tax->breakdown->shipping->country_tax_rate  = $new_tax_rate;
+
+		$taxjar_resp_tax->rate = $new_tax_rate;
+
+		return $taxjar_resp_tax;
 	}
 
 	/**
@@ -1022,7 +1061,7 @@ class WC_Connect_TaxJar_Integration {
 
 		// Decode Response
 		$taxjar_response = json_decode( $response['body'] );
-		$taxjar_response = $taxjar_response->tax;
+		$taxjar_response = $this->maybe_override_taxjar_tax( $taxjar_response->tax, $body );
 
 		// Update Properties based on Response
 		$taxes['freight_taxable'] = (int) $taxjar_response->freight_taxable;

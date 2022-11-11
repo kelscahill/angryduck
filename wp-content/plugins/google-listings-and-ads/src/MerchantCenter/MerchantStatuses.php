@@ -98,7 +98,7 @@ class MerchantStatuses implements Service, ContainerAwareInterface {
 
 	/**
 	 * Get the Product Statistics (updating caches if necessary). This is the
-	 * number of product IDs with each status (active and partially active are combined).
+	 * number of product IDs with each status (approved and partially approved are combined as active).
 	 *
 	 * @param bool $force_refresh Force refresh of all product status data.
 	 *
@@ -463,7 +463,7 @@ class MerchantStatuses implements Service, ContainerAwareInterface {
 			}
 
 			$product_issue_template = [
-				'product'              => $this->product_data_lookup[ $wc_product_id ]['name'],
+				'product'              => html_entity_decode( $this->product_data_lookup[ $wc_product_id ]['name'] ),
 				'product_id'           => $wc_product_id,
 				'created_at'           => $created_at,
 				'applicable_countries' => [],
@@ -805,11 +805,29 @@ class MerchantStatuses implements Service, ContainerAwareInterface {
 	 * @return array The original issue with any possibly overridden values.
 	 */
 	private function maybe_override_issue_values( array $issue ): array {
-		if ( 'merchant_quality_low' === $issue['code'] ) {
-			$issue['issue']      = 'Show products on additional surfaces across Google through enhanced free listings';
+		/**
+		 * Code 'merchant_quality_low' for matching the original issue.
+		 * Ref: https://developers.google.com/shopping-content/guides/account-issues#merchant_quality_low
+		 *
+		 * Issue string "Account isn't eligible for free listings" for matching
+		 * the updated copy after Free and Enhanced Listings merge.
+		 *
+		 * TODO: Remove the condition of matching the $issue['issue']
+		 *       if its issue code is the same as 'merchant_quality_low'
+		 *       after Google replaces the issue title on their side.
+		 */
+		if ( 'merchant_quality_low' === $issue['code'] || "Account isn't eligible for free listings" === $issue['issue'] ) {
+			$issue['issue']      = 'Show products on additional surfaces across Google through free listings';
 			$issue['severity']   = self::SEVERITY_WARNING;
-			$issue['action']     = 'Read about enhanced free listings';
 			$issue['action_url'] = 'https://support.google.com/merchants/answer/9199328?hl=en';
+		}
+
+		/**
+		 * Reference: https://github.com/woocommerce/google-listings-and-ads/issues/1688
+		 */
+		if ( 'home_page_issue' === $issue['code'] ) {
+			$issue['issue']      = 'Website claim is lost, need to re verify and claim your website. Please reference the support link';
+			$issue['action_url'] = 'https://woocommerce.com/document/google-listings-and-ads-faqs/#reverify-website';
 		}
 
 		return $issue;

@@ -5,7 +5,7 @@
  */
 class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
 {
-    public $data = [];
+    public $data = array();
 
     /**
      * SubscriberSync constructor.
@@ -24,13 +24,21 @@ class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
     {
         try {
             // if the store is not properly connected to Mailchimp - we need to skip this.
-            if (!mailchimp_is_configured()) return null;
+            if (!mailchimp_is_configured()) {
+                mailchimp_log('subscriber_sync', 'Mailchimp is not configured, can not process job.');
+                return null;
+            }
             // grab the hook type, and the new data
             list($hook_type, $data, $failed) = $this->parseInputData();
             // extract the service ids from the data we get
             list ($service_id, $email) = $this->extractServiceIDs($data);
             // ignore the empty submissions or certain events or emails
-            if ($this->hasInvalidEvent($hook_type, $failed, $data) || $this->shouldIgnoreEmail($email)) {
+            if ($this->hasInvalidEvent($hook_type, $failed, $data)) {
+                mailchimp_log('subscriber_sync', 'Webhook has invalid event', compact('email'));
+                return false;
+            }
+            if ($this->shouldIgnoreEmail($email)) {
+                mailchimp_log('subscriber_sync', 'Webhook is ignoring email', compact('email'));
                 return false;
             }
             // if hook type is 'subscribe' that means we need ot subscribe them
@@ -39,35 +47,44 @@ class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
             if (!($user = get_user_by('email', $email))) {
                 // if the user is not found and we should create new customers
                 return ($subscribe && $this->shouldCreateNewCustomers()) ?
-                    $this->createNewCustomer($email) :
+                    (bool) $this->createNewCustomer($email) :
                     false;
             }
             try {
                 $handled_key = "subscriber_sync.{$service_id}.handled";
                 // see if we've saved a service call in the last 30 minutes.
-                $handled = mailchimp_get_transient($handled_key, null);
+                $handled = mailchimp_get_transient($handled_key);
                 // if we've got the subscriber sync id and it's the same as the previous submission, just skip out now.
-                if ($handled === $subscribe) return true;
+                if ($handled === $subscribe) {
+                    mailchimp_log('subscriber_sync', "didn't need to do anything");
+                    return true;
+                }
                 // if they unsubscribed, we need to put a cache on this because it's causing issues in the
                 // shopify webhooks for some reason being re-subscribed.
                 if (!$subscribe) {
                     // update the cached status just in case this is causing trouble with the webhook.
                     $hashed = md5(trim(strtolower($email)));
                     // tell the webhooks that we've just synced this customer with a certain status.
-                    mailchimp_set_transient("{$hashed}.subscriber_sync", array('time' => time(), 'status' => $subscribe), 90);
+                    mailchimp_set_transient("{$hashed}.subscriber_sync", array('time' => time(), 'status' => false), 90);
                 }
                 // update the user meta to show the proper value.
                 update_user_meta($user->ID, 'mailchimp_woocommerce_is_subscribed', $subscribe);
                 // cache it for 90 seconds to be used above.
                 mailchimp_set_transient($handled_key, $subscribe, 90);
-                mailchimp_log('webhook', "Subscriber Sync :: {$hook_type} :: {$email}");
-            } catch (\Exception $e) {
+                mailchimp_log('webhook', "Subscriber Sync :: {$hook_type} :: {$email}", array(
+                    'subscribed' => $subscribe,
+                    'user_id' => $user->ID,
+                ));
+                return true;
+            } catch (Exception $e) {
                 $error = $e->getMessage();
                 mailchimp_error('webhook', "Updating Subscriber Status :: MC service ID {$service_id} :: {$hook_type} :: {$error}");
                 return false;
             }
-        } catch (\Throwable $e) {
-            mailchimp_error('webhook', $e->getMessage(), array('data' => $data ? json_encode($data) : null));
+        } catch (Throwable $e) {
+            mailchimp_error('webhook', $e->getMessage(), array(
+            	'data' => isset($data) && $data ? json_encode($data) : null
+            ));
         }
         return false;
     }
@@ -79,7 +96,9 @@ class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
     private function extractServiceIDs($data)
     {
         if (is_object($data)) {
-            $service_id = isset($data->web_id) ? $data->web_id : isset($data->id) ? $data->id : null;
+            $service_id = isset($data->web_id) ?
+                $data->web_id :
+                (isset($data->id) ? $data->id : null);
             $email = isset($data->email) ? $data->email : null;
             return array($service_id, $email);
         } else {
@@ -107,12 +126,14 @@ class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
         return array($hook_type, $data, $failed);
     }
 
-    /**
-     * @param $email
-     * @return \WP_User
-     * @throws MailChimp_WooCommerce_Error
-     * @throws MailChimp_WooCommerce_ServerError
-     */
+	/**
+	 * @param $email
+	 *
+	 * @return int|WP_Error
+	 * @throws MailChimp_WooCommerce_Error
+	 * @throws MailChimp_WooCommerce_RateLimitError
+	 * @throws MailChimp_WooCommerce_ServerError
+	 */
     private function createNewCustomer($email)
     {
         $member = mailchimp_get_api()->member(mailchimp_get_list_id(), $email);
@@ -123,11 +144,11 @@ class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
         // TODO maybe use the registration method and keep a record for when the user is verified later
         $user = wp_create_user(strtolower($email), wp_generate_password(), strtolower($email));
         // subscribe them because this function only runs for subscribers.
-        update_user_meta($user->ID, 'mailchimp_woocommerce_is_subscribed', true);
+        update_user_meta($user, 'mailchimp_woocommerce_is_subscribed', true);
         // if we have a first and last name from the MC account, just use that.
         if ($first_name && $last_name) {
             wp_update_user(array(
-                'ID' => $user->ID,
+                'ID' => $user,
                 'first_name' => $first_name,
                 'last_name' => $last_name
             ));
@@ -154,15 +175,6 @@ class MailChimp_WooCommerce_Subscriber_Sync extends Mailchimp_Woocommerce_Job
         return mailchimp_string_contains($email, array(
             'forgotten.mailchimp.com'
         ));
-    }
-
-    /**
-     * @param string $error
-     * @return bool
-     */
-    private function isUnprocessableEntityError(string $error): bool
-    {
-        return mailchimp_string_contains($error, 'Unprocessable Entity');
     }
 
     /**

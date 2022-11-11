@@ -223,6 +223,25 @@ body.admin-color-sunrise {
  */
 /* stylelint-disable block-closing-brace-newline-after */
 /* stylelint-enable */
+.customer-feedback-simple__container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.customer-feedback-simple__container .components-button {
+  line-height: 32px;
+  font-size: 20px;
+  border-radius: 3px;
+  padding: 6px;
+}
+.customer-feedback-simple__container .components-button:hover {
+  background-color: #f0f0f0;
+}
+
+.customer-feedback-simple__selection {
+  margin-left: 12px;
+}
+
 .woocommerce-customer-effort-score__selection {
   margin: 1em 0;
 }
@@ -281,13 +300,13 @@ body.admin-color-sunrise {
   content: "🙁";
 }
 .woocommerce-customer-effort-score__selection .components-radio-control__option input[value="3"] + label::before {
-  content: "😐";
+  content: "😑";
 }
 .woocommerce-customer-effort-score__selection .components-radio-control__option input[value="4"] + label::before {
   content: "🙂";
 }
 .woocommerce-customer-effort-score__selection .components-radio-control__option input[value="5"] + label::before {
-  content: "😁";
+  content: "😍";
 }
 
 .woocommerce-customer-effort-score__comments label {

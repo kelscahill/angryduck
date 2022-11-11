@@ -4,7 +4,7 @@ Tags: shipping, stamps, usps, woocommerce, taxes, payment, dhl, labels
 Requires at least: 4.6
 Requires PHP: 5.3
 Tested up to: 5.9
-Stable tag: 1.26.0
+Stable tag: 1.26.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -75,6 +75,21 @@ The source code is freely available [in GitHub](https://github.com/Automattic/wo
 6. Checking and exporting the label purchase reports
 
 == Changelog ==
+
+= 1.26.3 - 2022-08-03 =
+* Tweak - Always let the user to pick the package box.
+* Add   - Add filter to override TaxJar result.
+* Fix   - Uncatch error when installing/connecting the Jetpack. 
+
+= 1.26.2 - 2022-07-04 =
+* Fix   - Change the wp-calypso commit to fix NPM Error when run `npm run prepare`. 
+* Fix   - E2E Tests: npm ci, update puppeteer to v2
+* Fix   - JS Tests: npm ci
+* Tweak - Replace colors npm package with chalk
+
+= 1.26.1 - 2022-06-21 =
+* Add   - Display warning if non-roman character is entered in address fields.
+* Fix   - "Division by Zero" fatal error on PHP 8.
 
 = 1.26.0 - 2022-05-27 =
 * Add   - Tool to clear cached Tax server responses from the transients.

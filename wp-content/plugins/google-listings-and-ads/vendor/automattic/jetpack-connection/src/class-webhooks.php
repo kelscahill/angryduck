@@ -41,15 +41,35 @@ class Webhooks {
 		$webhooks = new static( $connection );
 
 		add_action( 'init', array( $webhooks, 'controller' ) );
+		add_action( 'load-toplevel_page_jetpack', array( $webhooks, 'fallback_jetpack_controller' ) );
+	}
+
+	/**
+	 * Jetpack plugin used to trigger this webhooks in Jetpack::admin_page_load()
+	 *
+	 * The Jetpack toplevel menu is still accessible for stand-alone plugins, and while there's no content for that page, there are still
+	 * actions from Calypso and WPCOM that reach that route regardless of the site having the Jetpack plugin or not. That's why we are still handling it here.
+	 */
+	public function fallback_jetpack_controller() {
+		$this->controller( true );
 	}
 
 	/**
 	 * The "controller" decides which handler we need to run.
+	 *
+	 * @param bool $force Do not check if it's a webhook request and just run the controller.
 	 */
-	public function controller() {
-		// The nonce is verified in specific handlers.
+	public function controller( $force = false ) {
+		if ( ! $force ) {
+			// The nonce is verified in specific handlers.
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( empty( $_GET['handler'] ) || 'jetpack-connection-webhooks' !== $_GET['handler'] ) {
+				return;
+			}
+		}
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_GET['handler'] ) || empty( $_GET['action'] ) || 'jetpack-connection-webhooks' !== $_GET['handler'] ) {
+		if ( empty( $_GET['action'] ) ) {
 			return;
 		}
 
@@ -58,17 +78,22 @@ class Webhooks {
 		switch ( $_GET['action'] ) {
 			case 'authorize':
 				$this->handle_authorize();
+				$this->do_exit();
 				break;
+			case 'authorize_redirect':
+				$this->handle_authorize_redirect();
+				$this->do_exit();
+				break;
+			// Class Jetpack::admin_page_load() still handles other cases.
 		}
 
-		$this->do_exit();
 	}
 
 	/**
 	 * Perform the authorization action.
 	 */
 	public function handle_authorize() {
-		if ( $this->connection->is_active() && $this->connection->is_user_connected() ) {
+		if ( $this->connection->is_connected() && $this->connection->is_user_connected() ) {
 			$redirect_url = apply_filters( 'jetpack_client_authorize_already_authorized_url', admin_url() );
 			wp_safe_redirect( $redirect_url );
 
@@ -104,7 +129,8 @@ class Webhooks {
 			 *
 			 * @param int Jetpack Blog ID.
 			 *
-			 * @since 4.2.0
+			 * @since 1.7.0
+			 * @since-jetpack 4.2.0
 			 */
 			do_action( 'jetpack_client_authorized', Jetpack_Options::get_option( 'id' ) );
 
@@ -115,6 +141,14 @@ class Webhooks {
 		$redirect          = wp_validate_redirect( $redirect ) ? $redirect : $fallback_redirect;
 
 		wp_safe_redirect( $redirect );
+	}
+
+	/**
+	 * The authorhize_redirect webhook handler
+	 */
+	public function handle_authorize_redirect() {
+		$authorize_redirect_handler = new Webhooks\Authorize_Redirect( $this->connection );
+		$authorize_redirect_handler->handle();
 	}
 
 	/**

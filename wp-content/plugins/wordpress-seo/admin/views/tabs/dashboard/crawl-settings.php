@@ -19,7 +19,7 @@ if ( ! defined( 'WPSEO_VERSION' ) ) {
 <?php
 	echo sprintf(
 		/* translators: %1$s expands to Yoast SEO */
-		esc_html__( 'To make the crawling of your site more efficient and environmental friendly, %1$s allows you to remove RSS feeds (added by WordPress) that might not be needed for your site.', 'wordpress-seo' ),
+		esc_html__( 'To make the crawling of your site more efficient and environmental friendly, %1$s allows you to remove URLs (added by WordPress) that might not be needed for your site.', 'wordpress-seo' ),
 		'Yoast SEO Premium'
 	);
 
@@ -33,12 +33,26 @@ if ( ! defined( 'WPSEO_VERSION' ) ) {
 	echo '</p>';
 
 	/**
+	 * WARNING: This hook is intended for internal use only.
+	 * Don't use it in your code as it will be removed shortly.
+	 */
+	do_action( 'wpseo_settings_tab_crawl_cleanup_internal', $yform );
+
+	/**
 	 * Fires when displaying the crawl cleanup tab.
+	 *
+	 * @deprecated 19.10 No replacement available.
 	 *
 	 * @param Yoast_Form $yform The yoast form object.
 	 */
-	do_action( 'wpseo_settings_tab_crawl_cleanup', $yform );
 
+	do_action_deprecated(
+		'wpseo_settings_tab_crawl_cleanup',
+		[ $yform ],
+		'19.10',
+		'',
+		'This action is going away with no replacement. If you want to add settings that interact with Yoast SEO, please create your own settings page.'
+	);
 	?>
 </div>
 <?php

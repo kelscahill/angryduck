@@ -18,13 +18,17 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
     public $updated_data;
     public $language;
     public $should_ignore = false;
+    public $submit_transactional = true;
 
-    /**
-     * MailChimp_WooCommerce_User_Submit constructor.
-     * @param null $id
-     * @param null $subscribed
-     * @param WP_User|null $updated_data
-     */
+	/**
+	 * MailChimp_WooCommerce_User_Submit constructor.
+	 *
+	 * @param null $id
+	 * @param null $subscribed
+	 * @param null $updated_data
+	 * @param null $language
+	 * @param null $gdpr_fields
+	 */
     public function __construct($id = null, $subscribed = null, $updated_data = null, $language = null, $gdpr_fields = null)
     {
         if (!empty($id)) {
@@ -60,8 +64,18 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
     }
 
     /**
-     * @return bool
+     * @param bool $bool
+     * @return $this
      */
+    public function submittingTransactional($bool = true)
+    {
+        $this->submit_transactional = (bool) $bool;
+        return $this;
+    }
+
+	/**
+	 * @return bool
+	 */
     public function handle()
     {
         if (!mailchimp_is_configured()) {
@@ -110,15 +124,27 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
             return false;
         }
 
+	    $user_subscribed = get_user_meta($this->id, 'mailchimp_woocommerce_is_subscribed', true);
+        $unsaved = '' === $user_subscribed || null === $user_subscribed;
+
         // if we have a null value, we need to grab the correct user meta for is_subscribed
         if (is_null($this->subscribed)) {
-            $user_subscribed = get_user_meta($this->id, 'mailchimp_woocommerce_is_subscribed', true);
-            if ($user_subscribed === '' || $user_subscribed === null) {
+            if ( $unsaved ) {
                 mailchimp_log('member.sync', "Skipping sync for {$email} because no subscriber status has been set");
                 static::$handling_for = null;
                 return false;
             }
             $this->subscribed = (bool) $user_subscribed;
+        }
+
+        // if the meta we've stored on the user is not equal to the value being passed to Mailchimp
+	    // let's update that value here.
+        if ( $unsaved || ( (bool) $this->subscribed && (bool) $user_subscribed !== (bool) $this->subscribed ) ) {
+        	update_user_meta(
+        		$this->id,
+		        'mailchimp_woocommerce_is_subscribed',
+		        $this->subscribed ? '1' : '0'
+	        );
         }
 
         $api_key = isset($options['mailchimp_api_key']) ? $options['mailchimp_api_key'] : false;
@@ -133,7 +159,7 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
 
         // don't let anyone be unsubscribed from the list - that should only happen on email campaigns
         // and someone clicking the unsubscribe linkage.
-        if (!$this->subscribed) {
+        if (!$this->subscribed && !$this->submit_transactional) {
             static::$handling_for = null;
             return false;
         }
@@ -189,7 +215,7 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
                     // update the member tags but fail silently just in case.
                     $api->updateMemberTags(mailchimp_get_list_id(), $email, true);
 
-                    mailchimp_tell_system_about_user_submit($email, $status_meta, 60);
+                    mailchimp_tell_system_about_user_submit($email, $status_meta);
 
                     if ($status_meta['created']) {
                         mailchimp_log('member.sync', 'Subscriber Swap '.$this->updated_data['user_email'].' to '.$email, array(
@@ -209,9 +235,14 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
 
             // if the member is unsubscribed or pending, we really can't do anything here.
             if (isset($member_data['status']) && in_array($member_data['status'], array('unsubscribed', 'pending'))) {
-                mailchimp_log('member.sync', "Skipped Member Sync For {$email} because the current status is {$member_data['status']}", $merge_fields);
-                static::$handling_for = null;
-                return false;
+                if ($this->subscribed && $member_data['status'] !== 'pending') {
+                    mailchimp_log('member.sync', "pushing {$email} status as pending because they were previously unsubscribed, and must use the double opt in to make it back on the list.");
+                    $member_data['status'] = 'pending';
+                } else {
+                    mailchimp_log('member.sync', "Skipped Member Sync For {$email} because the current status is {$member_data['status']}", $merge_fields);
+                    static::$handling_for = null;
+                    return false;
+                }
             }
 
             // if the status is not === 'transactional' we can update them to subscribed or pending now.
@@ -222,26 +253,37 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
                 // update the member tags but fail silently just in case.
                 $api->updateMemberTags(mailchimp_get_list_id(), $email, true);
 
-                mailchimp_tell_system_about_user_submit($email, $status_meta, 60);
+                mailchimp_tell_system_about_user_submit($email, $status_meta);
                 mailchimp_log('member.sync', "Updated Member {$email}", array(
                     'previous_status' => $member_data['status'],
                     'status' => $status_meta['updated'],
-                    'merge_fields' => $merge_fields
+                    'language' => $language,
+                    'merge_fields' => $merge_fields,
+                    'gdpr_fields' => $gdpr_fields,
                 ));
                 static::$handling_for = null;
                 return true;
             }
 
             if (isset($member_data['status'])) {
+                if ($member_data['status'] === 'subscribed' && !$this->subscribed) {
+                    $member_data['status'] = 'transactional';
+                }
                 // ok let's update this member
                 $api->update($list_id, $email, $member_data['status'], $merge_fields, null, $language, $gdpr_fields);
+
+                // delete this admin transient if there was one
+                mailchimp_delete_transient("updating_subscriber_status.{$this->id}" );
 
                 // update the member tags but fail silently just in case.
                 $api->updateMemberTags(mailchimp_get_list_id(), $email, true);
 
-                mailchimp_tell_system_about_user_submit($email, $status_meta, 60);
-                mailchimp_log('member.sync', "Updated Member {$email} ( merge fields only )", array(
-                    'merge_fields' => $merge_fields
+                mailchimp_tell_system_about_user_submit($email, $status_meta);
+                mailchimp_log('member.sync', "Updated Member {$email}", array(
+                    'status' => $member_data['status'],
+                    'language' => $language,
+                    'merge_fields' => $merge_fields,
+                    'gdpr_fields' => $gdpr_fields,
                 ));
                 static::$handling_for = null;
                 return true;
@@ -252,26 +294,29 @@ class MailChimp_WooCommerce_User_Submit extends Mailchimp_Woocommerce_Job
             sleep(3);
             mailchimp_error('member.sync.error', mailchimp_error_trace($e, "RateLimited :: user #{$this->id}"));
             $this->retry();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // if we have a 404 not found, we can create the member
             if ($e->getCode() == 404) {
 
                 try {
                     $uses_doi = isset($status_meta['requires_double_optin']) && $status_meta['requires_double_optin'];
-                    $status_if_new = $uses_doi ? 'pending' : true;
+                    $status_if_new = $uses_doi && $this->subscribed ? 'pending' : (bool) $this->subscribed;
 
                     $api->subscribe($list_id, $user->user_email, $status_if_new, $merge_fields, null, $language, $gdpr_fields);
-                    
+
+	                // delete this admin transient if there was one
+	                mailchimp_delete_transient("updating_subscriber_status.{$this->id}" );
+
                     // update the member tags but fail silently just in case.
                     $api->updateMemberTags(mailchimp_get_list_id(), $email, true);
 
-                    mailchimp_tell_system_about_user_submit($email, $status_meta, 60);
+                    mailchimp_tell_system_about_user_submit($email, $status_meta);
                     if ($status_meta['created']) {
                         mailchimp_log('member.sync', "Subscribed Member {$user->user_email}", array('status_if_new' => $status_if_new, 'merge_fields' => $merge_fields));
                     } else {
                         mailchimp_log('member.sync', "{$user->user_email} is Pending Double OptIn");
                     }
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     mailchimp_log('member.sync', $e->getMessage());
                 }
                 static::$handling_for = null;

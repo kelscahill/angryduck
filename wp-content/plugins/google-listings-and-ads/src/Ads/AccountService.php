@@ -57,13 +57,13 @@ class AccountService implements OptionsAwareInterface, Service {
 	}
 
 	/**
-	 * Get Ads IDs associated with the connected Google account.
+	 * Get Ads accounts associated with the connected Google account.
 	 *
-	 * @return int[]
+	 * @return array
 	 * @throws Exception When an API error occurs.
 	 */
-	public function get_account_ids(): array {
-		return $this->container->get( Ads::class )->get_ads_account_ids();
+	public function get_accounts(): array {
+		return $this->container->get( Ads::class )->get_ads_accounts();
 	}
 
 	/**
@@ -215,6 +215,7 @@ class AccountService implements OptionsAwareInterface, Service {
 		$this->options->delete( OptionsInterface::ADS_CONVERSION_ACTION );
 		$this->options->delete( OptionsInterface::ADS_ID );
 		$this->options->delete( OptionsInterface::ADS_SETUP_COMPLETED_AT );
+		$this->options->delete( OptionsInterface::CAMPAIGN_CONVERT_STATUS );
 	}
 
 	/**

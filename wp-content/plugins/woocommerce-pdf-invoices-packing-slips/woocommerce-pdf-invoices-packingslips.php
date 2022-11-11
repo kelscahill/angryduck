@@ -1,27 +1,27 @@
 <?php
 /**
- * Plugin Name: WooCommerce PDF Invoices & Packing Slips
- * Plugin URI: https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-bundle/
- * Description: Create, print & email PDF invoices & packing slips for WooCommerce orders.
- * Version: 2.15.0
- * Author: WP Overnight
- * Author URI: https://www.wpovernight.com
- * License: GPLv2 or later
- * License URI: https://opensource.org/licenses/gpl-license.php
- * Text Domain: woocommerce-pdf-invoices-packing-slips
- * WC requires at least: 2.2.0
- * WC tested up to: 6.6
+ * Plugin Name:          PDF Invoices & Packing Slips for WooCommerce
+ * Plugin URI:           https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-bundle/
+ * Description:          Create, print & email PDF invoices & packing slips for WooCommerce orders.
+ * Version:              3.2.4
+ * Author:               WP Overnight
+ * Author URI:           https://www.wpovernight.com
+ * License:              GPLv2 or later
+ * License URI:          https://opensource.org/licenses/gpl-license.php
+ * Text Domain:          woocommerce-pdf-invoices-packing-slips
+ * WC requires at least: 3.0
+ * WC tested up to:      7.1
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-if ( !class_exists( 'WPO_WCPDF' ) ) :
+if ( ! class_exists( 'WPO_WCPDF' ) ) :
 
 class WPO_WCPDF {
 
-	public $version = '2.15.0';
+	public $version = '3.2.4';
 	public $plugin_basename;
 	public $legacy_mode;
 	public $legacy_textdomain;
@@ -172,24 +172,17 @@ class WPO_WCPDF {
 	 * Load the main plugin classes and functions
 	 */
 	public function includes() {
-		// WooCommerce compatibility classes
-		include_once( $this->plugin_path() . '/includes/compatibility/abstract-wc-data-compatibility.php' );
-		include_once( $this->plugin_path() . '/includes/compatibility/class-wc-date-compatibility.php' );
-		include_once( $this->plugin_path() . '/includes/compatibility/class-wc-core-compatibility.php' );
-		include_once( $this->plugin_path() . '/includes/compatibility/class-wc-order-compatibility.php' );
-		include_once( $this->plugin_path() . '/includes/compatibility/class-wc-product-compatibility.php' );
-		include_once( $this->plugin_path() . '/includes/compatibility/wc-datetime-functions-compatibility.php' );
-
 		// Third party compatibility
 		include_once( $this->plugin_path() . '/includes/compatibility/class-wcpdf-compatibility-third-party-plugins.php' );
 
 		// Plugin classes
 		include_once( $this->plugin_path() . '/includes/wcpdf-functions.php' );
-		$this->settings = include_once( $this->plugin_path() . '/includes/class-wcpdf-settings.php' );
+		$this->settings  = include_once( $this->plugin_path() . '/includes/class-wcpdf-settings.php' );
 		$this->documents = include_once( $this->plugin_path() . '/includes/class-wcpdf-documents.php' );
-		$this->main = include_once( $this->plugin_path() . '/includes/class-wcpdf-main.php' );
+		$this->main      = include_once( $this->plugin_path() . '/includes/class-wcpdf-main.php' );
+		$this->endpoint  = include_once( $this->plugin_path() . '/includes/class-wcpdf-endpoint.php' );
 		include_once( $this->plugin_path() . '/includes/class-wcpdf-assets.php' );
-		$this->admin = include_once( $this->plugin_path() . '/includes/class-wcpdf-admin.php' );
+		$this->admin     = include_once( $this->plugin_path() . '/includes/class-wcpdf-admin.php' );
 		include_once( $this->plugin_path() . '/includes/class-wcpdf-frontend.php' );
 		include_once( $this->plugin_path() . '/includes/class-wcpdf-install.php' );
 		include_once( $this->plugin_path() . '/includes/class-wcpdf-font-synchronizer.php' );
@@ -206,6 +199,11 @@ class WPO_WCPDF {
 	public function load_classes() {
 		if ( $this->is_woocommerce_activated() === false ) {
 			add_action( 'admin_notices', array ( $this, 'need_woocommerce' ) );
+			return;
+		}
+
+		if ( $this->is_woocommerce_version_supported() === false ) {
+			add_action( 'admin_notices', array ( $this, 'need_woocommerce_3_0' ) );
 			return;
 		}
 
@@ -246,6 +244,29 @@ class WPO_WCPDF {
 	}
 
 	/**
+	 * Check if woocommerce version is supported
+	 */
+	public function is_woocommerce_version_supported() {
+		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '3.0', '>=' ) ) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Woocommerce version < 3.0 notice
+	 */
+	public function need_woocommerce_3_0() {
+		/* translators: <a> tags */
+		$error = sprintf( esc_html__( 'PDF Invoices & Packing Slips for WooCommerce requires %1$sWooCommerce%2$s version 3.0 or higher!' , 'woocommerce-pdf-invoices-packing-slips' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">', '</a>' );
+		
+		$message = '<div class="error"><p>' . $error . '</p></div>';
+	
+		echo $message;
+}
+
+	/**
 	 * Check if woocommerce is activated
 	 */
 	public function is_woocommerce_activated() {
@@ -266,7 +287,7 @@ class WPO_WCPDF {
 	 */
 	public function need_woocommerce() {
 		/* translators: <a> tags */
-		$error = sprintf( esc_html__( 'WooCommerce PDF Invoices & Packing Slips requires %1$sWooCommerce%2$s to be installed & activated!' , 'woocommerce-pdf-invoices-packing-slips' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">', '</a>' );
+		$error = sprintf( esc_html__( 'PDF Invoices & Packing Slips for WooCommerce requires %1$sWooCommerce%2$s to be installed & activated!' , 'woocommerce-pdf-invoices-packing-slips' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">', '</a>' );
 		
 		$message = '<div class="error"><p>' . $error . '</p></div>';
 	
@@ -277,7 +298,7 @@ class WPO_WCPDF {
 	 * PHP version requirement notice
 	 */
 	public function required_php_version() {
-		$error_message	= __( 'WooCommerce PDF Invoices & Packing Slips requires PHP 7.1 (7.4 or higher recommended).', 'woocommerce-pdf-invoices-packing-slips' );
+		$error_message	= __( 'PDF Invoices & Packing Slips for WooCommerce requires PHP 7.1 (7.4 or higher recommended).', 'woocommerce-pdf-invoices-packing-slips' );
 		/* translators: <a> tags */
 		$php_message	= __( 'We strongly recommend to %1$supdate your PHP version%2$s.', 'woocommerce-pdf-invoices-packing-slips' );
 		/* translators: <a> tags */
@@ -413,7 +434,7 @@ class WPO_WCPDF {
 				?>
 				<div class="error">
 					<img src="<?php echo $this->plugin_url() . "/assets/images/mailpoet.svg"; ?>" style="margin-top:10px;">
-					<p><?php _e( 'When sending emails with MailPoet 3 and the active sending method is <strong>MailPoet Sending Service</strong> or <strong>Your web host / web server</strong>, MailPoet does not include the <strong>WooCommerce PDF Invoices & Packing Slips</strong> attachments in the emails.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
+					<p><?php _e( 'When sending emails with MailPoet 3 and the active sending method is <strong>MailPoet Sending Service</strong> or <strong>Your web host / web server</strong>, MailPoet does not include the <strong>PDF Invoices & Packing Slips for WooCommerce</strong> attachments in the emails.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
 					<p><?php _e( 'To fix this you should select <strong>The default WordPress sending method (default)</strong> on the <strong>Advanced tab</strong>.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
 					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=mailpoet-settings#/advanced' ) ); ?>"><?php _e( 'Change MailPoet sending method to WordPress (default)', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
 					<p><a href="<?php echo esc_url( add_query_arg( 'wpo_wcpdf_hide_mailpoet_notice', 'true' ) ); ?>"><?php _e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
@@ -452,7 +473,7 @@ class WPO_WCPDF {
 endif; // class_exists
 
 /**
- * Returns the main instance of WooCommerce PDF Invoices & Packing Slips to prevent the need to use globals.
+ * Returns the main instance of PDF Invoices & Packing Slips for WooCommerce to prevent the need to use globals.
  *
  * @since  1.6
  * @return WPO_WCPDF

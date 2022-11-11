@@ -4,12 +4,17 @@
  *
  * @package automattic/jetpack-connection
  *
- * @since 1.5
- * @since 7.7 Moved to the jetpack-connection package.
+ * @since 1.7.0
+ * @since-jetpack 1.5
+ * @since-jetpack 7.7 Moved to the jetpack-connection package.
  */
 
 use Automattic\Jetpack\Connection\Client;
 use Automattic\Jetpack\Connection\Manager;
+
+if ( ! class_exists( IXR_Client::class ) ) {
+	require_once ABSPATH . WPINC . '/class-IXR.php';
+}
 
 /**
  * A Jetpack implementation of the WordPress core IXR client.
@@ -115,11 +120,11 @@ class Jetpack_IXR_Client extends IXR_Client {
 	 * @return WP_Error Error object.
 	 */
 	public function get_jetpack_error( $fault_code = null, $fault_string = null ) {
-		if ( is_null( $fault_code ) ) {
+		if ( $fault_code === null ) {
 			$fault_code = $this->error->code;
 		}
 
-		if ( is_null( $fault_string ) ) {
+		if ( $fault_string === null ) {
 			$fault_string = $this->error->message;
 		}
 

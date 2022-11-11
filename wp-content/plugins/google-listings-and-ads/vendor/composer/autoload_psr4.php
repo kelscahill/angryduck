@@ -8,8 +8,11 @@ $baseDir = dirname($vendorDir);
 return array(
     'phpseclib3\\' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'bcmath_compat\\' => array($vendorDir . '/phpseclib/bcmath_compat/src'),
+    'Symfony\\Polyfill\\Php81\\' => array($vendorDir . '/symfony/polyfill-php81'),
     'Symfony\\Polyfill\\Php80\\' => array($vendorDir . '/symfony/polyfill-php80'),
     'Symfony\\Polyfill\\Php73\\' => array($vendorDir . '/symfony/polyfill-php73'),
+    'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
+    'Symfony\\Polyfill\\Intl\\Normalizer\\' => array($vendorDir . '/symfony/polyfill-intl-normalizer'),
     'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'Symfony\\Contracts\\Translation\\' => array($vendorDir . '/symfony/translation-contracts'),
     'Symfony\\Component\\Validator\\' => array($vendorDir . '/symfony/validator'),
@@ -39,7 +42,6 @@ return array(
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\Vendor\\GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\Vendor\\Google\\Auth\\' => array($vendorDir . '/google/auth/src'),
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\Util\\' => array($baseDir . '/bin'),
-    'Automattic\\WooCommerce\\GoogleListingsAndAds\\Tests\\' => array($baseDir . '/tests'),
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\' => array($baseDir . '/src'),
     'Automattic\\Jetpack\\Autoloader\\' => array($vendorDir . '/automattic/jetpack-autoloader/src'),
 );

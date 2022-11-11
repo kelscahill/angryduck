@@ -19,6 +19,8 @@
 namespace Google\Ads\GoogleAds\Lib;
 
 use Google\Auth\FetchAuthTokenInterface;
+use Grpc\ChannelCredentials;
+use Grpc\Interceptor;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -35,6 +37,14 @@ trait ConfigurationTrait
     private $logLevel;
     private $proxy;
     private $transport;
+    private $grpcChannelIsSecure;
+
+    // The following configuration settings are based on complex objects. They cannot be set in
+    // configuration files like the others but only dynamically.
+    private $grpcChannelCredential;
+    private $unaryMiddlewares;
+    private $streamingMiddlewares;
+    private $grpcInterceptors;
 
     /**
      * Gets the developer token.
@@ -124,5 +134,55 @@ trait ConfigurationTrait
     public function getTransport()
     {
         return $this->transport;
+    }
+
+    /**
+     * Returns whether the gRPC channel is secure or not.
+     *
+     * @return bool
+     */
+    public function getGrpcChannelIsSecure()
+    {
+        return $this->grpcChannelIsSecure;
+    }
+
+    /**
+     * Gets the gRPC channel credential.
+     *
+     * @return ChannelCredentials|null
+     */
+    public function getGrpcChannelCredential()
+    {
+        return $this->grpcChannelCredential;
+    }
+
+    /**
+     * Gets the Google Ads unary middlewares.
+     *
+     * @return GoogleAdsMiddlewareAbstract[] the Google Ads unary middlewares
+     */
+    public function getUnaryMiddlewares()
+    {
+        return $this->unaryMiddlewares;
+    }
+
+    /**
+     * Gets the Google Ads streaming middlewares.
+     *
+     * @return GoogleAdsMiddlewareAbstract[] the Google Ads streaming middlewares
+     */
+    public function getStreamingMiddlewares()
+    {
+        return $this->streamingMiddlewares;
+    }
+
+    /*
+     * Gets the gRPC interceptors.
+     *
+     * @return Interceptor[] the gRPC interceptors
+     */
+    public function getGrpcInterceptors()
+    {
+        return $this->grpcInterceptors;
     }
 }

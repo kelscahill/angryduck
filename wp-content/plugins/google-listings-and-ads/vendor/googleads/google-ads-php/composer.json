@@ -3,11 +3,11 @@
   "homepage": "https://github.com/googleads/google-ads-php",
   "description": "Google Ads API client for PHP",
   "require": {
-    "php": ">=7.3",
-    "google/gax": "^1.7.0",
+    "php": ">=7.4",
+    "google/gax": "^1.13.0",
     "grpc/grpc": "^1.36.0",
-    "google/protobuf": "^3.18.0",
-    "monolog/monolog": "^1.26 || ^2.0"
+    "google/protobuf": "^3.19.4",
+    "monolog/monolog": "^1.26 || ^2.0 || ^3.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5",

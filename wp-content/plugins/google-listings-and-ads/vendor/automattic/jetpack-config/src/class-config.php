@@ -16,7 +16,12 @@ use Automattic\Jetpack\Connection\Manager;
 use Automattic\Jetpack\Connection\Plugin;
 use Automattic\Jetpack\JITM as JITM;
 use Automattic\Jetpack\JITMS\JITM as JITMS_JITM;
+use Automattic\Jetpack\Post_List\Post_List as Post_List;
+use Automattic\Jetpack\Publicize\Publicize_Setup as Publicize_Setup;
+use Automattic\Jetpack\Search\Initializer as Jetpack_Search_Main;
 use Automattic\Jetpack\Sync\Main as Sync_Main;
+use Automattic\Jetpack\Waf\Waf_Initializer as Jetpack_Waf_Main;
+use Automattic\Jetpack\WordAds\Initializer as Jetpack_WordAds_Main;
 
 /**
  * The configuration class.
@@ -33,9 +38,15 @@ class Config {
 	 * @var Array
 	 */
 	protected $config = array(
-		'jitm'       => false,
-		'connection' => false,
-		'sync'       => false,
+		'jitm'            => false,
+		'connection'      => false,
+		'sync'            => false,
+		'post_list'       => false,
+		'identity_crisis' => false,
+		'search'          => false,
+		'publicize'       => false,
+		'wordads'         => false,
+		'waf'             => false,
 	);
 
 	/**
@@ -54,7 +65,6 @@ class Config {
 		 * being constructed on priority 1.
 		 */
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ), 2 );
-
 	}
 
 	/**
@@ -93,6 +103,36 @@ class Config {
 				|| $this->ensure_class( 'Automattic\Jetpack\JITM' ) )
 			&& $this->ensure_feature( 'jitm' );
 		}
+
+		if ( $this->config['post_list'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Post_List\Post_List' )
+				&& $this->ensure_feature( 'post_list' );
+		}
+
+		if ( $this->config['identity_crisis'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Identity_Crisis' )
+				&& $this->ensure_feature( 'identity_crisis' );
+		}
+
+		if ( $this->config['search'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Search\Initializer' )
+				&& $this->ensure_feature( 'search' );
+		}
+
+		if ( $this->config['publicize'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Publicize\Publicize_UI' ) && $this->ensure_class( 'Automattic\Jetpack\Publicize\Publicize' )
+				&& $this->ensure_feature( 'publicize' );
+		}
+
+		if ( $this->config['wordads'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\WordAds\Initializer' )
+				&& $this->ensure_feature( 'wordads' );
+		}
+
+		if ( $this->config['waf'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Waf\Waf_Initializer' )
+				&& $this->ensure_feature( 'waf' );
+		}
 	}
 
 	/**
@@ -113,7 +153,7 @@ class Config {
 					/* translators: %1$s is a PHP class name. */
 					esc_html__(
 						'Unable to load class %1$s. Please add the package that contains it using composer and make sure you are requiring the Jetpack autoloader',
-						'jetpack'
+						'jetpack-config'
 					),
 					esc_html( $classname )
 				),
@@ -151,7 +191,7 @@ class Config {
 		/**
 		 * Fires when a specific Jetpack package feature is initalized using the Config package.
 		 *
-		 * @since 8.2.0
+		 * @since 1.1.0
 		 */
 		do_action( 'jetpack_feature_' . $feature . '_enabled' );
 
@@ -168,6 +208,15 @@ class Config {
 			// Provides compatibility with jetpack-jitm <v1.6.
 			JITM::configure();
 		}
+
+		return true;
+	}
+
+	/**
+	 * Enables the Post_List feature.
+	 */
+	protected function enable_post_list() {
+		Post_List::configure();
 
 		return true;
 	}
@@ -191,6 +240,45 @@ class Config {
 	}
 
 	/**
+	 * Enables the identity-crisis feature.
+	 */
+	protected function enable_identity_crisis() {
+		Identity_Crisis::init();
+	}
+
+	/**
+	 * Enables the search feature.
+	 */
+	protected function enable_search() {
+		Jetpack_Search_Main::init();
+	}
+
+	/**
+	 * Enables the Publicize feature.
+	 */
+	protected function enable_publicize() {
+		Publicize_Setup::configure();
+
+		return true;
+	}
+
+	/**
+	 * Enables WordAds.
+	 */
+	protected function enable_wordads() {
+		Jetpack_WordAds_Main::init();
+	}
+
+	/**
+	 * Enables Waf.
+	 */
+	protected function enable_waf() {
+		Jetpack_Waf_Main::init();
+
+		return true;
+	}
+
+	/**
 	 * Setup the Connection options.
 	 */
 	protected function ensure_options_connection() {
@@ -208,6 +296,39 @@ class Config {
 			}
 
 			( new Plugin( $slug ) )->add( $name, $options );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Setup the Identity Crisis options.
+	 *
+	 * @return bool
+	 */
+	protected function ensure_options_identity_crisis() {
+		$options = $this->get_feature_options( 'identity_crisis' );
+
+		if ( is_array( $options ) && count( $options ) ) {
+			add_filter(
+				'jetpack_idc_consumers',
+				function ( $consumers ) use ( $options ) {
+					$consumers[] = $options;
+					return $consumers;
+				}
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Setup the Sync options.
+	 */
+	protected function ensure_options_sync() {
+		$options = $this->get_feature_options( 'sync' );
+		if ( method_exists( 'Automattic\Jetpack\Sync\Main', 'set_sync_data_options' ) ) {
+			Sync_Main::set_sync_data_options( $options );
 		}
 
 		return true;

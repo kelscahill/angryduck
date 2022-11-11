@@ -2,9 +2,9 @@
 Contributors: automattic, google, woocommerce
 Tags: woocommerce, google, listings, ads
 Requires at least: 5.7
-Tested up to: 5.9
-Requires PHP: 7.3
-Stable tag: 1.13.4
+Tested up to: 6.0
+Requires PHP: 7.4
+Stable tag: 2.2.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -54,8 +54,8 @@ Create a new Google Ads account through Google Listings & Ads and a promotional 
 = Minimum Requirements =
 
 * WordPress 5.7 or greater
-* WooCommerce 6.0 or greater
-* PHP version 7.3 or greater (PHP 7.4 or greater is recommended)
+* WooCommerce 6.8 or greater
+* PHP version 7.4 or greater
 * MySQL version 5.6 or greater
 
 Visit the [WooCommerce server requirements documentation](https://docs.woocommerce.com/document/server-requirements/) for a detailed list of server requirements.
@@ -109,27 +109,34 @@ Yes, you can run both at the same time, and we recommend it! In the US, advertis
 
 == Changelog ==
 
-= 1.13.4 - 2022-06-07 =
-* Fix - Adding Github Actions for storybook.
-* Fix - Do not show error notice when Merchant Center review request API call failed.
-* Fix - Do not store URL matches transient until fully connected.
-* Fix - Fix GitHub Workflow paths.
-* Fix - Use commit instead of branch for storybook dependency.
-* Tweak - Always compare site URL hash without trailing slash.
-* Tweak - Compliance Policy links.
-* Tweak - WC 6.6 compatibility.
+= 2.2.0 - 2022-10-18 =
+* Add - Ad previews in the post-onboarding ads setup flow.
+* Add - Combine the audience and shipping steps for the onboarding flow and the editing free listings page.
+* Add - Streamlined Free Listings + Paid Ads for the onboarding flow.
+* Add - The disclaimer of Comparison Shopping Service of the accounts setup of onboarding flow.
+* Add - The submission success modal on the Product Feed page after the onboarding is completed along with paid ads setup.
+* Fix - A validateDOMNesting warning in the accounts setup step of the onboarding flow.
+* Fix - Free Listings + Paid Ads: Add the paid ads previews to the boost product listings section.
+* Fix - Remove - Support for WC < 6.8.
+* Fix - Shipping time values flash during the onboarding setup.
+* Fix - Steppers on the onboarding flow allow switching to later steps when the current step is not yet finished.
+* Fix - The "Or, create a new Google Ads account" button at the footer of the Google Ads account setup is clickable when connecting an existing account.
+* Fix - The incorrect active status style for a disabled button.
+* Tweak - Use different titles for the free listings setup of the onboarding and editing pages.
+* Update - Change the steppers in the onboarding flow to only allow going back to the previous steps.
+* Update - Detect the verification status of the phone number in the contact information settings.
+* Update - Layouts and copywriting of the Get Started page and the onboarding flow.
+* Update - Logos of Google Merchant Center and Google Ads.
+* Update - Open the billing setup page of Google Ads via a popup window and add an alternative hyperlink to open the same setup page.
+* Update - The FAQs in the paid ads setup and the campaign setup page.
 
-= 1.13.3 - 2022-05-31 =
-* Add - Add six more promotion supported countries.
-* Fix - Allow unicode for Manufacturer Part Number (MPN) value.
-* Fix - Avoid to show Unsaved Values confirmation in Edit Free Listing when no values has been changed.
-* Fix - Prevent repeated account URL retrievals.
-* Fix - Update tracking docs.
-* Tweak - Replace storybook deps in favor of woocommerce-grow/storybook.
-* Tweak - Simplify and centralize the processing of internal states for the TreeSelectControl component.
-* Update - budget recommendation conversion rate.
+= 2.1.4 - 2022-10-04 =
+* Add - Policy Compliance Checks in the onboarding flow.
+* Tweak - WC 7.0 compatibility.
 
-= 1.13.2 - 2022-05-25 =
-* Fix - Prevent repeated account URL retrievals.
+= 2.1.3 - 2022-09-27 =
+* Fix - Avoid truncate for issues with more than 100 characters length.
+* Fix - Update Size Type Attribute available values.
+* Tweak - Update Website not Claimed issue information.
 
 [See changelog for all versions](https://raw.githubusercontent.com/woocommerce/google-listings-and-ads/trunk/changelog.txt).

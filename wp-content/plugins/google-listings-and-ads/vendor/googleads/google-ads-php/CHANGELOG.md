@@ -1,3 +1,91 @@
+## 16.0.0
+*   Removed support for v9 of Google Ads API.
+*   Cleaned up the FieldMasks util to remove reference to protocol buffer's wrapper types.
+*   Added support for Monolog 1 back.
+*   Updated the minimum required version of `google/gax` to 1.13.0.
+*   Renamed a code example GetArtifactMetadata to SearchForGoogleAdsFields.
+*   Updated code examples:
+    * GenerateUserCredentials
+    * SetCustomClientTimeouts
+*   Fixed dependabot alert in `examples/LaravelSampleApp/composer.lock`.
+
+## 15.1.0
+*   Added support for v11 of Google Ads API.
+*   Added support for version 3 of [`monolog/monolog`](https://github.com/Seldaek/monolog).
+*   Fixed dependabot alert in `examples/LaravelSampleApp/composer.lock`.
+*   Added code examples:
+    * CreateExperiment
+    * DetectAndApplyRecommendations
+*   Removed code examples:
+    * CreateCampaignExperiment
+    * GraduateCampaignExperiment
+*   Updated code examples:
+    * AddSmartCampaign
+    * GenerateUserCredentials
+
+## 15.0.0
+*   Added support for v10_1 of Google Ads API.
+*   Removed support for v8 of Google Ads API.
+*   Combined two examples in `Authentication/` into `GenerateUserCredentials`,
+    since [OAuth OOB](https://developers.googleblog.com/2022/02/making-oauth-flows-safer.html?m=1#disallowed-oob) is being deprecated.
+*   Updated `Dockerfile` to use the latest stable version of Apache PHP by default.
+*   Updated `examples/Migration/composer.json` and fixed
+    [#761](https://github.com/googleads/google-ads-php/issues/761).
+*   Fixed dependabot alert in `examples/LaravelSampleApp/composer.lock`.
+*   Added code examples:
+    * AddPerformanceMaxProductListingGroupTree
+*   Updated code examples:
+    * AddCampaigns
+    * AddCustomerMatchUserList
+    * AddDynamicRemarketingAsset
+    * AddPerformanceMaxCampaign
+    * AddPerformanceMaxRetailCampaign
+    * GetChangeDetails
+    * NavigateSearchResultPagesCachingTokens
+    * UploadOfflineConversion
+
+## 14.0.0
+*   Added support for v10 of Google Ads API.
+*   Removed support for v7 of Google Ads API.
+*   Added support for case-insensitive HTTP header field names in `GoogleAdsMetadataTrait` of all
+    versions.
+*   Updated `composer.json` and `composer.lock` of LaravelSampleApp.
+*   Updated the minimum required version of `google/protobuf` to 3.19.4.
+*   Added code examples:
+    * AddCall
+    * AddCallAd
+    * AddDynamicPageFeedAsset
+    * AddDynamicRemarketingAsset
+    * NavigateSearchResultPagesCachingTokens
+*   Updated code examples:
+    * AddDisplayUploadAd
+    * AddPerformanceMaxCampaign
+    * AddPerformanceMaxRetailCampaign
+    * GetAccountInformation
+    * GetKeywords
+    * UploadConversionWithIdentifiers
+    * UploadImageAsset
+
+## 13.0.0
+*   Updated `composer.json` to require the minimum PHP version of 7.4.
+*   Added support for setting gRPC channel, gRPC interceptor and middleware.
+*   Updated the references of "Google My Business/GMB" in code examples to
+    "Business Profile".
+*   Updated LaravelSampleApp to use lazy loading for the paging mechanism for
+    lower memory footprint and page loading time.
+*   Added code examples:
+    * AddPerformanceMaxCampaign
+    * AddPerformanceMaxRetailCampaign
+    * AddResponsiveSearchAdWithAdCustomizer
+    * UploadConversionWithIdentifiers
+    * UploadConversionEnhancement
+*   Updated code example:
+    * AddAppCampaign
+*   Renamed code examples:
+    * AddGoogleMyBusinessLocationExtensions to AddBusinessProfileLocationExtensions
+    * SetupAdvancedRemarketing to SetUpAdvancedRemarketing
+    * SetupRemarketing to SetUpRemarketing
+
 ## 12.1.0
 *   Added support for v9 of Google Ads API.
 *   Added `grpc` and `protobuf` extensions to `require-dev` of `composer.json`.

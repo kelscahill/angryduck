@@ -4,7 +4,8 @@ use Automattic\WooCommerce\Blocks\Integrations\IntegrationInterface;
 use Automattic\WooCommerce\Blocks\Package;
 use Automattic\WooCommerce\Blocks\Domain\Services\ExtendRestApi;
 use Automattic\WooCommerce\Blocks\StoreApi\Schemas\CheckoutSchema;
-use Automattic\WooCommerce\Blocks\Integrations\IntegrationRegistry;
+use Automattic\WooCommerce\StoreApi\StoreApi;
+use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -26,7 +27,7 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
 	}
 
 	/**
-	 * When called invokes any initialization/setup for the integration.
+	 * @throws Exception
 	 */
 	public function initialize()
     {
@@ -40,6 +41,9 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
         //add_action('woocommerce_blocks_checkout_order_processed', [$this, 'order_processed'], 10, 2);
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function register_frontend_scripts()
     {
 		$script_path       = '/build/newsletter-block-frontend.js';
@@ -69,6 +73,7 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
 			'mailchimp-woocommerce', // text domain
 			dirname(dirname( __FILE__ )) . '/languages'
 		);
+		return true;
 	}
 
     public function register_editor_scripts()
@@ -155,21 +160,27 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
 	/**
 	 * This allows dynamic (JS) blocks to access attributes in the frontend.
 	 *
-	 * @param string[] $allowed_blocks
+	 * @param $allowed_blocks
+	 *
+	 * @return mixed
 	 */
 	public function add_attributes_to_frontend_blocks( $allowed_blocks )
     {
+    	if (!is_array($allowed_blocks)) {
+    		$allowed_blocks = (array) $allowed_blocks;
+	    }
 		$allowed_blocks[] = 'woocommerce/mailchimp-newsletter-subscription';
 		return $allowed_blocks;
 	}
 
 	/**
-	 * Add schema Store API to support posted data.
+	 * @throws Exception
 	 */
 	public function extend_store_api()
     {
         /** @var ExtendRestApi $extend */
-		$extend = Package::container()->get(ExtendRestApi::class);
+        /** @var ExtendSchema $extend */
+		$extend = class_exists('Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema') ? StoreApi::container()->get(ExtendSchema::class) : Package::container()->get(ExtendRestApi::class);
 
 		$extend->register_endpoint_data(
 			array(
@@ -184,27 +195,41 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
 							'arg_options' => array(
 								'validate_callback' => function( $value ) {
 									if ( ! is_bool( $value ) ) {
-										return new \WP_Error( 'api-error', 'value of type ' . gettype( $value ) . ' was posted to the newsletter optin callback' );
+										return new WP_Error( 'api-error', 'value of type ' . gettype( $value ) . ' was posted to the newsletter optin callback' );
 									}
 									return true;
 								},
 							),
 						),
+                        'gdprFields' => array(
+                            'description' => __( 'GDPR marketing opt-in.', 'mailchimp-newsletter' ),
+                            'type'        => 'object',
+                            'context'     => array(),
+                            'arg_options' => array(
+                                'validate_callback' => function( $value ) {
+                                    return true;
+                                },
+                            ),
+                        ),
 					);
 				},
 			)
 		);
 	}
 
-    /**
-     * Store guest info when they submit email from Store API.
-     *
-     * The guest email, first name and last name are captured.
-     *
-     * @see \Automattic\WooCommerce\Blocks\StoreApi\Routes\CartUpdateCustomer
-     *
-     * @param \WC_Order $order
-     */
+	/**
+	 * Store guest info when they submit email from Store API.
+	 *
+	 * The guest email, first name and last name are captured.
+	 *
+	 * @see \Automattic\WooCommerce\Blocks\StoreApi\Routes\CartUpdateCustomer
+	 *
+	 * @param WC_Order|WC_Order_Refund $order
+	 *
+	 * @throws MailChimp_WooCommerce_Error
+	 * @throws MailChimp_WooCommerce_RateLimitError
+	 * @throws MailChimp_WooCommerce_ServerError
+	 */
     public function capture_from_store_api($order)
     {
         if ($order->get_status() !== 'checkout-draft' ||
@@ -224,17 +249,22 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
     }
 
     /**
-     * @param \WC_Order $order
+     * @param WC_Order $order
      * @param $request
      */
     public function order_processed($order, $request)
     {
         $meta_key = 'mailchimp_woocommerce_is_subscribed';
         $optin = $request['extensions']['mailchimp-newsletter']['optin'];
-        //$email = $request['billing_address']['email'];
+        $gdpr_fields = isset($request['extensions']['mailchimp-newsletter']['gdprFields']) ?
+            (array) $request['extensions']['mailchimp-newsletter']['gdprFields'] : null;
 
         // update the order meta for the subscription status to support legacy functions
         update_post_meta($order->get_id(), $meta_key, $optin);
+        // let's set the GDPR fields here just in case we need to pull them again.
+        if (!empty($gdpr_fields)) {
+            update_post_meta($order->get_id(), "mailchimp_woocommerce_gdpr_fields", $gdpr_fields);
+        }
 
         // if the user id exists
         if (($user_id = $order->get_user_id())) {
@@ -244,7 +274,6 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
             if ((bool) $optin) {
                 // probably need to add the GDPR fields and language in to this submission next.
                 $language = null;
-                $gdpr_fields = null;
                 mailchimp_handle_or_queue(
                     new MailChimp_WooCommerce_User_Submit(
                         $user_id,
@@ -257,10 +286,25 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
             }
         }
 
-        // maybe add the filter to only submit orders from subscribers?
-        $service = MailChimp_Service::instance();
-        $tracking = $service->onNewOrder($order->get_id());
-        $service->onOrderSave($order->get_id(), $tracking, true);
+        $tracking = MailChimp_Service::instance()->onNewOrder($order->get_id());
+        // queue up the single order to be processed.
+        $campaign_id = isset($tracking) && isset($tracking['campaign_id']) ? $tracking['campaign_id'] : null;
+        $landing_site = isset($tracking) && isset($tracking['landing_site']) ? $tracking['landing_site'] : null;
+        $language = substr( get_locale(), 0, 2 );
+
+        // update the post meta with campaign tracking details for future sync
+        if (!empty($campaign_id)) {
+            update_post_meta($order->get_id(), 'mailchimp_woocommerce_campaign_id', $campaign_id);
+        }
+        if (!empty($landing_site)) {
+            update_post_meta($order->get_id(), 'mailchimp_woocommerce_landing_site', $landing_site);
+        }
+
+        $handler = new MailChimp_WooCommerce_Single_Order($order->get_id(), null, $campaign_id, $landing_site, $language, $gdpr_fields);
+        $handler->is_update = false;
+        $handler->is_admin_save = is_admin();
+
+        mailchimp_handle_or_queue($handler, 15);
     }
 
     /**
@@ -285,7 +329,8 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
         if (!($list_id = mailchimp_get_list_id())) {
             return array();
         }
-        return mailchimp_get_api()->getCachedGDPRFields($list_id);
+        $fields = mailchimp_get_api()->getCachedGDPRFields($list_id);
+        return is_array($fields) ? $fields : array();
     }
 
 	/**

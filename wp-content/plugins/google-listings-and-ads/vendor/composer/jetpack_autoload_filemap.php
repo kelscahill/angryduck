@@ -10,56 +10,56 @@ return array(
 		'version' => '3.0.3.0',
 		'path'    => $vendorDir . '/ralouphie/getallheaders/src/getallheaders.php'
 	),
-	'c964ee0ededf28c96ebd9db5099ef910' => array(
-		'version' => '1.5.1.0',
-		'path'    => $vendorDir . '/guzzlehttp/promises/src/functions_include.php'
-	),
 	'6e3fae29631ef280660b3cdad06f25a8' => array(
-		'version' => '2.5.0.0',
+		'version' => '2.5.2.0',
 		'path'    => $vendorDir . '/symfony/deprecation-contracts/function.php'
 	),
 	'decc78cc4436b1292c6c0d151b19445c' => array(
-		'version' => '3.0.12.0',
+		'version' => '3.0.14.0',
 		'path'    => $vendorDir . '/phpseclib/phpseclib/phpseclib/bootstrap.php'
 	),
-	'37a3dc5111fe8f707ab4c132ef1dbc62' => array(
-		'version' => '7.4.1.0',
-		'path'    => $vendorDir . '/guzzlehttp/guzzle/src/functions_include.php'
-	),
 	'1f87db08236948d07391152dccb70f04' => array(
-		'version' => '0.230.0.0',
+		'version' => '0.258.0.0',
 		'path'    => $vendorDir . '/google/apiclient-services/autoload.php'
 	),
 	'320cde22f66dd4f5d3fd621d3e88b98f' => array(
-		'version' => '1.22.1.0',
+		'version' => '1.26.0.0',
 		'path'    => $vendorDir . '/symfony/polyfill-ctype/bootstrap.php'
 	),
+	'0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => array(
+		'version' => '1.26.0.0',
+		'path'    => $vendorDir . '/symfony/polyfill-mbstring/bootstrap.php'
+	),
 	'0d59ee240a4cd96ddbb4ff164fccea4d' => array(
-		'version' => '1.22.1.0',
+		'version' => '1.26.0.0',
 		'path'    => $vendorDir . '/symfony/polyfill-php73/bootstrap.php'
 	),
 	'a4a119a56e50fbb293281d9a48007e0e' => array(
-		'version' => '1.24.0.0',
+		'version' => '1.26.0.0',
 		'path'    => $vendorDir . '/symfony/polyfill-php80/bootstrap.php'
 	),
-	'bce4ecd6aabb2a2948e06d0e2c4ea9a6' => array(
-		'version' => '1.24.0.0',
-		'path'    => $vendorDir . '/automattic/jetpack-connection/legacy/load-ixr.php'
+	'23c18046f52bef3eea034657bafda50f' => array(
+		'version' => '1.26.0.0',
+		'path'    => $vendorDir . '/symfony/polyfill-php81/bootstrap.php'
 	),
 	'a8d3953fd9959404dd22d3dfcd0a79f0' => array(
-		'version' => '2.12.1.0',
+		'version' => '2.12.6.0',
 		'path'    => $vendorDir . '/google/apiclient/src/aliases.php'
 	),
 	'56823cacd97af379eceaf82ad00b928f' => array(
-		'version' => '2.0.0.0',
+		'version' => '2.0.1.0',
 		'path'    => $vendorDir . '/phpseclib/bcmath_compat/lib/bcmath.php'
 	),
+	'e69f7f6ee287b969198c3c9d6777bd38' => array(
+		'version' => '1.26.0.0',
+		'path'    => $vendorDir . '/symfony/polyfill-intl-normalizer/bootstrap.php'
+	),
 	'a66af3295a2671f868924c6f4a9afc6c' => array(
-		'version' => 'dev-release/1.13.4',
+		'version' => 'dev-release/2.2.0',
 		'path'    => $vendorDir . '/guzzlehttp/guzzle/src/functions_include.php'
 	),
 	'7fd7393568b2f049bdce22a915a0972c' => array(
-		'version' => 'dev-release/1.13.4',
+		'version' => 'dev-release/2.2.0',
 		'path'    => $vendorDir . '/guzzlehttp/promises/src/functions_include.php'
 	),
 );
