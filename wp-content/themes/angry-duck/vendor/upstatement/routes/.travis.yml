@@ -1,14 +1,18 @@
+sudo: false
+
+dist: xenial
+
+services: mysql
+
 language: php
 
 php:
-    - 5.6.30
-    - 7.1
+    - 5.6.40
+    - 7.4
 
 env:
     - WP_VERSION=latest WP_MULTISITE=0
     - WP_VERSION=latest WP_MULTISITE=1
-    - WP_VERSION=4.7.3 WP_MULTISITE=0
-    - WP_VERSION=4.7.3 WP_MULTISITE=1
 
 before_script:
     - bash bin/install-wp-tests.sh wordpress_test root '' localhost $WP_VERSION
@@ -16,7 +20,7 @@ before_script:
 
 script:
     - mkdir -p build/logs
-    - phpunit --coverage-clover build/logs/clover.xml
+    - php vendor/bin/phpunit --coverage-clover build/logs/clover.xml
 
 after_script:
     - php vendor/bin/coveralls -v
