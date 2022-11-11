@@ -4,18 +4,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class that handles iDeal payment method.
+ * Class that handles iDEAL payment method.
  *
  * @extends WC_Gateway_Stripe
  *
  * @since 4.0.0
  */
 class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
+
+	const ID = 'stripe_ideal';
+
 	/**
 	 * Notices (array)
+	 *
 	 * @var array
 	 */
-	public $notices = array();
+	public $notices = [];
 
 	/**
 	 * Is test mode active?
@@ -56,14 +60,18 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 	 * Constructor
 	 */
 	public function __construct() {
-		$this->id           = 'stripe_ideal';
-		$this->method_title = __( 'Stripe iDeal', 'woocommerce-gateway-stripe' );
-		/* translators: link */
-		$this->method_description = sprintf( __( 'All other general Stripe settings can be adjusted <a href="%s">here</a>.', 'woocommerce-gateway-stripe' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=stripe' ) );
-		$this->supports           = array(
+		$this->id                 = self::ID;
+		$this->method_title       = __( 'Stripe iDEAL', 'woocommerce-gateway-stripe' );
+		$this->method_description = sprintf(
+		/* translators: 1) HTML anchor open tag 2) HTML anchor closing tag */
+			__( 'All other general Stripe settings can be adjusted %1$shere%2$s.', 'woocommerce-gateway-stripe' ),
+			'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=stripe' ) ) . '">',
+			'</a>'
+		);
+		$this->supports = [
 			'products',
 			'refunds',
-		);
+		];
 
 		// Load the form fields.
 		$this->init_form_fields();
@@ -86,8 +94,8 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 			$this->secret_key      = ! empty( $main_settings['test_secret_key'] ) ? $main_settings['test_secret_key'] : '';
 		}
 
-		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
+		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, [ $this, 'process_admin_options' ] );
+		add_action( 'wp_enqueue_scripts', [ $this, 'payment_scripts' ] );
 	}
 
 	/**
@@ -100,9 +108,9 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 	public function get_supported_currency() {
 		return apply_filters(
 			'wc_stripe_ideal_supported_currencies',
-			array(
+			[
 				'EUR',
-			)
+			]
 		);
 	}
 
@@ -139,11 +147,7 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 	}
 
 	/**
-	 * payment_scripts function.
-	 *
 	 * Outputs scripts used for stripe payment
-	 *
-	 * @access public
 	 */
 	public function payment_scripts() {
 		if ( ! is_cart() && ! is_checkout() && ! isset( $_GET['pay_for_order'] ) && ! is_add_payment_method_page() ) {
@@ -158,7 +162,7 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 	 * Initialize Gateway Settings Form Fields.
 	 */
 	public function init_form_fields() {
-		$this->form_fields = require( WC_STRIPE_PLUGIN_PATH . '/includes/admin/stripe-ideal-settings.php' );
+		$this->form_fields = require WC_STRIPE_PLUGIN_PATH . '/includes/admin/stripe-ideal-settings.php';
 	}
 
 	/**
@@ -206,18 +210,18 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 	public function create_source( $order ) {
 		$currency              = $order->get_currency();
 		$return_url            = $this->get_stripe_return_url( $order );
-		$post_data             = array();
+		$post_data             = [];
 		$post_data['amount']   = WC_Stripe_Helper::get_stripe_amount( $order->get_total(), $currency );
 		$post_data['currency'] = strtolower( $currency );
 		$post_data['type']     = 'ideal';
 		$post_data['owner']    = $this->get_owner_details( $order );
-		$post_data['redirect'] = array( 'return_url' => $return_url );
+		$post_data['redirect'] = [ 'return_url' => $return_url ];
 
 		if ( ! empty( $this->statement_descriptor ) ) {
 			$post_data['statement_descriptor'] = WC_Stripe_Helper::clean_statement_descriptor( $this->statement_descriptor );
 		}
 
-		WC_Stripe_Logger::log( 'Info: Begin creating iDeal source' );
+		WC_Stripe_Logger::log( 'Info: Begin creating iDEAL source' );
 
 		return WC_Stripe_API::request( apply_filters( 'wc_stripe_ideal_source', $post_data, $order ), 'sources' );
 	}
@@ -260,26 +264,32 @@ class WC_Gateway_Stripe_Ideal extends WC_Stripe_Payment_Gateway {
 			$order->update_meta_data( '_stripe_source_id', $response->id );
 			$order->save();
 
-			WC_Stripe_Logger::log( 'Info: Redirecting to iDeal...' );
+			WC_Stripe_Logger::log( 'Info: Redirecting to iDEAL...' );
 
-			return array(
+			return [
 				'result'   => 'success',
 				'redirect' => esc_url_raw( $response->redirect->url ),
-			);
+			];
 		} catch ( WC_Stripe_Exception $e ) {
 			wc_add_notice( $e->getLocalizedMessage(), 'error' );
 			WC_Stripe_Logger::log( 'Error: ' . $e->getMessage() );
 
 			do_action( 'wc_gateway_stripe_process_payment_error', $e, $order );
 
-			if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
+			if ( $order->has_status(
+				apply_filters(
+					'wc_stripe_allowed_payment_processing_statuses',
+					[ 'pending', 'failed' ],
+					$order
+				)
+			) ) {
 				$this->send_failed_order_email( $order_id );
 			}
 
-			return array(
+			return [
 				'result'   => 'fail',
 				'redirect' => '',
-			);
+			];
 		}
 	}
 }

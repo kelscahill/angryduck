@@ -3,10 +3,14 @@
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
 import Button from '@woocommerce/base-components/button';
-import { Icon, done as doneIcon } from '@woocommerce/icons';
+import { Icon, check } from '@wordpress/icons';
 import { useState, useEffect } from '@wordpress/element';
 import { useAddToCartFormContext } from '@woocommerce/base-context';
-import { useStoreAddToCart } from '@woocommerce/base-hooks';
+import {
+	useStoreEvents,
+	useStoreAddToCart,
+} from '@woocommerce/base-context/hooks';
+import { useInnerBlockLayoutContext } from '@woocommerce/shared-context';
 
 /**
  * Add to Cart Form Button Component.
@@ -24,6 +28,8 @@ const AddToCartButton = () => {
 		hasError,
 		dispatchActions,
 	} = useAddToCartFormContext();
+	const { parentName } = useInnerBlockLayoutContext();
+	const { dispatchStoreEvent } = useStoreEvents();
 	const { cartQuantity } = useStoreAddToCart( product.id || 0 );
 	const [ addedToCart, setAddedToCart ] = useState( false );
 	const addToCartButtonData = product.add_to_cart || {
@@ -39,10 +45,11 @@ const AddToCartButton = () => {
 			}
 			return true;
 		};
-		const unsubscribeProcessing = eventRegistration.onAddToCartAfterProcessingWithSuccess(
-			onSuccess,
-			0
-		);
+		const unsubscribeProcessing =
+			eventRegistration.onAddToCartAfterProcessingWithSuccess(
+				onSuccess,
+				0
+			);
 		return () => {
 			unsubscribeProcessing();
 		};
@@ -69,7 +76,15 @@ const AddToCartButton = () => {
 			isDisabled={ isDisabled }
 			isProcessing={ isProcessing }
 			isDone={ addedToCart }
-			onClick={ () => dispatchActions.submitForm() }
+			onClick={ () => {
+				dispatchActions.submitForm(
+					`woocommerce/single-product/${ product?.id || 0 }`
+				);
+				dispatchStoreEvent( 'cart-add-item', {
+					product,
+					listName: parentName,
+				} );
+			} }
 		/>
 	) : (
 		<LinkComponent
@@ -79,6 +94,12 @@ const AddToCartButton = () => {
 				addToCartButtonData.text ||
 				__( 'View Product', 'woocommerce' )
 			}
+			onClick={ () => {
+				dispatchStoreEvent( 'product-view-link', {
+					product,
+					listName: parentName,
+				} );
+			} }
 		/>
 	);
 };
@@ -86,14 +107,20 @@ const AddToCartButton = () => {
 /**
  * Button component for non-purchasable products.
  *
- * @param {Object} props           Incoming props.
- * @param {string} props.className Css classnames.
- * @param {string} props.href      Link for button.
- * @param {string} props.text      Text content for button.
+ * @param {Object}         props           Incoming props.
+ * @param {string}         props.className Css classnames.
+ * @param {string}         props.href      Link for button.
+ * @param {string}         props.text      Text content for button.
+ * @param {function():any} props.onClick   Callback to execute when button is clicked.
  */
-const LinkComponent = ( { className, href, text } ) => {
+const LinkComponent = ( { className, href, text, onClick } ) => {
 	return (
-		<Button className={ className } href={ href } rel="nofollow">
+		<Button
+			className={ className }
+			href={ href }
+			onClick={ onClick }
+			rel="nofollow"
+		>
 			{ text }
 		</Button>
 	);
@@ -102,13 +129,13 @@ const LinkComponent = ( { className, href, text } ) => {
 /**
  * Button for purchasable products.
  *
- * @param {Object} props                 Incoming props for component
- * @param {string} props.className       Incoming css class name.
- * @param {number} props.quantityInCart  Quantity of item in cart.
- * @param {boolean} props.isProcessing   Whether processing action is occurring.
- * @param {boolean} props.isDisabled     Whether the button is disabled or not.
- * @param {boolean} props.isDone         Whether processing is done.
- * @param {function():any} props.onClick Callback to execute when button is clicked.
+ * @param {Object}         props                Incoming props for component
+ * @param {string}         props.className      Incoming css class name.
+ * @param {number}         props.quantityInCart Quantity of item in cart.
+ * @param {boolean}        props.isProcessing   Whether processing action is occurring.
+ * @param {boolean}        props.isDisabled     Whether the button is disabled or not.
+ * @param {boolean}        props.isDone         Whether processing is done.
+ * @param {function():any} props.onClick        Callback to execute when button is clicked.
  */
 const ButtonComponent = ( {
 	className,
@@ -127,7 +154,7 @@ const ButtonComponent = ( {
 		>
 			{ isDone && quantityInCart > 0
 				? sprintf(
-						// translators: %s number of products in cart.
+						/* translators: %s number of products in cart. */
 						_n(
 							'%d in cart',
 							'%d in cart',
@@ -137,12 +164,7 @@ const ButtonComponent = ( {
 						quantityInCart
 				  )
 				: __( 'Add to cart', 'woocommerce' ) }
-			{ !! isDone && (
-				<Icon
-					srcElement={ doneIcon }
-					alt={ __( 'Done', 'woocommerce' ) }
-				/>
-			) }
+			{ !! isDone && <Icon icon={ check } /> }
 		</Button>
 	);
 };

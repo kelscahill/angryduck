@@ -390,7 +390,7 @@ function wc_locate_template( $template_name, $template_path = '', $default_path 
 	// Look within passed path within the theme - this is priority.
 	if ( false !== strpos( $template_name, 'product_cat' ) || false !== strpos( $template_name, 'product_tag' ) ) {
 		$cs_template = str_replace( '_', '-', $template_name );
-		$template = locate_template(
+		$template    = locate_template(
 			array(
 				trailingslashit( $template_path ) . $cs_template,
 				$cs_template,
@@ -468,7 +468,7 @@ function get_woocommerce_currency() {
 /**
  * Get full list of currency codes.
  *
- * Currency symbols and names should follow the Unicode CLDR recommendation (http://cldr.unicode.org/translation/currency-names)
+ * Currency symbols and names should follow the Unicode CLDR recommendation (https://cldr.unicode.org/translation/currency-names-and-symbols)
  *
  * @return array
  */
@@ -654,7 +654,7 @@ function get_woocommerce_currencies() {
 /**
  * Get all available Currency symbols.
  *
- * Currency symbols and names should follow the Unicode CLDR recommendation (http://cldr.unicode.org/translation/currency-names)
+ * Currency symbols and names should follow the Unicode CLDR recommendation (https://cldr.unicode.org/translation/currency-names-and-symbols)
  *
  * @since 4.1.0
  * @return array
@@ -703,7 +703,7 @@ function get_woocommerce_currency_symbols() {
 			'CVE' => '&#36;',
 			'CZK' => '&#75;&#269;',
 			'DJF' => 'Fr',
-			'DKK' => 'DKK',
+			'DKK' => 'kr.',
 			'DOP' => 'RD&#36;',
 			'DZD' => '&#x62f;.&#x62c;',
 			'EGP' => 'EGP',
@@ -730,7 +730,7 @@ function get_woocommerce_currency_symbols() {
 			'ILS' => '&#8362;',
 			'IMP' => '&pound;',
 			'INR' => '&#8377;',
-			'IQD' => '&#x639;.&#x62f;',
+			'IQD' => '&#x62f;.&#x639;',
 			'IRR' => '&#xfdfc;',
 			'IRT' => '&#x062A;&#x0648;&#x0645;&#x0627;&#x0646;',
 			'ISK' => 'kr.',
@@ -801,7 +801,7 @@ function get_woocommerce_currency_symbols() {
 			'SSP' => '&pound;',
 			'STN' => 'Db',
 			'SYP' => '&#x644;.&#x633;',
-			'SZL' => 'L',
+			'SZL' => 'E',
 			'THB' => '&#3647;',
 			'TJS' => '&#x405;&#x41c;',
 			'TMT' => 'm',
@@ -837,7 +837,7 @@ function get_woocommerce_currency_symbols() {
 /**
  * Get Currency symbol.
  *
- * Currency symbols and names should follow the Unicode CLDR recommendation (http://cldr.unicode.org/translation/currency-names)
+ * Currency symbols and names should follow the Unicode CLDR recommendation (https://cldr.unicode.org/translation/currency-names-and-symbols)
  *
  * @param string $currency Currency. (default: '').
  * @return string
@@ -949,15 +949,6 @@ function wc_get_image_size( $image_size ) {
 	} else {
 		$image_size = str_replace( 'woocommerce_', '', $image_size );
 
-		// Legacy size mapping.
-		if ( 'shop_single' === $image_size ) {
-			$image_size = 'single';
-		} elseif ( 'shop_catalog' === $image_size ) {
-			$image_size = 'thumbnail';
-		} elseif ( 'shop_thumbnail' === $image_size ) {
-			$image_size = 'gallery_thumbnail';
-		}
-
 		if ( 'single' === $image_size ) {
 			$size['width']  = absint( wc_get_theme_support( 'single_image_width', get_option( 'woocommerce_single_image_width', 600 ) ) );
 			$size['height'] = '';
@@ -976,14 +967,14 @@ function wc_get_image_size( $image_size ) {
 				$size['height'] = '';
 				$size['crop']   = 0;
 			} elseif ( 'custom' === $cropping ) {
-				$width          = max( 1, get_option( 'woocommerce_thumbnail_cropping_custom_width', '4' ) );
-				$height         = max( 1, get_option( 'woocommerce_thumbnail_cropping_custom_height', '3' ) );
+				$width          = max( 1, (float) get_option( 'woocommerce_thumbnail_cropping_custom_width', '4' ) );
+				$height         = max( 1, (float) get_option( 'woocommerce_thumbnail_cropping_custom_height', '3' ) );
 				$size['height'] = absint( NumberUtil::round( ( $size['width'] / $width ) * $height ) );
 				$size['crop']   = 1;
 			} else {
 				$cropping_split = explode( ':', $cropping );
-				$width          = max( 1, current( $cropping_split ) );
-				$height         = max( 1, end( $cropping_split ) );
+				$width          = max( 1, (float) current( $cropping_split ) );
+				$height         = max( 1, (float) end( $cropping_split ) );
 				$size['height'] = absint( NumberUtil::round( ( $size['width'] / $width ) * $height ) );
 				$size['crop']   = 1;
 			}
@@ -1048,8 +1039,63 @@ function wc_print_js() {
  * @param  bool    $httponly Whether the cookie is only accessible over HTTP, not scripting languages like JavaScript. @since 3.6.0.
  */
 function wc_setcookie( $name, $value, $expire = 0, $secure = false, $httponly = false ) {
+	/**
+	 * Controls whether the cookie should be set via wc_setcookie().
+	 *
+	 * @since 6.3.0
+	 *
+	 * @param bool    $set_cookie_enabled If wc_setcookie() should set the cookie.
+	 * @param string  $name               Cookie name.
+	 * @param string  $value              Cookie value.
+	 * @param integer $expire             When the cookie should expire.
+	 * @param bool    $secure             If the cookie should only be served over HTTPS.
+	 */
+	if ( ! apply_filters( 'woocommerce_set_cookie_enabled', true, $name, $value, $expire, $secure ) ) {
+		return;
+	}
+
 	if ( ! headers_sent() ) {
-		setcookie( $name, $value, $expire, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN, $secure, apply_filters( 'woocommerce_cookie_httponly', $httponly, $name, $value, $expire, $secure ) );
+		/**
+		 * Controls the options to be specified when setting the cookie.
+		 *
+		 * @see   https://www.php.net/manual/en/function.setcookie.php
+		 * @since 6.7.0
+		 *
+		 * @param array  $cookie_options Cookie options.
+		 * @param string $name           Cookie name.
+		 * @param string $value          Cookie value.
+		 */
+		$options = apply_filters(
+			'woocommerce_set_cookie_options',
+			array(
+				'expires'  => $expire,
+				'secure'   => $secure,
+				'path'     => COOKIEPATH ? COOKIEPATH : '/',
+				'domain'   => COOKIE_DOMAIN,
+				/**
+				 * Controls whether the cookie should only be accessible via the HTTP protocol, or if it should also be
+				 * accessible to Javascript.
+				 *
+				 * @see   https://www.php.net/manual/en/function.setcookie.php
+				 * @since 3.3.0
+				 *
+				 * @param bool   $httponly If the cookie should only be accessible via the HTTP protocol.
+				 * @param string $name     Cookie name.
+				 * @param string $value    Cookie value.
+				 * @param int    $expire   When the cookie should expire.
+				 * @param bool   $secure   If the cookie should only be served over HTTPS.
+				 */
+				'httponly' => apply_filters( 'woocommerce_cookie_httponly', $httponly, $name, $value, $expire, $secure ),
+			),
+			$name,
+			$value
+		);
+
+		if ( version_compare( PHP_VERSION, '7.3.0', '>=' ) ) {
+			setcookie( $name, $value, $options );
+		} else {
+			setcookie( $name, $value, $options['expires'], $options['path'], $options['domain'], $options['secure'], $options['httponly'] );
+		}
 	} elseif ( Constants::is_true( 'WP_DEBUG' ) ) {
 		headers_sent( $file, $line );
 		trigger_error( "{$name} cookie cannot be set - headers already sent by {$file} on line {$line}", E_USER_NOTICE ); // @codingStandardsIgnoreLine
@@ -1270,7 +1316,7 @@ function wc_format_country_state_string( $country_string ) {
  * @return array
  */
 function wc_get_base_location() {
-	$default = apply_filters( 'woocommerce_get_base_location', get_option( 'woocommerce_default_country' ) );
+	$default = apply_filters( 'woocommerce_get_base_location', get_option( 'woocommerce_default_country', 'US:CA' ) );
 
 	return wc_format_country_state_string( $default );
 }
@@ -1286,7 +1332,7 @@ function wc_get_base_location() {
  */
 function wc_get_customer_default_location() {
 	$set_default_location_to = get_option( 'woocommerce_default_customer_address', 'base' );
-	$default_location        = '' === $set_default_location_to ? '' : get_option( 'woocommerce_default_country', '' );
+	$default_location        = '' === $set_default_location_to ? '' : get_option( 'woocommerce_default_country', 'US:CA' );
 	$location                = wc_format_country_state_string( apply_filters( 'woocommerce_customer_default_location', $default_location ) );
 
 	// Geolocation takes priority if used and if geolocation is possible.
@@ -1771,19 +1817,8 @@ function wc_uasort_comparison( $a, $b ) {
  * @return int
  */
 function wc_ascii_uasort_comparison( $a, $b ) {
-	// 'setlocale' is required for compatibility with PHP 8.
-	// Without it, 'iconv' will return '?'s instead of transliterated characters.
-	$prev_locale = setlocale( LC_CTYPE, 0 );
-	setlocale( LC_ALL, 'C.UTF-8' );
-
-	// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged
-	if ( function_exists( 'iconv' ) && defined( 'ICONV_IMPL' ) && @strcasecmp( ICONV_IMPL, 'unknown' ) !== 0 ) {
-		$a = @iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $a );
-		$b = @iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $b );
-	}
-	// phpcs:enable WordPress.PHP.NoSilencedErrors.Discouraged
-
-	setlocale( LC_ALL, $prev_locale );
+	$a = remove_accents( $a );
+	$b = remove_accents( $b );
 	return strcmp( $a, $b );
 }
 
@@ -1801,10 +1836,26 @@ function wc_ascii_uasort_comparison( $a, $b ) {
 function wc_asort_by_locale( &$data, $locale = '' ) {
 	// Use Collator if PHP Internationalization Functions (php-intl) is available.
 	if ( class_exists( 'Collator' ) ) {
-		$locale   = $locale ? $locale : get_locale();
-		$collator = new Collator( $locale );
-		$collator->asort( $data, Collator::SORT_STRING );
-		return $data;
+		try {
+			$locale   = $locale ? $locale : get_locale();
+			$collator = new Collator( $locale );
+			$collator->asort( $data, Collator::SORT_STRING );
+			return $data;
+		} catch ( IntlException $e ) {
+			/*
+			 * Just skip if some error got caused.
+			 * It may be caused in installations that doesn't include ICU TZData.
+			 */
+			if ( Constants::is_true( 'WP_DEBUG' ) ) {
+				error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+					sprintf(
+						'An unexpected error occurred while trying to use PHP Intl Collator class, it may be caused by an incorrect installation of PHP Intl and ICU, and could be fixed by reinstallaing PHP Intl, see more details about PHP Intl installation: %1$s. Error message: %2$s',
+						'https://www.php.net/manual/en/intl.installation.php',
+						$e->getMessage()
+					)
+				);
+			}
+		}
 	}
 
 	$raw_data = $data;
@@ -1835,7 +1886,7 @@ function wc_get_tax_rounding_mode() {
 	$constant = WC_TAX_ROUNDING_MODE;
 
 	if ( 'auto' === $constant ) {
-		return 'yes' === get_option( 'woocommerce_prices_include_tax', 'no' ) ? 2 : 1;
+		return 'yes' === get_option( 'woocommerce_prices_include_tax', 'no' ) ? PHP_ROUND_HALF_DOWN : PHP_ROUND_HALF_UP;
 	}
 
 	return intval( $constant );
@@ -1864,7 +1915,7 @@ function wc_get_rounding_precision() {
  * @param  bool  $round If should round after adding precision.
  * @return int|float
  */
-function wc_add_number_precision( $value, $round = true ) {
+function wc_add_number_precision( float $value, bool $round = true ) {
 	$cent_precision = pow( 10, wc_get_price_decimals() );
 	$value          = $value * $cent_precision;
 	return $round ? NumberUtil::round( $value, wc_get_rounding_precision() - wc_get_price_decimals() ) : $value;
@@ -2038,7 +2089,7 @@ function wc_print_r( $expression, $return = false ) {
  */
 function wc_register_default_log_handler( $handlers ) {
 	$handler_class = Constants::get_constant( 'WC_LOG_HANDLER' );
-	if ( ! class_exists( $handler_class ) ) {
+	if ( is_null( $handler_class ) || ! class_exists( $handler_class ) ) {
 		$handler_class = WC_Log_Handler_File::class;
 	}
 
@@ -2253,9 +2304,13 @@ function wc_prevent_dangerous_auto_updates( $should_update, $plugin ) {
 		include_once dirname( __FILE__ ) . '/admin/plugin-updates/class-wc-plugin-updates.php';
 	}
 
-	$new_version      = wc_clean( $plugin->new_version );
-	$plugin_updates   = new WC_Plugin_Updates();
-	$untested_plugins = $plugin_updates->get_untested_plugins( $new_version, 'major' );
+	$new_version    = wc_clean( $plugin->new_version );
+	$plugin_updates = new WC_Plugin_Updates();
+	$version_type   = Constants::get_constant( 'WC_SSR_PLUGIN_UPDATE_RELEASE_VERSION_TYPE' );
+	if ( ! is_string( $version_type ) ) {
+		$version_type = 'none';
+	}
+	$untested_plugins = $plugin_updates->get_untested_plugins( $new_version, $version_type );
 	if ( ! empty( $untested_plugins ) ) {
 		return false;
 	}
@@ -2342,6 +2397,8 @@ function wc_is_active_theme( $theme ) {
 function wc_is_wp_default_theme_active() {
 	return wc_is_active_theme(
 		array(
+			'twentytwentythree',
+			'twentytwentytwo',
 			'twentytwentyone',
 			'twentytwenty',
 			'twentynineteen',
@@ -2423,7 +2480,7 @@ function wc_round_discount( $value, $precision ) {
 		return NumberUtil::round( $value, $precision, WC_DISCOUNT_ROUNDING_MODE ); // phpcs:ignore PHPCompatibility.FunctionUse.NewFunctionParameters.round_modeFound
 	}
 
-	if ( 2 === WC_DISCOUNT_ROUNDING_MODE ) {
+	if ( PHP_ROUND_HALF_DOWN === WC_DISCOUNT_ROUNDING_MODE ) {
 		return wc_legacy_round_half_down( $value, $precision );
 	}
 
@@ -2456,20 +2513,15 @@ function wc_selected( $value, $options ) {
 function wc_get_server_database_version() {
 	global $wpdb;
 
-	if ( empty( $wpdb->is_mysql ) ) {
+	if ( empty( $wpdb->is_mysql ) || ! $wpdb->use_mysqli ) {
 		return array(
 			'string' => '',
 			'number' => '',
 		);
 	}
 
-	// phpcs:disable WordPress.DB.RestrictedFunctions, PHPCompatibility.Extensions.RemovedExtensions.mysql_DeprecatedRemoved
-	if ( $wpdb->use_mysqli ) {
-		$server_info = mysqli_get_server_info( $wpdb->dbh );
-	} else {
-		$server_info = mysql_get_server_info( $wpdb->dbh );
-	}
-	// phpcs:enable WordPress.DB.RestrictedFunctions, PHPCompatibility.Extensions.RemovedExtensions.mysql_DeprecatedRemoved
+	// phpcs:ignore WordPress.DB.RestrictedFunctions
+	$server_info = mysqli_get_server_info( $wpdb->dbh );
 
 	return array(
 		'string' => $server_info,

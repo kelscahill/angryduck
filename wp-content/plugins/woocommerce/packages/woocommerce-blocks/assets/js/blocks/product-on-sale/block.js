@@ -11,12 +11,14 @@ import GridContentControl from '@woocommerce/editor-components/grid-content-cont
 import GridLayoutControl from '@woocommerce/editor-components/grid-layout-control';
 import ProductCategoryControl from '@woocommerce/editor-components/product-category-control';
 import ProductOrderbyControl from '@woocommerce/editor-components/product-orderby-control';
+import ProductStockControl from '@woocommerce/editor-components/product-stock-control';
 import { gridBlockPreview } from '@woocommerce/resource-previews';
-import { Icon, tag } from '@woocommerce/icons';
+import { Icon, percent } from '@wordpress/icons';
+import { getSetting } from '@woocommerce/settings';
 
 const EmptyPlaceholder = () => (
 	<Placeholder
-		icon={ <Icon srcElement={ tag } /> }
+		icon={ <Icon icon={ percent } /> }
 		label={ __( 'On Sale Products', 'woocommerce' ) }
 		className="wc-block-product-on-sale"
 	>
@@ -41,6 +43,7 @@ class ProductOnSaleBlock extends Component {
 			rows,
 			orderby,
 			alignButtons,
+			stockStatus,
 		} = attributes;
 
 		return (
@@ -54,6 +57,10 @@ class ProductOnSaleBlock extends Component {
 						rows={ rows }
 						alignButtons={ alignButtons }
 						setAttributes={ setAttributes }
+						minColumns={ getSetting( 'min_columns', 1 ) }
+						maxColumns={ getSetting( 'max_columns', 6 ) }
+						minRows={ getSetting( 'min_rows', 1 ) }
+						maxRows={ getSetting( 'max_rows', 6 ) }
 					/>
 				</PanelBody>
 				<PanelBody
@@ -93,6 +100,18 @@ class ProductOnSaleBlock extends Component {
 						onOperatorChange={ ( value = 'any' ) =>
 							setAttributes( { catOperator: value } )
 						}
+					/>
+				</PanelBody>
+				<PanelBody
+					title={ __(
+						'Filter by stock status',
+						'woocommerce'
+					) }
+					initialOpen={ false }
+				>
+					<ProductStockControl
+						setAttributes={ setAttributes }
+						value={ stockStatus }
 					/>
 				</PanelBody>
 			</InspectorControls>

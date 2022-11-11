@@ -1,14 +1,12 @@
 <?php
-namespace Automattic\WooCommerce\Blocks\StoreApi\Utilities;
+namespace Automattic\WooCommerce\StoreApi\Utilities;
 
 use \Exception;
-use Automattic\WooCommerce\Blocks\StoreApi\Routes\RouteException;
+use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
 
 /**
  * OrderController class.
  * Helper class which creates and syncs orders with the cart.
- *
- * @internal This API is used internally by Blocks--it is still in flux and may be subject to revisions.
  */
 class OrderController {
 
@@ -46,6 +44,9 @@ class OrderController {
 	 * @param \WC_Order $order The order object to update.
 	 */
 	public function update_order_from_cart( \WC_Order $order ) {
+		// Ensures Local pickups are accounted for.
+		add_filter( 'woocommerce_order_get_tax_location', array( $this, 'handle_local_pickup_taxes' ) );
+
 		// Ensure cart is current.
 		wc()->cart->calculate_shipping();
 		wc()->cart->calculate_totals();
@@ -92,8 +93,10 @@ class OrderController {
 					'shipping_state'      => $order->get_shipping_state(),
 					'shipping_postcode'   => $order->get_shipping_postcode(),
 					'shipping_country'    => $order->get_shipping_country(),
+					'shipping_phone'      => $order->get_shipping_phone(),
 				]
 			);
+
 			$customer->save();
 		};
 	}
@@ -107,8 +110,12 @@ class OrderController {
 	 * @param \WC_Order $order Order object.
 	 */
 	public function validate_order_before_payment( \WC_Order $order ) {
+		$needs_shipping          = wc()->cart->needs_shipping();
+		$chosen_shipping_methods = wc()->session->get( 'chosen_shipping_methods' );
+
 		$this->validate_coupons( $order );
 		$this->validate_email( $order );
+		$this->validate_selected_shipping_methods( $needs_shipping, $chosen_shipping_methods );
 		$this->validate_addresses( $order );
 	}
 
@@ -164,7 +171,7 @@ class OrderController {
 			throw new RouteException(
 				'woocommerce_rest_cart_coupon_errors',
 				sprintf(
-					// Translators: %s Coupon codes.
+					/* translators: %s Coupon codes. */
 					__( 'Invalid coupons were removed from the cart: "%s"', 'woocommerce' ),
 					implode( '", "', array_keys( $coupon_errors ) )
 				),
@@ -197,7 +204,7 @@ class OrderController {
 			throw new RouteException(
 				'woocommerce_rest_invalid_email_address',
 				sprintf(
-					// Translators: %s provided email.
+					/* translators: %s provided email. */
 					__( 'The provided email address (%s) is not valid—please provide a valid email address', 'woocommerce' ),
 					esc_html( $email )
 				),
@@ -222,7 +229,7 @@ class OrderController {
 			throw new RouteException(
 				'woocommerce_rest_invalid_address_country',
 				sprintf(
-					// Translators: %s country code.
+					/* translators: %s country code. */
 					__( 'Sorry, we do not ship orders to the provided country (%s)', 'woocommerce' ),
 					$shipping_address['country']
 				),
@@ -237,7 +244,7 @@ class OrderController {
 			throw new RouteException(
 				'woocommerce_rest_invalid_address_country',
 				sprintf(
-					// Translators: %s country code.
+					/* translators: %s country code. */
 					__( 'Sorry, we do not allow orders from the provided country (%s)', 'woocommerce' ),
 					$billing_address['country']
 				),
@@ -268,7 +275,7 @@ class OrderController {
 			throw new RouteException(
 				'woocommerce_rest_invalid_address',
 				sprintf(
-					// Translators: %s Address type.
+					/* translators: %s Address type. */
 					__( 'There was a problem with the provided %s:', 'woocommerce' ) . ' ' . implode( ', ', $error_messages ),
 					'shipping' === $code ? __( 'shipping address', 'woocommerce' ) : __( 'billing address', 'woocommerce' )
 				),
@@ -356,7 +363,7 @@ class OrderController {
 
 		foreach ( $address_fields as $address_field_key => $address_field ) {
 			if ( empty( $address[ $address_field_key ] ) && $address_field['required'] ) {
-				// Translators: %s Field label.
+				/* translators: %s Field label. */
 				$errors->add( $address_type, sprintf( __( '%s is required', 'woocommerce' ), $address_field['label'] ), $address_field_key );
 			}
 		}
@@ -398,6 +405,30 @@ class OrderController {
 	}
 
 	/**
+	 * Check there is a shipping method if it requires shipping.
+	 *
+	 * @throws RouteException Exception if invalid data is detected.
+	 * @param boolean $needs_shipping Current order needs shipping.
+	 * @param array   $chosen_shipping_methods Array of shipping methods.
+	 */
+	public function validate_selected_shipping_methods( $needs_shipping, $chosen_shipping_methods = array() ) {
+		if ( ! $needs_shipping || ! is_array( $chosen_shipping_methods ) ) {
+			return;
+		}
+
+		foreach ( $chosen_shipping_methods as $chosen_shipping_method ) {
+			if ( false === $chosen_shipping_method ) {
+				throw new RouteException(
+					'woocommerce_rest_invalid_shipping_option',
+					__( 'Sorry, this order requires a shipping option.', 'woocommerce' ),
+					400,
+					[]
+				);
+			}
+		}
+	}
+
+	/**
 	 * Changes default order status to draft for orders created via this API.
 	 *
 	 * @return string
@@ -406,6 +437,23 @@ class OrderController {
 		return 'checkout-draft';
 	}
 
+	/**
+	 * Passes the correct base for local pick orders
+	 *
+	 * @todo: Remove custom local pickup handling once WooCommerce 6.8.0 is the minimum version.
+	 *
+	 * @param array $location Taxes location.
+	 * @return array updated location that accounts for local pickup.
+	 */
+	public function handle_local_pickup_taxes( $location ) {
+		$customer = wc()->customer;
+
+		if ( ! empty( $customer ) ) {
+			return $customer->get_taxable_address();
+		}
+
+		return $location;
+	}
 	/**
 	 * Create order line items.
 	 *
@@ -453,28 +501,30 @@ class OrderController {
 	 * @param \WC_Order $order The order object to update.
 	 */
 	protected function update_addresses_from_cart( \WC_Order $order ) {
-		$customer_billing = wc()->customer->get_billing();
-		$customer_billing = array_combine(
-			array_map(
-				function( $key ) {
-					return 'billing_' . $key;
-				},
-				array_keys( $customer_billing )
-			),
-			$customer_billing
+		$order->set_props(
+			[
+				'billing_first_name'  => wc()->customer->get_billing_first_name(),
+				'billing_last_name'   => wc()->customer->get_billing_last_name(),
+				'billing_company'     => wc()->customer->get_billing_company(),
+				'billing_address_1'   => wc()->customer->get_billing_address_1(),
+				'billing_address_2'   => wc()->customer->get_billing_address_2(),
+				'billing_city'        => wc()->customer->get_billing_city(),
+				'billing_state'       => wc()->customer->get_billing_state(),
+				'billing_postcode'    => wc()->customer->get_billing_postcode(),
+				'billing_country'     => wc()->customer->get_billing_country(),
+				'billing_email'       => wc()->customer->get_billing_email(),
+				'billing_phone'       => wc()->customer->get_billing_phone(),
+				'shipping_first_name' => wc()->customer->get_shipping_first_name(),
+				'shipping_last_name'  => wc()->customer->get_shipping_last_name(),
+				'shipping_company'    => wc()->customer->get_shipping_company(),
+				'shipping_address_1'  => wc()->customer->get_shipping_address_1(),
+				'shipping_address_2'  => wc()->customer->get_shipping_address_2(),
+				'shipping_city'       => wc()->customer->get_shipping_city(),
+				'shipping_state'      => wc()->customer->get_shipping_state(),
+				'shipping_postcode'   => wc()->customer->get_shipping_postcode(),
+				'shipping_country'    => wc()->customer->get_shipping_country(),
+				'shipping_phone'      => wc()->customer->get_shipping_phone(),
+			]
 		);
-		$order->set_props( $customer_billing );
-
-		$customer_shipping = wc()->customer->get_shipping();
-		$customer_shipping = array_combine(
-			array_map(
-				function( $key ) {
-					return 'shipping_' . $key;
-				},
-				array_keys( $customer_shipping )
-			),
-			$customer_shipping
-		);
-		$order->set_props( $customer_shipping );
 	}
 }

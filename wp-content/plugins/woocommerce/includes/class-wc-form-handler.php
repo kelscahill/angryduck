@@ -347,7 +347,7 @@ class WC_Form_Handler {
 
 			do_action( 'woocommerce_save_account_details', $user->ID );
 
-			wp_safe_redirect( wc_get_page_permalink( 'myaccount' ) );
+			wp_safe_redirect( wc_get_endpoint_url( 'edit-account', '', wc_get_page_permalink( 'myaccount' ) ) );
 			exit;
 		}
 	}
@@ -440,6 +440,8 @@ class WC_Form_Handler {
 
 							// Redirect to success/confirmation/payment page.
 							if ( isset( $result['result'] ) && 'success' === $result['result'] ) {
+								$result['order_id'] = $order_id;
+
 								$result = apply_filters( 'woocommerce_payment_successful_result', $result, $order_id );
 
 								wp_redirect( $result['redirect'] ); //phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect

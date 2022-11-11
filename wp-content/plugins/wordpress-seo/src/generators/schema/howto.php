@@ -2,6 +2,8 @@
 
 namespace Yoast\WP\SEO\Generators\Schema;
 
+use Yoast\WP\SEO\Config\Schema_IDs;
+
 /**
  * Returns schema HowTo data.
  */
@@ -19,7 +21,7 @@ class HowTo extends Abstract_Schema_Piece {
 	/**
 	 * Renders a list of questions, referencing them by ID.
 	 *
-	 * @return array $data Our Schema graph.
+	 * @return array Our Schema graph.
 	 */
 	public function generate() {
 		$graph = [];
@@ -150,6 +152,10 @@ class HowTo extends Abstract_Schema_Piece {
 			'mainEntityOfPage' => [ '@id' => $this->context->main_schema_id ],
 			'description'      => '',
 		];
+
+		if ( $this->context->has_article ) {
+			$data['mainEntityOfPage'] = [ '@id' => $this->context->main_schema_id . Schema_IDs::ARTICLE_HASH ];
+		}
 
 		if ( isset( $block['attrs']['jsonDescription'] ) ) {
 			$data['description'] = $this->helpers->schema->html->sanitize( $block['attrs']['jsonDescription'] );

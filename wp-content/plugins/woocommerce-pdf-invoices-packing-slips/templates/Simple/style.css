@@ -122,8 +122,9 @@ table.order-data-addresses {
 	margin-bottom: 10mm;
 }
 
-table.order-data-addresses td.address {
-	word-wrap: break-word;
+table.order-data-addresses td.address,
+table.order-data-addresses td.order-data {
+	overflow-wrap: anywhere;
 }
 
 td.order-data {
@@ -151,7 +152,8 @@ td.order-data table th {
 /* Order details */
 table.order-details {
 	width:100%;
-	margin-bottom: 0mm;
+	margin-bottom: 8mm;
+	page-break-before: avoid;
 }
 
 .quantity,
@@ -220,6 +222,7 @@ dd:after {
 	margin: 4px 0;
 	font-size: 7pt;
 	line-height: 7pt;
+	overflow-wrap: anywhere;
 }
 .wc-item-meta p {
 	display: inline;
@@ -233,6 +236,7 @@ dd:after {
 .document-notes,
 .customer-notes {
 	margin-top: 5mm;
+	overflow-wrap: anywhere;
 }
 
 table.totals {

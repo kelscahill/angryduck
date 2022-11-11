@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<div class="toolbar toolbar-variations-defaults">
 				<div class="variations-defaults">
-					<strong><?php esc_html_e( 'Default Form Values', 'woocommerce' ); ?>: <?php echo wc_help_tip( __( 'These are the attributes that will be pre-selected on the frontend.', 'woocommerce' ) ); ?></strong>
+					<strong><?php esc_html_e( 'Default Form Values', 'woocommerce' ); ?>: <?php echo wc_help_tip( __( 'Choose a default form value if you want a certain variation already selected when a user visits the product page.', 'woocommerce' ) ); ?></strong>
 					<?php
 					foreach ( $variation_attributes as $attribute ) {
 						$selected_value = isset( $default_attributes[ sanitize_title( $attribute->get_name() ) ] ) ? $default_attributes[ sanitize_title( $attribute->get_name() ) ] : '';
@@ -75,6 +75,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<option value="variable_stock_status_instock"><?php esc_html_e( 'Set Status - In stock', 'woocommerce' ); ?></option>
 						<option value="variable_stock_status_outofstock"><?php esc_html_e( 'Set Status - Out of stock', 'woocommerce' ); ?></option>
 						<option value="variable_stock_status_onbackorder"><?php esc_html_e( 'Set Status - On backorder', 'woocommerce' ); ?></option>
+						<option value="variable_low_stock_amount"><?php esc_html_e( 'Low stock threshold', 'woocommerce' ); ?></option>
 					</optgroup>
 					<optgroup label="<?php esc_attr_e( 'Shipping', 'woocommerce' ); ?>">
 						<option value="variable_length"><?php esc_html_e( 'Length', 'woocommerce' ); ?></option>

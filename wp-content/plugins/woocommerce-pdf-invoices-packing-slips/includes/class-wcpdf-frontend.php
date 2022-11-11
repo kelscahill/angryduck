@@ -1,10 +1,6 @@
 <?php
 namespace WPO\WC\PDF_Invoices;
 
-use WPO\WC\PDF_Invoices\Compatibility\WC_Core as WCX;
-use WPO\WC\PDF_Invoices\Compatibility\Order as WCX_Order;
-use WPO\WC\PDF_Invoices\Compatibility\Product as WCX_Product;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
@@ -16,7 +12,8 @@ class Frontend {
 	function __construct()	{
 		add_filter( 'woocommerce_my_account_my_orders_actions', array( $this, 'my_account_pdf_link' ), 10, 2 );
 		add_filter( 'woocommerce_api_order_response', array( $this, 'woocommerce_api_invoice_number' ), 10, 2 );
-		add_shortcode( 'wcpdf_download_invoice', array($this, 'download_invoice_shortcode') );
+		add_action( 'wp_enqueue_scripts', array( $this, 'open_my_account_pdf_link_on_new_tab' ), 999 );
+		add_shortcode( 'wcpdf_download_invoice', array( $this, 'download_invoice_shortcode' ) );
 	}
 
 	/**
@@ -27,11 +24,11 @@ class Frontend {
 
 		$invoice = wcpdf_get_invoice( $order );
 		if ( $invoice && $invoice->is_enabled() ) {
-			$pdf_url = wp_nonce_url( admin_url( 'admin-ajax.php?action=generate_wpo_wcpdf&document_type=invoice&order_ids=' . WCX_Order::get_id( $order ) . '&my-account'), 'generate_wpo_wcpdf' );
+			$pdf_url = WPO_WCPDF()->endpoint->get_document_link( $order, 'invoice', array( 'my-account' => 'true' ) );
 
 			// check my account button settings
-			$button_setting = $invoice->get_setting('my_account_buttons', 'available');
-			switch ($button_setting) {
+			$button_setting = $invoice->get_setting( 'my_account_buttons', 'available' );
+			switch ( $button_setting ) {
 				case 'available':
 					$invoice_allowed = $invoice->exists();
 					break;
@@ -42,8 +39,8 @@ class Frontend {
 					$invoice_allowed = false;
 					break;
 				case 'custom':
-					$allowed_statuses = $button_setting = $invoice->get_setting('my_account_restrict', array());
-					if ( !empty( $allowed_statuses ) && in_array( WCX_Order::get_status( $order ), array_keys( $allowed_statuses ) ) ) {
+					$allowed_statuses = $button_setting = $invoice->get_setting( 'my_account_restrict', array() );
+					if ( !empty( $allowed_statuses ) && in_array( $order->get_status(), array_keys( $allowed_statuses ) ) ) {
 						$invoice_allowed = true;
 					} else {
 						$invoice_allowed = false;
@@ -52,15 +49,37 @@ class Frontend {
 			}
 
 			// Check if invoice has been created already or if status allows download (filter your own array of allowed statuses)
-			if ( $invoice_allowed || in_array(WCX_Order::get_status( $order ), apply_filters( 'wpo_wcpdf_myaccount_allowed_order_statuses', array() ) ) ) {
+			if ( $invoice_allowed || in_array( $order->get_status(), apply_filters( 'wpo_wcpdf_myaccount_allowed_order_statuses', array() ) ) ) {
 				$actions['invoice'] = array(
-					'url'  => $pdf_url,
+					'url'  => esc_url( $pdf_url ),
 					'name' => apply_filters( 'wpo_wcpdf_myaccount_button_text', $invoice->get_title(), $invoice )
 				);
 			}
 		}
 
 		return apply_filters( 'wpo_wcpdf_myaccount_actions', $actions, $order );
+	}
+
+	/**
+	 * Open PDF on My Account page in a new browser tab/window
+	 */
+	public function open_my_account_pdf_link_on_new_tab() {
+		if ( function_exists( 'is_account_page' ) && is_account_page() ) {
+			if ( $general_settings = get_option( 'wpo_wcpdf_settings_general' ) ) {
+				if ( isset( $general_settings['download_display'] ) && $general_settings['download_display'] == 'display' ) {
+					$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+					if ( function_exists( 'file_get_contents' ) && $script = file_get_contents( WPO_WCPDF()->plugin_path() . '/assets/js/my-account-link'.$suffix.'.js' ) ) {
+
+						if ( WPO_WCPDF()->endpoint->is_enabled() ) {
+							$script = str_replace( 'generate_wpo_wcpdf', WPO_WCPDF()->endpoint->get_identifier(), $script );
+						}
+						
+						wp_add_inline_script( 'jquery', $script );
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -76,55 +95,62 @@ class Frontend {
 			}
 		}
 
-		return $data;
 		$this->restore_storing_document_settings();
+		return $data;
 	}
 
 	/**
 	 * Download invoice frontend shortcode
 	 */
 	public function download_invoice_shortcode( $atts ) {
-		
-		if( is_admin() ) return;
-
-		// Default values
-		$values = shortcode_atts(array(
-			'order_id'		=> '',
-			'link_text'		=> ''
-		), $atts);
-		if( !$values ) return;
-
 		global $wp;
 
+		if ( is_admin() ) {
+			return;
+		}
+
+		// Default values
+		$values = shortcode_atts (array(
+			'order_id'		=> '',
+			'link_text'		=> ''
+		), $atts );
+
+		if ( empty( $values ) ) {
+			return;
+		}
+
 		// Get $order
-		if( is_checkout() && !empty(is_wc_endpoint_url('order-received')) && empty($values['order_id']) && isset($wp->query_vars['order-received']) ) {
-			$order = wc_get_order( $wp->query_vars['order-received'] );
-		} elseif( is_account_page() && !empty(is_wc_endpoint_url('view-order')) && empty($values['order_id']) && isset($wp->query_vars['view-order']) ) {
-			$order = wc_get_order( $wp->query_vars['view-order'] );
-		} elseif( !empty($values['order_id']) ) {
+		if ( empty( $values['order_id'] ) ) {
+			if( is_checkout() && is_wc_endpoint_url( 'order-received' ) && isset( $wp->query_vars['order-received'] ) ) {
+				$order = wc_get_order( $wp->query_vars['order-received'] );
+			} elseif( is_account_page() && is_wc_endpoint_url( 'view-order' ) && isset( $wp->query_vars['view-order'] ) ) {
+				$order = wc_get_order( $wp->query_vars['view-order'] );
+			}
+		} else {
 			$order = wc_get_order( $values['order_id'] );
 		}
-		if( !is_object($order) || !isset($order) || empty($order) ) return;
+
+		if ( empty( $order ) || ! is_object( $order ) ) {
+			return;
+		}
+
+		$invoice = wcpdf_get_invoice( $order );
+		if ( ! $invoice || ! $invoice->is_allowed() ) {
+			return;
+		}
 
 		// Link text
-		$link_text = __('Download invoice (PDF)', 'woocommerce-pdf-invoices-packing-slips');
-		if( ! empty($values['link_text']) ) {
+		if( ! empty( $values['link_text'] ) ) {
 			$link_text = $values['link_text'];
+		} else {
+			$link_text = __( 'Download invoice (PDF)', 'woocommerce-pdf-invoices-packing-slips' );
 		}
 
-		// User permissions
-		$debug_settings = get_option('wpo_wcpdf_settings_debug', array());
-		$text = null;
-		if( is_user_logged_in() ) {
-			$pdf_url = wp_nonce_url( admin_url( 'admin-ajax.php?action=generate_wpo_wcpdf&template_type=invoice&order_ids=' . $order->get_id() . '&my-account'), 'generate_wpo_wcpdf' );
-			$text = '<p><a href="'.esc_attr($pdf_url).'" target="_blank">'.$link_text.'</a></p>';
-		} elseif( ! is_user_logged_in() && isset($debug_settings['guest_access']) ) {
-			$pdf_url = admin_url( 'admin-ajax.php?action=generate_wpo_wcpdf&template_type=invoice&order_ids=' . $order->get_id() . '&order_key=' . $order->get_order_key() );
-    		$text = '<p><a href="'.esc_attr($pdf_url).'" target="_blank">'.$link_text.'</a></p>';
-		}
+		$pdf_url = WPO_WCPDF()->endpoint->get_document_link( $order, 'invoice', array( 'shortcode' => 'true' ) );
+
+		$text = sprintf( '<p><a href="%s" target="_blank">%s</a></p>', esc_url( $pdf_url ), esc_html( $link_text ) );
 
 		return $text;
-
 	}
 
 	/**

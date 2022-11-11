@@ -6,12 +6,17 @@
  * @package WooCommerce\Classes
  */
 
+use Automattic\WooCommerce\Internal\ProductAttributesLookup\Filterer;
+use Automattic\WooCommerce\Internal\Traits\AccessiblePrivateMethods;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
  * WC_Query Class.
  */
 class WC_Query {
+
+	use AccessiblePrivateMethods;
 
 	/**
 	 * Query vars to add to wp.
@@ -35,9 +40,18 @@ class WC_Query {
 	private static $chosen_attributes;
 
 	/**
+	 * The instance of the class that helps filtering with the product attributes lookup table.
+	 *
+	 * @var Filterer
+	 */
+	private $filterer;
+
+	/**
 	 * Constructor for the query class. Hooks in methods.
 	 */
 	public function __construct() {
+		$this->filterer = wc_get_container()->get( Filterer::class );
+
 		add_action( 'init', array( $this, 'add_endpoints' ) );
 		if ( ! is_admin() ) {
 			add_action( 'wp_loaded', array( $this, 'get_errors' ), 20 );
@@ -47,6 +61,13 @@ class WC_Query {
 			add_filter( 'get_pagenum_link', array( $this, 'remove_add_to_cart_pagination' ), 10, 1 );
 		}
 		$this->init_query_vars();
+	}
+
+	/**
+	 * Reset the chosen attributes so that get_layered_nav_chosen_attributes will get them from the query again.
+	 */
+	public static function reset_chosen_attributes() {
+		self::$chosen_attributes = null;
 	}
 
 	/**
@@ -134,7 +155,7 @@ class WC_Query {
 				$title = __( 'Add payment method', 'woocommerce' );
 				break;
 			case 'lost-password':
-				if ( in_array( $action, array( 'rp', 'resetpass', 'newaccount' ) ) ) {
+				if ( in_array( $action, array( 'rp', 'resetpass', 'newaccount' ), true ) ) {
 					$title = __( 'Set password', 'woocommerce' );
 				} else {
 					$title = __( 'Lost password', 'woocommerce' );
@@ -487,10 +508,24 @@ class WC_Query {
 		self::$product_query = $q;
 
 		// Additonal hooks to change WP Query.
-		add_filter( 'posts_clauses', array( $this, 'price_filter_post_clauses' ), 10, 2 );
+		self::add_filter( 'posts_clauses', array( $this, 'product_query_post_clauses' ), 10, 2 );
 		add_filter( 'the_posts', array( $this, 'handle_get_posts' ), 10, 2 );
 
 		do_action( 'woocommerce_product_query', $q, $this );
+	}
+
+	/**
+	 * Add extra clauses to the product query.
+	 *
+	 * @param array    $args Product query clauses.
+	 * @param WP_Query $wp_query The current product query.
+	 * @return array The updated product query clauses array.
+	 */
+	private function product_query_post_clauses( $args, $wp_query ) {
+		$args = $this->price_filter_post_clauses( $args, $wp_query );
+		$args = $this->filterer->filter_by_attribute_post_clauses( $args, $wp_query, $this->get_layered_nav_chosen_attributes() );
+
+		return $args;
 	}
 
 	/**
@@ -722,8 +757,8 @@ class WC_Query {
 			);
 		}
 
-		// Layered nav filters on terms.
-		if ( $main_query ) {
+		if ( $main_query && ! $this->filterer->filtering_via_lookup_table_is_active() ) {
+			// Layered nav filters on terms.
 			foreach ( $this->get_layered_nav_chosen_attributes() as $taxonomy => $data ) {
 				$tax_query[] = array(
 					'taxonomy'         => $taxonomy,

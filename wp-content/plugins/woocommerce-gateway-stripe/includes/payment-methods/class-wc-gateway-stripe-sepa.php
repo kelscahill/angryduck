@@ -11,18 +11,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 4.0.0
  */
 class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
-	/**
-	 * The delay between retries.
-	 *
-	 * @var int
-	 */
-	public $retry_interval;
+
+	const ID = 'stripe_sepa';
 
 	/**
 	 * Notices (array)
+	 *
 	 * @var array
 	 */
-	public $notices = array();
+	public $notices = [];
 
 	/**
 	 * Is test mode active?
@@ -60,45 +57,36 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 	public $saved_cards;
 
 	/**
-	 * Pre Orders Object
-	 *
-	 * @var object
-	 */
-	public $pre_orders;
-
-	/**
 	 * Constructor
 	 */
 	public function __construct() {
-		$this->retry_interval = 1;
-		$this->id             = 'stripe_sepa';
-		$this->method_title   = __( 'Stripe SEPA Direct Debit', 'woocommerce-gateway-stripe' );
-		/* translators: link */
-		$this->method_description = sprintf( __( 'All other general Stripe settings can be adjusted <a href="%s">here</a>.', 'woocommerce-gateway-stripe' ), admin_url( 'admin.php?page=wc-settings&tab=checkout&section=stripe' ) );
-		$this->has_fields         = true;
-		$this->supports           = array(
+		$this->id                 = self::ID;
+		$this->method_title       = __( 'Stripe SEPA Direct Debit', 'woocommerce-gateway-stripe' );
+		$this->method_description = sprintf(
+		/* translators: 1) HTML anchor open tag 2) HTML anchor closing tag */
+			__( 'All other general Stripe settings can be adjusted %1$shere%2$s.', 'woocommerce-gateway-stripe' ),
+			'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=checkout&section=stripe' ) ) . '">',
+			'</a>'
+		);
+		$this->has_fields = true;
+		$this->supports   = [
 			'products',
 			'refunds',
 			'tokenization',
 			'add_payment_method',
-			'subscriptions',
-			'subscription_cancellation',
-			'subscription_suspension',
-			'subscription_reactivation',
-			'subscription_amount_changes',
-			'subscription_date_changes',
-			'subscription_payment_method_change',
-			'subscription_payment_method_change_customer',
-			'subscription_payment_method_change_admin',
-			'multiple_subscriptions',
-			'pre-orders',
-		);
+		];
 
 		// Load the form fields.
 		$this->init_form_fields();
 
 		// Load the settings.
 		$this->init_settings();
+
+		// Check if subscriptions are enabled and add support for them.
+		$this->maybe_init_subscriptions();
+
+		// Check if pre-orders are enabled and add support for them.
+		$this->maybe_init_pre_orders();
 
 		$main_settings              = get_option( 'woocommerce_stripe_settings' );
 		$this->title                = $this->get_option( 'title' );
@@ -115,14 +103,8 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 			$this->secret_key      = ! empty( $main_settings['test_secret_key'] ) ? $main_settings['test_secret_key'] : '';
 		}
 
-		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
-
-		if ( WC_Stripe_Helper::is_pre_orders_exists() ) {
-			$this->pre_orders = new WC_Stripe_Pre_Orders_Compat();
-
-			add_action( 'wc_pre_orders_process_pre_order_completion_payment_' . $this->id, array( $this->pre_orders, 'process_pre_order_release_payment' ) );
-		}
+		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, [ $this, 'process_admin_options' ] );
+		add_action( 'wp_enqueue_scripts', [ $this, 'payment_scripts' ] );
 	}
 
 	/**
@@ -135,9 +117,9 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 	public function get_supported_currency() {
 		return apply_filters(
 			'wc_stripe_sepa_supported_currencies',
-			array(
+			[
 				'EUR',
-			)
+			]
 		);
 	}
 
@@ -178,11 +160,7 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 	}
 
 	/**
-	 * payment_scripts function.
-	 *
 	 * Outputs scripts used for stripe payment
-	 *
-	 * @access public
 	 */
 	public function payment_scripts() {
 		if ( ! is_cart() && ! is_checkout() && ! isset( $_GET['pay_for_order'] ) && ! is_add_payment_method_page() ) {
@@ -197,7 +175,7 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 	 * Initialize Gateway Settings Form Fields.
 	 */
 	public function init_form_fields() {
-		$this->form_fields = require( WC_STRIPE_PLUGIN_PATH . '/includes/admin/stripe-sepa-settings.php' );
+		$this->form_fields = require WC_STRIPE_PLUGIN_PATH . '/includes/admin/stripe-sepa-settings.php';
 	}
 
 	/**
@@ -285,7 +263,7 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 			$this->save_payment_method_checkbox();
 		}
 
-		do_action( 'wc_stripe_sepa_payment_fields', $this->id );
+		do_action( 'wc_stripe_payment_fields_stripe_sepa', $this->id );
 
 		echo '</div>';
 	}
@@ -305,8 +283,16 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 		try {
 			$order = wc_get_order( $order_id );
 
+			if ( $this->has_subscription( $order_id ) ) {
+				$force_save_source = true;
+			}
+
+			if ( $this->maybe_change_subscription_payment_method( $order_id ) ) {
+				return $this->process_change_subscription_payment_method( $order_id );
+			}
+
 			if ( $this->maybe_process_pre_orders( $order_id ) ) {
-				return $this->pre_orders->process_pre_order( $order_id );
+				return $this->process_pre_order( $order_id );
 			}
 
 			// This comes from the create account checkbox in the checkout page.
@@ -397,10 +383,10 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 			WC()->cart->empty_cart();
 
 			// Return thank you page redirect.
-			return array(
+			return [
 				'result'   => 'success',
 				'redirect' => $this->get_return_url( $order ),
-			);
+			];
 
 		} catch ( WC_Stripe_Exception $e ) {
 			wc_add_notice( $e->getLocalizedMessage(), 'error' );
@@ -408,14 +394,20 @@ class WC_Gateway_Stripe_Sepa extends WC_Stripe_Payment_Gateway {
 
 			do_action( 'wc_gateway_stripe_process_payment_error', $e, $order );
 
-			if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
+			if ( $order->has_status(
+				apply_filters(
+					'wc_stripe_allowed_payment_processing_statuses',
+					[ 'pending', 'failed' ],
+					$order
+				)
+			) ) {
 				$this->send_failed_order_email( $order_id );
 			}
 
-			return array(
+			return [
 				'result'   => 'fail',
 				'redirect' => '',
-			);
+			];
 		}
 	}
 }

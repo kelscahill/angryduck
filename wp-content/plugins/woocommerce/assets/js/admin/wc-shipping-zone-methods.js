@@ -34,11 +34,17 @@
 					this.trigger( 'change:methods' );
 				},
 				save: function() {
+					// Special handling for an empty 'zone_locations' array, which jQuery filters out during $.post().
+					var changes = _.clone( this.changes );
+					if ( _.has( changes, 'zone_locations' ) && _.isEmpty( changes.zone_locations ) ) {
+						changes.zone_locations = [''];
+					}
+
 					$.post(
 						ajaxurl + ( ajaxurl.indexOf( '?' ) > 0 ? '&' : '?' ) + 'action=woocommerce_shipping_zone_methods_save_changes',
 						{
 							wc_shipping_zones_nonce : data.wc_shipping_zones_nonce,
-							changes                 : this.changes,
+							changes                 : changes,
 							zone_id                 : data.zone_id
 						},
 						this.onSaveResponse,
@@ -62,6 +68,9 @@
 							shippingMethod.trigger( 'change:methods' );
 							shippingMethod.changes = {};
 							shippingMethod.trigger( 'saved:methods' );
+
+							// Overrides the onbeforeunload callback added by settings.js.
+							window.onbeforeunload = null;
 						} else {
 							window.alert( data.strings.save_failed );
 						}
@@ -218,7 +227,7 @@
 				},
 				setUnloadConfirmation: function() {
 					this.needsUnloadConfirm = true;
-					$save_button.removeAttr( 'disabled' );
+					$save_button.prop( 'disabled', false );
 				},
 				clearUnloadConfirmation: function() {
 					this.needsUnloadConfirm = false;

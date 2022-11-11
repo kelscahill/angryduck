@@ -3,11 +3,12 @@
  */
 import { __ } from '@wordpress/i18n';
 import { decodeEntities } from '@wordpress/html-entities';
-import { SelectControl } from '@wordpress/components';
-import { useValidationContext } from '@woocommerce/base-context';
+import { SelectControl } from 'wordpress-components';
 import { useEffect } from 'react';
 import classnames from 'classnames';
-import { ValidationInputError } from '@woocommerce/base-components/validation';
+import { ValidationInputError } from '@woocommerce/base-components/validation-input-error';
+import { VALIDATION_STORE_KEY } from '@woocommerce/block-data';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 // Default option for select boxes.
 const selectAnOption = {
@@ -30,13 +31,17 @@ const AttributeSelectControl = ( {
 		'woocommerce'
 	),
 } ) => {
-	const {
-		getValidationError,
-		setValidationErrors,
-		clearValidationError,
-	} = useValidationContext();
 	const errorId = attributeName;
-	const error = getValidationError( errorId ) || {};
+
+	const { setValidationErrors, clearValidationError } =
+		useDispatch( VALIDATION_STORE_KEY );
+
+	const { error } = useSelect( ( select ) => {
+		const store = select( VALIDATION_STORE_KEY );
+		return {
+			error: store.getValidationError( errorId ) || {},
+		};
+	} );
 
 	useEffect( () => {
 		if ( value ) {
@@ -58,10 +63,10 @@ const AttributeSelectControl = ( {
 	] );
 
 	// Remove validation errors when unmounted.
-	useEffect( () => () => void clearValidationError( errorId ), [
-		errorId,
-		clearValidationError,
-	] );
+	useEffect(
+		() => () => void clearValidationError( errorId ),
+		[ errorId, clearValidationError ]
+	);
 
 	return (
 		<div className="wc-block-components-product-add-to-cart-attribute-picker__container">
@@ -74,7 +79,7 @@ const AttributeSelectControl = ( {
 				className={ classnames(
 					'wc-block-components-product-add-to-cart-attribute-picker__select',
 					{
-						'has-error': error.message && ! error.hidden,
+						'has-error': error?.message && ! error?.hidden,
 					}
 				) }
 			/>

@@ -8,6 +8,11 @@
  * @version 2.2.0
  */
 
+use Automattic\WooCommerce\Internal\DataStores\Orders\DataSynchronizer;
+use Automattic\WooCommerce\Internal\ProductAttributesLookup\LookupDataStore as ProductAttributesLookupDataStore;
+use Automattic\WooCommerce\Proxies\LegacyProxy;
+use Automattic\WooCommerce\Utilities\OrderUtil;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -296,29 +301,34 @@ class WC_Post_Data {
 	 * @param mixed $id ID of post being deleted.
 	 */
 	public static function delete_post( $id ) {
-		if ( ! current_user_can( 'delete_posts' ) || ! $id ) {
+		$container = wc_get_container();
+		if ( ! $container->get( LegacyProxy::class )->call_function( 'current_user_can', 'delete_posts' ) || ! $id ) {
 			return;
 		}
 
-		$post_type = get_post_type( $id );
-
+		$post_type = self::get_post_type( $id );
 		switch ( $post_type ) {
 			case 'product':
 				$data_store = WC_Data_Store::load( 'product-variable' );
 				$data_store->delete_variations( $id, true );
 				$data_store->delete_from_lookup_table( $id, 'wc_product_meta_lookup' );
-				$parent_id = wp_get_post_parent_id( $id );
+				$container->get( ProductAttributesLookupDataStore::class )->on_product_deleted( $id );
 
+				$parent_id = wp_get_post_parent_id( $id );
 				if ( $parent_id ) {
 					wc_delete_product_transients( $parent_id );
 				}
+
 				break;
 			case 'product_variation':
 				$data_store = WC_Data_Store::load( 'product' );
 				$data_store->delete_from_lookup_table( $id, 'wc_product_meta_lookup' );
 				wc_delete_product_transients( wp_get_post_parent_id( $id ) );
+				$container->get( ProductAttributesLookupDataStore::class )->on_product_deleted( $id );
+
 				break;
 			case 'shop_order':
+			case DataSynchronizer::PLACEHOLDER_ORDER_POST_TYPE:
 				global $wpdb;
 
 				$refunds = $wpdb->get_results( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type = 'shop_order_refund' AND post_parent = %d", $id ) );
@@ -342,7 +352,7 @@ class WC_Post_Data {
 			return;
 		}
 
-		$post_type = get_post_type( $id );
+		$post_type = self::get_post_type( $id );
 
 		// If this is an order, trash any refunds too.
 		if ( in_array( $post_type, wc_get_order_types( 'order-count' ), true ) ) {
@@ -360,6 +370,9 @@ class WC_Post_Data {
 		} elseif ( 'product' === $post_type ) {
 			$data_store = WC_Data_Store::load( 'product-variable' );
 			$data_store->delete_variations( $id, false );
+			wc_get_container()->get( ProductAttributesLookupDataStore::class )->on_product_deleted( $id );
+		} elseif ( 'product_variation' === $post_type ) {
+			wc_get_container()->get( ProductAttributesLookupDataStore::class )->on_product_deleted( $id );
 		}
 	}
 
@@ -373,7 +386,7 @@ class WC_Post_Data {
 			return;
 		}
 
-		$post_type = get_post_type( $id );
+		$post_type = self::get_post_type( $id );
 
 		if ( in_array( $post_type, wc_get_order_types( 'order-count' ), true ) ) {
 			global $wpdb;
@@ -391,7 +404,21 @@ class WC_Post_Data {
 			$data_store->untrash_variations( $id );
 
 			wc_product_force_unique_sku( $id );
+
+			wc_get_container()->get( ProductAttributesLookupDataStore::class )->on_product_changed( $id );
+		} elseif ( 'product_variation' === $post_type ) {
+			wc_get_container()->get( ProductAttributesLookupDataStore::class )->on_product_changed( $id );
 		}
+	}
+
+	/**
+	 * Get the post type for a given post.
+	 *
+	 * @param int $id The post id.
+	 * @return string The post type.
+	 */
+	private static function get_post_type( $id ) {
+		return wc_get_container()->get( LegacyProxy::class )->call_function( 'get_post_type', $id );
 	}
 
 	/**
@@ -401,7 +428,7 @@ class WC_Post_Data {
 	 * @param int $order_id Order ID.
 	 */
 	public static function before_delete_order( $order_id ) {
-		if ( in_array( get_post_type( $order_id ), wc_get_order_types(), true ) ) {
+		if ( OrderUtil::is_order( $order_id, wc_get_order_types() ) ) {
 			// Clean up user.
 			$order = wc_get_order( $order_id );
 
@@ -437,7 +464,7 @@ class WC_Post_Data {
 	public static function delete_order_items( $postid ) {
 		global $wpdb;
 
-		if ( in_array( get_post_type( $postid ), wc_get_order_types(), true ) ) {
+		if ( OrderUtil::is_order( $postid, wc_get_order_types() ) ) {
 			do_action( 'woocommerce_delete_order_items', $postid );
 
 			$wpdb->query(
@@ -459,7 +486,7 @@ class WC_Post_Data {
 	 * @param int $postid Post ID.
 	 */
 	public static function delete_order_downloadable_permissions( $postid ) {
-		if ( in_array( get_post_type( $postid ), wc_get_order_types(), true ) ) {
+		if ( OrderUtil::is_order( $postid, wc_get_order_types() ) ) {
 			do_action( 'woocommerce_delete_order_downloadable_permissions', $postid );
 
 			$data_store = WC_Data_Store::load( 'customer-download' );

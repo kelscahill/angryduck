@@ -16,14 +16,10 @@ const defaultLabel = __( 'Cash on delivery', 'woocommerce' );
 const label = decodeEntities( settings.title ) || defaultLabel;
 
 /**
- * @typedef {import('@woocommerce/type-defs/registered-payment-method-props').RegisteredPaymentMethodProps} RegisteredPaymentMethodProps
- */
-
-/**
  * Content component
  */
 const Content = () => {
-	return <div>{ decodeEntities( settings.description || '' ) }</div>;
+	return decodeEntities( settings.description || '' );
 };
 
 /**
@@ -39,8 +35,8 @@ const Label = ( props ) => {
 /**
  * Determine whether COD is available for this cart/order.
  *
- * @param {Object} props Incoming props for the component.
- * @param {boolean} props.cartNeedsShipping True if the cart contains any physical/shippable products.
+ * @param {Object}  props                         Incoming props for the component.
+ * @param {boolean} props.cartNeedsShipping       True if the cart contains any physical/shippable products.
  * @param {boolean} props.selectedShippingMethods
  *
  * @return {boolean}  True if COD payment method should be displayed as a payment option.

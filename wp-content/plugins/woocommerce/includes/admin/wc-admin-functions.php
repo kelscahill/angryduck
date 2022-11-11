@@ -20,6 +20,7 @@ function wc_get_screen_ids() {
 	$wc_screen_id = sanitize_title( __( 'WooCommerce', 'woocommerce' ) );
 	$screen_ids   = array(
 		'toplevel_page_' . $wc_screen_id,
+		$wc_screen_id . '_page_wc-orders',
 		$wc_screen_id . '_page_wc-reports',
 		$wc_screen_id . '_page_wc-shipping',
 		$wc_screen_id . '_page_wc-settings',
@@ -29,6 +30,7 @@ function wc_get_screen_ids() {
 		'product_page_product_attributes',
 		'product_page_product_exporter',
 		'product_page_product_importer',
+		'product_page_product-reviews',
 		'edit-product',
 		'product',
 		'edit-shop_coupon',
@@ -37,6 +39,7 @@ function wc_get_screen_ids() {
 		'edit-product_tag',
 		'profile',
 		'user-edit',
+		wc_get_page_screen_id( 'shop-order' ),
 	);
 
 	foreach ( wc_get_order_types() as $type ) {
@@ -56,6 +59,21 @@ function wc_get_screen_ids() {
 }
 
 /**
+ * Get page ID for a specific WC resource.
+ *
+ * @param string $for Name of the resource.
+ *
+ * @return string Page ID. Empty string if resource not found.
+ */
+function wc_get_page_screen_id( $for ) {
+	switch ( $for ) {
+		case 'shop-order':
+			return 'woocommerce_page_wc-orders';
+	}
+	return '';
+}
+
+/**
  * Create a page and store the ID in an option.
  *
  * @param mixed  $slug Slug for the new page.
@@ -63,9 +81,10 @@ function wc_get_screen_ids() {
  * @param string $page_title (default: '') Title for the new page.
  * @param string $page_content (default: '') Content for the new page.
  * @param int    $post_parent (default: 0) Parent for the new page.
+ * @param string $post_status (default: publish) The post status of the new page.
  * @return int page ID.
  */
-function wc_create_page( $slug, $option = '', $page_title = '', $page_content = '', $post_parent = 0 ) {
+function wc_create_page( $slug, $option = '', $page_title = '', $page_content = '', $post_parent = 0, $post_status = 'publish' ) {
 	global $wpdb;
 
 	$option_value = get_option( $option );
@@ -81,7 +100,7 @@ function wc_create_page( $slug, $option = '', $page_title = '', $page_content = 
 
 	if ( strlen( $page_content ) > 0 ) {
 		// Search for an existing page with the specified page content (typically a shortcode).
-		$shortcode = str_replace( array( '<!-- wp:shortcode -->', '<!-- /wp:shortcode -->' ), '', $page_content );
+		$shortcode        = str_replace( array( '<!-- wp:shortcode -->', '<!-- /wp:shortcode -->' ), '', $page_content );
 		$valid_page_found = $wpdb->get_var( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE post_type='page' AND post_status NOT IN ( 'pending', 'trash', 'future', 'auto-draft' ) AND post_content LIKE %s LIMIT 1;", "%{$shortcode}%" ) );
 	} else {
 		// Search for an existing page with the specified page slug.
@@ -110,12 +129,12 @@ function wc_create_page( $slug, $option = '', $page_title = '', $page_content = 
 		$page_id   = $trashed_page_found;
 		$page_data = array(
 			'ID'          => $page_id,
-			'post_status' => 'publish',
+			'post_status' => $post_status,
 		);
 		wp_update_post( $page_data );
 	} else {
 		$page_data = array(
-			'post_status'    => 'publish',
+			'post_status'    => $post_status,
 			'post_type'      => 'page',
 			'post_author'    => 1,
 			'post_name'      => $slug,
@@ -125,6 +144,8 @@ function wc_create_page( $slug, $option = '', $page_title = '', $page_content = 
 			'comment_status' => 'closed',
 		);
 		$page_id   = wp_insert_post( $page_data );
+
+		do_action( 'woocommerce_page_created', $page_id, $page_data );
 	}
 
 	if ( $option ) {
@@ -206,17 +227,19 @@ function wc_maybe_adjust_line_item_product_stock( $item, $item_quantity = -1 ) {
 		return false;
 	}
 
-	$product               = $item->get_product();
-	$item_quantity         = wc_stock_amount( $item_quantity >= 0 ? $item_quantity : $item->get_quantity() );
-	$already_reduced_stock = wc_stock_amount( $item->get_meta( '_reduced_stock', true ) );
+	$product = $item->get_product();
 
 	if ( ! $product || ! $product->managing_stock() ) {
 		return false;
 	}
 
+	$item_quantity          = wc_stock_amount( $item_quantity >= 0 ? $item_quantity : $item->get_quantity() );
+	$already_reduced_stock  = wc_stock_amount( $item->get_meta( '_reduced_stock', true ) );
+	$restock_refunded_items = wc_stock_amount( $item->get_meta( '_restock_refunded_items', true ) );
 	$order                  = $item->get_order();
 	$refunded_item_quantity = $order->get_qty_refunded_for_item( $item->get_id() );
-	$diff                   = $item_quantity + $refunded_item_quantity - $already_reduced_stock;
+
+	$diff = $item_quantity - $restock_refunded_items - $already_reduced_stock;
 
 	/*
 	 * 0 as $item_quantity usually indicates we're deleting the order item.
@@ -238,7 +261,7 @@ function wc_maybe_adjust_line_item_product_stock( $item, $item_quantity = -1 ) {
 		return $new_stock;
 	}
 
-	$item->update_meta_data( '_reduced_stock', $item_quantity + $refunded_item_quantity );
+	$item->update_meta_data( '_reduced_stock', $item_quantity - $restock_refunded_items );
 	$item->save();
 
 	if ( $item_quantity > 0 ) {
@@ -342,7 +365,7 @@ function wc_save_order_items( $order_id, $items ) {
 
 			$item->save();
 
-			if ( in_array( $order->get_status(), array( 'processing', 'completed', 'on-hold' ) ) ) {
+			if ( in_array( $order->get_status(), array( 'processing', 'completed', 'on-hold' ), true ) ) {
 				$changed_stock = wc_maybe_adjust_line_item_product_stock( $item );
 				if ( $changed_stock && ! is_wp_error( $changed_stock ) ) {
 					$qty_change_order_notes[] = $item->get_name() . ' (' . $changed_stock['from'] . '&rarr;' . $changed_stock['to'] . ')';

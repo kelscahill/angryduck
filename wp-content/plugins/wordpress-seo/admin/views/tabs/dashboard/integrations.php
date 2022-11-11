@@ -7,6 +7,8 @@
  * @uses Yoast_Form $yform Form object.
  */
 
+use Yoast\WP\SEO\Presenters\Admin\Alert_Presenter;
+
 if ( ! defined( 'WPSEO_VERSION' ) ) {
 	header( 'Status: 403 Forbidden' );
 	header( 'HTTP/1.1 403 Forbidden' );
@@ -19,50 +21,25 @@ $integration_toggles = Yoast_Integration_Toggles::instance()->get_all();
 	<h2><?php esc_html_e( 'Integrations', 'wordpress-seo' ); ?></h2>
 	<div class="yoast-measure">
 		<?php
-		echo sprintf(
-		/* translators: %1$s expands to Yoast SEO */
-			esc_html__( '%1$s can integrate with third parties products. You can enable or disable these integrations below.', 'wordpress-seo' ),
-			'Yoast SEO'
+
+		$integrations_moved_message = sprintf(
+			/* translators: 1: link open tag; 2: link close tag. */
+			esc_html__( 'Looking for your integrations settings? We\'ve moved them to a %1$sseparate Integrations page%2$s.', 'wordpress-seo' ),
+			'<a href="' . esc_url( admin_url( 'admin.php?page=wpseo_integrations' ) ) . '">',
+			'</a>'
 		);
 
-		foreach ( $integration_toggles as $integration ) {
-			$help_text = esc_html( $integration->label );
+		$frontpage_settings_alert = new Alert_Presenter( $integrations_moved_message, 'info' );
 
-			if ( ! empty( $integration->extra ) ) {
-				$help_text .= ' ' . $integration->extra;
-			}
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output from present() is considered safe.
+		echo $frontpage_settings_alert->present();
 
-			if ( ! empty( $integration->read_more_label ) ) {
-				$help_text .= ' ';
-				$help_text .= sprintf(
-					'<a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
-					esc_url( WPSEO_Shortlinker::get( $integration->read_more_url ) ),
-					esc_html( $integration->read_more_label )
-				);
-			}
-
-			$feature_help = new WPSEO_Admin_Help_Panel(
-				$integration->setting,
-				/* translators: %s expands to an integration's name */
-				sprintf( esc_html__( 'Help on: %s', 'wordpress-seo' ), esc_html( $integration->name ) ),
-				$help_text
-			);
-
-			$yform->toggle_switch(
-				$integration->setting,
-				[
-					'on'  => __( 'On', 'wordpress-seo' ),
-					'off' => __( 'Off', 'wordpress-seo' ),
-				],
-				'<strong>' . $integration->name . '</strong>',
-				$feature_help->get_button_html() . $feature_help->get_panel_html()
-			);
-
-			if ( ! empty( $integration->after ) ) {
-				// phpcs:ignore WordPress.Security.EscapeOutput -- after contains HTMl and we assume it's properly escape on object creation.
-				echo $integration->after;
-			}
-		}
+		$yform->hidden( 'semrush_integration_active', 'semrush_integration_active' );
+		$yform->hidden( 'ryte_indexability', 'ryte_indexability' );
+		$yform->hidden( 'zapier_integration_active', 'zapier_integration_active' );
+		$yform->hidden( 'algolia_integration_active', 'algolia_integration_active' );
+		$yform->hidden( 'wincher_integration_active', 'wincher_integration_active' );
+		$yform->hidden( 'wordproof_integration_active', 'wordproof_integration_active' );
 		?>
 	</div>
 <?php

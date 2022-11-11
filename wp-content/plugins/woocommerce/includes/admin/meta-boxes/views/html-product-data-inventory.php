@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					'value'         => $product_object->get_manage_stock( 'edit' ) ? 'yes' : 'no',
 					'wrapper_class' => 'show_if_simple show_if_variable',
 					'label'         => __( 'Manage stock?', 'woocommerce' ),
-					'description'   => __( 'Enable stock management at product level', 'woocommerce' ),
+					'description'   => __( 'Manage stock level (quantity)', 'woocommerce' ),
 				)
 			);
 
@@ -75,10 +75,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 				array(
 					'id'                => '_low_stock_amount',
 					'value'             => $product_object->get_low_stock_amount( 'edit' ),
-					'placeholder'       => get_option( 'woocommerce_notify_low_stock_amount' ),
+					'placeholder'       => sprintf(
+						/* translators: %d: Amount of stock left */
+						esc_attr__( 'Store-wide threshold (%d)', 'woocommerce' ),
+						esc_attr( get_option( 'woocommerce_notify_low_stock_amount' ) )
+					),
 					'label'             => __( 'Low stock threshold', 'woocommerce' ),
 					'desc_tip'          => true,
-					'description'       => __( 'When product stock reaches this amount you will be notified by email', 'woocommerce' ),
+					'description'       => __( 'When product stock reaches this amount you will be notified by email. It is possible to define different values for each variation individually. The shop default value can be set in Settings > Products > Inventory.', 'woocommerce' ),
 					'type'              => 'number',
 					'custom_attributes' => array(
 						'step' => 'any',
@@ -107,7 +111,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		?>
 	</div>
 
-	<div class="options_group show_if_simple show_if_variable">
+	<div class="inventory_sold_individually options_group show_if_simple show_if_variable">
 		<?php
 		woocommerce_wp_checkbox(
 			array(
@@ -115,9 +119,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'value'         => $product_object->get_sold_individually( 'edit' ) ? 'yes' : 'no',
 				'wrapper_class' => 'show_if_simple show_if_variable',
 				'label'         => __( 'Sold individually', 'woocommerce' ),
-				'description'   => __( 'Enable this to only allow one of this item to be bought in a single order', 'woocommerce' ),
+				'description'   => __( 'Limit purchases to 1 item per order', 'woocommerce' ),
 			)
 		);
+
+		echo wc_help_tip( __( 'Check to let customers to purchase only 1 item in a single order. This is particularly useful for items that have limited quantity, for example art or handmade goods.', 'woocommerce' ) );
 
 		do_action( 'woocommerce_product_options_sold_individually' );
 		?>

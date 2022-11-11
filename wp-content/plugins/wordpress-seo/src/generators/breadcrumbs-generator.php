@@ -47,14 +47,14 @@ class Breadcrumbs_Generator implements Generator_Interface {
 	/**
 	 * The URL helper.
 	 *
-	 * @var Url_Helper;
+	 * @var Url_Helper
 	 */
 	private $url_helper;
 
 	/**
 	 * The pagination helper.
 	 *
-	 * @var Pagination_Helper;
+	 * @var Pagination_Helper
 	 */
 	private $pagination_helper;
 
@@ -176,11 +176,23 @@ class Breadcrumbs_Generator implements Generator_Interface {
 		/**
 		 * Filter: 'wpseo_breadcrumb_links' - Allow the developer to filter the Yoast SEO breadcrumb links, add to them, change order, etc.
 		 *
-		 * @api array $crumbs The crumbs array.
+		 * @param array $crumbs The crumbs array.
 		 */
-		$crumbs = \apply_filters( 'wpseo_breadcrumb_links', $crumbs );
+		$filtered_crumbs = \apply_filters( 'wpseo_breadcrumb_links', $crumbs );
 
-		$filter_callback = function( $link_info, $index ) use ( $crumbs ) {
+		// Basic check to make sure the filtered crumbs are in an array.
+		if ( ! \is_array( $filtered_crumbs ) ) {
+			\_doing_it_wrong(
+				'Filter: \'wpseo_breadcrumb_links\'',
+				'The `wpseo_breadcrumb_links` filter should return a multi-dimensional array.',
+				'YoastSEO v20.0'
+			);
+		}
+		else {
+			$crumbs = $filtered_crumbs;
+		}
+
+		$filter_callback = static function( $link_info, $index ) use ( $crumbs ) {
 			/**
 			 * Filter: 'wpseo_breadcrumb_single_link_info' - Allow developers to filter the Yoast SEO Breadcrumb link information.
 			 *
@@ -231,7 +243,8 @@ class Breadcrumbs_Generator implements Generator_Interface {
 	 * @return array The crumb.
 	 */
 	private function get_term_crumb( $crumb, $ancestor ) {
-		$crumb['term_id'] = $ancestor->object_id;
+		$crumb['term_id']  = $ancestor->object_id;
+		$crumb['taxonomy'] = $ancestor->object_sub_type;
 
 		return $crumb;
 	}
@@ -355,7 +368,7 @@ class Breadcrumbs_Generator implements Generator_Interface {
 	 * @param array     $crumbs            The array of breadcrumbs.
 	 * @param Indexable $current_indexable The current indexable.
 	 *
-	 * @returns array The breadcrumbs.
+	 * @return array The breadcrumbs.
 	 */
 	protected function add_paged_crumb( array $crumbs, $current_indexable ) {
 		$is_simple_page = $this->current_page_helper->is_simple_page();

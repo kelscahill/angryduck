@@ -27,16 +27,20 @@ class MailChimp_Newsletter extends MailChimp_WooCommerce_Options
         return static::$_instance;
     }
 
-    /**
-     * @param WC_Checkout $checkout
-     */
+	/**
+	 * @param $checkout
+	 */
     public function applyNewsletterField($checkout)
     {
-        if (!is_admin()) {
+        // some folks have asked to be able to check out on behalf of customers. I guess this makes sense
+        // if they want to do this, but it needs to be a constant and custom.
+        $allow_admin = defined('MAILCHIMP_ALLOW_ADMIN_NEWSLETTER') && MAILCHIMP_ALLOW_ADMIN_NEWSLETTER;
+
+        if ($allow_admin || !is_admin()) {
             $api = mailchimp_get_api();
 
             // get the gdpr fields from the cache - or call it again and save for 5 minutes.
-            $GDPRfields = $api->getCachedGDPRFields(mailchimp_get_list_id(), 5);
+            $GDPRfields = $api->getCachedGDPRFields(mailchimp_get_list_id());
 
             // if the user has chosen to hide the checkbox, don't do anything.
             if (($default_setting = $this->getOption('mailchimp_checkbox_defaults', 'check')) === 'hide') {
@@ -55,9 +59,6 @@ class MailChimp_Newsletter extends MailChimp_WooCommerce_Options
             if (is_user_logged_in()) {
                 $status = get_user_meta(get_current_user_id(), 'mailchimp_woocommerce_is_subscribed', true);
                 /// if the user is logged in - and is already subscribed - just ignore this checkbox.
-                if ((bool) $status) {
-                    return;
-                }
                 if ($status === '' || $status === null) {
                     $status = $default_checked;
                 }
@@ -102,9 +103,9 @@ class MailChimp_Newsletter extends MailChimp_WooCommerce_Options
         $this->handleStatus($order_id);
     }
 
-    /**
-     * @param WC_Order $order
-     */
+	/**
+	 * @param $order
+	 */
     public function processPayPalNewsletterField($order)
     {
         $this->handleStatus($order->get_id());

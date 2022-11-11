@@ -1,13 +1,16 @@
 /* global jQuery, woocommerce_admin_system_status, wcSetClipboard, wcClearClipboard */
 jQuery( function ( $ ) {
-
 	/**
 	 * Users country and state fields
 	 */
 	var wcSystemStatus = {
-		init: function() {
+		init: function () {
 			$( document.body )
-				.on( 'click', 'a.help_tip, a.woocommerce-help-tip', this.preventTipTipClick )
+				.on(
+					'click',
+					'a.help_tip, a.woocommerce-help-tip, woocommerce-product-type-tip',
+					this.preventTipTipClick
+				)
 				.on( 'click', 'a.debug-report', this.generateReport )
 				.on( 'click', '#copy-for-support', this.copyReport )
 				.on( 'aftercopy', '#copy-for-support', this.copySuccess )
@@ -33,11 +36,11 @@ jQuery( function ( $ ) {
 
 			$( '.wc_status_table thead, .wc_status_table tbody' ).each( function() {
 				if ( $( this ).is( 'thead' ) ) {
-					var label = $( this ).find( 'th:eq(0)' ).data( 'export-label' ) || $( this ).text();
+					var label = $( this ).find( 'th:eq(0)' ).data( 'exportLabel' ) || $( this ).text();
 					report = report + '\n### ' + label.trim() + ' ###\n\n';
 				} else {
 					$( 'tr', $( this ) ).each( function() {
-						var label       = $( this ).find( 'td:eq(0)' ).data( 'export-label' ) || $( this ).find( 'td:eq(0)' ).text();
+						var label       = $( this ).find( 'td:eq(0)' ).data( 'exportLabel' ) || $( this ).find( 'td:eq(0)' ).text();
 						var the_name    = label.trim().replace( /(<([^>]+)>)/ig, '' ); // Remove HTML.
 
 						// Find value
@@ -68,7 +71,7 @@ jQuery( function ( $ ) {
 
 			try {
 				$( '#debug-report' ).slideDown();
-				$( '#debug-report' ).find( 'textarea' ).val( '`' + report + '`' ).focus().select();
+				$( '#debug-report' ).find( 'textarea' ).val( '`' + report + '`' ).trigger( 'focus' ).trigger( 'select' );
 				$( this ).fadeOut();
 				return false;
 			} catch ( e ) {
@@ -100,7 +103,7 @@ jQuery( function ( $ ) {
 				'fadeIn':     50,
 				'fadeOut':    50,
 				'delay':      0
-			}).focus();
+			}).trigger( 'focus' );
 		},
 
 		/**
@@ -108,7 +111,7 @@ jQuery( function ( $ ) {
 		 */
 		copyFail: function() {
 			$( '.copy-error' ).removeClass( 'hidden' );
-			$( '#debug-report' ).find( 'textarea' ).focus().select();
+			$( '#debug-report' ).find( 'textarea' ).trigger( 'focus' ).trigger( 'select' );
 		}
 	};
 

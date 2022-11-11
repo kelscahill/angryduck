@@ -2,7 +2,7 @@
  * External dependencies
  */
 import classnames from 'classnames';
-import { withInstanceId } from '@woocommerce/base-hocs/with-instance-id';
+import { withInstanceId } from '@wordpress/compose';
 
 /**
  * Internal dependencies
@@ -54,7 +54,8 @@ const RadioControlAccordion = ( {
 									className={ classnames(
 										'wc-block-components-radio-control-accordion-content',
 										{
-											'wc-block-components-radio-control-accordion-content-hide': ! checked,
+											'wc-block-components-radio-control-accordion-content-hide':
+												! checked,
 										}
 									) }
 								>

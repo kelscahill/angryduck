@@ -86,23 +86,12 @@ class WC_Product_CSV_Importer_Controller {
 	/**
 	 * Check whether a file is a valid CSV file.
 	 *
-	 * @todo Replace this method with wc_is_file_valid_csv() function.
 	 * @param string $file File path.
 	 * @param bool   $check_path Whether to also check the file is located in a valid location (Default: true).
 	 * @return bool
 	 */
 	public static function is_file_valid_csv( $file, $check_path = true ) {
-		if ( $check_path && apply_filters( 'woocommerce_product_csv_importer_check_import_file_path', true ) && false !== stripos( $file, '://' ) ) {
-			return false;
-		}
-
-		$valid_filetypes = self::get_valid_csv_filetypes();
-		$filetype        = wp_check_filetype( $file, $valid_filetypes );
-		if ( in_array( $filetype['type'], $valid_filetypes, true ) ) {
-			return true;
-		}
-
-		return false;
+		return wc_is_file_valid_csv( $file, $check_path );
 	}
 
 	/**
@@ -355,7 +344,10 @@ class WC_Product_CSV_Importer_Controller {
 			wp_schedule_single_event( time() + DAY_IN_SECONDS, 'importer_scheduled_cleanup', array( $id ) );
 
 			return $upload['file'];
-		} elseif ( file_exists( ABSPATH . $file_url ) ) {
+		} elseif (
+			( 0 === stripos( realpath( ABSPATH . $file_url ), ABSPATH ) ) &&
+			file_exists( ABSPATH . $file_url )
+		) {
 			if ( ! self::is_file_valid_csv( ABSPATH . $file_url ) ) {
 				return new WP_Error( 'woocommerce_product_csv_importer_upload_file_invalid', __( 'Invalid file type. The importer supports CSV and TXT file formats.', 'woocommerce' ) );
 			}
@@ -566,6 +558,8 @@ class WC_Product_CSV_Importer_Controller {
 						/* translators: %d: Attribute number */
 						__( 'Attribute %d default', 'woocommerce' ) => 'attributes:default',
 						/* translators: %d: Download number */
+						__( 'Download %d ID', 'woocommerce' ) => 'downloads:id',
+						/* translators: %d: Download number */
 						__( 'Download %d name', 'woocommerce' ) => 'downloads:name',
 						/* translators: %d: Download number */
 						__( 'Download %d URL', 'woocommerce' ) => 'downloads:url',
@@ -600,7 +594,7 @@ class WC_Product_CSV_Importer_Controller {
 	}
 
 	/**
-	 * Map columns using the user's lastest import mappings.
+	 * Map columns using the user's latest import mappings.
 	 *
 	 * @param  array $headers Header columns.
 	 * @return array
@@ -721,6 +715,7 @@ class WC_Product_CSV_Importer_Controller {
 			'downloads'          => array(
 				'name'    => __( 'Downloads', 'woocommerce' ),
 				'options' => array(
+					'downloads:id' . $index   => __( 'Download ID', 'woocommerce' ),
 					'downloads:name' . $index => __( 'Download name', 'woocommerce' ),
 					'downloads:url' . $index  => __( 'Download URL', 'woocommerce' ),
 					'download_limit'          => __( 'Download limit', 'woocommerce' ),

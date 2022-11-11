@@ -85,7 +85,7 @@ class WPSEO_Image_Utils {
 	 * @param array $image         Image array with URL and metadata.
 	 * @param int   $attachment_id Attachment ID.
 	 *
-	 * @return false|array $image {
+	 * @return false|array {
 	 *     Array of image data
 	 *
 	 *     @type string $alt      Image's alt text.
@@ -186,13 +186,14 @@ class WPSEO_Image_Utils {
 		}
 
 		if ( ! $image ) {
-			$image         = image_get_intermediate_size( $attachment_id, $size );
-			$image['size'] = $size;
+			$image = image_get_intermediate_size( $attachment_id, $size );
 		}
 
 		if ( ! $image ) {
 			return false;
 		}
+
+		$image['size'] = $size;
 
 		return self::get_data( $image, $attachment_id );
 	}
@@ -271,10 +272,16 @@ class WPSEO_Image_Utils {
 			return $image['filesize'];
 		}
 
+		if ( ! isset( $image['path'] ) ) {
+			return 0;
+		}
+
 		// If the file size for the file is over our limit, we're going to go for a smaller version.
-		// @todo Save the filesize to the image metadata.
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- If file size doesn't properly return, we'll not fail.
-		return @filesize( self::get_absolute_path( $image['path'] ) );
+		if ( function_exists( 'wp_filesize' ) ) {
+			return wp_filesize( self::get_absolute_path( $image['path'] ) );
+		}
+
+		return file_exists( $image['path'] ) ? (int) filesize( $image['path'] ) : 0;
 	}
 
 	/**
@@ -351,7 +358,7 @@ class WPSEO_Image_Utils {
 	/**
 	 * Retrieve the internal WP image file sizes.
 	 *
-	 * @return array $image_sizes An array of image sizes.
+	 * @return array An array of image sizes.
 	 */
 	public static function get_sizes() {
 		/**
@@ -398,7 +405,7 @@ class WPSEO_Image_Utils {
 	/**
 	 * Gets the post's first usable content image. Null if none is available.
 	 *
-	 * @param int $post_id The post id.
+	 * @param int|null $post_id The post id.
 	 *
 	 * @return string|null The image URL.
 	 */

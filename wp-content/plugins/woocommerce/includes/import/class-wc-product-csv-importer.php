@@ -606,7 +606,7 @@ class WC_Product_CSV_Importer extends WC_Product_Importer {
 	/**
 	 * Parse download file urls, we should allow shortcodes here.
 	 *
-	 * Allow shortcodes if present, othersiwe esc_url the value.
+	 * Allow shortcodes if present, otherwise esc_url the value.
 	 *
 	 * @param string $value Field value.
 	 *
@@ -894,6 +894,12 @@ class WC_Product_CSV_Importer extends WC_Product_Importer {
 				}
 				unset( $data[ $key ] );
 
+			} elseif ( $this->starts_with( $key, 'downloads:id' ) ) {
+				if ( ! empty( $value ) ) {
+					$downloads[ str_replace( 'downloads:id', '', $key ) ]['id'] = $value;
+				}
+				unset( $data[ $key ] );
+
 			} elseif ( $this->starts_with( $key, 'downloads:name' ) ) {
 				if ( ! empty( $value ) ) {
 					$downloads[ str_replace( 'downloads:name', '', $key ) ]['name'] = $value;
@@ -935,8 +941,9 @@ class WC_Product_CSV_Importer extends WC_Product_Importer {
 				}
 
 				$data['downloads'][] = array(
-					'name' => $file['name'] ? $file['name'] : wc_get_filename_from_url( $file['url'] ),
-					'file' => $file['url'],
+					'download_id' => isset( $file['id'] ) ? $file['id'] : null,
+					'name'        => $file['name'] ? $file['name'] : wc_get_filename_from_url( $file['url'] ),
+					'file'        => $file['url'],
 				);
 			}
 		}

@@ -1,10 +1,6 @@
 <?php
 namespace WPO\WC\PDF_Invoices\Documents;
 
-use WPO\WC\PDF_Invoices\Compatibility\WC_Core as WCX;
-use WPO\WC\PDF_Invoices\Compatibility\Order as WCX_Order;
-use WPO\WC\PDF_Invoices\Compatibility\Product as WCX_Product;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
@@ -50,8 +46,8 @@ class Packing_Slip extends Order_Document_Methods {
 			if ( isset( $this->settings['display_number'] ) ) {
 				$suffix = (string) $this->get_number();
 			} else {
-				if ( empty( $this->order ) ) {
-					$order = WCX::get_order ( $order_ids[0] );
+				if ( empty( $this->order ) && isset( $args['order_ids'] ) ) {
+					$order = wc_get_order( $args['order_ids'][0] );
 					$suffix = is_callable( array( $order, 'get_order_number' ) ) ? $order->get_order_number() : '';
 				} else {
 					$suffix = is_callable( array( $this->order, 'get_order_number' ) ) ? $this->order->get_order_number() : '';
@@ -146,13 +142,54 @@ class Packing_Slip extends Order_Document_Methods {
 				)
 			),
 		);
-
+		
+		if ( ! function_exists( 'WPO_WCPDF_Pro' ) ) {
+			ob_start();
+			?>
+			<div class="notice notice-info inline">
+				<p><a href="https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-professional/" target="_blank"><?php _e( 'Upgrade to our Professional extension to attach packing slips to any email!', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+			</div>
+			<?php
+			$html = ob_get_clean();
+			
+			$pro_notice = array(
+				array(
+					'type'			=> 'setting',
+					'id'			=> 'attach_to_email_ids',
+					'title'			=> __( 'Attach to:', 'woocommerce-pdf-invoices-packing-slips' ),
+					'callback'		=> 'html_section',
+					'section'		=> 'packing_slip',
+					'args'			=> array(
+						'option_name' => $option_name,
+						'id'          => 'attach_to_email_ids',
+						'html'        => $html,
+					)
+				),
+			);
+			$settings_fields = WPO_WCPDF()->settings->move_setting_after_id( $settings_fields, $pro_notice, 'enabled' );
+		}
 
 		// allow plugins to alter settings fields
 		$settings_fields = apply_filters( 'wpo_wcpdf_settings_fields_documents_packing_slip', $settings_fields, $page, $option_group, $option_name );
 		WPO_WCPDF()->settings->add_settings_fields( $settings_fields, $page, $option_group, $option_name );
 		return;
 
+	}
+
+	/**
+	 * Document number title
+	 */
+	public function get_number_title() {
+		$number_title = __( 'Packing Slip Number:', 'woocommerce-pdf-invoices-packing-slips' );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_number_title", $number_title, $this );
+	}
+
+	/**
+	 * Document date title
+	 */
+	public function get_date_title() {
+		$date_title = __( 'Packing Slip Date:', 'woocommerce-pdf-invoices-packing-slips' );
+		return apply_filters( "wpo_wcpdf_{$this->slug}_date_title", $date_title, $this );
 	}
 
 }

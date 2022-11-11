@@ -52,7 +52,7 @@ class Events_Calendar_Schema extends Abstract_Schema_Piece {
 	 * Partially lifted from the 'Tribe__JSON_LD__Abstract' class.
 	 *
 	 * @see https://docs.theeventscalendar.com/reference/classes/tribe__json_ld__abstract/
-	 * @return array $graph Event Schema markup
+	 * @return array Event Schema markup
 	 */
 	public function generate() {
 		$posts = [];
@@ -77,7 +77,10 @@ class Events_Calendar_Schema extends Abstract_Schema_Piece {
 		// If the resulting array only has one entry, print it directly.
 		if ( \count( $data ) === 1 ) {
 			$data                     = $data[0];
-			$data['mainEntityOfPage'] = [ '@id' => $this->context->canonical . Schema_IDs::WEBPAGE_HASH ];
+			$data['mainEntityOfPage'] = [ '@id' => $this->context->main_schema_id ];
+			if ( $this->context->has_article ) {
+				$data['mainEntityOfPage'] = [ '@id' => $this->context->main_schema_id . Schema_IDs::ARTICLE_HASH ];
+			}
 		}
 		elseif ( \count( $data ) === 0 ) {
 			$data = false;

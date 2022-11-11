@@ -8,11 +8,11 @@
 /**
  * Constants used for @id variables.
  *
+ * @since      10.2
  * @deprecated 14.0
- *
- * @since 10.2
  */
 class WPSEO_Schema_IDs {
+
 	/**
 	 * Hash used for the Author `@id`.
 	 */
@@ -60,8 +60,10 @@ class WPSEO_Schema_IDs {
 
 	/**
 	 * Hash used for the WebPage's `@id`.
+	 *
+	 * @deprecated 19.3
 	 */
-	const WEBPAGE_HASH = '#webpage';
+	const WEBPAGE_HASH = '';
 
 	/**
 	 * Hash used for the Website's `@id`.

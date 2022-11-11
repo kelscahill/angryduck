@@ -623,7 +623,13 @@ class WC_REST_Products_V2_Controller extends WC_REST_CRUD_Controller {
 	 * @return array
 	 */
 	protected function api_get_meta_data( $product, $context ) {
-		return $product->get_meta_data();
+		$meta_data = $product->get_meta_data();
+
+		if ( ! isset( $this->request ) || ! $this->request instanceof WP_REST_Request ) {
+			return $meta_data;
+		}
+
+		return $this->get_meta_data_for_response( $this->request, $meta_data );
 	}
 
 	/**
@@ -640,7 +646,7 @@ class WC_REST_Products_V2_Controller extends WC_REST_CRUD_Controller {
 		 *
 		 *  TODO: Refactor to fix this behavior when DI gets included to make it obvious and clean.
 		*/
-		$request = func_num_args() >= 2 ? func_get_arg( 2 ) : new WP_REST_Request( '', '', array( 'context' => $context ) );
+		$request = func_num_args() >= 3 ? func_get_arg( 2 ) : new WP_REST_Request( '', '', array( 'context' => $context ) );
 		$fields  = $this->get_fields_for_response( $request );
 
 		$base_data = array();
@@ -765,6 +771,9 @@ class WC_REST_Products_V2_Controller extends WC_REST_CRUD_Controller {
 					break;
 				case 'backordered':
 					$base_data['backordered'] = $product->is_on_backorder();
+					break;
+				case 'low_stock_amount':
+					$base_data['low_stock_amount'] = '' === $product->get_low_stock_amount() ? null : $product->get_low_stock_amount();
 					break;
 				case 'sold_individually':
 					$base_data['sold_individually'] = $product->is_sold_individually();
@@ -2352,29 +2361,47 @@ class WC_REST_Products_V2_Controller extends WC_REST_CRUD_Controller {
 			);
 		}
 
-		$params['in_stock']  = array(
+		$params['in_stock']     = array(
 			'description'       => __( 'Limit result set to products in stock or out of stock.', 'woocommerce' ),
 			'type'              => 'boolean',
 			'sanitize_callback' => 'wc_string_to_bool',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['on_sale']   = array(
+		$params['on_sale']      = array(
 			'description'       => __( 'Limit result set to products on sale.', 'woocommerce' ),
 			'type'              => 'boolean',
 			'sanitize_callback' => 'wc_string_to_bool',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['min_price'] = array(
+		$params['min_price']    = array(
 			'description'       => __( 'Limit result set to products based on a minimum price.', 'woocommerce' ),
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'validate_callback' => 'rest_validate_request_arg',
 		);
-		$params['max_price'] = array(
+		$params['max_price']    = array(
 			'description'       => __( 'Limit result set to products based on a maximum price.', 'woocommerce' ),
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'validate_callback' => 'rest_validate_request_arg',
+		);
+		$params['include_meta'] = array(
+			'default'           => array(),
+			'description'       => __( 'Limit meta_data to specific keys.', 'woocommerce' ),
+			'type'              => 'array',
+			'items'             => array(
+				'type' => 'string',
+			),
+			'sanitize_callback' => 'wp_parse_list',
+		);
+		$params['exclude_meta'] = array(
+			'default'           => array(),
+			'description'       => __( 'Ensure meta_data excludes specific keys.', 'woocommerce' ),
+			'type'              => 'array',
+			'items'             => array(
+				'type' => 'string',
+			),
+			'sanitize_callback' => 'wp_parse_list',
 		);
 
 		return $params;
