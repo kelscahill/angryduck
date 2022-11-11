@@ -6,7 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'UpdateHelper\\' => array($vendorDir . '/kylekatarnls/update-helper/src'),
     'Twig_' => array($vendorDir . '/twig/twig/lib'),
     'Routes' => array($vendorDir . '/upstatement/routes'),
 );
