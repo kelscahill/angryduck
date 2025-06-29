@@ -15,16 +15,16 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\PosCustomBatchRequest;
-use Google\Service\ShoppingContent\PosCustomBatchResponse;
-use Google\Service\ShoppingContent\PosInventoryRequest;
-use Google\Service\ShoppingContent\PosInventoryResponse;
-use Google\Service\ShoppingContent\PosListResponse;
-use Google\Service\ShoppingContent\PosSaleRequest;
-use Google\Service\ShoppingContent\PosSaleResponse;
-use Google\Service\ShoppingContent\PosStore;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosCustomBatchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosCustomBatchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosInventoryRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosInventoryResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosSaleRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosSaleResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PosStore;
 
 /**
  * The "pos" collection of methods.
@@ -34,7 +34,7 @@ use Google\Service\ShoppingContent\PosStore;
  *   $pos = $contentService->pos;
  *  </code>
  */
-class Pos extends \Google\Service\Resource
+class Pos extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Batches multiple POS-related calls in a single request. (pos.custombatch)
@@ -42,6 +42,7 @@ class Pos extends \Google\Service\Resource
    * @param PosCustomBatchRequest $postBody
    * @param array $optParams Optional parameters.
    * @return PosCustomBatchResponse
+   * @throws \Google\Service\Exception
    */
   public function custombatch(PosCustomBatchRequest $postBody, $optParams = [])
   {
@@ -56,6 +57,7 @@ class Pos extends \Google\Service\Resource
    * @param string $targetMerchantId The ID of the target merchant.
    * @param string $storeCode A store code that is unique per merchant.
    * @param array $optParams Optional parameters.
+   * @throws \Google\Service\Exception
    */
   public function delete($merchantId, $targetMerchantId, $storeCode, $optParams = [])
   {
@@ -71,6 +73,7 @@ class Pos extends \Google\Service\Resource
    * @param string $storeCode A store code that is unique per merchant.
    * @param array $optParams Optional parameters.
    * @return PosStore
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $targetMerchantId, $storeCode, $optParams = [])
   {
@@ -86,6 +89,7 @@ class Pos extends \Google\Service\Resource
    * @param PosStore $postBody
    * @param array $optParams Optional parameters.
    * @return PosStore
+   * @throws \Google\Service\Exception
    */
   public function insert($merchantId, $targetMerchantId, PosStore $postBody, $optParams = [])
   {
@@ -101,6 +105,7 @@ class Pos extends \Google\Service\Resource
    * @param PosInventoryRequest $postBody
    * @param array $optParams Optional parameters.
    * @return PosInventoryResponse
+   * @throws \Google\Service\Exception
    */
   public function inventory($merchantId, $targetMerchantId, PosInventoryRequest $postBody, $optParams = [])
   {
@@ -115,6 +120,7 @@ class Pos extends \Google\Service\Resource
    * @param string $targetMerchantId The ID of the target merchant.
    * @param array $optParams Optional parameters.
    * @return PosListResponse
+   * @throws \Google\Service\Exception
    */
   public function listPos($merchantId, $targetMerchantId, $optParams = [])
   {
@@ -130,6 +136,7 @@ class Pos extends \Google\Service\Resource
    * @param PosSaleRequest $postBody
    * @param array $optParams Optional parameters.
    * @return PosSaleResponse
+   * @throws \Google\Service\Exception
    */
   public function sale($merchantId, $targetMerchantId, PosSaleRequest $postBody, $optParams = [])
   {

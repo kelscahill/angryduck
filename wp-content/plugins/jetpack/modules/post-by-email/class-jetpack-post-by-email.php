@@ -63,7 +63,12 @@ class Jetpack_Post_By_Email {
 			)
 		);
 		wp_enqueue_style( 'post-by-email', plugins_url( 'post-by-email.css', __FILE__ ), array(), JETPACK__VERSION );
-		wp_style_add_data( 'post-by-email', 'jetpack-inline', true );
+		// Inline styles. @see wp_maybe_inline_styles()
+		if ( is_rtl() ) {
+			wp_style_add_data( 'post-by-email', 'path', plugin_dir_path( __FILE__ ) . 'post-by-email-rtl.min.css' );
+		} else {
+			wp_style_add_data( 'post-by-email', 'path', plugin_dir_path( __FILE__ ) . 'post-by-email.min.css' );
+		}
 	}
 
 	/**
@@ -138,7 +143,7 @@ class Jetpack_Post_By_Email {
 								<?php echo esc_html( wptexturize( __( "If you don't have a WordPress.com account yet, you can sign up for free in just a few seconds.", 'jetpack' ) ) ); ?>
 							</p>
 							<p>
-								<a href="<?php echo esc_url( $jetpack->build_connect_url( false, get_edit_profile_url( get_current_user_id() ) . '#post-by-email', 'unlinked-user-pbe' ) ); ?>" class="button button-connector" id="wpcom-connect"><?php esc_html_e( 'Link account with WordPress.com', 'jetpack' ); ?></a>
+								<a href="<?php echo esc_url( $jetpack->build_connect_url( true, get_edit_profile_url( get_current_user_id() ) . '#post-by-email', 'unlinked-user-pbe' ) ); ?>" class="button button-connector" id="wpcom-connect"><?php esc_html_e( 'Link account with WordPress.com', 'jetpack' ); ?></a>
 							</p>
 							<?php
 						}

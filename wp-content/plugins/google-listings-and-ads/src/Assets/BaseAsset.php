@@ -94,7 +94,7 @@ abstract class BaseAsset implements Asset {
 		string $uri,
 		array $dependencies = [],
 		string $version = '',
-		callable $enqueue_condition_callback = null
+		?callable $enqueue_condition_callback = null
 	) {
 		$this->file_extension             = $file_extension;
 		$this->handle                     = $handle;
@@ -130,6 +130,10 @@ abstract class BaseAsset implements Asset {
 	 * @return bool
 	 */
 	public function can_enqueue(): bool {
+		if ( is_null( $this->enqueue_condition_callback ) ) {
+			return true;
+		}
+
 		return (bool) call_user_func( $this->enqueue_condition_callback, $this );
 	}
 
@@ -208,7 +212,11 @@ abstract class BaseAsset implements Asset {
 	 */
 	protected function defer_action( string $action, callable $callback, int $priority = 10 ): void {
 		if ( did_action( $action ) ) {
-			$callback();
+			try {
+				$callback();
+			} catch ( InvalidAsset $exception ) {
+				do_action( 'woocommerce_gla_exception', $exception, __METHOD__ );
+			}
 
 			return;
 		}

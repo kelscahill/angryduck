@@ -17,6 +17,7 @@ class WPCOM_JSON_API_Date {
 	 * @return string
 	 */
 	public static function format_date( $date_gmt, $date = null ) {
+		$offset        = null;
 		$timestamp_gmt = strtotime( "$date_gmt+0000" );
 
 		if ( null === $date ) {
@@ -46,7 +47,7 @@ class WPCOM_JSON_API_Date {
 						$offset = $timezone->getOffset( $date_time );
 					}
 				} else {
-					$offset = 3600 * get_option( 'gmt_offset' );
+					$offset = 3600 * (float) get_option( 'gmt_offset' );
 				}
 			} else {
 				$offset = $timestamp - $timestamp_gmt;

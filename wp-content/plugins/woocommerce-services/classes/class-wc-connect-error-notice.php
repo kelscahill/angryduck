@@ -13,6 +13,7 @@ if ( ! class_exists( 'WC_Connect_Error_Notice' ) ) {
 
 	class WC_Connect_Error_Notice {
 
+
 		private static $inst = null;
 
 		public static function instance() {
@@ -32,7 +33,7 @@ if ( ! class_exists( 'WC_Connect_Error_Notice' ) ) {
 		}
 
 		public function render_notice() {
-			$error_notice = filter_input( INPUT_GET, 'wc-connect-error-notice' );
+			$error_notice = filter_input( INPUT_GET, 'wc-connect-error-notice', FILTER_SANITIZE_ENCODED );
 			if ( 'disable' === $error_notice ) {
 				WC_Connect_Options::update_option( 'error_notice', false );
 				$url = remove_query_arg( 'wc-connect-error-notice' );
@@ -46,7 +47,7 @@ if ( ! class_exists( 'WC_Connect_Error_Notice' ) ) {
 		}
 
 		private function notice_enabled() {
-			return WC_Connect_Options::get_option( 'error_notice', false );
+			 return WC_Connect_Options::get_option( 'error_notice', false );
 		}
 
 		private function show_notice() {
@@ -70,8 +71,7 @@ if ( ! class_exists( 'WC_Connect_Error_Notice' ) ) {
 
 				if (
 					! $product ||
-					(
-						$product->has_weight() &&
+					( $product->has_weight() &&
 						$product->get_length() &&
 						$product->get_height() &&
 						$product->get_width()
@@ -81,8 +81,8 @@ if ( ! class_exists( 'WC_Connect_Error_Notice' ) ) {
 					return;
 				}
 
-				$product_name = WC_Connect_Compatibility::instance()->get_product_name( $product );
-				$product_id   = is_a( $product, 'WC_Product_Variation' ) ? $product->get_parent_id() : $id;
+				$product_name = $product->get_name();
+				$product_id   = $product->is_type( 'variation' ) ? $product->get_parent_id() : $product->get_id();
 				$message      = sprintf(
 					__( '<strong>"%2$s" is missing weight, length, width, or height.</strong><br />Shipping rates cannot be calculated. <a href="%1$s">Enter dimensions and weight for %2$s</a> so your customers can purchase this item.', 'woocommerce-services' ),
 					get_edit_post_link( $product_id ),
@@ -108,5 +108,4 @@ if ( ! class_exists( 'WC_Connect_Error_Notice' ) ) {
 			echo '';
 		}
 	}
-
 }

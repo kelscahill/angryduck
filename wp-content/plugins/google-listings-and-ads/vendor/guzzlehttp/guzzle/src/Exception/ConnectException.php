@@ -2,8 +2,8 @@
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Exception;
 
-use Psr\Http\Client\NetworkExceptionInterface;
-use Psr\Http\Message\RequestInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Client\NetworkExceptionInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\RequestInterface;
 
 /**
  * Exception thrown when a connection cannot be established.
@@ -25,7 +25,7 @@ class ConnectException extends TransferException implements NetworkExceptionInte
     public function __construct(
         string $message,
         RequestInterface $request,
-        \Throwable $previous = null,
+        ?\Throwable $previous = null,
         array $handlerContext = []
     ) {
         parent::__construct($message, 0, $previous);

@@ -3,7 +3,7 @@
 Plugin Name: Perfmatters MU
 Plugin URI: https://perfmatters.io/
 Description: Perfmatters is a lightweight performance plugin developed to speed up your WordPress site.
-Version: 1.6.8
+Version: 2.3.2
 Author: forgemedia
 Author URI: https://forgemedia.io/
 License: GPLv2 or later
@@ -16,13 +16,18 @@ add_filter('option_active_plugins', 'perfmatters_mu_disable_plugins', 1);
 
 function perfmatters_mu_disable_plugins($plugins) {
 
-	//admin check
-	if(is_admin()) {
-		return $plugins;
-	}
+    //admin check
+    if(is_admin()) {
+        return $plugins;
+    }
+
+    //only filter GET requests
+    if((!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'GET') && !isset($_GET['perfmatters'])) {
+        return $plugins;
+    }
 
     //dont filter if its a rest or ajax request
-    if((defined('REST_REQUEST') && REST_REQUEST) || wp_is_json_request() || wp_doing_ajax() || wp_doing_cron()) {
+    if((defined('REST_REQUEST') && REST_REQUEST) || (defined('WP_CLI') && WP_CLI) || (function_exists('wp_is_json_request') && wp_is_json_request() && !pmsm_mu_prefer_html_request()) || wp_doing_ajax() || wp_doing_cron()) {
         return $plugins;
     }
 
@@ -36,22 +41,27 @@ function perfmatters_mu_disable_plugins($plugins) {
         return $plugins;
     }
 
-	//base plugin active check
-	if(is_array($plugins) && !in_array('perfmatters/perfmatters.php', $plugins)) {
-		return $plugins;
-	}
-
-    //make sure script manager is enabled
-    $perfmatters_extras = get_option('perfmatters_extras');
-    if(empty($perfmatters_extras['script_manager'])) {
+    //base plugin active check
+    if(is_array($plugins) && !in_array('perfmatters/perfmatters.php', $plugins)) {
         return $plugins;
     }
 
-	//make sure MU is enabled
-	$pmsm_settings = get_option('perfmatters_script_manager_settings');
-	if(empty($pmsm_settings['mu_mode'])) {
-		return $plugins;
-	}
+    //page builder check
+    if(pmsm_mu_is_page_builder()) {
+        return $plugins;
+    }
+
+    //make sure script manager is enabled
+    $perfmatters_tools = get_option('perfmatters_tools');
+    if(empty($perfmatters_tools['script_manager'])) {
+        return $plugins;
+    }
+
+    //make sure MU is enabled
+    $pmsm_settings = get_option('perfmatters_script_manager_settings');
+    if(empty($pmsm_settings['mu_mode'])) {
+        return $plugins;
+    }
 
     //wp login check
     $perfmatters_options = get_option('perfmatters_options');
@@ -59,155 +69,276 @@ function perfmatters_mu_disable_plugins($plugins) {
         return $plugins;
     }
 
-	//script manager is being viewed
-	if(isset($_GET['perfmatters'])) {
+    //script manager is being viewed
+    if(isset($_GET['perfmatters'])) {
 
-		//store active plugins for script manager UI in case they get disabled completely
-		global $pmsm_active_plugins;
-		$pmsm_active_plugins = $plugins;
+        //store active plugins for script manager UI in case they get disabled completely
+        global $pmsm_active_plugins;
+        $pmsm_active_plugins = $plugins;
 
         //don't filter plugins if script manager is up
         return $plugins;
-	}
+    }
+
+    if(isset($_GET['perfmattersoff'])) {
+        return $plugins;
+    }
 
     //testing mode check
     if(!empty($pmsm_settings['testing_mode'])) {
+        wp_cookie_constants();
         require_once(wp_normalize_path(ABSPATH) . 'wp-includes/pluggable.php');
         if(!function_exists('wp_get_current_user') || !current_user_can('manage_options')) {
             return $plugins;
         }
     }
 
-	//check for manual override
-	if(!empty($_GET['mu_mode']) && $_GET['mu_mode'] == 'off') {
-		return $plugins;
-	}
-
-    //make sure mu hasn't run already
-    global $mu_run_flag;
-    if($mu_run_flag) {
+    //check for manual override
+    if(!empty($_GET['mu_mode']) && $_GET['mu_mode'] == 'off') {
         return $plugins;
     }
 
-    $mu_run_flag = true;
+    //make sure mu hasn't run already
+    global $mu_run_flag;
+    global $mu_plugins;
+    if($mu_run_flag) {
+        return $mu_plugins;
+    }
 
-	//get script manager configuration
-	$pmsm = get_option('perfmatters_script_manager');
+    //get script manager configuration
+    $pmsm = get_option('perfmatters_script_manager');
 
-	//we have some plugins that are disabled
-	if(!empty($pmsm['disabled']['plugins'])) {
+    //we have some plugins that are disabled
+    if(!empty($pmsm['disabled']['plugins'])) {
 
-		//attempt to get post id
-		$currentID = perfmatters_mu_get_current_ID();
+        //attempt to get post id
+        $currentID = perfmatters_mu_get_current_ID();
 
-		//assign disable/enable arrays
-		$disabled = $pmsm['disabled']['plugins'];
-		$enabled = !empty($pmsm['enabled']['plugins']) ? $pmsm['enabled']['plugins'] : '';
+        //echo $currentID;
 
-		//loop through disabled plugins
-		foreach($disabled as $handle => $data) {
+        //assign disable/enable arrays
+        $disabled = $pmsm['disabled']['plugins'];
+        $enabled = !empty($pmsm['enabled']['plugins']) ? $pmsm['enabled']['plugins'] : '';
 
-			//current plugin disable is set
-			if(!empty($data['everywhere']) || (!empty($data['current']) && in_array($currentID, $data['current'])) || !empty($data['regex'])) {
+        //loop through disabled plugins
+        foreach($disabled as $handle => $data) {
 
-				//enable current url check
-				if(!empty($enabled[$handle]['current']) && in_array($currentID, $enabled[$handle]['current'])) {
-					continue;
-				}
+            //current plugin disable is set
+            if(!empty($data['everywhere']) 
+                || (!empty($data['current']) && in_array($currentID, $data['current'])) 
+                || pmsm_mu_check_post_types($data, $currentID) 
+                || pmsm_mu_check_user_status($data) 
+                || pmsm_mu_check_device_type($data) 
+                || (!empty($data['regex']) && preg_match($data['regex'], home_url(add_query_arg(array(), $_SERVER['REQUEST_URI']))))
+            ) {
 
-                //user status check
-                if(!empty($enabled[$handle]['user_status']) && function_exists('wp_get_current_user')) {
-                    $status = is_user_logged_in();
-                    if(($status && $enabled[$handle]['user_status'] == 'loggedin') || (!$status && $enabled[$handle]['user_status'] == 'loggedout')) {
+                if(!empty($enabled[$handle])) {
+
+                    //enable current url check
+                    if(!empty($enabled[$handle]['current']) && in_array($currentID, $enabled[$handle]['current'])) {
+                        continue;
+                    }
+
+                    //user status check
+                    if(pmsm_mu_check_user_status($enabled[$handle])) {
+                        continue;
+                    }
+
+                    //device type check
+                    if(pmsm_mu_check_device_type($enabled[$handle])) {
+                        continue;
+                    }
+
+                    //enable regex
+                    if(!empty($enabled[$handle]['regex'])) {
+                        if(preg_match($enabled[$handle]['regex'], home_url(add_query_arg(array(), $_SERVER['REQUEST_URI'])))) {
+                            continue;
+                        }
+                    }
+
+                    //home page as post type
+                    if(pmsm_mu_check_post_types($enabled[$handle], $currentID)) {
                         continue;
                     }
                 }
 
-				//disable regex check
-				if(!empty($data['regex'])) {
-					global $wp;
-		  			$current_url = home_url(add_query_arg(array(), $_SERVER['REQUEST_URI']));
-					if(!preg_match($data['regex'], $current_url)) {
-						continue;
-					}
-				}
+                //remove plugin from list
+                $m_array = preg_grep('/^' . $handle . '.*/', $plugins);
+                $single_array = array();
+                if(!empty($m_array) && is_array($m_array)) {
+                    if(count($m_array) > 1) {
+                        $single_array = preg_grep('/' . $handle . '\.php/', $m_array);
+                    }
+                    if(!empty($single_array)) {
+                        unset($plugins[key($single_array)]);
+                    }
+                    else {
+                        unset($plugins[key($m_array)]);
+                    }
+                }
+            }
+        }
+    }
 
-				//enable regex
-				if(!empty($enabled[$handle]['regex'])) {
-					global $wp;
-		  			$current_url = home_url(add_query_arg(array(), $_SERVER['REQUEST_URI']));
+    $mu_run_flag = true;
+    $mu_plugins = $plugins;
 
-		  			if(preg_match($enabled[$handle]['regex'], $current_url)) {
-						continue;
-					}
-				}
-
-				//home page as post type
-				if($currentID === 0) {
-					if(get_option('show_on_front') == 'page' && !empty($enabled[$handle]['post_types']) && in_array('page', $enabled[$handle]['post_types'])) {
-						continue;
-					}
-				}
-				elseif(!empty($currentID)) {
-					
-					//grab post details
-					$post = get_post($currentID);
-
-					//post type enable check
-					if(!empty($post->post_type) && !empty($enabled[$handle]['post_types']) && in_array($post->post_type, $enabled[$handle]['post_types'])) {
-						continue;
-					}
-				}
-
-				//remove plugin from list
-				$m_array = preg_grep('/^' . $handle . '.*/', $plugins);
-				if(!empty($m_array) && is_array($m_array)) {
-					unset($plugins[key($m_array)]);
-				}
-			}
-		}
-	}
-
-	return $plugins;
+    return $plugins;
 }
 
 //remove our filter after plugins have loaded
 function perfmatters_mu_remove_filters() {
-	remove_filter('option_active_plugins', 'perfmatters_mu_disable_plugins', 1, 1);
+    remove_filter('option_active_plugins', 'perfmatters_mu_disable_plugins', 1, 1);
 }
 add_action('plugins_loaded', 'perfmatters_mu_remove_filters', 1);
 
 //attempt to get the current id for mu mode
 function perfmatters_mu_get_current_ID() {
 
-	//load necessary parts for url_to_postid
-    if(is_multisite()) {
-        wp_cookie_constants();
+    //load necessary parts for url_to_postid
+    wp_cookie_constants();
+    require_once(wp_normalize_path(ABSPATH) . 'wp-includes/pluggable.php');
+    global $wp_rewrite;
+    global $wp;
+    $wp_rewrite = new WP_Rewrite();
+    $wp = new WP();
+    
+    //attempt to get post id from url
+    $currentID = (int) perfmatters_url_to_postid(home_url($_SERVER['REQUEST_URI']));
+
+    //id wasn't found
+    if($currentID === 0) {
+
+        //check for home url match
+        //$request = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . strtok($_SERVER['REQUEST_URI']);
+        $request = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+        if(trailingslashit(home_url()) !== trailingslashit($request)) {
+            $currentID = '';
+        }
     }
-	require_once(wp_normalize_path(ABSPATH) . 'wp-includes/pluggable.php');
-	global $wp_rewrite;
-	global $wp;
- 	$wp_rewrite = new WP_Rewrite();
- 	$wp = new WP();
- 	
-	//attempt to get post id from url
-	$currentID = perfmatters_url_to_postid(home_url($_SERVER['REQUEST_URI']));
 
-	//id wasn't found
-	if($currentID === 0) {
+    //clean up
+    unset($wp_rewrite);
+    unset($wp);
 
-		//check for home url match
-		$request = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-		if(trailingslashit(home_url()) !== trailingslashit($request)) {
-			$currentID = '';
-		}
-	}
+    return $currentID;
+}
 
-	//clean up
-	unset($wp_rewrite);
-	unset($wp);
+//check if current post type is set in option
+function pmsm_mu_check_post_types($option, $currentID = '') {
+    if($currentID === 0) {
+        if(get_option('show_on_front') == 'page' && !empty($option['post_types']) && in_array('page', $option['post_types'])) {
+            return true;
+        }
+    }
+    elseif(!empty($currentID)) {
+        
+        //grab post details
+        $post = get_post($currentID);
 
-	return $currentID;
+        //post type enable check
+        if(!empty($post->post_type) && !empty($option['post_types']) && in_array($post->post_type, $option['post_types'])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+//check if current user status is set
+function pmsm_mu_check_user_status($option) {
+    if(!empty($option['user_status'])) {
+        $status = is_user_logged_in();
+        if(($status && $option['user_status'] == 'loggedin') || (!$status && $option['user_status'] == 'loggedout')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+//check if current device type is set
+function pmsm_mu_check_device_type($option) {
+    if(!empty($option['device_type'])) {
+        $mobile = wp_is_mobile();
+        if(($mobile && $option['device_type'] == 'mobile') || (!$mobile && $option['device_type'] == 'desktop')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+//check if page builder is being used
+function pmsm_mu_is_page_builder() {
+    $page_builders = apply_filters('perfmatters_page_builders', array(
+        'elementor-preview', //elementor
+        'fl_builder', //beaver builder
+        'et_fb', //divi
+        'ct_builder', //oxygen
+        'tve', //thrive
+        'app', //flatsome
+        'uxb_iframe',
+        'fb-edit', //fusion builder
+        'builder',
+        'bricks', //bricks
+        'vc_editable', //wp bakery
+        'op3editor', //optimizepress
+        'cs_preview_state' //cornerstone
+    ));
+
+    if(!empty($page_builders)) {
+        foreach($page_builders as $page_builder) {
+            if(isset($_REQUEST[$page_builder])) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+//check if html/xhtml is the preferred request
+function pmsm_mu_prefer_html_request() {
+
+    //check accept header
+    if(empty($_SERVER['HTTP_ACCEPT'])) {
+        return false;
+    }
+
+    //get content types set in header
+    $content_types = explode(',', $_SERVER['HTTP_ACCEPT']);
+    $html_preference = 0;
+    $xhtml_preference = 0;
+    $highest_preference = 0;
+
+    //loop through accepted types
+    foreach($content_types as $type) {
+
+        //split parts
+        $type_parts = explode(';', trim($type));
+        $mime_type = $type_parts[0];
+
+        //default quality factor of 1 if not set
+        $q = 1.0;
+        if(isset($type_parts[1]) && strpos($type_parts[1], 'q=') === 0) {
+            $q = floatval(substr($type_parts[1], 2));
+        }
+
+        //update highest preference
+        if($q > $highest_preference) {
+            $highest_preference = $q;
+        }
+
+        //check mime type
+        if($mime_type === 'text/html') {
+            $html_preference = $q;
+        }
+        elseif($mime_type === 'application/xhtml+xml') {
+            $xhtml_preference = $q;
+        }
+    }
+
+    // Return true if text/html or application/xhtml+xml has the highest preference
+    return ($html_preference === $highest_preference || $xhtml_preference === $highest_preference);
 }
 
 //custom url_to_postid() replacement - modified from https://gist.github.com/Webcreations907/ce5b77565dfb9a208738
@@ -228,6 +359,8 @@ function perfmatters_url_to_postid($url) {
 
     // Check to see if we are using rewrite rules
     $rewrite = get_option('rewrite_rules');
+    global $wp_rewrite;
+    //$rewrite = $wp_rewrite->wp_rewrite_rules();
 
     // Not using rewrite rules, and 'p=N' and 'page_id=N' methods failed, so we're out of options
     if ( empty( $rewrite ) ) {
@@ -306,6 +439,14 @@ function perfmatters_url_to_postid($url) {
         $url = str_replace( '://www.', '://', $url );
     }
 
+    if ( trim( $url, '/' ) === home_url() && 'page' === get_option( 'show_on_front' ) ) {
+        $page_on_front = get_option( 'page_on_front' );
+
+        if ( $page_on_front && get_post( $page_on_front ) instanceof WP_Post ) {
+            return (int) $page_on_front;
+        }
+    }
+
     // Strip 'index.php/' if we're not using path info permalinks
     if ( isset( $wp_rewrite ) && ! $wp_rewrite->using_index_permalinks() ) {
         $url = str_replace( 'index.php/', '', $url );
@@ -342,6 +483,20 @@ function perfmatters_url_to_postid($url) {
 
         if ( preg_match( "!^$match!", $request_match, $matches ) ) {
 
+            if ( $wp_rewrite->use_verbose_page_rules && preg_match( '/pagename=\$matches\[([0-9]+)\]/', $query, $varmatch ) ) {
+                // This is a verbose page match, let's check to be sure about it.
+                $page = get_page_by_path( $matches[ $varmatch[1] ] );
+                if ( ! $page ) {
+                    continue;
+                }
+ 
+                $post_status_obj = get_post_status_object( $page->post_status );
+                if (is_object($post_status_obj) && ! $post_status_obj->public && ! $post_status_obj->protected
+                    && ! $post_status_obj->private && $post_status_obj->exclude_from_search ) {
+                    continue;
+                }
+            }
+
             // Got a match.
             // Trim the query of everything up to the '?'.
             $query = preg_replace( "!^.+\?!", '', $query );
@@ -369,6 +524,10 @@ function perfmatters_url_to_postid($url) {
             $post_types = array();
             foreach ($rewrite as $key => $value) {
 
+                if(!is_string($value)) {
+                    continue;
+                }
+
                 if(preg_match('/post_type=([^&]+)/i', $value, $matched)){
 
                     if(isset($matched[1]) && !in_array($matched[1], $post_types)){
@@ -393,9 +552,11 @@ function perfmatters_url_to_postid($url) {
             *************************************************************************/
 
             // Taken from class-wp.php
-            foreach ( $GLOBALS['wp_post_types'] as $post_type => $t ) {
-                if ( $t->query_var ) {
-                    $post_type_query_vars[ $t->query_var ] = $post_type;
+            if(!empty($GLOBALS['wp_post_types'])) {
+                foreach ( $GLOBALS['wp_post_types'] as $post_type => $t ) {
+                    if ( $t->query_var ) {
+                        $post_type_query_vars[ $t->query_var ] = $post_type;
+                    }
                 }
             }
 
@@ -440,6 +601,7 @@ function perfmatters_url_to_postid($url) {
                     return $post[0]->ID;
                 }
             }
+
             $query = new WP_Query( $query );
 
             if ( ! empty( $query->posts ) && $query->is_singular ) {
@@ -462,23 +624,39 @@ function perfmatters_url_to_postid($url) {
                 * custom query_var set ie query_var => 'acme_books'.
                 *************************************************************************/
 
-                if(isset($post_types)){
+                if(isset($post_types)) {
 
-                    foreach ($rewrite as $key => $value) {
+                    foreach($rewrite as $key => $value) {
 
-                        if(preg_match('/\?([^&]+)=([^&]+)/i', $value, $matched)){
+                        if(!is_string($value)) {
+                            continue;
+                        }
 
-                            if(isset($matched[1]) && !in_array($matched[1], $post_types) && array_key_exists($matched[1], $query_vars)){
+                        if(preg_match('/\?([^&]+)=([^&]+)/i', $value, $matched)) {
+
+                            if(isset($matched[1]) && !in_array($matched[1], $post_types) && array_key_exists($matched[1], $query_vars)) {
 
                                 $post_types[] = $matched[1];
 
                                 $args = array(
-                                        'name'      => $query_vars[$matched[1]],
-                                        'post_type' => $matched[1],
-                                        'showposts' => 1,
-                                    );
+                                    'name'      => $query_vars[$matched[1]],
+                                    'post_type' => $matched[1],
+                                    'showposts' => 1,
+                                );
 
-                                if ( $post = get_posts( $args ) ) {
+                                if($post = get_posts($args)) {
+                                    return $post[0]->ID;
+                                }
+                            }
+                            elseif(isset($matched[1]) && in_array($matched[1], $post_types) && !empty($query_vars['name'])) {
+
+                                $args = array(
+                                    'name'      => $query_vars['name'],
+                                    'post_type' => $matched[1],
+                                    'showposts' => 1,
+                                );
+
+                                if($post = get_posts($args)) {
                                     return $post[0]->ID;
                                 }
                             }
@@ -486,9 +664,9 @@ function perfmatters_url_to_postid($url) {
                     }
                 }
 
-	            /************************************************************************
-	            * END ADD
-	            *************************************************************************/
+                /************************************************************************
+                * END ADD
+                *************************************************************************/
 
                 return 0;
             }

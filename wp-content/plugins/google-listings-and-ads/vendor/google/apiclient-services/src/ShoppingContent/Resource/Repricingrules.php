@@ -15,10 +15,10 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\ListRepricingRulesResponse;
-use Google\Service\ShoppingContent\RepricingRule;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ListRepricingRulesResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RepricingRule;
 
 /**
  * The "repricingrules" collection of methods.
@@ -28,7 +28,7 @@ use Google\Service\ShoppingContent\RepricingRule;
  *   $repricingrules = $contentService->repricingrules;
  *  </code>
  */
-class Repricingrules extends \Google\Service\Resource
+class Repricingrules extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Creates a repricing rule for your Merchant Center account.
@@ -88,8 +88,8 @@ class Repricingrules extends \Google\Service\Resource
    * @param array $optParams Optional parameters.
    *
    * @opt_param string countryCode [CLDR country
-   * code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml) (e.g.
-   * "US"), used as a filter on repricing rules.
+   * code](http://www.unicode.org/repos/cldr/tags/latest/common/main/en.xml) (for
+   * example, "US"), used as a filter on repricing rules.
    * @opt_param string languageCode The two-letter ISO 639-1 language code
    * associated with the repricing rule, used as a filter.
    * @opt_param int pageSize The maximum number of repricing rules to return. The

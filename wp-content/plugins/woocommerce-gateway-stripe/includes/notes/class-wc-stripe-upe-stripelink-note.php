@@ -25,7 +25,7 @@ class WC_Stripe_UPE_StripeLink_Note {
 	/**
 	 * Link to Stripe Link documentation.
 	 */
-	const NOTE_DOCUMENTATION_URL = 'https://woocommerce.com/document/stripe/#stripe-link';
+	const NOTE_DOCUMENTATION_URL = 'https://woocommerce.com/document/stripe/setup-and-configuration/express-checkouts/';
 
 	/**
 	 * Get the note.
@@ -67,12 +67,12 @@ class WC_Stripe_UPE_StripeLink_Note {
 	/**
 	 * Init Link payment method notification
 	 *
-	 * @param WC_Stripe_UPE_Payment_Gateway $gateway
+	 * @param WC_Stripe_Payment_Gateway $gateway
 	 *
 	 * @return void
 	 * @throws \Automattic\WooCommerce\Admin\Notes\NotesUnavailableException
 	 */
-	public static function init( WC_Stripe_UPE_Payment_Gateway $gateway ) {
+	public static function init( WC_Stripe_Payment_Gateway $gateway ) {
 		if ( ! WC_Stripe_Feature_Flags::is_upe_checkout_enabled() ) {
 			return;
 		}
@@ -84,8 +84,12 @@ class WC_Stripe_UPE_StripeLink_Note {
 			return;
 		}
 
+		if ( ! is_a( $gateway, 'WC_Stripe_UPE_Payment_Gateway' ) ) {
+			return;
+		}
+
 		// If store currency is not USD, skip
-		if ( 'USD' !== get_woocommerce_currency() ) {
+		if ( WC_Stripe_Currency_Code::UNITED_STATES_DOLLAR !== get_woocommerce_currency() ) {
 			return;
 		}
 

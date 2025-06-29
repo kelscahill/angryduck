@@ -1,0 +1,1 @@
+System.register(["./LoadingOutlined-legacy.CPhLaklC.js","./responsiveObserve-legacy.C9Flzrl6.js"],(function(e,s){"use strict";var u,t,n,r;return{setters:[e=>{u=e.s,t=e.B,n=e.H},e=>{r=e.u}],execute:function(){e("u",(function(){const e=u({});let s=null;const c=r();return t((()=>{s=c.value.subscribe((s=>{e.value=s}))})),n((()=>{c.value.unsubscribe(s)})),e}))}}}));

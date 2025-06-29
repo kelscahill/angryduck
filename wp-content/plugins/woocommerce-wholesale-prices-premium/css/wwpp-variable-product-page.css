@@ -1,0 +1,4 @@
+.single_variation_wrap .single_variation .woocommerce-variation-price .price .original-computed-price,
+.single_variation_wrap .single_variation .woocommerce-variation-price .price .wholesale_price_container {
+    display: none !important;
+}

@@ -19,7 +19,7 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\Middlew
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\FetchAuthTokenInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\GetQuotaProjectInterface;
-use Psr\Http\Message\RequestInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\RequestInterface;
 
 /**
  * ProxyAuthTokenMiddleware is a Guzzle Middleware that adds an Authorization header
@@ -58,8 +58,8 @@ class ProxyAuthTokenMiddleware
      */
     public function __construct(
         FetchAuthTokenInterface $fetcher,
-        callable $httpHandler = null,
-        callable $tokenCallback = null
+        ?callable $httpHandler = null,
+        ?callable $tokenCallback = null
     ) {
         $this->fetcher = $fetcher;
         $this->httpHandler = $httpHandler;

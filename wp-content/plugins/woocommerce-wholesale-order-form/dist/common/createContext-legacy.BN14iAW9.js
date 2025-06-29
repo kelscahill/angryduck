@@ -1,0 +1,1 @@
+System.register(["./LoadingOutlined-legacy.CPhLaklC.js"],(function(e,t){"use strict";var n,r,c,s,u;return{setters:[e=>{n=e.r,r=e.p,c=e.a0,s=e.z,u=e.i}],execute:function(){e("c",(function(e){const t=Symbol("contextKey");return{useProvide:(e,u)=>{const o=n({});return r(t,o),c((()=>{s(o,e,u||{})})),o},useInject:()=>u(t,e)||{}}}))}}}));

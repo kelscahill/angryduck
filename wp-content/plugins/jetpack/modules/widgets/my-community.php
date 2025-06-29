@@ -1,12 +1,12 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
+
 use Automattic\Jetpack\Redirect;
 
-/**
- * Disable direct access/execution to/of the widget code.
- */
+// Disable direct access/execution to/of the widget code.
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit( 0 );
 }
 
 /**
@@ -43,10 +43,6 @@ class Jetpack_My_Community_Widget extends WP_Widget {
 				'customize_selective_refresh' => true,
 			)
 		);
-
-		if ( is_active_widget( false, false, $this->id_base ) || is_active_widget( false, false, 'monster' ) || is_customize_preview() ) {
-			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_style' ) );
-		}
 
 		$this->default_title = esc_html__( 'Community', 'jetpack' );
 
@@ -191,6 +187,9 @@ class Jetpack_My_Community_Widget extends WP_Widget {
 			$title = $this->default_title;
 		}
 
+		// Enqueue front end assets.
+		$this->enqueue_style();
+
 		echo $args['before_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		/** This filter is documented in wp-includes/widgets/class-wp-widget-pages.php */
@@ -245,20 +244,18 @@ class Jetpack_My_Community_Widget extends WP_Widget {
 
 			$my_community .= '</ul></div>';
 
+		} elseif ( current_user_can( 'edit_theme_options' ) ) {
+			$my_community = '<p>' . wp_kses(
+				sprintf(
+					/* Translators: 1. link to the widgets settings screen. 2. link to support document. */
+					__( 'There are no users to display in this <a href="%1$s">My Community widget</a>. <a href="%2$s">Want more traffic?</a>', 'jetpack' ),
+					admin_url( 'widgets.php' ),
+					esc_url( Redirect::get_url( 'jetpack-support-getting-more-views-and-traffic' ) )
+				),
+				array( 'a' => array( 'href' => true ) )
+			) . '</p>';
 		} else {
-			if ( current_user_can( 'edit_theme_options' ) ) {
-				$my_community = '<p>' . wp_kses(
-					sprintf(
-						/* Translators: 1. link to the widgets settings screen. 2. link to support document. */
-						__( 'There are no users to display in this <a href="%1$s">My Community widget</a>. <a href="%2$s">Want more traffic?</a>', 'jetpack' ),
-						admin_url( 'widgets.php' ),
-						esc_url( Redirect::get_url( 'jetpack-support-getting-more-views-and-traffic' ) )
-					),
-					array( 'a' => array( 'href' => true ) )
-				) . '</p>';
-			} else {
-				$my_community = '<p>' . esc_html__( "I'm just starting out; leave me a comment or a like :)", 'jetpack' ) . '</p>';
-			}
+			$my_community = '<p>' . esc_html__( "I'm just starting out; leave me a comment or a like :)", 'jetpack' ) . '</p>';
 		}
 
 		return $my_community;

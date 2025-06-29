@@ -26,7 +26,7 @@ class SiteVerificationMeta implements OptionsAwareInterface, Registerable, Servi
 	public function register(): void {
 		add_action(
 			'wp_head',
-			function() {
+			function () {
 				$this->display_meta_token();
 			}
 		);
@@ -42,7 +42,7 @@ class SiteVerificationMeta implements OptionsAwareInterface, Registerable, Servi
 			return;
 		}
 
-		echo '<!-- Google site verification - Google Listings & Ads -->' . PHP_EOL;
+		echo '<!-- Google site verification - Google for WooCommerce -->' . PHP_EOL;
 		echo wp_kses(
 			$settings['meta_tag'],
 			[

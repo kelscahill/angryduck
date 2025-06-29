@@ -3,19 +3,20 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\API\Google;
 
+use Automattic\WooCommerce\GoogleListingsAndAds\Exception\ExceptionWithResponseData;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\ContainerAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
-use Google\Service\Exception as GoogleException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Exception as GoogleServiceException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification as SiteVerificationService;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceResource as WebResource;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceResourceSite as WebResourceSite;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceGettokenRequest as GetTokenRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceGettokenRequestSite as GetTokenRequestSite;
 use Exception;
-use Google\Service\SiteVerification as SiteVerificationService;
-use Google\Service\SiteVerification\SiteVerificationWebResourceResource as WebResource;
-use Google\Service\SiteVerification\SiteVerificationWebResourceResourceSite as WebResourceSite;
-use Google\Service\SiteVerification\SiteVerificationWebResourceGettokenRequest as GetTokenRequest;
-use Google\Service\SiteVerification\SiteVerificationWebResourceGettokenRequestSite as GetTokenRequestSite;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -27,6 +28,7 @@ defined( 'ABSPATH' ) || exit;
 class SiteVerification implements ContainerAwareInterface, OptionsAwareInterface {
 
 	use ContainerAwareTrait;
+	use ExceptionTrait;
 	use OptionsAwareTrait;
 	use PluginHelper;
 
@@ -94,7 +96,7 @@ class SiteVerification implements ContainerAwareInterface, OptionsAwareInterface
 	 * @param string $identifier The URL of the site to verify (including protocol).
 	 *
 	 * @return string The meta tag to be used for verification.
-	 * @throws Exception When unable to retrieve meta token.
+	 * @throws ExceptionWithResponseData When unable to retrieve meta token.
 	 */
 	protected function get_token( string $identifier ): string {
 		/** @var SiteVerificationService $service */
@@ -114,11 +116,17 @@ class SiteVerification implements ContainerAwareInterface, OptionsAwareInterface
 		try {
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$response = $service->webResource->getToken( $post_body );
-		} catch ( GoogleException $e ) {
+		} catch ( GoogleServiceException $e ) {
 			do_action( 'woocommerce_gla_sv_client_exception', $e, __METHOD__ );
-			throw new Exception(
-				__( 'Unable to retrieve site verification token.', 'google-listings-and-ads' ),
-				$e->getCode()
+
+			$errors = $this->get_exception_errors( $e );
+
+			throw new ExceptionWithResponseData(
+				/* translators: %s Error message */
+				sprintf( __( 'Unable to retrieve site verification token: %s', 'google-listings-and-ads' ), reset( $errors ) ),
+				$e->getCode(),
+				null,
+				[ 'errors' => $errors ]
 			);
 		}
 
@@ -131,7 +139,7 @@ class SiteVerification implements ContainerAwareInterface, OptionsAwareInterface
 	 *
 	 * @param string $identifier The URL of the site to verify (including protocol).
 	 *
-	 * @throws Exception When unable to verify token.
+	 * @throws ExceptionWithResponseData When unable to verify token.
 	 */
 	protected function insert( string $identifier ) {
 		/** @var SiteVerificationService $service */
@@ -150,13 +158,18 @@ class SiteVerification implements ContainerAwareInterface, OptionsAwareInterface
 		try {
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$service->webResource->insert( self::VERIFICATION_METHOD, $post_body );
-		} catch ( GoogleException $e ) {
+		} catch ( GoogleServiceException $e ) {
 			do_action( 'woocommerce_gla_sv_client_exception', $e, __METHOD__ );
-			throw new Exception(
-				__( 'Unable to insert site verification.', 'google-listings-and-ads' ),
-				$e->getCode()
+
+			$errors = $this->get_exception_errors( $e );
+
+			throw new ExceptionWithResponseData(
+				/* translators: %s Error message */
+				sprintf( __( 'Unable to insert site verification: %s', 'google-listings-and-ads' ), reset( $errors ) ),
+				$e->getCode(),
+				null,
+				[ 'errors' => $errors ]
 			);
 		}
 	}
-
 }

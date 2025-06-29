@@ -1,29 +1,79 @@
-/* Order list buttons: */
-.type-shop_order .column-wc_actions a.button.wpo_wcpdf {
-	padding: 3px 2px 1px 1px !important;
+/* wc orders list */
+.type-shop_order .column-wc_actions a.button.wpo_wcpdf,
+.type-shop_order .column-wc_actions a.button.wpo_wcpdf:hover,
+.woocommerce_page_wc-orders .column-wc_actions a.button.wpo_wcpdf,
+.woocommerce_page_wc-orders .column-wc_actions a.button.wpo_wcpdf:hover {
+	background-repeat: no-repeat;
+	background-position: center;
+	text-align: center;
+	background-size: 16px 16px;
 }
 
-.type-shop_order .column-wc_actions a.button.wpo_wcpdf.exists::after {
-	content: "\f147";
-	position:absolute;
-	font-size:16px;
-	left:7px;
-	color:#2aad2a;
+.type-shop_order .column-wc_actions a.button.wpo_wcpdf > svg,
+.woocommerce_page_wc-orders .column-wc_actions a.button.wpo_wcpdf > svg {
+	display: block;
+	position: absolute;
+	width: 10px;
+	height: 10px;
+	bottom: 1px;
+	background: #f6f7f7;
 }
 
-.wpo_wcpdf-actions a.button.exists::after {
-	font-family: Dashicons;
-	content: "\f147";
-	font-size: 125%;
-	line-height: 80%;
+.type-shop_order .column-wc_actions a.button.wpo_wcpdf.exists > svg.icon-exists,
+.woocommerce_page_wc-orders .column-wc_actions a.button.wpo_wcpdf.exists > svg.icon-exists {
+	left: auto;
+	right: 2px;
+	fill: #2aad2a;
+}
+
+.type-shop_order .column-wc_actions a.button.wpo_wcpdf.ubl > svg.icon-ubl,
+.woocommerce_page_wc-orders .column-wc_actions a.button.wpo_wcpdf.ubl > svg.icon-ubl {
+	left: auto;
+	right: 2px;
+	fill: black;
+}
+
+.type-shop_order .column-wc_actions a.button.wpo_wcpdf.printed > svg.icon-printed,
+.woocommerce_page_wc-orders .column-wc_actions a.button.wpo_wcpdf.printed > svg.icon-printed {
+	left: 2px;
+	right: auto;
+	fill: #51266b;
+}
+
+.wpo_wcpdf-actions a.button.exists > svg,
+.wpo_wcpdf-ubl-actions a.button.exists > svg {
+	width: 14px;
+	height: 14px;
+	line-height: 30px;
 	margin-left: 4px;
-	color: #2aad2a;
+	margin-bottom: 3px;
+	fill: #2aad2a;
 	vertical-align: middle;
 }
 
-.type-shop_order .column-wc_actions a.button.wpo_wcpdf img,
-.type-shop_order .column-order_actions a.button.wpo_wcpdf img /* legacy: 3.2 & older */ {
-	width: 16px;
+.wpo_wcpdf-actions .printed-data,
+.wcpdf-data-fields .printed-data {
+	font-size: 8pt;
+	color: #999;
+	margin-left: 5px;
+	vertical-align: middle;
+	margin-top: 3px !important;
+}
+
+.wpo_wcpdf-actions .printed-data > svg,
+.wcpdf-data-fields .printed-data > svg {
+	width: 14px;
+	height: 14px;
+	background: #fff;
+	fill: #999;
+	vertical-align: middle;
+	margin-right: 3px;
+}
+
+.wpo_wcpdf-actions a.unmark_printed,
+.wcpdf-data-fields a.unmark_printed {
+	margin-left: 4px;
+	color: #a00;;
 }
 
 .widefat .column-pdf_invoice_number {
@@ -92,7 +142,7 @@
 
 /* Edit buttons Invoice, Proforma and Credit */
 .wcpdf-data-fields h4 .dashicons:first-of-type {
-	margin-left:20px !important;	
+	margin-left:20px !important;
 }
 
 .wcpdf-data-fields .wpo-wcpdf-edit-date-number,
@@ -118,9 +168,9 @@
 
 .wcpdf-data-fields h4 .wcpdf-regenerate-spin {
 	opacity: 1;
- 	-webkit-animation: spin 1.6s linear infinite; /* Safari */
- 	animation: spin 1.6s linear infinite;
- 	pointer-events: none;
+	-webkit-animation: spin 1.6s linear infinite; /* Safari */
+	animation: spin 1.6s linear infinite;
+	pointer-events: none;
 }
 
 /* Safari */

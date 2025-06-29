@@ -3,7 +3,6 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Product;
 
-use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidValue;
 use Automattic\WooCommerce\GoogleListingsAndAds\Google\BatchInvalidProductEntry;
 use Automattic\WooCommerce\GoogleListingsAndAds\Google\BatchProductIDRequestEntry;
 use Automattic\WooCommerce\GoogleListingsAndAds\Google\BatchProductRequestEntry;
@@ -53,6 +52,11 @@ class ProductSyncer implements Service {
 	protected $wc;
 
 	/**
+	 * @var ProductRepository
+	 */
+	protected $product_repository;
+
+	/**
 	 * ProductSyncer constructor.
 	 *
 	 * @param GoogleProductService  $google_service
@@ -60,19 +64,22 @@ class ProductSyncer implements Service {
 	 * @param ProductHelper         $product_helper
 	 * @param MerchantCenterService $merchant_center
 	 * @param WC                    $wc
+	 * @param ProductRepository     $product_repository
 	 */
 	public function __construct(
 		GoogleProductService $google_service,
 		BatchProductHelper $batch_helper,
 		ProductHelper $product_helper,
 		MerchantCenterService $merchant_center,
-		WC $wc
+		WC $wc,
+		ProductRepository $product_repository
 	) {
-		$this->google_service  = $google_service;
-		$this->batch_helper    = $batch_helper;
-		$this->product_helper  = $product_helper;
-		$this->merchant_center = $merchant_center;
-		$this->wc              = $wc;
+		$this->google_service     = $google_service;
+		$this->batch_helper       = $batch_helper;
+		$this->product_helper     = $product_helper;
+		$this->merchant_center    = $merchant_center;
+		$this->wc                 = $wc;
+		$this->product_repository = $product_repository;
 	}
 
 	/**
@@ -142,7 +149,7 @@ class ProductSyncer implements Service {
 			sprintf(
 				"Submitted %s products:\n%s",
 				count( $updated_products ),
-				json_encode( $updated_products )
+				wp_json_encode( $updated_products )
 			),
 			__METHOD__
 		);
@@ -152,7 +159,7 @@ class ProductSyncer implements Service {
 				sprintf(
 					"%s products failed to sync with Merchant Center:\n%s",
 					count( $invalid_products ),
-					json_encode( $invalid_products )
+					wp_json_encode( $invalid_products )
 				),
 				__METHOD__
 			);
@@ -228,7 +235,7 @@ class ProductSyncer implements Service {
 			sprintf(
 				"Deleted %s products:\n%s",
 				count( $deleted_products ),
-				json_encode( $deleted_products ),
+				wp_json_encode( $deleted_products ),
 			),
 			__METHOD__
 		);
@@ -238,7 +245,7 @@ class ProductSyncer implements Service {
 				sprintf(
 					"Failed to delete %s products from Merchant Center:\n%s",
 					count( $invalid_products ),
-					json_encode( $invalid_products )
+					wp_json_encode( $invalid_products )
 				),
 				__METHOD__
 			);
@@ -254,17 +261,6 @@ class ProductSyncer implements Service {
 	 */
 	public static function get_supported_product_types(): array {
 		return (array) apply_filters( 'woocommerce_gla_supported_product_types', [ 'simple', 'variable', 'variation' ] );
-	}
-
-	/**
-	 * Return the list of product types we will hide functionality for (default none).
-	 *
-	 * @since 1.2.0
-	 *
-	 * @return array
-	 */
-	public static function get_hidden_product_types(): array {
-		return (array) apply_filters( 'woocommerce_gla_hidden_product_types', [] );
 	}
 
 	/**
@@ -336,6 +332,11 @@ class ProductSyncer implements Service {
 			}
 		}
 
+		// Exclude any ID's which are not ready to delete or are not available in the DB.
+		$product_ids        = array_values( $internal_error_ids );
+		$ready_ids          = $this->product_repository->find_delete_product_ids( $product_ids );
+		$internal_error_ids = array_intersect( $internal_error_ids, $ready_ids );
+
 		// call an action to retry if any products with internal errors exist
 		if ( ! empty( $internal_error_ids ) && apply_filters( 'woocommerce_gla_products_delete_retry_on_failure', true, $invalid_products ) ) {
 			do_action( 'woocommerce_gla_batch_retry_delete_products', $internal_error_ids );
@@ -350,15 +351,30 @@ class ProductSyncer implements Service {
 	}
 
 	/**
-	 * Validates whether Merchant Center is connected and ready for syncing data.
+	 * Validates whether Merchant Center is connected and ready for pushing data.
 	 *
-	 * @throws ProductSyncerException If the Google Merchant Center connection is not ready.
+	 * @throws ProductSyncerException If the Google Merchant Center connection is not ready or cannot push data.
 	 */
 	protected function validate_merchant_center_setup(): void {
 		if ( ! $this->merchant_center->is_ready_for_syncing() ) {
 			do_action( 'woocommerce_gla_error', 'Cannot sync any products before setting up Google Merchant Center.', __METHOD__ );
 
 			throw new ProductSyncerException( __( 'Google Merchant Center has not been set up correctly. Please review your configuration.', 'google-listings-and-ads' ) );
+		}
+
+		if ( ! $this->merchant_center->should_push() ) {
+			do_action(
+				'woocommerce_gla_error',
+				'Cannot push any products because they are being fetched automatically.',
+				__METHOD__
+			);
+
+			throw new ProductSyncerException(
+				__(
+					'Pushing products will not run if the automatic data fetching is enabled. Please review your configuration in Google Listing and Ads settings.',
+					'google-listings-and-ads'
+				)
+			);
 		}
 	}
 }

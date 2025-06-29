@@ -9,6 +9,7 @@
 
 use Automattic\Jetpack\Constants;
 use Automattic\WooCommerce\Internal\Admin\Orders\Edit as OrderEdit;
+use Automattic\WooCommerce\Utilities\OrderUtil;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -22,11 +23,6 @@ class WC_Admin_Meta_Boxes {
 	 * @since 6.5.0
 	 */
 	public const ERROR_STORE = 'woocommerce_meta_box_errors';
-
-	/**
-	 * The css class used to close the meta box
-	 */
-	private const CLOSED_CSS_CLASS = 'closed';
 
 	/**
 	 * Is meta boxes saved once?
@@ -138,8 +134,6 @@ class WC_Admin_Meta_Boxes {
 		add_meta_box( 'woocommerce-product-data', __( 'Product data', 'woocommerce' ), 'WC_Meta_Box_Product_Data::output', 'product', 'normal', 'high' );
 		add_meta_box( 'woocommerce-product-images', __( 'Product gallery', 'woocommerce' ), 'WC_Meta_Box_Product_Images::output', 'product', 'side', 'low' );
 
-		add_filter( 'postbox_classes_product_postexcerpt', array( $this, 'collapse_postexcerpt' ) );
-
 		// Orders.
 		foreach ( wc_get_order_types( 'order-meta-boxes' ) as $type ) {
 			$order_type_object = get_post_type_object( $type );
@@ -153,18 +147,6 @@ class WC_Admin_Meta_Boxes {
 		if ( 'comment' === $screen_id && isset( $_GET['c'] ) && metadata_exists( 'comment', wc_clean( wp_unslash( $_GET['c'] ) ), 'rating' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			add_meta_box( 'woocommerce-rating', __( 'Rating', 'woocommerce' ), 'WC_Meta_Box_Product_Reviews::output', 'comment', 'normal', 'high' );
 		}
-	}
-
-	/**
-	 * Collapse product short description meta box by default
-	 *
-	 * @param array $classes The css class array applied to the meta box.
-	 */
-	public function collapse_postexcerpt( $classes ) {
-		if ( ! in_array( self::CLOSED_CSS_CLASS, $classes, true ) ) {
-			array_push( $classes, self::CLOSED_CSS_CLASS );
-		}
-		return $classes;
 	}
 
 	/**
@@ -234,7 +216,7 @@ class WC_Admin_Meta_Boxes {
 		$post_id = absint( $post_id );
 
 		// $post_id and $post are required
-		if ( empty( $post_id ) || empty( $post ) || self::$saved_meta_boxes ) {
+		if ( empty( $post_id ) || empty( $post ) || ! is_a( $post, 'WP_Post' ) || self::$saved_meta_boxes ) {
 			return;
 		}
 
@@ -266,6 +248,10 @@ class WC_Admin_Meta_Boxes {
 
 		// Check the post type.
 		if ( in_array( $post->post_type, wc_get_order_types( 'order-meta-boxes' ), true ) ) {
+			if ( OrderUtil::custom_orders_table_usage_is_enabled() ) {
+				return;
+			}
+
 			/**
 			 * Save meta for shop order.
 			 *
@@ -297,7 +283,7 @@ class WC_Admin_Meta_Boxes {
 	 * @return string[] Templates array excluding block-based templates.
 	 */
 	public function remove_block_templates( $templates ) {
-		if ( count( $templates ) === 0 || ! wc_current_theme_is_fse_theme() || ( ! function_exists( 'gutenberg_get_block_template' ) && ! function_exists( 'get_block_template' ) ) ) {
+		if ( count( $templates ) === 0 || ! wc_current_theme_is_fse_theme() ) {
 			return $templates;
 		}
 
@@ -310,9 +296,7 @@ class WC_Admin_Meta_Boxes {
 				continue;
 			}
 
-			$block_template = function_exists( 'gutenberg_get_block_template' ) ?
-				gutenberg_get_block_template( $theme . '//' . $template_key ) :
-				get_block_template( $theme . '//' . $template_key );
+			$block_template = get_block_template( $theme . '//' . $template_key );
 
 			// If the block template has the product post type specified, include it.
 			if ( $block_template && is_array( $block_template->post_types ) && in_array( 'product', $block_template->post_types ) ) {

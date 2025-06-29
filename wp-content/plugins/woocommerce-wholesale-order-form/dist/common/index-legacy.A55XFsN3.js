@@ -1,0 +1,1 @@
+System.register(["./Col-legacy.BbwJYWOZ.js","./LoadingOutlined-legacy.CPhLaklC.js"],(function(e,t){"use strict";var s,n,r;return{setters:[e=>{s=e.C,n=e.A},e=>{r=e.a6}],execute:function(){e("C",r(s)),e("R",r(n))}}}));

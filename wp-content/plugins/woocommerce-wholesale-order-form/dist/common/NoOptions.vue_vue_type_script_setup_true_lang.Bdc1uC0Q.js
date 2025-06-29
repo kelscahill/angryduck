@@ -1,0 +1,1 @@
+import{d as o,o as a,f as n,M as r,L as s,u as e}from"./LoadingOutlined.BFkAxzyV.js";import{c as t}from"./index.Ith4SzXf.js";const _=o({__name:"NoOptions",setup(l){return(p,c)=>(a(),n("p",null,[r("em",null,s(e(t)("noAvailableOptions",e(wp.i18n.__)("No available options.","woocommerce-wholesale-order-form"))),1)]))}});export{_};

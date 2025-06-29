@@ -5,7 +5,10 @@
  * @package automattic/jetpack
  */
 
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
+
 use Automattic\Jetpack\Assets;
+use Automattic\Jetpack\Image_CDN\Image_CDN_Core;
 
 /**
  * Jetpack_Gallery_Widget main class.
@@ -105,8 +108,7 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 				// of logic in that method that shouldn't be duplicated.
 				$carousel = new Jetpack_Carousel();
 
-				// First parameter is $output, which comes from filters, and causes bypass of the asset enqueuing. Passing null is correct.
-				$carousel->enqueue_assets( null );
+				$carousel->enqueue_assets();
 			}
 		}
 
@@ -278,7 +280,7 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 
 		foreach ( $instance['attachments'] as $attachment ) {
 			$attachment_image_src = wp_get_attachment_image_src( $attachment->ID, 'full' );
-			$attachment_image_src = jetpack_photon_url( $attachment_image_src[0], array( 'w' => $this->instance_width ) ); /** [url, width, height] */
+			$attachment_image_src = Image_CDN_Core::cdn_url( $attachment_image_src[0], array( 'w' => $this->instance_width ) ); /** [url, width, height] */
 
 			$caption = wptexturize( wp_strip_all_tags( $attachment->post_excerpt ) );
 
@@ -296,9 +298,7 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 			$max_width = min( (int) $content_width, $max_width );
 		}
 
-		$color     = Jetpack_Options::get_option( 'slideshow_background_color', 'black' );
-		$autostart = isset( $attr['autostart'] ) ? $attr['autostart'] : true; // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable -- Todo: should read off the $instance? Also not sure if slideshow_widget() is used still.
-
+		$color   = Jetpack_Options::get_option( 'slideshow_background_color', 'black' );
 		$js_attr = array(
 			'gallery'   => $gallery,
 			'selector'  => $gallery_instance,
@@ -306,7 +306,7 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 			'height'    => $max_height,
 			'trans'     => 'fade',
 			'color'     => $color,
-			'autostart' => $autostart,
+			'autostart' => true,
 		);
 
 		$html = $slideshow->slideshow_js( $js_attr );
@@ -328,7 +328,11 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 	/**
 	 * Outputs the widget settings form.
 	 *
+	 * @html-template-var array $instance
+	 * @html-template-var array<string,array<string|int,string|int>> $allowed_values
+	 *
 	 * @param array $instance Current settings.
+	 * @return string|void
 	 */
 	public function form( $instance ) {
 		$defaults       = $this->defaults();
@@ -442,7 +446,7 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 				'_inc/build/widgets/gallery/js/gallery.min.js',
 				'modules/widgets/gallery/js/gallery.js'
 			),
-			array(),
+			array( 'jquery' ),
 			JETPACK__VERSION,
 			false
 		);
@@ -466,6 +470,7 @@ class Jetpack_Gallery_Widget extends WP_Widget {
 					'modules/widgets/gallery/js/admin.js'
 				),
 				array(
+					'jquery',
 					'media-models',
 					'media-views',
 				),

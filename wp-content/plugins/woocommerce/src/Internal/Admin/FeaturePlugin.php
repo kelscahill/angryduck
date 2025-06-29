@@ -8,18 +8,15 @@ namespace Automattic\WooCommerce\Internal\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\Admin\API;
-use \Automattic\WooCommerce\Admin\Notes\Notes;
-use \Automattic\WooCommerce\Internal\Admin\Notes\OrderMilestones;
-use \Automattic\WooCommerce\Internal\Admin\Notes\WooSubscriptionsNotes;
-use \Automattic\WooCommerce\Internal\Admin\Notes\TrackingOptIn;
-use \Automattic\WooCommerce\Internal\Admin\Notes\WooCommercePayments;
-use \Automattic\WooCommerce\Internal\Admin\Notes\InstallJPAndWCSPlugins;
-use \Automattic\WooCommerce\Internal\Admin\Notes\TestCheckout;
-use \Automattic\WooCommerce\Internal\Admin\Notes\SellingOnlineCourses;
-use \Automattic\WooCommerce\Internal\Admin\Notes\MerchantEmailNotifications;
-use \Automattic\WooCommerce\Internal\Admin\Notes\WelcomeToWooCommerceForStoreUsers;
-use \Automattic\WooCommerce\Internal\Admin\Notes\ManageStoreActivityFromHomeScreen;
-use \Automattic\WooCommerce\Internal\Admin\Notes\MagentoMigration;
+use Automattic\WooCommerce\Admin\Notes\Notes;
+use Automattic\WooCommerce\Internal\Admin\Notes\OrderMilestones;
+use Automattic\WooCommerce\Internal\Admin\Notes\WooSubscriptionsNotes;
+use Automattic\WooCommerce\Internal\Admin\Notes\TrackingOptIn;
+use Automattic\WooCommerce\Internal\Admin\Notes\WooCommercePayments;
+use Automattic\WooCommerce\Internal\Admin\Notes\InstallJPAndWCSPlugins;
+use Automattic\WooCommerce\Internal\Admin\Notes\SellingOnlineCourses;
+use Automattic\WooCommerce\Internal\Admin\Notes\MerchantEmailNotifications;
+use Automattic\WooCommerce\Internal\Admin\Notes\MagentoMigration;
 use Automattic\WooCommerce\Admin\Features\Features;
 use Automattic\WooCommerce\Admin\PluginsHelper;
 use Automattic\WooCommerce\Admin\PluginsInstaller;
@@ -42,6 +39,13 @@ class FeaturePlugin {
 	 * @var object
 	 */
 	protected static $instance = null;
+
+	/**
+	 * Indicates if init has been invoked already.
+	 *
+	 * @var bool
+	 */
+	private bool $initialized = false;
 
 	/**
 	 * Constructor
@@ -70,6 +74,11 @@ class FeaturePlugin {
 		if ( ! defined( 'WC_ABSPATH' ) ) {
 			return;
 		}
+
+		if ( $this->initialized ) {
+			return;
+		}
+		$this->initialized = true;
 
 		// Load the page controller functions file first to prevent fatal errors when disabling WooCommerce Admin.
 		$this->define_constants();
@@ -135,11 +144,11 @@ class FeaturePlugin {
 		 */
 		if ( ! defined( 'WC_ADMIN_VERSION_NUMBER' ) ) {
 			/**
-			  * Define the current WC Admin version.
-			  *
-			  * @deprecated 6.4.0
-			  * @var string
-			  */
+			 * Define the current WC Admin version.
+			 *
+			 * @deprecated 6.4.0
+			 * @var string
+			 */
 			define( 'WC_ADMIN_VERSION_NUMBER', '3.3.0' );
 		}
 	}
@@ -179,10 +188,7 @@ class FeaturePlugin {
 		new TrackingOptIn();
 		new WooCommercePayments();
 		new InstallJPAndWCSPlugins();
-		new TestCheckout();
 		new SellingOnlineCourses();
-		new WelcomeToWooCommerceForStoreUsers();
-		new ManageStoreActivityFromHomeScreen();
 		new MagentoMigration();
 
 		// Initialize MerchantEmailNotifications.

@@ -40,6 +40,15 @@ trait PluginHelper {
 	}
 
 	/**
+	 * Get the client name for this plugin.
+	 *
+	 * @return string
+	 */
+	protected function get_client_name(): string {
+		return 'google-listings-and-ads';
+	}
+
+	/**
 	 * Get the plugin slug.
 	 *
 	 * @return string
@@ -143,7 +152,7 @@ trait PluginHelper {
 	 * @return string
 	 */
 	protected function get_documentation_url(): string {
-		return 'https://docs.woocommerce.com/document/google-listings-and-ads/';
+		return 'https://woocommerce.com/document/google-for-woocommerce/?utm_source=wordpress&utm_medium=all-plugins-page&utm_campaign=doc-link&utm_content=google-listings-and-ads';
 	}
 
 	/**
@@ -165,8 +174,7 @@ trait PluginHelper {
 			return apply_filters( 'woocommerce_gla_wcs_url', WOOCOMMERCE_GLA_CONNECT_SERVER_URL );
 		}
 
-		// TODO: Change to api.woocommerce.com when we are no longer in test phase.
-		return apply_filters( 'woocommerce_gla_wcs_url', 'https://api-vipgo.woocommerce.com' );
+		return apply_filters( 'woocommerce_gla_wcs_url', 'https://api.woocommerce.com' );
 	}
 
 	/**
@@ -191,4 +199,55 @@ trait PluginHelper {
 		return preg_replace( '#^https?://#', '', untrailingslashit( $url ) );
 	}
 
+	/**
+	 * It tries to convert a string to a decimal number using the dot as the decimal separator.
+	 * This is useful with functions like is_numeric as it doesn't recognize commas as decimal separators or any thousands separator.
+	 * Note: Using wc_format_decimal with a dot as the decimal separator (WC -> Settings -> General) will strip out commas but won’t replace them with dots.
+	 * For example, wc_format_decimal('2,4') will return 24 instead of 2.4.
+	 *
+	 * @param string $numeric_string The number to convert.
+	 *
+	 * @return string The number as a standard decimal. 1.245,63 -> 1245.65
+	 */
+	protected function convert_to_standard_decimal( string $numeric_string ): string {
+		$locale = localeconv();
+
+		$separators = [ wc_get_price_decimal_separator(), wc_get_price_thousand_separator(), $locale['thousands_sep'], $locale['mon_thousands_sep'], $locale['decimal_point'], $locale['mon_decimal_point'], ',' ];
+
+		if ( wc_get_price_decimals() > 0 ) {
+			// Replace all posible separators with dots.
+			$numeric_string = str_replace( $separators, '.', $numeric_string );
+			// Leave only the last dot that is the decimal separator.
+			return (string) preg_replace( '/\.(?=.*\.)/', '', $numeric_string );
+		} else {
+			// If no decimals remove all separators.
+			return str_replace( $separators, '', $numeric_string );
+		}
+	}
+
+	/**
+	 * Returns enabled or disabled based on a boolean value.
+	 *
+	 * Returns "enabled" for truthy
+	 * Returns "disabled" for falsy.
+	 *
+	 * @param bool $value The value to check.
+	 * @return string
+	 */
+	protected function enabled_or_disabled( bool $value ): string {
+		return $value ? 'Enabled' : 'Disabled';
+	}
+
+	/**
+	 * Returns Yes or No based on a boolean value.
+	 *
+	 * Returns "yes" for truthy
+	 * Returns "no" for falsy.
+	 *
+	 * @param bool $value The value to check.
+	 * @return string
+	 */
+	protected function yes_or_no( bool $value ): string {
+		return $value ? 'Yes' : 'No';
+	}
 }

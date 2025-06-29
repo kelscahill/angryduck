@@ -19,17 +19,13 @@ class Settings implements Service, Registerable {
 	public function register(): void {
 		add_action(
 			'admin_menu',
-			function() {
+			function () {
 				wc_admin_register_page(
 					[
-						'title'    => __( 'Settings', 'google-listings-and-ads' ),
-						'parent'   => 'google-listings-and-ads-category',
-						'path'     => '/google/settings',
-						'id'       => 'google-settings',
-						'nav_args' => [
-							'order'  => 40,
-							'parent' => 'google-listings-and-ads-category',
-						],
+						'title'  => __( 'Settings', 'google-listings-and-ads' ),
+						'parent' => 'google-listings-and-ads-category',
+						'path'   => '/google/settings',
+						'id'     => 'google-settings',
 					]
 				);
 			}

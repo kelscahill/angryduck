@@ -5,8 +5,25 @@
  */
 class MailChimp_WooCommerce_Transform_Orders {
 
-	public $campaign_id   = null;
 	protected $is_syncing = false;
+
+    /**
+     * @param $is_syncing
+     * @return $this
+     */
+    public function setSyncing($is_syncing = true)
+    {
+        $this->is_syncing = (bool) $is_syncing;
+        return $this;
+    }
+
+    /**
+     * @return bool|mixed
+     */
+    public function isSyncing()
+    {
+        return $this->is_syncing;
+    }
 
 	/**
 	 * @param int $page
@@ -26,14 +43,17 @@ class MailChimp_WooCommerce_Transform_Orders {
 			'drafts'   => 0,
 			'stuffed'  => false,
 			'items'    => array(),
+            'has_next_page' => false
 		);
 
-		if ( ( ( $orders = $this->getOrderPosts( $page, $limit ) ) && ! empty( $orders ) ) ) {
-			foreach ( $orders as $post_id ) {
+		if ( ( ( $orders = $this->getOrderPosts( $page, $limit ) ) && ! empty( $orders['items'] ) ) ) {
+			foreach ( $orders['items'] as $post_id ) {
 				$response->items[] = $post_id;
 				$response->count++;
 			}
-		}
+
+            $response->has_next_page = $orders['has_next_page'];
+        }
 
 		$response->stuffed = $response->count > 0 && (int) $response->count === (int) $limit;
 		$this->is_syncing  = false;
@@ -42,21 +62,18 @@ class MailChimp_WooCommerce_Transform_Orders {
 	}
 
 	/**
-	 * @param WP_Post $post
+	 * @param $woo
 	 *
 	 * @return MailChimp_WooCommerce_Order|mixed|void
 	 * @throws MailChimp_WooCommerce_Error
 	 * @throws MailChimp_WooCommerce_RateLimitError
 	 * @throws MailChimp_WooCommerce_ServerError
 	 */
-	public function transform( WP_Post $post ) {
-		$woo = wc_get_order( $post );
-
+	public function transform( $woo ) {
 		$order = new MailChimp_WooCommerce_Order();
 
 		// if the woo get order returns an empty value, we need to skip the whole thing.
 		if ( empty( $woo ) ) {
-			mailchimp_error( 'sync', 'get woo post was not found for order ' . $post->ID );
 			return $order;
 		}
 
@@ -71,7 +88,7 @@ class MailChimp_WooCommerce_Transform_Orders {
 		// we know how to resolve these types of things.
 		// mailchimp_log('get_billing_mail', method_exists($woo, 'get_billing_email'), array($order->toArray(), $woo));
 		if ( ! method_exists( $woo, 'get_billing_email' ) ) {
-			$message = "Post ID {$post->ID} was an order refund. Skipping this.";
+			$message = "Post ID {$woo->get_id()} was an order refund. Skipping this.";
 			if ( $this->is_syncing ) {
 				throw new MailChimp_WooCommerce_Error( $message );
 			}
@@ -79,7 +96,7 @@ class MailChimp_WooCommerce_Transform_Orders {
 				'initial_sync',
 				$message,
 				array(
-					'post'        => $post,
+					'post'        => $woo,
 					'order_class' => get_class( $woo ),
 				)
 			);
@@ -98,15 +115,6 @@ class MailChimp_WooCommerce_Transform_Orders {
 		}
 
 		$order->setId( $woo->get_order_number() );
-
-		// if we have a campaign id let's set it now.
-		if ( ! empty( $this->campaign_id ) ) {
-			try {
-				$order->setCampaignId( $this->campaign_id );
-			} catch ( Exception $e ) {
-				mailchimp_log( 'transform_order_set_campaign_id.error', 'No campaign added to order, with provided ID: ' . $this->campaign_id . ' :: ' . $e->getMessage() . ' :: in ' . $e->getFile() . ' :: on ' . $e->getLine() );
-			}
-		}
 
 		$order->setProcessedAt( $woo->get_date_created()->setTimezone( new DateTimeZone( 'UTC' ) ) );
 
@@ -184,6 +192,7 @@ class MailChimp_WooCommerce_Transform_Orders {
 		foreach ( $woo->get_items() as $key => $order_detail ) {
 			/** @var WC_Order_Item_Product $order_detail */
 
+            $key = apply_filters( 'mailchimp_line_item_key', $key, $woo );
 			// add it into the order item container.
 			$item = $this->transformLineItem( $key, $order_detail );
 
@@ -243,8 +252,18 @@ class MailChimp_WooCommerce_Transform_Orders {
 	public function buildCustomerFromOrder( $order ) {
 		$customer = new MailChimp_WooCommerce_Customer();
 
+        $wordpress_user = $order->get_user();
+
+        if (empty($wordpress_user)) {
+            mailchimp_debug('order_logic', "order did not have a wordpress user id, checking by email {$order->get_billing_email()}");
+            $wordpress_user = get_user_by('email', $order->get_billing_email());
+            if ($wordpress_user) {
+                mailchimp_debug('order_logic', "found a wordpress user by email {$order->get_billing_email()}");
+            }
+        }
+
 		// attach the WordPress user to the Mailchimp customer object.
-		$customer->setWordpressUser( $order->get_user() );
+		$customer->setWordpressUser( $wordpress_user );
 
 		$customer->setId( mailchimp_hash_trim_lower( $order->get_billing_email() ) );
 		$customer->setCompany( $order->get_billing_company() );
@@ -253,57 +272,19 @@ class MailChimp_WooCommerce_Transform_Orders {
 		$customer->setLastName( $order->get_billing_last_name() );
 		$customer->setAddress( $this->transformBillingAddress( $order ) );
 
-		// removing this because it's causing issues with the order counts
-		// if (!($stats = $this->getCustomerOrderTotals($order))) {
-		// $stats = (object) array('count' => 0, 'total' => 0);
-		// }
-		//
-		// $customer->setOrdersCount($stats->count);
-		// $customer->setTotalSpent($stats->total);
-
 		// we now hold this data inside the customer object for usage in the order handler class
 		// we only update the subscriber status on a member IF they were subscribed.
 		$subscribed_on_order = $customer->wasSubscribedOnOrder( $order->get_id() );
+		// this basically says "if they subscribed on the order, allow it, otherwise use the wordpress meta"
+        $customer->setOptInStatus( $subscribed_on_order );
+        // if we have a wordpress meta already saying they're subscribed, we can use this as a default value.
+        $customer->applyWordpressUserSubscribeStatus();
 
-		$customer->setOptInStatus( $subscribed_on_order );
-
-		try {
-			$doi = mailchimp_list_has_double_optin();
-		} catch ( Exception $e ) {
-			$doi = false;
-		}
-
-		$status_if_new = $doi ? false : $subscribed_on_order;
-
-		$customer->setOptInStatus( $status_if_new );
-
-		// if they didn't subscribe on the order, we need to check to make sure they're not already a subscriber
-		// if they are, we just need to make sure that we don't unsubscribe them just because they unchecked this box.
-		if ( $doi || ! $subscribed_on_order ) {
-			try {
-				$subscriber = mailchimp_get_api()->member( mailchimp_get_list_id(), $customer->getEmailAddress() );
-
-				if ( $subscriber['status'] === 'transactional' ) {
-					$customer->setOptInStatus( false );
-					// when the list requires a double opt in - flag it here.
-					if ( $doi ) {
-						$customer->requireDoubleOptIn( true );
-					}
-					return $customer;
-				} elseif ( $subscriber['status'] === 'pending' ) {
-					$customer->setOptInStatus( false );
-					return $customer;
-				}
-
-				$customer->setOptInStatus( $subscriber['status'] === 'subscribed' );
-			} catch ( Exception $e ) {
-				// if double opt in is enabled - we need to make a request now that subscribes the customer as pending
-				// so that the double opt in will actually fire.
-				if ( $doi && ( ! isset( $subscriber ) || empty( $subscriber ) ) ) {
-					$customer->requireDoubleOptIn( true );
-				}
-			}
-		}
+        // if we are only going to submit existing people on the list during a sync this call is required.
+        if ($this->is_syncing && !$customer->getOptInStatus() && mailchimp_sync_existing_contacts_only()) {
+            $customer->syncSubscriberStatusFromMailchimp();
+            mailchimp_debug("sync.logic", "customer {$customer->getEmailAddress()} was not subscribed in woo, but pulled from Mailchimp with a status of {$customer->getMailchimpStatus()}");
+        }
 
 		return $customer;
 	}
@@ -406,24 +387,33 @@ class MailChimp_WooCommerce_Transform_Orders {
 			$offset = ( $page - 1 ) * $posts;
 		}
 
-		$params = array(
+        $limit = $posts + 1;
+
+        $params = array(
 			'post_type'      => 'shop_order',
-			// 'post_status' => array_keys(wc_get_order_statuses()),
-			'post_status'    => 'wc-completed',
-			'posts_per_page' => $posts,
+            'post_status'    => 'wc-completed',
+			'posts_per_page' => $limit,
 			'offset'         => $offset,
-			'orderby'        => 'id',
-			'order'          => 'ASC',
+			'orderby'        => 'date',
+			'order'          => 'DESC',
 			'fields'         => 'ids',
 		);
 
-		$orders = get_posts( $params );
-		if ( empty( $orders ) ) {
-			sleep( 2 );
-			$orders = get_posts( $params );
-		}
+		$orders = MailChimp_WooCommerce_HPOS::get_orders( $params );
 
-		return empty( $orders ) ? false : $orders;
+        if (empty( $orders ) ) {
+            return false;
+        }
+
+        $has_next_page = count( $orders ) > $posts;
+        if ( $has_next_page ) {
+            array_pop( $orders );
+        }
+
+		return [
+            'items' => $orders,
+            'has_next_page' => $has_next_page,
+        ];
 	}
 
 	/**

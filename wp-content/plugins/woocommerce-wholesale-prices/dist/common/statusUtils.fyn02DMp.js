@@ -1,0 +1,1 @@
+import{A as e}from"../apps/settings/index.0FToouit.js";function r(a,s,t){return e({["".concat(a,"-status-success")]:s==="success",["".concat(a,"-status-warning")]:s==="warning",["".concat(a,"-status-error")]:s==="error",["".concat(a,"-status-validating")]:s==="validating",["".concat(a,"-has-feedback")]:t})}const c=(a,s)=>s||a;export{r as a,c as g};

@@ -66,14 +66,24 @@ class Filterer {
 		// The extra derived table ("SELECT product_or_parent_id FROM") is needed for performance
 		// (causes the filtering subquery to be executed only once).
 		$clause_root = " {$wpdb->posts}.ID IN ( SELECT product_or_parent_id FROM (";
-		if ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) ) {
+
+		/**
+		 * Filters the woocommerce_hide_out_of_stock_items option to override the default behavior in product filtering by attribute.
+		 *
+		 * @param bool $option_value The behavior configured in WooCommerce settings.
+		 * @return bool The behavior to use in the catalog when product filtering by attribute.
+		 *
+		 * @since 9.8.0.
+		 */
+		$hide_out_of_stock = apply_filters( 'woocommerce_product_attributes_filterer_hide_out_of_stock', 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) );
+		if ( $hide_out_of_stock ) {
 			$in_stock_clause = ' AND in_stock = 1';
 		} else {
 			$in_stock_clause = '';
 		}
 
 		$attribute_ids_for_and_filtering = array();
-
+		$clauses                         = array();
 		foreach ( $attributes_to_filter_by as $taxonomy => $data ) {
 			$all_terms                  = get_terms( $taxonomy, array( 'hide_empty' => false ) );
 			$term_ids_by_slug           = wp_list_pluck( $all_terms, 'term_id', 'slug' );
@@ -201,23 +211,34 @@ class Filterer {
 	private function get_product_counts_query_using_lookup_table( $tax_query, $meta_query, $taxonomy, $term_ids ) {
 		global $wpdb;
 
-		$meta_query_sql    = $meta_query->get_sql( 'post', $this->lookup_table_name, 'product_or_parent_id' );
-		$tax_query_sql     = $tax_query->get_sql( $this->lookup_table_name, 'product_or_parent_id' );
-		$hide_out_of_stock = 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' );
+		$meta_query_sql = $meta_query->get_sql( 'post', $this->lookup_table_name, 'product_or_parent_id' );
+		$tax_query_sql  = $tax_query->get_sql( $this->lookup_table_name, 'product_or_parent_id' );
+
+		/**
+		 * Filters the woocommerce_hide_out_of_stock_items option to override the default behavior in product filtering by attribute.
+		 *
+		 * @param bool $option_value The behavior configured in WooCommerce settings.
+		 * @return bool The behavior to use in the catalog when product filtering by attribute.
+		 *
+		 * @since 9.5.0.
+		 */
+		$hide_out_of_stock = apply_filters( 'woocommerce_product_attributes_filterer_hide_out_of_stock', 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) );
 		$in_stock_clause   = $hide_out_of_stock ? ' AND in_stock = 1' : '';
 
+		$query           = array();
 		$query['select'] = 'SELECT COUNT(DISTINCT product_or_parent_id) as term_count, term_id as term_count_id';
 		$query['from']   = "FROM {$this->lookup_table_name}";
 		$query['join']   = "
 			{$tax_query_sql['join']} {$meta_query_sql['join']}
 			INNER JOIN {$wpdb->posts} ON {$wpdb->posts}.ID = {$this->lookup_table_name}.product_or_parent_id";
 
-		$term_ids_sql   = $this->get_term_ids_sql( $term_ids );
-		$query['where'] = "
+		$encoded_taxonomy = sanitize_title( $taxonomy );
+		$term_ids_sql     = $this->get_term_ids_sql( $term_ids );
+		$query['where']   = "
 			WHERE {$wpdb->posts}.post_type IN ( 'product' )
 			AND {$wpdb->posts}.post_status = 'publish'
 			{$tax_query_sql['where']} {$meta_query_sql['where']}
-			AND {$this->lookup_table_name}.taxonomy='{$taxonomy}'
+			AND {$this->lookup_table_name}.taxonomy='{$encoded_taxonomy}'
 			AND {$this->lookup_table_name}.term_id IN $term_ids_sql
 			{$in_stock_clause}";
 

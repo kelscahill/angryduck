@@ -1,39 +1,62 @@
 jQuery( function( $ ) {
 
 	$( '#doaction, #doaction2' ).on( 'click', function( e ) {
-		let actionselected = $(this).attr("id").substr(2);
-		let action         = $('select[name="' + actionselected + '"]').val();
+		let actionselected = $( this ).attr( "id" ).substr( 2 );
+		let action         = $( 'select[name="' + actionselected + '"]' ).val();
 
-		if ( $.inArray(action, wpo_wcpdf_ajax.bulk_actions) !== -1 ) {
+		if ( $.inArray( action, wpo_wcpdf_ajax.bulk_actions ) !== -1 ) {
 			e.preventDefault();
-			let template = action;
-			let checked  = [];
+			let template   = action;
+			let checked    = [];
+			let ubl_output = false;
 
-			$('tbody th.check-column input[type="checkbox"]:checked').each(
+			// is UBL action
+			if ( action.indexOf( 'ubl' ) != -1 ) {
+				template   = template.replace( '_ubl', '' );
+				ubl_output = true;
+			}
+
+			$( 'tbody th.check-column input[type="checkbox"]:checked' ).each(
 				function() {
-					checked.push($(this).val());
+					checked.push( $( this ).val() );
 				}
 			);
-			
-			if (!checked.length) {
-				alert('You have to select order(s) first!');
+
+			if ( ! checked.length ) {
+				alert( wpo_wcpdf_ajax.select_orders );
 				return;
 			}
-			
-			let order_ids = checked.join('x');
 
-			if (wpo_wcpdf_ajax.ajaxurl.indexOf("?") != -1) {
-				url = wpo_wcpdf_ajax.ajaxurl+'&action=generate_wpo_wcpdf&document_type='+template+'&order_ids='+order_ids+'&bulk&_wpnonce='+wpo_wcpdf_ajax.nonce;
+			let partial_url = '';
+			let full_url    = '';
+
+			if ( wpo_wcpdf_ajax.ajaxurl.indexOf ("?" ) != -1 ) {
+				partial_url = wpo_wcpdf_ajax.ajaxurl+'&action=generate_wpo_wcpdf&document_type='+template+'&bulk&_wpnonce='+wpo_wcpdf_ajax.nonce;
 			} else {
-				url = wpo_wcpdf_ajax.ajaxurl+'?action=generate_wpo_wcpdf&document_type='+template+'&order_ids='+order_ids+'&bulk&_wpnonce='+wpo_wcpdf_ajax.nonce;
+				partial_url = wpo_wcpdf_ajax.ajaxurl+'?action=generate_wpo_wcpdf&document_type='+template+'&bulk&_wpnonce='+wpo_wcpdf_ajax.nonce;
 			}
 
-			window.open(url,'_blank');
+			// ubl
+			if ( ubl_output ) {
+				$.each( checked, function( i, order_id ) {
+					full_url = partial_url + '&order_ids='+order_id+'&output=ubl';
+					window.open( full_url, '_blank' );
+				} );
+
+			// pdf
+			} else {
+				let order_ids = checked.join( 'x' );
+				full_url      = partial_url + '&order_ids='+order_ids;
+				window.open( full_url, '_blank' );
+			}
+
 		}
 	} );
 
-	$( '#wpo_wcpdf-data-input-box' ).insertAfter('#woocommerce-order-data');
-	
+	if ( wpo_wcpdf_ajax.sticky_document_data_metabox ) {
+		$( '#wpo_wcpdf-data-input-box' ).insertAfter('#woocommerce-order-data');
+	}
+
 	// enable invoice number edit if user initiated
 	$( '#wpo_wcpdf-data-input-box' ).on( 'click', '.wpo-wcpdf-set-date-number, .wpo-wcpdf-edit-date-number, .wpo-wcpdf-edit-document-notes', function() {
 		let $form = $(this).closest('.wcpdf-data-fields-section');
@@ -68,7 +91,7 @@ jQuery( function( $ ) {
 			if ( window.confirm( wpo_wcpdf_ajax.confirm_regenerate ) === false ) {
 				return; // having second thoughts
 			}
-	
+
 			$form.find('.wpo-wcpdf-regenerate-document').addClass('wcpdf-regenerate-spin');
 
 		// delete specific
@@ -79,6 +102,12 @@ jQuery( function( $ ) {
 
 			// hide regenerate button
 			$form.find('.wpo-wcpdf-regenerate-document').hide();
+		}
+
+		// Remove previous notice if exists.
+		const $previous_notice = $( this ).closest( '#wpo_wcpdf-data-input-box' ).find( '.notice' );
+		if ( $previous_notice.length ) {
+			$previous_notice.remove();
 		}
 
 		// block ui
@@ -105,29 +134,34 @@ jQuery( function( $ ) {
 			type:               'POST',
 			context:            $form,
 			success: function( response ) {
-				toggle_edit_mode( $form );
-
 				// update document DOM data
-				$form.closest('#wpo_wcpdf-data-input-box').load( document.URL + ' #wpo_wcpdf-data-input-box .postbox-header, #wpo_wcpdf-data-input-box .inside', function() {
-					let notice_type;
-					if( response.success ) {
-						notice_type = 'success';
-					} else {
-						notice_type = 'error';
-					}
-					$(this).find( ".wcpdf-data-fields[data-document='" + data.document +"'][data-order_id='" + data.order_id +"']" ).before( '<div class="notice notice-'+notice_type+' inline" style="margin:0 10px 10px 10px;"><p>'+response.data.message+'</p></div>' );
-				});
+				$form.closest('#wpo_wcpdf-data-input-box').load(
+					document.URL + ' #wpo_wcpdf-data-input-box .postbox-header, #wpo_wcpdf-data-input-box .inside',
+					function() {
+						toggle_edit_mode( $form );
 
-				if( action == 'regenerate' ) {
-					$form.find('.wpo-wcpdf-regenerate-document').removeClass('wcpdf-regenerate-spin');
-					toggle_edit_mode( $form );
-				}
+						const notice_type   = response.success ? 'success' : 'error';
+						const $target_field = $( this ).find( '.wcpdf-data-fields[data-document="' + data.document + '"][data-order_id="' + data.order_id + '"]' );
 
-				// unblock ui
-				$form.unblock();
+						if ( $target_field.length ) {
+							$target_field.before(
+								'<div class="notice notice-' + notice_type + ' inline" style="margin:0 10px 10px 10px;">' +
+								'<p>' + response.data.message + '</p>' +
+								'</div>'
+							);
+						}
+
+						if( action === 'regenerate' ) {
+							$form.find('.wpo-wcpdf-regenerate-document').removeClass('wcpdf-regenerate-spin');
+							toggle_edit_mode( $form );
+						}
+
+						// unblock ui
+						$form.unblock();
+				} );
 			}
 		} );
-		
+
 	} );
 
 	function toggle_edit_mode( $form, mode = null ) {
@@ -151,5 +185,18 @@ jQuery( function( $ ) {
 			$form.closest('.wcpdf-data-fields').find('.wpo-wcpdf-document-buttons').hide();
 		}
 	}
+
+	$( '#wpo_wcpdf-data-input-box' ).on( 'click', '.view-more, .hide-details', function( e ) {
+		e.preventDefault();
+
+		$( this ).hide();
+		$( '.pdf-more-details' ).slideToggle( 'slow' );
+
+		if ( $( this ).hasClass( 'view-more' ) ) {
+			$( '.hide-details' ).show();
+		} else {
+			$( '.view-more' ).show();
+		}
+	} );
 
 } );

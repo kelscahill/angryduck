@@ -18,7 +18,7 @@ use Automattic\Jetpack\Assets;
 
 $GLOBALS['concatenate_scripts'] = false; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
-Assets::add_resource_hint( '//c0.wp.com', 'dns-prefetch' );
+Assets::add_resource_hint( '//c0.wp.com', 'preconnect' );
 
 /**
  * Asset CDN module main class file.
@@ -52,7 +52,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 		 * is available and we know whether the response will be AMP or not. This is particularly important
 		 * for AMP-first (native AMP) pages where there are no AMP-specific URLs.
 		 */
-		if ( Jetpack_AMP_Support::is_amp_request() ) {
+		if ( class_exists( Jetpack_AMP_Support::class ) && Jetpack_AMP_Support::is_amp_request() ) {
 			return;
 		}
 
@@ -77,6 +77,9 @@ class Jetpack_Photon_Static_Assets_CDN {
 				if ( wp_startswith( $thing->src, self::CDN ) ) {
 					continue;
 				}
+				if ( ! is_string( $thing->src ) ) {
+					continue;
+				}
 				$src = ltrim( str_replace( $site_url, '', $thing->src ), '/' );
 				if ( self::is_js_or_css_file( $src ) && in_array( substr( $src, 0, 9 ), array( 'wp-admin/', 'wp-includ' ), true ) ) {
 					$wp_scripts->registered[ $handle ]->src = sprintf( self::CDN . 'c/%1$s/%2$s', $version, $src );
@@ -85,6 +88,9 @@ class Jetpack_Photon_Static_Assets_CDN {
 			}
 			foreach ( $wp_styles->registered as $handle => $thing ) {
 				if ( wp_startswith( $thing->src, self::CDN ) ) {
+					continue;
+				}
+				if ( ! is_string( $thing->src ) ) {
 					continue;
 				}
 				$src = ltrim( str_replace( $site_url, '', $thing->src ), '/' );
@@ -111,7 +117,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 	public static function fix_script_relative_path( $relative, $src ) {
 
 		// Note relevant in AMP responses. See note above.
-		if ( Jetpack_AMP_Support::is_amp_request() ) {
+		if ( class_exists( Jetpack_AMP_Support::class ) && Jetpack_AMP_Support::is_amp_request() ) {
 			return $relative;
 		}
 
@@ -220,7 +226,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 	 */
 	public static function get_plugin_assets( $plugin, $version ) {
 		if ( 'jetpack' === $plugin && JETPACK__VERSION === $version ) {
-			if ( ! self::is_public_version( $version ) ) {
+			if ( ! self::is_public_version( $version ) || ! file_exists( JETPACK__PLUGIN_DIR . 'modules/photon-cdn/jetpack-manifest.php' ) ) {
 				return false;
 			}
 
@@ -294,7 +300,7 @@ class Jetpack_Photon_Static_Assets_CDN {
 	 * @return Boolean whether the file is a JS or CSS.
 	 */
 	public static function is_js_or_css_file( $path ) {
-		return ( false === strpos( $path, '?' ) ) && in_array( substr( $path, -3 ), array( 'css', '.js' ), true );
+		return ( ! str_contains( $path, '?' ) ) && in_array( substr( $path, -3 ), array( 'css', '.js' ), true );
 	}
 
 	/**

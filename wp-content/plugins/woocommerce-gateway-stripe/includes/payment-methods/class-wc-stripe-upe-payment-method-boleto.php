@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class WC_Stripe_UPE_Payment_Method_Boleto extends WC_Stripe_UPE_Payment_Method {
 
-	const STRIPE_ID = 'boleto';
+	const STRIPE_ID = WC_Stripe_Payment_Methods::BOLETO;
 
 	const LPM_GATEWAY_CLASS = WC_Gateway_Stripe_Boleto::class;
 
@@ -21,10 +21,11 @@ class WC_Stripe_UPE_Payment_Method_Boleto extends WC_Stripe_UPE_Payment_Method {
 		parent::__construct();
 		$this->stripe_id            = self::STRIPE_ID;
 		$this->can_refund           = false;
-		$this->title                = 'Pay with Boleto';
+		$this->title                = 'Boleto';
 		$this->is_reusable          = false;
-		$this->supported_currencies = [ 'BRL' ];
+		$this->supported_currencies = [ WC_Stripe_Currency_Code::BRAZILIAN_REAL ];
 		$this->supported_countries  = [ 'BR' ];
+		$this->supports             = [ 'products' ];
 		$this->label                = __( 'Boleto', 'woocommerce-gateway-stripe' );
 		$this->description          = __(
 			'Boleto is an official payment method in Brazil. Customers receive a voucher that can be paid at authorized agencies or banks, ATMs, or online bank portals.',
@@ -43,7 +44,7 @@ class WC_Stripe_UPE_Payment_Method_Boleto extends WC_Stripe_UPE_Payment_Method {
 	 * @return mixed
 	 */
 	public function add_allowed_payment_processing_statuses( $allowed_statuses, $order ) {
-		if ( 'boleto' === $order->get_meta( '_stripe_upe_payment_type' ) && ! in_array( 'on-hold', $allowed_statuses ) ) {
+		if ( WC_Stripe_Payment_Methods::BOLETO === $order->get_meta( '_stripe_upe_payment_type' ) && ! in_array( 'on-hold', $allowed_statuses ) ) {
 			$allowed_statuses[] = 'on-hold';
 		}
 

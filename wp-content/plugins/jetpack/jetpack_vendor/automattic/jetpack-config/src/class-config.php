@@ -12,14 +12,16 @@ namespace Automattic\Jetpack;
  * contain the package classes shown below. The consumer plugin
  * must require the corresponding packages to use these features.
  */
+use Automattic\Jetpack\Account_Protection\Account_Protection as Jetpack_Account_Protection_Main;
 use Automattic\Jetpack\Connection\Manager;
 use Automattic\Jetpack\Connection\Plugin;
-use Automattic\Jetpack\JITM as JITM;
+use Automattic\Jetpack\Import\Main as Import_Main;
 use Automattic\Jetpack\JITMS\JITM as JITMS_JITM;
-use Automattic\Jetpack\Post_List\Post_List as Post_List;
-use Automattic\Jetpack\Publicize\Publicize_Setup as Publicize_Setup;
+use Automattic\Jetpack\Post_List\Post_List;
+use Automattic\Jetpack\Publicize\Publicize_Setup;
 use Automattic\Jetpack\Search\Initializer as Jetpack_Search_Main;
 use Automattic\Jetpack\Stats\Main as Stats_Main;
+use Automattic\Jetpack\Stats_Admin\Main as Stats_Admin_Main;
 use Automattic\Jetpack\Sync\Main as Sync_Main;
 use Automattic\Jetpack\VideoPress\Initializer as VideoPress_Pkg_Initializer;
 use Automattic\Jetpack\Waf\Waf_Initializer as Jetpack_Waf_Main;
@@ -40,17 +42,21 @@ class Config {
 	 * @var Array
 	 */
 	protected $config = array(
-		'jitm'            => false,
-		'connection'      => false,
-		'sync'            => false,
-		'post_list'       => false,
-		'identity_crisis' => false,
-		'search'          => false,
-		'publicize'       => false,
-		'wordads'         => false,
-		'waf'             => false,
-		'videopress'      => false,
-		'stats'           => false,
+		'jitm'               => false,
+		'connection'         => false,
+		'sync'               => false,
+		'post_list'          => false,
+		'identity_crisis'    => false,
+		'search'             => false,
+		'publicize'          => false,
+		'wordads'            => false,
+		'account_protection' => false,
+		'waf'                => false,
+		'videopress'         => false,
+		'stats'              => false,
+		'stats_admin'        => false,
+		'yoast_promo'        => false,
+		'import'             => false,
 	);
 
 	/**
@@ -140,6 +146,11 @@ class Config {
 				&& $this->ensure_feature( 'wordads' );
 		}
 
+		if ( $this->config['account_protection'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Account_Protection\Account_Protection' )
+				&& $this->ensure_feature( 'account_protection' );
+		}
+
 		if ( $this->config['waf'] ) {
 			$this->ensure_class( 'Automattic\Jetpack\Waf\Waf_Initializer' )
 				&& $this->ensure_feature( 'waf' );
@@ -150,6 +161,18 @@ class Config {
 		}
 		if ( $this->config['stats'] ) {
 			$this->ensure_class( 'Automattic\Jetpack\Stats\Main' ) && $this->ensure_feature( 'stats' );
+		}
+		if ( $this->config['stats_admin'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Stats_Admin\Main' ) && $this->ensure_feature( 'stats_admin' );
+		}
+
+		if ( $this->config['yoast_promo'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Yoast_Promo' ) && $this->ensure_feature( 'yoast_promo' );
+		}
+
+		if ( $this->config['import'] ) {
+			$this->ensure_class( 'Automattic\Jetpack\Import\Main' )
+				&& $this->ensure_feature( 'import' );
 		}
 	}
 
@@ -218,6 +241,7 @@ class Config {
 			JITMS_JITM::configure();
 		} else {
 			// Provides compatibility with jetpack-jitm <v1.6.
+			// @phan-suppress-next-line PhanUndeclaredClassMethod
 			JITM::configure();
 		}
 
@@ -293,6 +317,16 @@ class Config {
 	}
 
 	/**
+	 * Enables Account Protection.
+	 */
+	protected function enable_account_protection() {
+		$account_protection = Jetpack_Account_Protection_Main::instance();
+		$account_protection->initialize();
+
+		return true;
+	}
+
+	/**
 	 * Enables Waf.
 	 */
 	protected function enable_waf() {
@@ -318,6 +352,14 @@ class Config {
 	}
 
 	/**
+	 * Enables Stats Admin.
+	 */
+	protected function enable_stats_admin() {
+		Stats_Admin_Main::init();
+		return true;
+	}
+
+	/**
 	 * Handles VideoPress options
 	 */
 	protected function ensure_options_videopress() {
@@ -325,6 +367,23 @@ class Config {
 		if ( ! empty( $options ) ) {
 			VideoPress_Pkg_Initializer::update_init_options( $options );
 		}
+		return true;
+	}
+
+	/**
+	 * Enables Yoast Promo.
+	 */
+	protected function enable_yoast_promo() {
+		Yoast_Promo::init();
+		return true;
+	}
+
+	/**
+	 * Enables the Import feature.
+	 */
+	protected function enable_import() {
+		Import_Main::configure();
+
 		return true;
 	}
 
@@ -410,5 +469,4 @@ class Config {
 	protected function get_feature_options( $feature ) {
 		return empty( $this->feature_options[ $feature ] ) ? array() : $this->feature_options[ $feature ];
 	}
-
 }

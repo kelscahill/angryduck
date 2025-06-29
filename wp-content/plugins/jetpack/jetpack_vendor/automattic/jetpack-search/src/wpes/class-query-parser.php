@@ -44,6 +44,20 @@ class Query_Parser extends Query_Builder {
 	protected $langs;
 	protected $avail_langs = array( 'ar', 'bg', 'ca', 'cs', 'da', 'de', 'el', 'en', 'es', 'eu', 'fa', 'fi', 'fr', 'he', 'hi', 'hu', 'hy', 'id', 'it', 'ja', 'ko', 'nl', 'no', 'pt', 'ro', 'ru', 'sv', 'tr', 'zh' );
 
+	/**
+	 * All fields.
+	 *
+	 * @var array
+	 */
+	public $all_fields;
+
+	/**
+	 * Phrase fields.
+	 *
+	 * @var array
+	 */
+	public $phrase_fields;
+
 	public function __construct( $user_query, $langs ) {
 		$this->orig_query    = $user_query;
 		$this->current_query = $this->orig_query;
@@ -452,7 +466,6 @@ class Query_Parser extends Query_Builder {
 				'should'
 			);
 		}
-
 	}
 
 	/*
@@ -691,7 +704,7 @@ class Query_Parser extends Query_Builder {
 				$broken = true;
 				break;
 			}
-			$breakpoint--;
+			--$breakpoint;
 		}
 		// if we weren't able to find a break, need to chop mid-word
 		if ( ! $broken ) {
@@ -699,5 +712,4 @@ class Query_Parser extends Query_Builder {
 		}
 		return $string;
 	}
-
 }

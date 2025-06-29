@@ -1,0 +1,87 @@
+#per-order-quantity-wholesale-percent-discount-cat-level-controls-header {
+    margin-bottom: 30px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls-header > h4 {
+    margin: 0;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls-header > p.desc {
+    margin-bottom: 10px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls-header label[for='enable-per-order-quantity-wholesale-percent-discount-cat-level'] .spinner,
+label[for='enable-per-order-quantity-wholesale-percent-discount-cat-level-mode-2'] .spinner {
+    display: none;
+    float: none;
+    visibility: visible;
+    margin: 0 2px 0 0;
+    position: relative;
+    top: -2px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls-header label[for='enable-per-order-quantity-wholesale-percent-discount-cat-level'] input[type="checkbox"] {
+    display: inline-block;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls {
+    margin-bottom: 30px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set {
+    margin-bottom: 10px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set label {
+    display: inline-block;
+    width: 180px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set select,
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set input[type="number"] {
+    display: inline-block;
+    width: 320px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set .tooltip {
+    display: inline-block;
+    margin-top: 6px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set {
+    padding-top: 20px;
+    padding-left: 186px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set #cancel-edit-quantity-discount-rule,
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set #edit-quantity-discount-rule {
+    display: none;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set #add-quantity-discount-rule {
+    display: inline-block;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set.edit-mode #cancel-edit-quantity-discount-rule,
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set.edit-mode #edit-quantity-discount-rule {
+    display: inline-block;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set.edit-mode #add-quantity-discount-rule {
+    display: none;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-controls .field-controls .field-set.button-field-set .spinner {
+    float: none;
+    display: none;
+    visibility: visible;
+    margin-left: 6px;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table thead tr th,
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tbody tr td,
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tfoot tr th {
+    padding: 8px 10px;
+    cursor: default !important;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tbody tr.processing-row {
+    background-color: #FFDB99;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table thead tr th.controls-heading,
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tbody tr td.controls,
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tfoot tr th.controls-heading {
+    width: 10%;
+    text-align: right;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tbody tr td.controls .edit {
+    color: green;
+    cursor: pointer;
+}
+#per-order-quantity-wholesale-percent-discount-cat-level-mapping-table tbody tr td.controls .delete {
+    color: red;
+    cursor: pointer;
+}

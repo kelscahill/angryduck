@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-namespace Google\Http;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Http;
 
-use Google\Client;
-use Google\Service\Exception as GoogleServiceException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Client;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Exception as GoogleServiceException;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7\Request;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7\Response;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\RequestInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\ResponseInterface;
 
 /**
  * Class to handle batched requests to the Google API service.
@@ -62,7 +62,12 @@ class Batch
     ) {
         $this->client = $client;
         $this->boundary = $boundary ?: mt_rand();
-        $this->rootUrl = rtrim($rootUrl ?: $this->client->getConfig('base_path'), '/');
+        $rootUrl = rtrim($rootUrl ?: $this->client->getConfig('base_path'), '/');
+        $this->rootUrl = str_replace(
+            'UNIVERSE_DOMAIN',
+            $this->client->getUniverseDomain(),
+            $rootUrl
+        );
         $this->batchPath = $batchPath ?: self::BATCH_PATH;
     }
 

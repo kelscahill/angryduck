@@ -3,6 +3,7 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Proxies;
 
+use Automattic\WooCommerce\Container;
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidValue;
 use WC_Countries;
 use WC_Coupon;
@@ -33,6 +34,13 @@ class WC {
 	 */
 	protected $countries;
 
+	/**
+	 * List of countries the WC store sells to.
+	 *
+	 * @var array
+	 */
+	protected $allowed_countries;
+
 	/** @var WC_Countries */
 	protected $wc_countries;
 
@@ -47,20 +55,19 @@ class WC {
 	 * @param WC_Countries|null $countries
 	 */
 	public function __construct( ?WC_Countries $countries = null ) {
-		$countries               = $countries ?? new WC_Countries();
-		$this->wc_countries      = $countries;
-		$this->base_country      = $countries->get_base_country() ?? 'US';
-		$this->countries         = $countries->get_countries() ?? [];
-		$this->allowed_countries = $countries->get_allowed_countries() ?? [];
-		$this->continents        = $countries->get_continents() ?? [];
+		$this->wc_countries = $countries ?? new WC_Countries();
 	}
 
 	/**
-	 * Get WooCommerce
+	 * Get WooCommerce countries.
 	 *
 	 * @return array
 	 */
 	public function get_countries(): array {
+		if ( null === $this->countries ) {
+			$this->countries = $this->wc_countries->get_countries() ?? [];
+		}
+
 		return $this->countries;
 	}
 
@@ -70,6 +77,10 @@ class WC {
 	 * @return array
 	 */
 	public function get_allowed_countries(): array {
+		if ( null === $this->allowed_countries ) {
+			$this->allowed_countries = $this->wc_countries->get_allowed_countries() ?? [];
+		}
+
 		return $this->allowed_countries;
 	}
 
@@ -79,6 +90,10 @@ class WC {
 	 * @return string
 	 */
 	public function get_base_country(): string {
+		if ( null === $this->base_country ) {
+			$this->base_country = $this->wc_countries->get_base_country() ?? 'US';
+		}
+
 		return $this->base_country;
 	}
 
@@ -88,6 +103,10 @@ class WC {
 	 * @return array
 	 */
 	public function get_continents(): array {
+		if ( null === $this->continents ) {
+			$this->continents = $this->wc_countries->get_continents() ?? [];
+		}
+
 		return $this->continents;
 	}
 
@@ -200,5 +219,16 @@ class WC {
 	 */
 	public function get_available_payment_gateways(): array {
 		return WCCore()->payment_gateways->get_available_payment_gateways();
+	}
+
+	/**
+	 * Returns the WooCommerce object container.
+	 *
+	 * @return Container
+	 *
+	 * @since 2.3.10
+	 */
+	public function wc_get_container(): Container {
+		return wc_get_container();
 	}
 }

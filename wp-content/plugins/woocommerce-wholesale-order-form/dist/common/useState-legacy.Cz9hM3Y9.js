@@ -1,0 +1,1 @@
+System.register(["./LoadingOutlined-legacy.CPhLaklC.js"],(function(t,e){"use strict";var n;return{setters:[t=>{n=t.b}],execute:function(){t("u",(function(t){const e="function"==typeof t?t():t,u=n(e);return[u,function(t){u.value=t}]}))}}}));

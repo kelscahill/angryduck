@@ -1,0 +1,285 @@
+{
+  "id": "%order_form-id%",
+  "title": "Wholesale Order Listing",
+  "form_header": {
+    "rows": [
+      {
+        "id": "%random_id%",
+        "columns": [
+          {
+            "id": "%random_id%",
+            "fields": [
+              {
+                "id": "%random_id%",
+                "elementClass": "search-input",
+                "settings": {
+                  "styles": null,
+                  "options": {
+                    "skuSearch": "no"
+                  }
+                }
+              }
+            ],
+            "settings": {
+              "styles": {
+                "boxAlignment": "%box_alignment%",
+                "elementAlignment": "%rtl_alignment%",
+                "margin": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                },
+                "padding": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                }
+              },
+              "options": null
+            }
+          },
+          {
+            "id": "%random_id%",
+            "fields": [
+              {
+                "id": "%random_id%",
+                "elementClass": "category-filter",
+                "settings": {
+                  "styles": null,
+                  "options": null
+                }
+              }
+            ],
+            "settings": {
+              "styles": {
+                "boxAlignment": "%box_alignment%",
+                "elementAlignment": "%rtl_alignment%",
+                "margin": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                },
+                "padding": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                }
+              },
+              "options": null
+            }
+          },
+          {
+            "id": "%random_id%",
+            "fields": [
+              {
+                "id": "%random_id%",
+                "elementClass": "search-button",
+                "settings": {
+                  "styles": null,
+                  "options": null
+                }
+              }
+            ],
+            "settings": {
+              "styles": {
+                "boxAlignment": "%box_alignment%",
+                "elementAlignment": "%rtl_alignment%",
+                "margin": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                },
+                "padding": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                }
+              },
+              "options": null
+            }
+          }
+        ],
+        "settings": {
+          "styles": null,
+          "options": null
+        }
+      }
+    ],
+    "settings": {
+      "styles": null,
+      "options": null
+    }
+  },
+  "form_body": {
+    "columns": [
+      {
+        "id": "%random_id%",
+        "elementClass": "product-name",
+        "settings": {
+          "styles": null,
+          "options": {
+            "clickAction": "navigate-to-product-page",
+            "displayVariationDropdown": "yes"
+          }
+        }
+      },
+      {
+        "id": "%random_id%",
+        "elementClass": "product-price",
+        "settings": {
+          "styles": null,
+          "options": {
+            "quantityBasedPricing": "no"
+          }
+        }
+      },
+      {
+        "id": "%random_id%",
+        "elementClass": "quantity-input",
+        "settings": {
+          "styles": null,
+          "options": null
+        }
+      },
+      {
+        "id": "%random_id%",
+        "elementClass": "add-to-cart-button",
+        "settings": {
+          "styles": null,
+          "options": null
+        }
+      }
+    ],
+    "settings": {
+      "styles": null,
+      "options": null
+    }
+  },
+  "form_footer": {
+    "rows": [
+      {
+        "id": "%random_id%",
+        "columns": [
+          {
+            "id": "%random_id%",
+            "fields": [
+              {
+                "id": "%random_id%",
+                "elementClass": "product-count",
+                "settings": {
+                  "styles": null,
+                  "options": null
+                }
+              }
+            ],
+            "settings": {
+              "styles": {
+                "boxAlignment": "%box_alignment%",
+                "elementAlignment": "%rtl_alignment%",
+                "margin": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                },
+                "padding": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                }
+              },
+              "options": null
+            }
+          },
+          {
+            "id": "%random_id%",
+            "fields": [
+              {
+                "id": "%random_id%",
+                "elementClass": "form-pagination",
+                "settings": {
+                  "styles": null,
+                  "options": null
+                }
+              }
+            ],
+            "settings": {
+              "styles": {
+                "boxAlignment": "%box_alignment%",
+                "elementAlignment": "%rtl_alignment%",
+                "margin": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                },
+                "padding": {
+                  "top": "",
+                  "right": "",
+                  "bottom": "",
+                  "left": "",
+                  "unit": "px",
+                  "linked": "yes"
+                }
+              },
+              "options": null
+            }
+          }
+        ],
+        "settings": {
+          "styles": null,
+          "options": null
+        }
+      }
+    ],
+    "settings": {
+      "styles": null,
+      "options": null
+    }
+  },
+  "settings": {
+    "permissions": {
+      "allowedUserRoles": [],
+      "noAccessTitle": "",
+      "noAccessMessage": "",
+      "noAccessLoginUrl": ""
+    },
+    "hideFormTitle": "no",
+    "productSort": "asc",
+    "productSortBy": "menu_order",
+    "productsPerPage": "10",
+    "lazyLoad": "no",
+    "showVariationsIndividually": "no",
+    "showZeroInventory": "no",
+    "includeProducts": [],
+    "excludeProducts": [],
+    "defaultCategory": null,
+    "includedCategories": [],
+    "excludedCategories": []
+  }
+}

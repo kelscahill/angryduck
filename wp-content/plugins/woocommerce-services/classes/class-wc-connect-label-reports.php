@@ -1,5 +1,7 @@
 <?php
 
+use Automattic\WooCommerce\Utilities\OrderUtil;
+
 if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 	include_once WC()->plugin_path() . '/includes/admin/reports/class-wc-admin-report.php';
 
@@ -20,11 +22,11 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 			?>
 			<a
 				href="#"
-				download="report-shipping-labels-<?php echo esc_attr( $current_range ); ?>-<?php echo date_i18n( 'Y-m-d', current_time( 'timestamp' ) ); ?>.csv"
+				download="report-shipping-labels-<?php echo esc_attr( $current_range ); ?>-<?php echo esc_html( date_i18n( 'Y-m-d', current_time( 'timestamp' ) ) ); ?>.csv"
 				class="export_csv"
 				data-export="table"
 			>
-				<?php _e( 'Export CSV', 'woocommerce-services' ); ?>
+				<?php esc_html_e( 'Export CSV', 'woocommerce-services' ); ?>
 			</a>
 			<?php
 		}
@@ -35,9 +37,19 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 
 		private function get_all_labels() {
 			global $wpdb;
-			$query      = "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = 'wc_connect_labels'";
-			$db_results = $wpdb->get_results( $query );
-			$results    = array();
+
+			$table_name = OrderUtil::get_table_for_order_meta();
+			$id_column  = OrderUtil::custom_orders_table_usage_is_enabled() ? 'order_id' : 'post_id';
+			$db_results = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT %i, meta_value FROM %i WHERE meta_key = %s',
+					$id_column,
+					$table_name,
+					'wc_connect_labels'
+				)
+			);
+
+			$results = array();
 
 			foreach ( $db_results as $meta ) {
 				$labels = maybe_unserialize( $meta->meta_value );
@@ -51,7 +63,7 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 				}
 
 				foreach ( $labels as $label ) {
-					$results[] = array_merge( $label, array( 'order_id' => $meta->post_id ) );
+					$results[] = array_merge( $label, array( 'order_id' => $meta->{$id_column} ) );
 				}
 			}
 
@@ -67,9 +79,15 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 				set_transient( self::LABELS_TRANSIENT_KEY, $all_labels, 1800 );
 			}
 
-			// translate timestamps to JS timestapms
-			$start_date = $this->start_date * 1000;
-			$end_date   = $this->end_date * 1000;
+			/**
+			 * Translate timestamps to JS timestamps.
+			 *
+			 * The start_date is set to the beginning of the day (midnight) of the start_date property, converted to milliseconds.
+			 * The end_date is set to the end of the day (one millisecond before midnight) of the end_date property, converted to milliseconds.
+			 * This ensures that the date range includes the entire days specified by start_date and end_date.
+			 */
+			$start_date = strtotime( 'midnight', $this->start_date ) * 1000;
+			$end_date   = strtotime( 'tomorrow', $this->end_date ) * 1000 - 1;
 
 			$results = array();
 			foreach ( $all_labels as $label ) {
@@ -124,9 +142,12 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 			include WC()->plugin_path() . '/includes/admin/views/html-report-by-date.php';
 		}
 
-		private function get_order_url( $post_id ) {
+		private function get_edit_order_link( $post_id ) {
 			$order = wc_get_order( $post_id );
-			return '<a href="' . WC_Connect_Compatibility::instance()->get_edit_order_url( $order ) . '">' . $order->get_order_number( $order ) . '</a>';
+			if ( ! is_a( $order, 'WC_Order' ) ) {
+				return null;
+			}
+			return '<a href="' . $order->get_edit_order_url() . '">' . $order->get_order_number() . '</a>';
 		}
 
 		private function get_label_refund_status( $label ) {
@@ -176,19 +197,28 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 						<?php foreach ( $labels as $label ) : ?>
 							<tr>
 								<th scope="row">
-									<?php echo get_date_from_gmt( date( 'Y-m-d H:i:s', $label['created'] / 1000 ) ); ?>
+									<?php echo esc_html( get_date_from_gmt( date( 'Y-m-d H:i:s', intval( $label['created'] / 1000 ) ) ) ); ?>
 								</th>
 								<td>
-									<?php echo $this->get_order_url( $label['order_id'] ); ?>
+									<?php
+									echo wp_kses(
+										$this->get_edit_order_link( $label['order_id'] ),
+										array(
+											'a' => array(
+												'href' => array(),
+											),
+										)
+									);
+									?>
 								</td>
 								<td>
-									<?php echo wc_price( $label['rate'] ); ?>
+									<?php echo wp_kses_post( wc_price( $label['rate'] ) ); ?>
 								</td>
 								<td>
-									<?php echo $label['service_name']; ?>
+									<?php echo esc_html( $label['service_name'] ); ?>
 								</td>
 								<td>
-									<?php echo $this->get_label_refund_status( $label ); ?>
+									<?php echo esc_html( $this->get_label_refund_status( $label ) ); ?>
 								</td>
 							</tr>
 						<?php endforeach; ?>
@@ -199,13 +229,13 @@ if ( ! class_exists( 'WC_Connect_Label_Reports' ) ) {
 						?>
 						<tr>
 							<th scope="row">
-								<?php _e( 'Total', 'woocommerce-services' ); ?>
+								<?php esc_html_e( 'Total', 'woocommerce-services' ); ?>
 							</th>
 							<th>
 								<?php echo count( $labels ); ?>
 							</th>
 							<th>
-								<?php echo wc_price( $total ); ?>
+								<?php echo wp_kses_post( wc_price( $total ) ); ?>
 							</th>
 							<th></th>
 							<th></th>

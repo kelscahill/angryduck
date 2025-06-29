@@ -15,12 +15,12 @@
  * the License.
  */
 
-namespace Google\Service\SiteVerification\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\Resource;
 
-use Google\Service\SiteVerification\SiteVerificationWebResourceGettokenRequest;
-use Google\Service\SiteVerification\SiteVerificationWebResourceGettokenResponse;
-use Google\Service\SiteVerification\SiteVerificationWebResourceListResponse;
-use Google\Service\SiteVerification\SiteVerificationWebResourceResource;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceGettokenRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceGettokenResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\SiteVerification\SiteVerificationWebResourceResource;
 
 /**
  * The "webResource" collection of methods.
@@ -30,13 +30,14 @@ use Google\Service\SiteVerification\SiteVerificationWebResourceResource;
  *   $webResource = $siteVerificationService->webResource;
  *  </code>
  */
-class WebResource extends \Google\Service\Resource
+class WebResource extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Relinquish ownership of a website or domain. (webResource.delete)
    *
    * @param string $id The id of a verified site or domain.
    * @param array $optParams Optional parameters.
+   * @throws \Google\Service\Exception
    */
   public function delete($id, $optParams = [])
   {
@@ -50,6 +51,7 @@ class WebResource extends \Google\Service\Resource
    * @param string $id The id of a verified site or domain.
    * @param array $optParams Optional parameters.
    * @return SiteVerificationWebResourceResource
+   * @throws \Google\Service\Exception
    */
   public function get($id, $optParams = [])
   {
@@ -64,6 +66,7 @@ class WebResource extends \Google\Service\Resource
    * @param SiteVerificationWebResourceGettokenRequest $postBody
    * @param array $optParams Optional parameters.
    * @return SiteVerificationWebResourceGettokenResponse
+   * @throws \Google\Service\Exception
    */
   public function getToken(SiteVerificationWebResourceGettokenRequest $postBody, $optParams = [])
   {
@@ -79,6 +82,7 @@ class WebResource extends \Google\Service\Resource
    * @param SiteVerificationWebResourceResource $postBody
    * @param array $optParams Optional parameters.
    * @return SiteVerificationWebResourceResource
+   * @throws \Google\Service\Exception
    */
   public function insert($verificationMethod, SiteVerificationWebResourceResource $postBody, $optParams = [])
   {
@@ -92,6 +96,7 @@ class WebResource extends \Google\Service\Resource
    *
    * @param array $optParams Optional parameters.
    * @return SiteVerificationWebResourceListResponse
+   * @throws \Google\Service\Exception
    */
   public function listWebResource($optParams = [])
   {
@@ -107,6 +112,7 @@ class WebResource extends \Google\Service\Resource
    * @param SiteVerificationWebResourceResource $postBody
    * @param array $optParams Optional parameters.
    * @return SiteVerificationWebResourceResource
+   * @throws \Google\Service\Exception
    */
   public function patch($id, SiteVerificationWebResourceResource $postBody, $optParams = [])
   {
@@ -121,6 +127,7 @@ class WebResource extends \Google\Service\Resource
    * @param SiteVerificationWebResourceResource $postBody
    * @param array $optParams Optional parameters.
    * @return SiteVerificationWebResourceResource
+   * @throws \Google\Service\Exception
    */
   public function update($id, SiteVerificationWebResourceResource $postBody, $optParams = [])
   {

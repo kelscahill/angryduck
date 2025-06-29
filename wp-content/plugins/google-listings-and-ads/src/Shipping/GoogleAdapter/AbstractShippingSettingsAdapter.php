@@ -4,8 +4,8 @@ declare( strict_types=1 );
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Shipping\GoogleAdapter;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidValue;
-use Google\Service\ShoppingContent\DeliveryTime;
-use Google\Service\ShoppingContent\ShippingSettings as GoogleShippingSettings;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\DeliveryTime;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ShippingSettings as GoogleShippingSettings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -30,23 +30,23 @@ abstract class AbstractShippingSettingsAdapter extends GoogleShippingSettings {
 	/**
 	 * Initialize this object's properties from an array.
 	 *
-	 * @param array $array Used to seed this object's properties.
+	 * @param array $properties Used to seed this object's properties.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidValue When the required parameters are not provided, or they are invalid.
 	 */
-	public function mapTypes( $array ) {
-		$this->validate_gla_data( $array );
+	public function mapTypes( $properties ) {
+		$this->validate_gla_data( $properties );
 
-		$this->currency       = $array['currency'];
-		$this->delivery_times = $array['delivery_times'];
+		$this->currency       = $properties['currency'];
+		$this->delivery_times = $properties['delivery_times'];
 
-		$this->map_gla_data( $array );
+		$this->map_gla_data( $properties );
 
-		$this->unset_gla_data( $array );
+		$this->unset_gla_data( $properties );
 
-		parent::mapTypes( $array );
+		parent::mapTypes( $properties );
 	}
 
 	/**
@@ -66,8 +66,8 @@ abstract class AbstractShippingSettingsAdapter extends GoogleShippingSettings {
 		$time = new DeliveryTime();
 		$time->setMinHandlingTimeInDays( 0 );
 		$time->setMaxHandlingTimeInDays( 0 );
-		$time->setMinTransitTimeInDays( (int) $this->delivery_times[ $country ] );
-		$time->setMaxTransitTimeInDays( (int) $this->delivery_times[ $country ] );
+		$time->setMinTransitTimeInDays( (int) $this->delivery_times[ $country ]['time'] );
+		$time->setMaxTransitTimeInDays( (int) $this->delivery_times[ $country ]['max_time'] );
 
 		return $time;
 	}

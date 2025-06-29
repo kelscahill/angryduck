@@ -29,6 +29,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 						'origin_address',
 						'last_rate_request',
 						'services_last_result_code',
+						'only_tax',
 					);
 				case 'shipping_method':
 					return array(
@@ -42,6 +43,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 				'store_guid',
 				'debug_logging_enabled',
 				'debug_display_enabled',
+				'add_payment_method_url',
 				'payment_methods',
 				'account_settings',
 				'paper_size',
@@ -98,7 +100,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 				}
 			}
 
-			trigger_error( sprintf( 'Invalid WooCommerce Shipping & Tax option name: %s', $name ), E_USER_WARNING );
+			trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping & Tax option name: %s', $name ), E_USER_WARNING ) );
 			return $default;
 		}
 
@@ -119,7 +121,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 					return self::update_grouped_option( $group, $name, $value );
 				}
 			}
-			trigger_error( sprintf( 'Invalid WooCommerce Shipping & Tax option name: %s', $name ), E_USER_WARNING );
+			trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping & Tax option name: %s', $name ), E_USER_WARNING ) );
 			return false;
 		}
 
@@ -135,7 +137,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 			$result = true;
 			$names  = (array) $names;
 			if ( ! self::is_valid( $names ) ) {
-				trigger_error( sprintf( 'Invalid WooCommerce Shipping & Tax option names: %s', print_r( $names, 1 ) ), E_USER_WARNING );
+				trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping & Tax option names: %s', print_r( $names, 1 ) ), E_USER_WARNING ) );
 				return false;
 			}
 			foreach ( array_intersect( $names, self::get_option_names( 'non_compact' ) ) as $name ) {
@@ -165,7 +167,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 			$option_name = self::get_shipping_method_option_name( $name, $service_id, $service_instance );
 
 			if ( ! $option_name ) {
-				trigger_error( sprintf( 'Invalid WooCommerce Shipping & Tax shipping method option name: %s', $name ), E_USER_WARNING );
+				trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping & Tax shipping method option name: %s', $name ), E_USER_WARNING ) );
 				return $default;
 			}
 
@@ -186,7 +188,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 			$option_name = self::get_shipping_method_option_name( $name, $service_id, $service_instance );
 
 			if ( ! $option_name ) {
-				trigger_error( sprintf( 'Invalid WooCommerce Shipping & Tax shipping method option name: %s', $name ), E_USER_WARNING );
+				trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping & Tax shipping method option name: %s', $name ), E_USER_WARNING ) );
 				return false;
 			}
 
@@ -206,7 +208,7 @@ if ( ! class_exists( 'WC_Connect_Options' ) ) {
 			$option_name = self::get_shipping_method_option_name( $name, $service_id, $service_instance );
 
 			if ( ! $option_name ) {
-				trigger_error( sprintf( 'Invalid WooCommerce Shipping & Tax shipping method option name: %s', $name ), E_USER_WARNING );
+				trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping & Tax shipping method option name: %s', $name ), E_USER_WARNING ) );
 				return false;
 			}
 

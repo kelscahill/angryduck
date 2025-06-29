@@ -9,8 +9,8 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Client;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Client\ClientExceptionInterface;
 use Exception;
-use Psr\Http\Client\ClientExceptionInterface;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -26,8 +26,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Connection implements ContainerAwareInterface, OptionsAwareInterface {
 
-	use ApiExceptionTrait;
 	use ContainerAwareTrait;
+	use ExceptionTrait;
 	use OptionsAwareTrait;
 
 	/**
@@ -52,7 +52,7 @@ class Connection implements ContainerAwareInterface, OptionsAwareInterface {
 			$result = $client->post(
 				$this->get_connection_url(),
 				[
-					'body' => json_encode( $post_body ),
+					'body' => wp_json_encode( $post_body ),
 				]
 			);
 

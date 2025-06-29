@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7;
 
 use InvalidArgumentException;
-use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UploadedFileInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\StreamInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
 
 class UploadedFile implements UploadedFileInterface
@@ -64,8 +64,8 @@ class UploadedFile implements UploadedFileInterface
         $streamOrFile,
         ?int $size,
         int $errorStatus,
-        string $clientFilename = null,
-        string $clientMediaType = null
+        ?string $clientFilename = null,
+        ?string $clientMediaType = null
     ) {
         $this->setError($errorStatus);
         $this->size = $size;
@@ -113,7 +113,7 @@ class UploadedFile implements UploadedFileInterface
         $this->error = $error;
     }
 
-    private function isStringNotEmpty($param): bool
+    private static function isStringNotEmpty($param): bool
     {
         return is_string($param) && false === empty($param);
     }
@@ -163,7 +163,7 @@ class UploadedFile implements UploadedFileInterface
     {
         $this->validateActive();
 
-        if (false === $this->isStringNotEmpty($targetPath)) {
+        if (false === self::isStringNotEmpty($targetPath)) {
             throw new InvalidArgumentException(
                 'Invalid path provided for move operation; must be a non-empty string'
             );

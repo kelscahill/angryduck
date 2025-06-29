@@ -1,0 +1,28 @@
+.notice.wwpp-getting-started{
+    padding: 15px 20px !important;
+    position: relative;
+}
+.notice.wwpp-getting-started p{
+    font-size: 16px;
+}
+
+.notice.wwpp-getting-started p a{
+    font-family: "Lato", 'Lato', Helvetica, Arial, Sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #f7941d;
+    border-style: solid;
+    border-width: 1px 1px 1px 1px;
+    border-color: #A85E06;
+    padding: 10px 20px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.notice.wwpp-getting-started p a:active{
+    top: 1px;
+    position: relative;
+}

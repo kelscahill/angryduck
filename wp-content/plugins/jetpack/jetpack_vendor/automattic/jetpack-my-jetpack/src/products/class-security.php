@@ -7,10 +7,8 @@
 
 namespace Automattic\Jetpack\My_Jetpack\Products;
 
-use Automattic\Jetpack\Connection\Client;
 use Automattic\Jetpack\My_Jetpack\Module_Product;
 use Automattic\Jetpack\My_Jetpack\Wpcom_Products;
-use Jetpack_Options;
 use WP_Error;
 
 /**
@@ -33,21 +31,21 @@ class Security extends Module_Product {
 	public static $module_name = 'security';
 
 	/**
-	 * Get the internationalized product name
+	 * Get the product name
 	 *
 	 * @return string
 	 */
 	public static function get_name() {
-		return __( 'Security', 'jetpack-my-jetpack' );
+		return 'Security Bundle';
 	}
 
 	/**
-	 * Get the internationalized product title
+	 * Get the product title
 	 *
 	 * @return string
 	 */
 	public static function get_title() {
-		return __( 'Security', 'jetpack-my-jetpack' );
+		return 'Jetpack Security';
 	}
 
 	/**
@@ -56,7 +54,7 @@ class Security extends Module_Product {
 	 * @return string
 	 */
 	public static function get_description() {
-		return __( 'Comprehensive site security, including Backup, Scan, and Anti-spam.', 'jetpack-my-jetpack' );
+		return __( 'Comprehensive site security, including VaultPress Backup, Scan, and Akismet Anti-spam.', 'jetpack-my-jetpack' );
 	}
 
 	/**
@@ -65,13 +63,13 @@ class Security extends Module_Product {
 	 * @return string
 	 */
 	public static function get_long_description() {
-		return __( 'Comprehensive site security, including Backup, Scan, and Anti-spam.', 'jetpack-my-jetpack' );
+		return __( 'Comprehensive site security, including VaultPress Backup, Scan, and Akismet Anti-spam.', 'jetpack-my-jetpack' );
 	}
 
 	/**
 	 * Get the internationalized features list
 	 *
-	 * @return array Boost features list
+	 * @return array Security features list
 	 */
 	public static function get_features() {
 		return array(
@@ -83,17 +81,18 @@ class Security extends Module_Product {
 	}
 
 	/**
-	 * Get the product princing details
+	 * Get the product pricing details
 	 *
 	 * @return array Pricing details
 	 */
 	public static function get_pricing_for_ui() {
+		$product_slug = static::get_wpcom_product_slug();
 		return array_merge(
 			array(
 				'available'          => true,
-				'wpcom_product_slug' => static::get_wpcom_product_slug(),
+				'wpcom_product_slug' => $product_slug,
 			),
-			Wpcom_Products::get_product_pricing( static::get_wpcom_product_slug() )
+			Wpcom_Products::get_product_pricing( $product_slug )
 		);
 	}
 
@@ -149,7 +148,6 @@ class Security extends Module_Product {
 		}
 
 		return $activation;
-
 	}
 
 	/**
@@ -164,35 +162,19 @@ class Security extends Module_Product {
 	}
 
 	/**
-	 * Hits the wpcom api to check scan status.
+	 * Get the product-slugs of the paid plans for this product.
+	 * (Do not include bundle plans, unless it's a bundle plan itself).
 	 *
-	 * @todo Maybe add caching.
-	 *
-	 * @return Object|WP_Error
+	 * @return array
 	 */
-	private static function get_state_from_wpcom() {
-		static $status = null;
-
-		if ( $status !== null ) {
-			return $status;
-		}
-
-		$site_id = Jetpack_Options::get_option( 'id' );
-
-		$response = Client::wpcom_json_api_request_as_blog(
-			sprintf( '/sites/%d/purchases', $site_id ),
-			'1.1',
-			array(
-				'method' => 'GET',
-			)
+	public static function get_paid_plan_product_slugs() {
+		return array(
+			'jetpack_security_t1_yearly',
+			'jetpack_security_t1_monthly',
+			'jetpack_security_t1_bi_yearly',
+			'jetpack_security_t2_yearly',
+			'jetpack_security_t2_monthly',
 		);
-		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			return new WP_Error( 'purchases_state_fetch_failed' );
-		}
-
-		$body   = wp_remote_retrieve_body( $response );
-		$status = json_decode( $body );
-		return $status;
 	}
 
 	/**
@@ -201,15 +183,15 @@ class Security extends Module_Product {
 	 * @return boolean
 	 */
 	public static function has_required_plan() {
-		$purchases_data = static::get_state_from_wpcom();
+		$purchases_data = Wpcom_Products::get_site_current_purchases();
 		if ( is_wp_error( $purchases_data ) ) {
 			return false;
 		}
 		if ( is_array( $purchases_data ) && ! empty( $purchases_data ) ) {
 			foreach ( $purchases_data as $purchase ) {
 				if (
-					0 === strpos( $purchase->product_slug, 'jetpack_security' ) ||
-					0 === strpos( $purchase->product_slug, 'jetpack_complete' )
+					str_starts_with( $purchase->product_slug, 'jetpack_security' ) ||
+					str_starts_with( $purchase->product_slug, 'jetpack_complete' )
 				) {
 					return true;
 				}
@@ -230,7 +212,7 @@ class Security extends Module_Product {
 	/**
 	 * Return all the products it contains.
 	 *
-	 * @return Array Product slugs
+	 * @return array Product slugs
 	 */
 	public static function get_supported_products() {
 		return array( 'backup', 'scan', 'anti-spam' );

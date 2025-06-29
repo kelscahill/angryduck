@@ -18,7 +18,6 @@ if ( ! class_exists( 'WC_Connect_Service_Schemas_Store' ) ) {
 
 			$this->api_client = $api_client;
 			$this->logger     = $logger;
-
 		}
 
 		public function fetch_service_schemas_from_connect_server() {
@@ -38,6 +37,7 @@ if ( ! class_exists( 'WC_Connect_Service_Schemas_Store' ) ) {
 			$this->logger->log( 'Successfully loaded service schemas from server response.', __FUNCTION__ );
 			$this->update_last_fetch_timestamp();
 			$this->maybe_update_heartbeat();
+			$this->maybe_mark_as_legacy_site( $response_body );
 
 			$old_schemas = $this->get_service_schemas();
 			if ( $old_schemas == $response_body ) {
@@ -95,6 +95,12 @@ if ( ! class_exists( 'WC_Connect_Service_Schemas_Store' ) ) {
 
 			if ( $should_update ) {
 				WC_Connect_Options::update_option( 'last_heartbeat', $now );
+			}
+		}
+
+		protected function maybe_mark_as_legacy_site( $service_schemas ) {
+			if ( isset( $service_schemas->features->first_install ) && $service_schemas->features->first_install === true ) {
+				WC_Connect_Options::update_option( 'only_tax', '1' );
 			}
 		}
 
@@ -261,6 +267,32 @@ if ( ! class_exists( 'WC_Connect_Service_Schemas_Store' ) ) {
 			}
 
 			return $predefined_packages;
+		}
+
+		/**
+		 * Returns the WooCommerce Shipping and WooCommerce Tax migration enabled status
+		 *
+		 * @return bool
+		 */
+		public function is_wcship_wctax_migration_enabled() {
+			$service_schemas = $this->get_service_schemas();
+
+			return is_object( $service_schemas ) && property_exists( $service_schemas, 'features' ) && property_exists( $service_schemas->features, 'wcshippingtax_upgrade_banner' ) && ! empty( $service_schemas->features->wcshippingtax_upgrade_banner );
+		}
+
+		/**
+		 * Returns the WooCommerce Shipping and WooCommerce Tax upgrade banners
+		 *
+		 * @return object|null The banners schema or null if no such id was found
+		 */
+		public function get_wcship_wctax_upgrade_banner() {
+			$service_schemas = $this->get_service_schemas();
+
+			if ( $this->is_wcship_wctax_migration_enabled() ) {
+				return $service_schemas->features->wcshippingtax_upgrade_banner;
+			}
+
+			return null;
 		}
 	}
 }

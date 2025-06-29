@@ -38,12 +38,8 @@ function wpcf7_sendinblue_save_contact_form( $contact_form, $args, $context ) {
 		return;
 	}
 
-	$prop = isset( $_POST['wpcf7-sendinblue'] )
-		? (array) $_POST['wpcf7-sendinblue']
-		: array();
-
 	$prop = wp_parse_args(
-		$prop,
+		(array) wpcf7_superglobal_post( 'wpcf7-sendinblue', array() ),
 		array(
 			'enable_contact_list' => false,
 			'contact_lists' => array(),
@@ -90,220 +86,362 @@ function wpcf7_sendinblue_editor_panels( $panels ) {
 		)
 	);
 
-	$editor_panel = function () use ( $prop, $service ) {
+	$editor_panel = static function () use ( $prop, $service ) {
 
 		$description = sprintf(
 			esc_html(
-				__( "You can set up the Sendinblue integration here. For details, see %s.", 'contact-form-7' )
+				/* translators: %s: link labeled 'Brevo integration' */
+				__( 'You can set up the Brevo integration here. For details, see %s.', 'contact-form-7' )
 			),
 			wpcf7_link(
 				__( 'https://contactform7.com/sendinblue-integration/', 'contact-form-7' ),
-				__( 'Sendinblue integration', 'contact-form-7' )
+				__( 'Brevo integration', 'contact-form-7' )
 			)
 		);
 
-		$lists = $service->get_lists();
+		$lists = wpcf7_sendinblue_get_lists();
 		$templates = $service->get_templates();
 
-?>
-<h2><?php echo esc_html( __( 'Sendinblue', 'contact-form-7' ) ); ?></h2>
+		$formatter = new WPCF7_HTMLFormatter();
 
-<fieldset>
-	<legend><?php echo $description; ?></legend>
+		$formatter->append_start_tag( 'h2' );
 
-	<table class="form-table" role="presentation">
-		<tbody>
-			<tr class="<?php echo $prop['enable_contact_list'] ? '' : 'inactive'; ?>">
-				<th scope="row">
-		<?php
-
-		echo esc_html( __( 'Contact lists', 'contact-form-7' ) );
-
-		?>
-				</th>
-				<td>
-					<fieldset>
-						<legend class="screen-reader-text">
-		<?php
-
-		echo esc_html( __( 'Contact lists', 'contact-form-7' ) );
-
-		?>
-						</legend>
-						<label for="wpcf7-sendinblue-enable-contact-list">
-							<input type="checkbox" name="wpcf7-sendinblue[enable_contact_list]" id="wpcf7-sendinblue-enable-contact-list" value="1" <?php checked( $prop['enable_contact_list'] ); ?> />
-		<?php
-
-		echo esc_html(
-			__( "Add form submitters to your contact lists", 'contact-form-7' )
+		$formatter->append_preformatted(
+			esc_html( __( 'Brevo', 'contact-form-7' ) )
 		);
 
-		?>
-						</label>
-					</fieldset>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"></th>
-				<td>
-					<fieldset>
-		<?php
+		$formatter->end_tag( 'h2' );
+
+		$formatter->append_start_tag( 'fieldset' );
+
+		$formatter->append_start_tag( 'legend' );
+
+		$formatter->append_preformatted( $description );
+
+		$formatter->end_tag( 'legend' );
+
+		$formatter->append_start_tag( 'table', array(
+			'class' => 'form-table',
+			'role' => 'presentation',
+		) );
+
+		$formatter->append_start_tag( 'tbody' );
+
+		$formatter->append_start_tag( 'tr', array(
+			'class' => $prop['enable_contact_list'] ? '' : 'inactive',
+		) );
+
+		$formatter->append_start_tag( 'th', array(
+			'scope' => 'row',
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Contact lists', 'contact-form-7' ) )
+		);
+
+		$formatter->append_start_tag( 'td' );
+
+		$formatter->append_start_tag( 'fieldset' );
+
+		$formatter->append_start_tag( 'legend', array(
+			'class' => 'screen-reader-text',
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Contact lists', 'contact-form-7' ) )
+		);
+
+		$formatter->end_tag( 'legend' );
+
+		$formatter->append_start_tag( 'label', array(
+			'for' => 'wpcf7-sendinblue-enable-contact-list',
+		) );
+
+		$formatter->append_start_tag( 'input', array(
+			'type' => 'checkbox',
+			'name' => 'wpcf7-sendinblue[enable_contact_list]',
+			'id' => 'wpcf7-sendinblue-enable-contact-list',
+			'value' => '1',
+			'checked' => $prop['enable_contact_list'],
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Add form submitters to your contact lists', 'contact-form-7' ) )
+		);
+
+		$formatter->end_tag( 'tr' );
+
+		$formatter->append_start_tag( 'tr' );
+
+		$formatter->append_start_tag( 'th', array(
+			'scope' => 'row',
+		) );
+
+		$formatter->append_start_tag( 'td' );
+
+		$formatter->append_start_tag( 'fieldset' );
 
 		if ( $lists ) {
-			echo sprintf(
-				'<legend>%1$s</legend>',
+			$formatter->append_start_tag( 'legend' );
+
+			$formatter->append_preformatted(
 				esc_html( __( 'Select lists to which contacts are added:', 'contact-form-7' ) )
 			);
 
-			echo '<ul>';
+			$formatter->end_tag( 'legend' );
+
+			$formatter->append_start_tag( 'ul' );
 
 			foreach ( $lists as $list ) {
-				echo sprintf(
-					'<li><label><input %1$s /> %2$s</label></li>',
-					wpcf7_format_atts( array(
-						'type' => 'checkbox',
-						'name' => 'wpcf7-sendinblue[contact_lists][]',
-						'value' => $list['id'],
-						'checked' => in_array( $list['id'], $prop['contact_lists'] )
-							? 'checked'
-							: '',
-					) ),
-					esc_html( $list['name'] )
-				);
+				$formatter->append_start_tag( 'li' );
+				$formatter->append_start_tag( 'label' );
+
+				$formatter->append_start_tag( 'input', array(
+					'type' => 'checkbox',
+					'name' => 'wpcf7-sendinblue[contact_lists][]',
+					'value' => $list['id'],
+					'checked' => in_array( $list['id'], $prop['contact_lists'] ),
+				) );
+
+				$formatter->append_whitespace();
+
+				$formatter->append_preformatted( esc_html( $list['name'] ) );
+
+				$formatter->end_tag( 'li' );
 			}
 
-			echo '</ul>';
+			$formatter->end_tag( 'ul' );
+
 		} else {
-			echo sprintf(
-				'<legend>%1$s</legend>',
+			$formatter->append_start_tag( 'legend' );
+
+			$formatter->append_preformatted(
 				esc_html( __( 'You have no contact list yet.', 'contact-form-7' ) )
 			);
+
+			$formatter->end_tag( 'legend' );
 		}
 
-		?>
-					</fieldset>
-		<?php
+		$formatter->end_tag( 'fieldset' );
 
-		echo sprintf(
-			'<p><a %1$s>%2$s <span class="screen-reader-text">%3$s</span><span aria-hidden="true" class="dashicons dashicons-external"></span></a></p>',
-			wpcf7_format_atts( array(
-				'href' => 'https://my.sendinblue.com/lists',
-				'target' => '_blank',
-				'rel' => 'external noreferrer noopener',
-			) ),
-			esc_html( __( 'Manage your contact lists', 'contact-form-7' ) ),
+		$formatter->append_start_tag( 'p' );
+
+		$formatter->append_start_tag( 'a', array(
+			'href' => 'https://my.sendinblue.com/lists',
+			'target' => '_blank',
+			'rel' => 'external noreferrer noopener',
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Manage your contact lists', 'contact-form-7' ) )
+		);
+
+		$formatter->append_whitespace();
+
+		$formatter->append_start_tag( 'span', array(
+			'class' => 'screen-reader-text',
+		) );
+
+		$formatter->append_preformatted(
 			esc_html( __( '(opens in a new tab)', 'contact-form-7' ) )
 		);
 
-		?>
-				</td>
-			</tr>
-			<tr class="<?php echo $prop['enable_transactional_email'] ? '' : 'inactive'; ?>">
-				<th scope="row">
-		<?php
+		$formatter->end_tag( 'span' );
 
-		echo esc_html( __( 'Welcome email', 'contact-form-7' ) );
+		$formatter->append_start_tag( 'span', array(
+			'aria-hidden' => 'true',
+			'class' => 'dashicons dashicons-external',
+		) );
 
-		?>
-				</th>
-				<td>
-					<fieldset>
-						<legend class="screen-reader-text">
-		<?php
+		$formatter->end_tag( 'p' );
 
-		echo esc_html( __( 'Welcome email', 'contact-form-7' ) );
+		$formatter->end_tag( 'tr' );
 
-		?>
-						</legend>
-						<label for="wpcf7-sendinblue-enable-transactional-email">
-							<input type="checkbox" name="wpcf7-sendinblue[enable_transactional_email]" id="wpcf7-sendinblue-enable-transactional-email" value="1" <?php checked( $prop['enable_transactional_email'] ); ?> />
-		<?php
+		$formatter->append_start_tag( 'tr', array(
+			'class' => $prop['enable_transactional_email'] ? '' : 'inactive',
+		) );
 
-		echo esc_html(
-			__( "Send a welcome email to new contacts", 'contact-form-7' )
+		$formatter->append_start_tag( 'th', array(
+			'scope' => 'row',
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Welcome email', 'contact-form-7' ) )
 		);
 
-		?>
-						</label>
-					</fieldset>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"></th>
-				<td>
-					<fieldset>
-		<?php
+		$formatter->append_start_tag( 'td' );
+
+		$formatter->append_start_tag( 'fieldset' );
+
+		$formatter->append_start_tag( 'legend', array(
+			'class' => 'screen-reader-text',
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Welcome email', 'contact-form-7' ) )
+		);
+
+		$formatter->end_tag( 'legend' );
+
+		$formatter->append_start_tag( 'label', array(
+			'for' => 'wpcf7-sendinblue-enable-transactional-email',
+		) );
+
+		$formatter->append_start_tag( 'input', array(
+			'type' => 'checkbox',
+			'name' => 'wpcf7-sendinblue[enable_transactional_email]',
+			'id' => 'wpcf7-sendinblue-enable-transactional-email',
+			'value' => '1',
+			'checked' => $prop['enable_transactional_email'],
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Send a welcome email to new contacts', 'contact-form-7' ) )
+		);
+
+		$formatter->end_tag( 'fieldset' );
+
+		$formatter->end_tag( 'tr' );
+
+		$formatter->append_start_tag( 'tr' );
+
+		$formatter->append_start_tag( 'th', array(
+			'scope' => 'row',
+		) );
+
+		$formatter->append_start_tag( 'td' );
+
+		$formatter->append_start_tag( 'fieldset' );
 
 		if ( $templates ) {
-			echo sprintf(
-				'<legend>%1$s</legend>',
+			$formatter->append_start_tag( 'legend' );
+
+			$formatter->append_preformatted(
 				esc_html( __( 'Select an email template:', 'contact-form-7' ) )
 			);
 
-			echo '<select name="wpcf7-sendinblue[email_template]">';
+			$formatter->end_tag( 'legend' );
 
-			echo sprintf(
-				'<option %1$s>%2$s</option>',
-				wpcf7_format_atts( array(
-					'value' => 0,
-					'selected' => 0 === $prop['email_template']
-						? 'selected'
-						: '',
-				) ),
+			$formatter->append_start_tag( 'select', array(
+				'name' => 'wpcf7-sendinblue[email_template]',
+			) );
+
+			$formatter->append_start_tag( 'option', array(
+				'value' => 0,
+				'selected' => 0 === $prop['email_template'],
+			) );
+
+			$formatter->append_preformatted(
 				esc_html( __( '&mdash; Select &mdash;', 'contact-form-7' ) )
 			);
 
+			$formatter->end_tag( 'option' );
+
 			foreach ( $templates as $template ) {
-				echo sprintf(
-					'<option %1$s>%2$s</option>',
-					wpcf7_format_atts( array(
-						'value' => $template['id'],
-						'selected' => $prop['email_template'] === $template['id']
-							? 'selected'
-							: '',
-					) ),
-					esc_html( $template['name'] )
-				);
+				$formatter->append_start_tag( 'option', array(
+					'value' => $template['id'],
+					'selected' => $prop['email_template'] === $template['id'],
+				) );
+
+				$formatter->append_preformatted( esc_html( $template['name'] ) );
+
+				$formatter->end_tag( 'option' );
 			}
 
-			echo '</select>';
+			$formatter->end_tag( 'select' );
+
 		} else {
-			echo sprintf(
-				'<legend>%1$s</legend>',
+			$formatter->append_start_tag( 'legend' );
+
+			$formatter->append_preformatted(
 				esc_html( __( 'You have no active email template yet.', 'contact-form-7' ) )
 			);
+
+			$formatter->end_tag( 'legend' );
 		}
 
-		?>
-					</fieldset>
-		<?php
+		$formatter->end_tag( 'fieldset' );
 
-		echo sprintf(
-			'<p><a %1$s>%2$s <span class="screen-reader-text">%3$s</span><span aria-hidden="true" class="dashicons dashicons-external"></span></a></p>',
-			wpcf7_format_atts( array(
-				'href' => 'https://my.sendinblue.com/camp/lists/template',
-				'target' => '_blank',
-				'rel' => 'external noreferrer noopener',
-			) ),
-			esc_html( __( 'Manage your email templates', 'contact-form-7' ) ),
+		$formatter->append_start_tag( 'p' );
+
+		$formatter->append_start_tag( 'a', array(
+			'href' => 'https://my.sendinblue.com/camp/lists/template',
+			'target' => '_blank',
+			'rel' => 'external noreferrer noopener',
+		) );
+
+		$formatter->append_preformatted(
+			esc_html( __( 'Manage your email templates', 'contact-form-7' ) )
+		);
+
+		$formatter->append_whitespace();
+
+		$formatter->append_start_tag( 'span', array(
+			'class' => 'screen-reader-text',
+		) );
+
+		$formatter->append_preformatted(
 			esc_html( __( '(opens in a new tab)', 'contact-form-7' ) )
 		);
 
-		?>
-				</td>
-			</tr>
-		</tbody>
-	</table>
-</fieldset>
-<?php
+		$formatter->end_tag( 'span' );
+
+		$formatter->append_start_tag( 'span', array(
+			'aria-hidden' => 'true',
+			'class' => 'dashicons dashicons-external',
+		) );
+
+		$formatter->end_tag( 'p' );
+
+		$formatter->end_tag( 'tr' );
+
+		$formatter->end_tag( 'table' );
+
+		$formatter->print();
 	};
 
 	$panels += array(
 		'sendinblue-panel' => array(
-			'title' => __( 'Sendinblue', 'contact-form-7' ),
+			'title' => __( 'Brevo', 'contact-form-7' ),
 			'callback' => $editor_panel,
 		),
 	);
 
 	return $panels;
+}
+
+
+/**
+ * Retrieves contact lists from Brevo's database.
+ */
+function wpcf7_sendinblue_get_lists() {
+	static $lists = array();
+
+	$service = WPCF7_Sendinblue::get_instance();
+
+	if ( ! empty( $lists ) or ! $service->is_active() ) {
+		return $lists;
+	}
+
+	$limit = 50;
+	$offset = 0;
+
+	while ( count( $lists ) < $limit * 10 ) {
+		$lists_next = (array) $service->get_lists( array(
+			'limit' => $limit,
+			'offset' => $offset,
+		) );
+
+		if ( ! empty( $lists_next ) ) {
+			$lists = array_merge( $lists, $lists_next );
+		}
+
+		if ( count( $lists_next ) < $limit ) {
+			break;
+		}
+
+		$offset += $limit;
+	}
+
+	return $lists;
 }

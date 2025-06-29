@@ -1,6 +1,6 @@
 <?php
 /**
- * Sendinblue module main file
+ * Brevo module main file
  *
  * @link https://contactform7.com/sendinblue-integration/
  */
@@ -10,7 +10,7 @@ wpcf7_include_module_file( 'sendinblue/contact-form-properties.php' );
 wpcf7_include_module_file( 'sendinblue/doi.php' );
 
 
-add_action( 'wpcf7_init', 'wpcf7_sendinblue_register_service', 1, 0 );
+add_action( 'wpcf7_init', 'wpcf7_sendinblue_register_service', 10, 0 );
 
 /**
  * Registers the Sendinblue service.
@@ -46,7 +46,7 @@ function wpcf7_sendinblue_submit( $contact_form, $result ) {
 	}
 
 	if ( empty( $result['status'] )
-	or ! in_array( $result['status'], array( 'mail_sent', 'mail_failed' ) ) ) {
+	or ! in_array( $result['status'], array( 'mail_sent', 'mail_failed' ), true ) ) {
 		return;
 	}
 
@@ -175,7 +175,7 @@ function wpcf7_sendinblue_collect_parameters() {
 	foreach ( (array) $submission->get_posted_data() as $name => $val ) {
 		$name = strtoupper( $name );
 
-		if ( 'YOUR-' == substr( $name, 0, 5 ) ) {
+		if ( 'YOUR-' === substr( $name, 0, 5 ) ) {
 			$name = substr( $name, 5 );
 		}
 
@@ -187,15 +187,22 @@ function wpcf7_sendinblue_collect_parameters() {
 	}
 
 	if ( isset( $params['SMS'] ) ) {
-		$sms = implode( ' ', (array) $params['SMS'] );
-		$sms = trim( $sms );
+		$sms = trim( implode( ' ', (array) $params['SMS'] ) );
+		$sms = preg_replace( '/[#*].*$/', '', $sms ); // Remove extension
 
-		$plus = '+' == substr( $sms, 0, 1 ) ? '+' : '';
+		$is_international = false ||
+			str_starts_with( $sms, '+' ) ||
+			str_starts_with( $sms, '00' );
+
+		if ( $is_international ) {
+			$sms = preg_replace( '/^[+0]+/', '', $sms );
+		}
+
 		$sms = preg_replace( '/[^0-9]/', '', $sms );
 
-		if ( 6 < strlen( $sms ) and strlen( $sms ) < 18 ) {
-			$params['SMS'] = $plus . $sms;
-		} else { // Invalid phone number
+		if ( $is_international and 6 < strlen( $sms ) and strlen( $sms ) < 16 ) {
+			$params['SMS'] = '+' . $sms;
+		} else { // Invalid telephone number
 			unset( $params['SMS'] );
 		}
 	}
@@ -218,6 +225,18 @@ function wpcf7_sendinblue_collect_parameters() {
 			);
 		}
 	}
+
+	$params = array_map(
+		function ( $param ) {
+			if ( is_array( $param ) ) {
+				$param = wpcf7_array_flatten( $param );
+				$param = reset( $param );
+			}
+
+			return $param;
+		},
+		$params
+	);
 
 	$params = apply_filters(
 		'wpcf7_sendinblue_collect_parameters',

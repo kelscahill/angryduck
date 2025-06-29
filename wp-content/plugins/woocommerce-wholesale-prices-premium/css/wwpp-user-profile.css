@@ -1,0 +1,47 @@
+#wwpp-per-wholesale-user-settings {
+    margin-bottom: 30px;
+}
+#wwpp-per-wholesale-user-settings label {
+    font-weight: normal !important;
+}
+
+.wwpp_per_wholesale_user_settings_field {
+    width: 25em;
+}
+
+
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container {
+    margin-bottom: 10px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container label {
+    display: inline-block;
+    width: 120px;
+    min-width: 120px;
+    font-weight: normal;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container .field-control {
+    display: inline-block;
+    width: 400px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls {
+    margin-bottom: 20px;
+}
+
+
+#payment-gateway-surcharge-mapping .surcharge-controls .field-container {
+    margin-bottom: 10px;
+}
+#payment-gateway-surcharge-mapping .surcharge-controls .field-container label {
+    display: inline-block;
+    width: 120px;
+    min-width: 120px;
+    font-weight: normal;
+}
+#payment-gateway-surcharge-mapping .surcharge-controls .field-container input[type="text"],
+#payment-gateway-surcharge-mapping .surcharge-controls .field-container select {
+    display: inline-block;
+    width: 400px;
+}
+#payment-gateway-surcharge-mapping .button-controls {
+    margin-bottom: 20px;
+}

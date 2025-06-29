@@ -48,13 +48,13 @@ use Google\ApiCore\ValidationException;
  * for details. A template consists of a sequence of literals, wildcards, and variable bindings,
  * where each binding can have a sub-path. A string representation can be parsed into an
  * instance of AbsoluteResourceTemplate, which can then be used to perform matching and instantiation.
+ *
+ * @internal
  */
 class AbsoluteResourceTemplate implements ResourceTemplateInterface
 {
-    /** @var RelativeResourceTemplate */
-    private $resourceTemplate;
-
-    /** @var string */
+    private RelativeResourceTemplate $resourceTemplate;
+    /** @var string|bool */
     private $verb;
 
     /**
@@ -62,10 +62,10 @@ class AbsoluteResourceTemplate implements ResourceTemplateInterface
      * @param string $path
      * @throws ValidationException
      */
-    public function __construct($path)
+    public function __construct(string $path)
     {
         if (empty($path)) {
-            throw new ValidationException("Cannot construct AbsoluteResourceTemplate from empty string");
+            throw new ValidationException('Cannot construct AbsoluteResourceTemplate from empty string');
         }
         if ($path[0] !== '/') {
             throw new ValidationException(
@@ -96,7 +96,7 @@ class AbsoluteResourceTemplate implements ResourceTemplateInterface
     /**
      * @inheritdoc
      */
-    public function matches($path)
+    public function matches(string $path)
     {
         try {
             $this->match($path);
@@ -109,7 +109,7 @@ class AbsoluteResourceTemplate implements ResourceTemplateInterface
     /**
      * @inheritdoc
      */
-    public function match($path)
+    public function match(string $path)
     {
         if (empty($path)) {
             throw $this->matchException($path, "path cannot be empty");
@@ -124,7 +124,7 @@ class AbsoluteResourceTemplate implements ResourceTemplateInterface
         return $this->resourceTemplate->match(substr($path, 1, $verbSeparatorPos - 1));
     }
 
-    private function matchException($path, $reason)
+    private function matchException(string $path, string $reason)
     {
         return new ValidationException("Could not match path '$path' to template '$this': $reason");
     }
@@ -134,7 +134,7 @@ class AbsoluteResourceTemplate implements ResourceTemplateInterface
         return $this->verb ? ':' . $this->verb : '';
     }
 
-    private function verbSeparatorPos($path)
+    private function verbSeparatorPos(string $path)
     {
         $finalSeparatorPos = strrpos($path, '/');
         $verbSeparatorPos = strrpos($path, ':', $finalSeparatorPos);

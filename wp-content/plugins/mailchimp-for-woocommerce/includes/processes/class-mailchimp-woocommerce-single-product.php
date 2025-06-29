@@ -8,6 +8,7 @@
  * Date: 7/15/16
  * Time: 11:42 AM
  */
+
 class MailChimp_WooCommerce_Single_Product extends Mailchimp_Woocommerce_Job
 {
     public $id;
@@ -37,7 +38,12 @@ class MailChimp_WooCommerce_Single_Product extends Mailchimp_Woocommerce_Job
     public function setId($id)
     {
         if (!empty($id)) {
-            $this->id = $id instanceof WP_Post ? $id->ID : $id;
+            // when we pass in a wc product or an object that has a method called get_id we can use it.
+            if ($id instanceof WC_Product || (is_object($id) && method_exists($id, 'get_id'))) {
+                $this->id = $id->get_id();
+            } else {
+                $this->id = $id instanceof WP_Post ? $id->ID : $id;
+            }
         }
         return $this;
     }
@@ -122,34 +128,12 @@ class MailChimp_WooCommerce_Single_Product extends Mailchimp_Woocommerce_Job
             return false;
         }
 
-        $method = "no action";
+        $method = "upsert";
 
         try {
 
-            if (!($product_post = get_post($this->id))) {
-                return false;
-            }
-
-            try {
-                // pull the product from Mailchimp first to see what method we need to call next.
-                $mailchimp_product = $this->api()->getStoreProduct($this->store_id, $this->id, true);
-            } catch (Exception $e) {
-                if ($e instanceof MailChimp_WooCommerce_RateLimitError) {
-                    throw $e;
-                }
-                $mailchimp_product = false;
-            }
-
-            // depending on if it's existing or not - we change the method call
-            $method = $mailchimp_product ? 'updateStoreProduct' : 'addStoreProduct';
-
-            // if the mode set is "create" and the product is in Mailchimp - just return the product.
-            if ($this->mode === 'create' && !empty($mailchimp_product)) {
-                return $mailchimp_product;
-            }
-
-            // if the mode is set to "update" and the product is not currently in Mailchimp - skip it.
-            if ($this->mode === 'update' && empty($mailchimp_product)) {
+            if( !($product_post = MailChimp_WooCommerce_HPOS::get_product($this->id)) ){
+                mailchimp_log('product', "tried to load product by ID {$this->id} but did not find it.");
                 return false;
             }
 
@@ -173,11 +157,12 @@ class MailChimp_WooCommerce_Single_Product extends Mailchimp_Woocommerce_Job
             }
 
             // either updating or creating the product
-            $this->api()->{$method}($this->store_id, $product, false);
+            $this->api()->updateStoreProduct($this->store_id, $product, false);
 
             mailchimp_log('product_submit.success', "{$method} :: #{$product->getId()}");
-
-            update_option('mailchimp-woocommerce-last_product_updated', $product->getId());
+            // increment the sync counter
+            mailchimp_register_synced_resource('products');
+            \Mailchimp_Woocommerce_DB_Helpers::update_option('mailchimp-woocommerce-last_product_updated', $product->getId());
 
             return $product;
 
@@ -206,7 +191,7 @@ class MailChimp_WooCommerce_Single_Product extends Mailchimp_Woocommerce_Job
         if (is_null($this->api)) {
 
             $this->store_id = mailchimp_get_store_id();
-            $options = get_option('mailchimp-woocommerce', array());
+            $options = \Mailchimp_Woocommerce_DB_Helpers::get_option('mailchimp-woocommerce', array());
 
             if (!empty($this->store_id) && is_array($options) && isset($options['mailchimp_api_key'])) {
                 return $this->api = new MailChimp_WooCommerce_MailChimpApi($options['mailchimp_api_key']);

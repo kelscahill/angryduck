@@ -5,9 +5,9 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\Shipping\GoogleAdapter;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidValue;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\LocationRate;
-use Google\Service\ShoppingContent\Price;
-use Google\Service\ShoppingContent\RateGroup;
-use Google\Service\ShoppingContent\Value;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Price;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RateGroup;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Value;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -22,25 +22,25 @@ abstract class AbstractRateGroupAdapter extends RateGroup {
 	/**
 	 * Initialize this object's properties from an array.
 	 *
-	 * @param array $array Used to seed this object's properties.
+	 * @param array $properties Used to seed this object's properties.
 	 *
 	 * @throws InvalidValue When the required parameters are not provided, or they are invalid.
 	 */
-	public function mapTypes( $array ) {
-		if ( empty( $array['currency'] ) || ! is_string( $array['currency'] ) ) {
+	public function mapTypes( $properties ) {
+		if ( empty( $properties['currency'] ) || ! is_string( $properties['currency'] ) ) {
 			throw new InvalidValue( 'The value of "currency" must be a non empty string.' );
 		}
-		if ( empty( $array['location_rates'] ) || ! is_array( $array['location_rates'] ) ) {
+		if ( empty( $properties['location_rates'] ) || ! is_array( $properties['location_rates'] ) ) {
 			throw new InvalidValue( 'The value of "location_rates" must be a non empty array.' );
 		}
 
-		$this->map_location_rates( $array['location_rates'], $array['currency'] );
+		$this->map_location_rates( $properties['location_rates'], $properties['currency'] );
 
 		// Remove the extra data before calling the parent method since it doesn't expect them.
-		unset( $array['currency'] );
-		unset( $array['location_rates'] );
+		unset( $properties['currency'] );
+		unset( $properties['location_rates'] );
 
-		parent::mapTypes( $array );
+		parent::mapTypes( $properties );
 	}
 
 	/**

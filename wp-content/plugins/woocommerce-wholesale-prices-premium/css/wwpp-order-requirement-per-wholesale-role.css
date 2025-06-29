@@ -1,0 +1,97 @@
+#order-requirement-per-wholesale-role-controls {
+    padding-top: 20px;
+}
+
+/** Field Controls **/
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container {
+    margin-bottom: 20px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container select {
+    display: block;
+    min-width: 300px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container select#minimum-order-logic {
+    min-width: 0;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container .chosen-container {
+    width: 400px !important;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container input[ type="number" ] {
+    display: block;
+    min-width: 170px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-controls .field-container p.desc {
+    font-weight: normal;
+}
+
+/** Button Controls **/
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls {
+    display: block;
+    margin-bottom: 20px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls .button {
+    float: left;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls #cancel-edit-mapping {
+    margin-right: 10px;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.add-mode #add-mapping,
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.edit-mode #add-mapping {
+    display: none;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.add-mode #save-mapping {
+    display: none;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.add-mode #cancel-edit-mapping {
+    display: none;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.edit-mode #add-mapping {
+    display: none;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.edit-mode #save-mapping {
+    display: inline-block;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.edit-mode #cancel-edit-mapping {
+    display: inline-block;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls .spinner {
+    top: 0;
+}
+#order-requirement-per-wholesale-role-controls .order-requirement-button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+}
+
+/** Mapping Table **/
+#order-requirement-per-wholesale-role thead tr th,
+#order-requirement-per-wholesale-role tfoot tr th {
+    padding: 15px 10px;
+}
+#order-requirement-per-wholesale-role tbody tr.edited {
+    background-color: #fff2d8 !important;
+}
+#order-requirement-per-wholesale-role tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+#order-requirement-per-wholesale-role tbody tr td.controls .edit {
+    color: green;
+    margin-right: 15px;
+}
+#order-requirement-per-wholesale-role tbody tr td.controls .delete {
+    color: red;
+}

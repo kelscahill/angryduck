@@ -41,7 +41,7 @@ class PolicyComplianceCheck implements Service {
 	protected $target_audience;
 
 	/**
-	 * BaseController constructor.
+	 * PolicyComplianceCheck constructor.
 	 *
 	 * @param WC             $wc
 	 * @param GoogleHelper   $google_helper
@@ -105,7 +105,12 @@ class PolicyComplianceCheck implements Service {
 	 * @return string Landing page URL.
 	 */
 	private function get_landing_page_url(): string {
-		$products = wc_get_products( [ 'limit' => 1 ] );
+		$products = wc_get_products(
+			[
+				'limit'  => 1,
+				'status' => 'publish',
+			]
+		);
 		if ( ! empty( $products ) ) {
 			return $products[0]->get_permalink();
 		}

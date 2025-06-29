@@ -15,11 +15,11 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\RegionalInventory as RegionalInventoryModel;
-use Google\Service\ShoppingContent\RegionalinventoryCustomBatchRequest;
-use Google\Service\ShoppingContent\RegionalinventoryCustomBatchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RegionalInventory as RegionalInventoryModel;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RegionalinventoryCustomBatchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RegionalinventoryCustomBatchResponse;
 
 /**
  * The "regionalinventory" collection of methods.
@@ -29,7 +29,7 @@ use Google\Service\ShoppingContent\RegionalinventoryCustomBatchResponse;
  *   $regionalinventory = $contentService->regionalinventory;
  *  </code>
  */
-class Regionalinventory extends \Google\Service\Resource
+class Regionalinventory extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Updates regional inventory for multiple products or regions in a single
@@ -38,6 +38,7 @@ class Regionalinventory extends \Google\Service\Resource
    * @param RegionalinventoryCustomBatchRequest $postBody
    * @param array $optParams Optional parameters.
    * @return RegionalinventoryCustomBatchResponse
+   * @throws \Google\Service\Exception
    */
   public function custombatch(RegionalinventoryCustomBatchRequest $postBody, $optParams = [])
   {
@@ -57,6 +58,7 @@ class Regionalinventory extends \Google\Service\Resource
    * @param RegionalInventoryModel $postBody
    * @param array $optParams Optional parameters.
    * @return RegionalInventoryModel
+   * @throws \Google\Service\Exception
    */
   public function insert($merchantId, $productId, RegionalInventoryModel $postBody, $optParams = [])
   {

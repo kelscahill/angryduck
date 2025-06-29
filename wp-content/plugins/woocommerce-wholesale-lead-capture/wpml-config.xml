@@ -1,0 +1,27 @@
+<wpml-config>
+    <admin-texts>
+        <key name="wwlc_fields_first_name_field_placeholder" />
+        <key name="wwlc_fields_last_name_field_placeholder" />
+        <key name="wwlc_fields_phone_field_placeholder" />
+        <key name="wwlc_fields_email_field_placeholder" />
+        <key name="wwlc_fields_username_placeholder" />
+        <key name="wwlc_fields_company_field_placeholder" />
+        <key name="wwlc_fields_address_placeholder" />
+        <key name="wwlc_fields_address2_placeholder" />
+        <key name="wwlc_fields_city_placeholder" />
+        <key name="wwlc_fields_state_placeholder" />
+        <key name="wwlc_fields_postcode_placeholder" />
+        <key name="wwlc_fields_password_field_placeholder" />
+        <key name="wwlc_fields_confirm_password_field_placeholder" />
+        <key name="wwlc_emails_new_user_admin_notification_template" />
+        <key name="wwlc_emails_new_user_admin_notification_auto_approved_subject" />
+        <key name="wwlc_emails_new_user_admin_notification_subject" />
+        <key name="wwlc_emails_new_user_admin_notification_auto_approved_template" />
+        <key name="wwlc_emails_new_user_subject" />
+        <key name="wwlc_emails_new_user_template" />
+        <key name="wwlc_emails_approval_email_subject" />
+        <key name="wwlc_emails_approval_email_template" />
+        <key name="wwlc_emails_rejected_email_subject" />
+        <key name="wwlc_emails_rejected_email_template" />
+    </admin-texts>
+</wpml-config>

@@ -1,0 +1,12 @@
+.wwpp-recommendation-notice {
+    margin-top: 20px;
+    display: block;
+    padding: 10px 15px;
+    background-color: #dce9de;
+    width: max-content;
+}
+
+.wwpp-recommendation-notice a,
+.wwpp-recommendation-notice a:focus {
+    outline: none;
+}

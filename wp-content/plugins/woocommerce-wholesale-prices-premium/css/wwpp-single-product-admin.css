@@ -1,0 +1,181 @@
+/*
+|-----------------------------------------------------------------------------------------------------------------------
+| Product Quantity Based Wholesale Pricing
+|-----------------------------------------------------------------------------------------------------------------------
+*/
+
+/* Field Controls */
+.product-quantity-based-wholesale-pricing.simple .pqbwp-enable-field-container,
+.product-quantity-based-wholesale-pricing.simple .pqbwp-desc {
+    padding-left: 12px !important;
+    font-style: italic;
+    font-size: 13px;
+}
+.product-quantity-based-wholesale-pricing.variable {
+    border-top: 1px solid #DDDDDD;
+}
+.product-quantity-based-wholesale-pricing.variable .pqbwp-enable-field-container,
+.product-quantity-based-wholesale-pricing.variable .pqbwp-desc {
+    padding-left: 0 !important;
+    font-style: italic;
+    font-size: 13px;
+}
+.product-quantity-based-wholesale-pricing.variable .pqbwp-enable-field-container .description{
+    margin: 0 0 0 7px;
+}
+.product-quantity-based-wholesale-pricing.simple .pqbwp-heading {
+    padding-bottom: 10px !important;
+}
+.wc-metabox .data .product-quantity-based-wholesale-pricing.variable .pqbwp-heading {
+    padding-top: 0 !important;
+    padding: 0 !important;
+    color: #555;
+    font-size: 14px !important;
+    margin: 10px 0 !important;
+}
+
+.product-quantity-based-wholesale-pricing .pqbwp-desc {
+    margin-top: 0;
+    padding-top: 0;
+}
+.product-quantity-based-wholesale-pricing.simple .pqbwp_registered_wholesale_roles {
+    min-width: 248px;
+}
+.product-quantity-based-wholesale-pricing.simple .pqbwp_price_type {
+    width: 248px;
+}
+.product-quantity-based-wholesale-pricing.variable .pqbwp_registered_wholesale_roles,
+.product-quantity-based-wholesale-pricing.variable .pqbwp_price_type {
+    width: 95%;
+}
+
+/* Button Controls */
+.product-quantity-based-wholesale-pricing .button-controls {
+    display: block;
+}
+.product-quantity-based-wholesale-pricing .button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+.product-quantity-based-wholesale-pricing .button-controls .button {
+    float: left;
+    margin-left: 0;
+    margin-right: 8px;
+}
+.product-quantity-based-wholesale-pricing .button-controls .pqbwp-cancel {
+    margin-right: 10px;
+}
+.product-quantity-based-wholesale-pricing .button-controls.add-mode .pqbwp-add-rule {
+    display: inline-block;
+}
+.product-quantity-based-wholesale-pricing .button-controls.add-mode .pqbwp-save-rule {
+    display: none;
+}
+.product-quantity-based-wholesale-pricing .button-controls.add-mode .pqbwp-cancel {
+    display: none;
+}
+.product-quantity-based-wholesale-pricing .button-controls.edit-mode .pqbwp-add-rule {
+    display: none;
+}
+.product-quantity-based-wholesale-pricing .button-controls.edit-mode .pqbwp-save-rule {
+    display: inline-block;
+}
+.product-quantity-based-wholesale-pricing .button-controls.edit-mode .pqbwp-cancel {
+    display: inline-block;
+}
+.product-quantity-based-wholesale-pricing .button-controls .spinner {
+    top: 0;
+}
+.product-quantity-based-wholesale-pricing .button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+    margin-left: 0;
+}
+
+/* Table Mapping */
+.product-quantity-based-wholesale-pricing .table-mapping {
+    padding: 5px 12px 10px !important;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr.edited {
+     background-color: #FCFFA9 !important;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr.err-row {
+    background-color: #FFDEDE !important;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr td.controls .dashicons {
+    visibility: hidden;
+    cursor: pointer;
+    color: grey;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr:hover td.controls .dashicons {
+    visibility: visible;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr.disabled td.controls .dashicons,
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr.disabled td.controls .dashicons:hover {
+    visibility: hidden !important;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr td.controls .dashicons.edit:hover {
+    color: orange;
+}
+.product-quantity-based-wholesale-pricing .table-mapping tbody tr td.controls .dashicons.delete:hover {
+    color: red;
+}
+.product-quantity-based-wholesale-pricing.variable .pqbwp-mapping {
+    padding: 0;
+}
+.product-quantity-based-wholesale-pricing.variable .pqbwp-mapping th,
+.product-quantity-based-wholesale-pricing.variable .pqbwp-mapping td {
+    padding: 8px 10px;
+}
+.product-quantity-based-wholesale-pricing.variable .table-mapping {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Processing Indicator */
+.product-quantity-based-wholesale-pricing .processing-indicator {
+    padding: 5px 12px 10px !important;
+    background-color: #fbfbfb;
+    text-align: center;
+    display: none;
+}
+.product-quantity-based-wholesale-pricing .processing-indicator .spinner {
+    display: inline-block;
+    visibility: visible;
+    float: none;
+}
+
+.product-quantity-based-wholesale-pricing.options_group.parent-variable{
+    margin: 0px 10px 12px;
+}
+.product-quantity-based-wholesale-pricing.options_group.simple select,
+.product-quantity-based-wholesale-pricing.options_group.parent-variable select{
+    width: 50%;
+}
+
+/* WordPress 4.4 and WooCommerce 2.4.10 and above Styling Fixes */
+#general_product_data .show_if_simple .options_group h3 {
+    font-size: 14px; padding: 8px 12px 0 12px; margin: 0; line-height: 1.4;
+}
+
+/* Wholesale Pricing Options */
+#wholesale-pricing-options > strong {
+    margin-bottom: 1em;
+    display: inline-block;
+}
+#wholesale-pricing-options > label {
+    display: block;
+    margin-bottom: 10px;
+}
+#wholesale-pricing-options .tooltip {
+    color: #666666;
+    font-size: 16px;
+}
+#variable_product_options .chosen-container-multi .chosen-choices li.search-field{
+    width: 260px!important;
+}
+
+.woocommerce_options_panel .wholesale_sale_price_dates_fields input:nth-of-type(2) {
+    clear: left;
+}

@@ -36,7 +36,7 @@ class WPCF7_Integration {
 	 */
 	public static function get_instance() {
 		if ( empty( self::$instance ) ) {
-			self::$instance = new self;
+			self::$instance = new self();
 			self::$instance->categories = self::get_builtin_categories();
 		}
 
@@ -50,8 +50,7 @@ class WPCF7_Integration {
 	public function add_service( $name, WPCF7_Service $service ) {
 		$name = sanitize_key( $name );
 
-		if ( empty( $name )
-		or isset( $this->services[$name] ) ) {
+		if ( empty( $name ) or isset( $this->services[$name] ) ) {
 			return false;
 		}
 
@@ -65,8 +64,7 @@ class WPCF7_Integration {
 	public function add_category( $name, $title ) {
 		$name = sanitize_key( $name );
 
-		if ( empty( $name )
-		or isset( $this->categories[$name] ) ) {
+		if ( empty( $name ) or isset( $this->categories[$name] ) ) {
 			return false;
 		}
 
@@ -80,7 +78,7 @@ class WPCF7_Integration {
 	 * @param string $name The name of service to search.
 	 */
 	public function service_exists( $name = '' ) {
-		if ( '' == $name ) {
+		if ( '' === $name ) {
 			return (bool) count( $this->services );
 		} else {
 			return isset( $this->services[$name] );
@@ -120,7 +118,7 @@ class WPCF7_Integration {
 				array_flip( (array) $args['include'] )
 			);
 
-			if ( 1 == count( $services ) ) {
+			if ( 1 === count( $services ) ) {
 				$singular = true;
 			}
 		}
@@ -141,6 +139,8 @@ class WPCF7_Integration {
 <h2 class="title"><?php echo esc_html( $service->get_title() ); ?></h2>
 <div class="infobox">
 <?php echo esc_html( implode( ', ', $cats ) ); ?>
+<br />
+<?php $service->link(); ?>
 </div>
 <br class="clear" />
 
@@ -247,8 +247,8 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 
 
 	public function load( $action = '' ) {
-		if ( 'auth_redirect' == $action ) {
-			$code = isset( $_GET['code'] ) ? $_GET['code'] : '';
+		if ( 'auth_redirect' === $action ) {
+			$code = wpcf7_superglobal_get( 'code' );
 
 			if ( $code ) {
 				$this->request_token( $code );
@@ -283,7 +283,7 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 			$this->authorization_endpoint
 		);
 
-		if ( wp_redirect( esc_url_raw( $endpoint ) ) ) {
+		if ( wp_redirect( sanitize_url( $endpoint ) ) ) {
 			exit();
 		}
 	}
@@ -320,7 +320,7 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 			),
 		);
 
-		$response = wp_remote_post( esc_url_raw( $endpoint ), $request );
+		$response = wp_remote_post( sanitize_url( $endpoint ), $request );
 		$response_code = (int) wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
 		$response_body = json_decode( $response_body, true );
@@ -329,7 +329,7 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 			$this->log( $endpoint, $request, $response );
 		}
 
-		if ( 401 == $response_code ) { // Unauthorized
+		if ( 401 === $response_code ) { // Unauthorized
 			$this->access_token = null;
 			$this->refresh_token = null;
 		} else {
@@ -367,7 +367,7 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 			),
 		);
 
-		$response = wp_remote_post( esc_url_raw( $endpoint ), $request );
+		$response = wp_remote_post( sanitize_url( $endpoint ), $request );
 		$response_code = (int) wp_remote_retrieve_response_code( $response );
 		$response_body = wp_remote_retrieve_body( $response );
 		$response_body = json_decode( $response_body, true );
@@ -376,7 +376,7 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 			$this->log( $endpoint, $request, $response );
 		}
 
-		if ( 401 == $response_code ) { // Unauthorized
+		if ( 401 === $response_code ) { // Unauthorized
 			$this->access_token = null;
 			$this->refresh_token = null;
 		} else {
@@ -409,7 +409,7 @@ class WPCF7_Service_OAuth2 extends WPCF7_Service {
 			)
 		);
 
-		$response = wp_remote_request( esc_url_raw( $url ), $request );
+		$response = wp_remote_request( sanitize_url( $url ), $request );
 
 		if ( 401 === wp_remote_retrieve_response_code( $response )
 		and ! $refreshed ) {

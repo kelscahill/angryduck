@@ -15,12 +15,12 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\AccountStatus;
-use Google\Service\ShoppingContent\AccountstatusesCustomBatchRequest;
-use Google\Service\ShoppingContent\AccountstatusesCustomBatchResponse;
-use Google\Service\ShoppingContent\AccountstatusesListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountStatus;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountstatusesCustomBatchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountstatusesCustomBatchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountstatusesListResponse;
 
 /**
  * The "accountstatuses" collection of methods.
@@ -30,7 +30,7 @@ use Google\Service\ShoppingContent\AccountstatusesListResponse;
  *   $accountstatuses = $contentService->accountstatuses;
  *  </code>
  */
-class Accountstatuses extends \Google\Service\Resource
+class Accountstatuses extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves multiple Merchant Center account statuses in a single request.
@@ -39,6 +39,7 @@ class Accountstatuses extends \Google\Service\Resource
    * @param AccountstatusesCustomBatchRequest $postBody
    * @param array $optParams Optional parameters.
    * @return AccountstatusesCustomBatchResponse
+   * @throws \Google\Service\Exception
    */
   public function custombatch(AccountstatusesCustomBatchRequest $postBody, $optParams = [])
   {
@@ -60,6 +61,7 @@ class Accountstatuses extends \Google\Service\Resource
    * destinations are returned, otherwise only issues for the Shopping
    * destination.
    * @return AccountStatus
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $accountId, $optParams = [])
   {
@@ -84,6 +86,7 @@ class Accountstatuses extends \Google\Service\Resource
    * sensitive) will be returned.
    * @opt_param string pageToken The token returned by the previous request.
    * @return AccountstatusesListResponse
+   * @throws \Google\Service\Exception
    */
   public function listAccountstatuses($merchantId, $optParams = [])
   {

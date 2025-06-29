@@ -1,0 +1,101 @@
+/** Field Controls **/
+.shipping-method-controls .field-container {
+    margin-bottom: 20px;
+}
+.shipping-method-controls .non-zoned-method-controls {
+    display: none;
+}
+.shipping-method-controls .zone-method-controls {
+    display: block;
+}
+.shipping-method-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+.shipping-method-controls .field-container select {
+    display: block;
+    min-width: 300px;
+}
+
+
+/** Button Controls **/
+.button-controls {
+    display: block;
+    margin-bottom: 40px;
+}
+.button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+.button-controls .button {
+    float: left;
+}
+.button-controls #cancel-edit-mapping {
+    margin-right: 10px;
+}
+.button-controls.add-mode #add-mapping {
+    display: inline-block;
+}
+.button-controls.add-mode #edit-mapping {
+    display: none;
+}
+.button-controls.add-mode #cancel-edit-mapping {
+    display: none;
+}
+.button-controls.edit-mode #add-mapping {
+    display: none;
+}
+.button-controls.edit-mode #edit-mapping {
+    display: inline-block;
+}
+.button-controls.edit-mode #cancel-edit-mapping {
+    display: inline-block;
+}
+.button-controls .spinner {
+    top: 0;
+}
+.button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+}
+
+
+/** Mapping Table **/
+#wholesale-role-shipping-method-mapping thead tr th,
+#wholesale-role-shipping-method-mapping tfoot tr th,
+#wholesale-role-shipping-method-mapping tbody tr td {
+    padding: 10px 12px;
+}
+#wholesale-role-shipping-method-mapping thead tr th.wholesale-role-heading,
+#wholesale-role-shipping-method-mapping thead tr th.shipping-zone-heading,
+#wholesale-role-shipping-method-mapping thead tr th.shipping-method-heading,
+#wholesale-role-shipping-method-mapping tfoot tr th.wholesale-role-heading,
+#wholesale-role-shipping-method-mapping tfoot tr th.shipping-zone-heading,
+#wholesale-role-shipping-method-mapping tfoot tr th.shipping-method-heading {
+    width: 31%;
+}
+#wholesale-role-shipping-method-mapping thead tr th.controls-heading,
+#wholesale-role-shipping-method-mapping tfoot tr th.controls-heading {
+    width: 10%;
+}
+#wholesale-role-shipping-method-mapping tbody tr.processing {
+    background-color: #ffe5d2 !important;
+}
+#wholesale-role-shipping-method-mapping tbody tr td.controls {
+    width: 50% !important;
+    text-align: right;
+}
+#wholesale-role-shipping-method-mapping tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+#wholesale-role-shipping-method-mapping tbody tr td.controls .edit-mapping {
+    color: green;
+}
+#wholesale-role-shipping-method-mapping tbody tr td.controls .delete-mapping {
+    color: red;
+    margin-left: 4px;
+}

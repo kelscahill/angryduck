@@ -15,10 +15,10 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\Collection;
-use Google\Service\ShoppingContent\ListCollectionsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Collection;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ListCollectionsResponse;
 
 /**
  * The "collections" collection of methods.
@@ -28,7 +28,7 @@ use Google\Service\ShoppingContent\ListCollectionsResponse;
  *   $collections = $contentService->collections;
  *  </code>
  */
-class Collections extends \Google\Service\Resource
+class Collections extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Uploads a collection to your Merchant Center account. If a collection with
@@ -41,6 +41,7 @@ class Collections extends \Google\Service\Resource
    * @param Collection $postBody
    * @param array $optParams Optional parameters.
    * @return Collection
+   * @throws \Google\Service\Exception
    */
   public function create($merchantId, Collection $postBody, $optParams = [])
   {
@@ -56,6 +57,7 @@ class Collections extends \Google\Service\Resource
    * @param string $collectionId Required. The collectionId of the collection.
    * CollectionId is the same as the REST ID of the collection.
    * @param array $optParams Optional parameters.
+   * @throws \Google\Service\Exception
    */
   public function delete($merchantId, $collectionId, $optParams = [])
   {
@@ -71,6 +73,7 @@ class Collections extends \Google\Service\Resource
    * @param string $collectionId Required. The REST ID of the collection.
    * @param array $optParams Optional parameters.
    * @return Collection
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $collectionId, $optParams = [])
   {
@@ -95,6 +98,7 @@ class Collections extends \Google\Service\Resource
    * page. All other parameters must match the original call that provided the
    * page token.
    * @return ListCollectionsResponse
+   * @throws \Google\Service\Exception
    */
   public function listCollections($merchantId, $optParams = [])
   {

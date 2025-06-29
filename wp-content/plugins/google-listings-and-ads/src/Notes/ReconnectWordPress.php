@@ -6,6 +6,8 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\Notes;
 use Automattic\WooCommerce\Admin\Notes\Note as NoteEntry;
 use Automattic\WooCommerce\GoogleListingsAndAds\API\Google\Connection;
 use Automattic\WooCommerce\GoogleListingsAndAds\HelperTraits\Utilities;
+use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\MerchantCenterAwareInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\MerchantCenterAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
 
 defined( 'ABSPATH' ) || exit;
@@ -19,10 +21,11 @@ defined( 'ABSPATH' ) || exit;
  *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\Notes
  */
-class ReconnectWordPress extends AbstractNote {
+class ReconnectWordPress extends AbstractNote implements MerchantCenterAwareInterface {
 
 	use PluginHelper;
 	use Utilities;
+	use MerchantCenterAwareTrait;
 
 	/**
 	 * @var Connection
@@ -53,10 +56,10 @@ class ReconnectWordPress extends AbstractNote {
 	public function get_entry(): NoteEntry {
 		$note = new NoteEntry();
 		$note->set_title(
-			__( 'Re-connect your store to Google Listings & Ads', 'google-listings-and-ads' )
+			__( 'Re-connect your store to Google for WooCommerce', 'google-listings-and-ads' )
 		);
 		$note->set_content(
-			__( 'Your WordPress.com account has been disconnected from Google Listings & Ads. Connect your WordPress.com account again to ensure your products stay listed on Google through the Google Listings & Ads extension.<br/><br/>If you do not re-connect, any existing listings may be removed from Google.', 'google-listings-and-ads' )
+			__( 'Your WordPress.com account has been disconnected from Google for WooCommerce. Connect your WordPress.com account again to ensure your products stay listed on Google through the Google for WooCommerce extension.<br/><br/>If you do not re-connect, any existing listings may be removed from Google.', 'google-listings-and-ads' )
 		);
 		$note->set_content_data( (object) [] );
 		$note->set_type( NoteEntry::E_WC_ADMIN_NOTE_INFORMATIONAL );
@@ -64,7 +67,7 @@ class ReconnectWordPress extends AbstractNote {
 		$note->set_source( $this->get_slug() );
 		$note->add_action(
 			'reconnect-wordpress',
-			__( 'Go to Google Listings & Ads', 'google-listings-and-ads' ),
+			__( 'Go to Google for WooCommerce', 'google-listings-and-ads' ),
 			add_query_arg( 'subpath', '/reconnect-wpcom-account', $this->get_settings_url() )
 		);
 
@@ -80,7 +83,7 @@ class ReconnectWordPress extends AbstractNote {
 	 * @return bool
 	 */
 	public function should_be_added(): bool {
-		if ( $this->has_been_added() ) {
+		if ( $this->has_been_added() || ! $this->merchant_center->is_setup_complete() ) {
 			return false;
 		}
 

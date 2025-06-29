@@ -4,10 +4,10 @@ declare( strict_types=1 );
 namespace Automattic\WooCommerce\GoogleListingsAndAds\API\Google\Query;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidProperty;
-use Google\Exception as GoogleException;
-use Google\Service\ShoppingContent;
-use Google\Service\ShoppingContent\SearchRequest;
-use Google\Service\ShoppingContent\SearchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Exception as GoogleException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\SearchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\SearchResponse;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -77,6 +77,14 @@ abstract class MerchantQuery extends Query {
 		}
 
 		/** @var SearchResponse $this->results */
-		$this->results = $this->client->reports->search( $this->id, $request );
+		$results = $this->client->reports->search( $this->id, $request );
+
+		/**
+		 * Filter the search response prior to setting the property.
+		 *
+		 * @param SearchResponse $results The search response.
+		 * @param SearchRequest  $request The search request.
+		 */
+		$this->results = apply_filters( 'gla_merchant_query_response', $results, $request );
 	}
 }

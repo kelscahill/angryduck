@@ -67,7 +67,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 		}
 
 		public function get_item_data( WC_Order $order, $item ) {
-			$product = WC_Connect_Compatibility::instance()->get_item_product( $order, $item );
+			$product = WC_Connect_Utils::get_item_product( $order, $item );
 			if ( ! $product || ! $product->needs_shipping() ) {
 				return null;
 			}
@@ -81,8 +81,8 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 				$length = $product->get_length();
 				$width  = $product->get_width();
 			}
-
-			$product_data = array(
+			$parent_product_id = $product->is_type( 'variation' ) ? $product->get_parent_id() : $product->get_id();
+			$product_data      = array(
 				'height'     => (float) $height,
 				'product_id' => $product->get_id(),
 				'length'     => (float) $length,
@@ -90,11 +90,11 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 				'weight'     => (float) $weight,
 				'width'      => (float) $width,
 				'name'       => $this->get_name( $product ),
-				'url'        => get_edit_post_link( WC_Connect_Compatibility::instance()->get_parent_product_id( $product ), null ),
+				'url'        => get_edit_post_link( $parent_product_id, null ),
 			);
 
 			if ( $product->is_type( 'variation' ) ) {
-				$product_data['attributes'] = WC_Connect_Compatibility::instance()->get_formatted_variation( $product, true );
+				$product_data['attributes'] = wc_get_formatted_variation( $product, true );
 			}
 
 			return $product_data;
@@ -152,8 +152,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 			if ( $product->get_sku() ) {
 				$identifier = $product->get_sku();
 			} else {
-				$identifier = '#' . WC_Connect_Compatibility::instance()->get_product_id( $product );
-
+				$identifier = '#' . $product->get_id();
 			}
 			return sprintf( '%s - %s', $identifier, $product->get_title() );
 		}
@@ -176,7 +175,6 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 					),
 				);
 			}
-
 			$formatted_packages = array();
 
 			foreach ( $packages as $package_obj ) {
@@ -186,23 +184,23 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 
 				foreach ( $package['items'] as $item_index => $item ) {
 					$product_data = (array) $item;
-					$product      = WC_Connect_Compatibility::instance()->get_item_product( $order, $product_data );
+					$product      = WC_Connect_Utils::get_item_product( $order, $product_data );
 
 					if ( $product ) {
+						$parent_product_id    = $product->is_type( 'variation' ) ? $product->get_parent_id() : $product->get_id();
 						$product_data['name'] = $this->get_name( $product );
-						$product_data['url']  = get_edit_post_link( WC_Connect_Compatibility::instance()->get_parent_product_id( $product ), null );
+						$product_data['url']  = get_edit_post_link( $parent_product_id, null );
 						if ( $product->is_type( 'variation' ) ) {
-							$formatted                  = WC_Connect_Compatibility::instance()->get_formatted_variation( $product, true );
-							$product_data['attributes'] = $formatted;
+							$product_data['attributes'] = wc_get_formatted_variation( $product, true );
 						}
-						$customs_info = get_post_meta( $product_data['product_id'], 'wc_connect_customs_info', true );
-						if ( $customs_info ) {
+						$customs_info = $product->get_meta( 'wc_connect_customs_info', true );
+						if ( is_array( $customs_info ) ) {
 							$product_data = array_merge( $product_data, $customs_info );
 						}
 					} else {
-						$product_data['name'] = WC_Connect_Compatibility::instance()->get_product_name_from_order( $product_data['product_id'], $order );
+						$product_data['name'] = WC_Connect_Utils::get_product_name_from_order( $product_data['product_id'], $order );
 					}
-					$product_data['value'] = WC_Connect_Compatibility::instance()->get_product_price_from_order( $product_data['product_id'], $order );
+					$product_data['value'] = WC_Connect_Utils::get_product_price_from_order( $product_data['product_id'], $order );
 					if ( ! isset( $product_data['value'] ) ) {
 						$product_data['value'] = 0;
 					}
@@ -227,10 +225,44 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 				}
 
 				$refunded_qty = $order->get_qty_refunded_for_item( $item->get_id() );
+				$remaining_quantity = $item['qty'] - absint( $refunded_qty );
+				/**
+				 * The threshold at which we will start batching items together.
+				 * As an example, if a single order item has a quantity 60, which is more than the default threshold
+				 * value of 20 we will start batching together.
+				 */
+				$threshold = apply_filters( 'wc_connect_shipment_item_quantity_threshold', 20 );
+				/**
+				 * Max number of shipments allowed to be created for this item should quantity of this order items
+				 * exceeds `wc_connect_shipment_item_quantity_threshold`
+				 */
+				$max_shipments = apply_filters( 'wc_connect_max_shipments_if_quantity_exceeds_threshold', 5 );
 
-				for ( $i = 0; $i < ( $item['qty'] - absint( $refunded_qty ) ); $i ++ ) {
-					$items[] = $item_data;
+				$weight_per_item = $item_data['weight'];
+				$should_cap_shipments = $remaining_quantity > $threshold;
+
+				if ( $should_cap_shipments ) {
+					$quantity_per_shipment = floor( $remaining_quantity / $max_shipments );
+					for ( $i = 0; $i < $max_shipments; $i ++ ) {
+						$remaining_quantity -= $quantity_per_shipment;
+
+						if( $remaining_quantity >= $quantity_per_shipment ) {
+							$item_data['quantity'] = $quantity_per_shipment;
+						} else {
+							$item_data['quantity'] = $quantity_per_shipment + $remaining_quantity;
+						}
+
+						$item_data['weight'] = round( $item_data['quantity'] * $weight_per_item, 2 );
+						$items[] = $item_data;
+					}
+				} else {
+					for ( $i = 0; $i < $remaining_quantity; $i ++ ) {
+						$items[] = $item_data;
+					}
 				}
+
+
+
 			}
 
 			return $items;
@@ -289,7 +321,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 		}
 
 		protected function get_form_data( WC_Order $order ) {
-			$order_id          = WC_Connect_Compatibility::instance()->get_order_id( $order );
+			$order_id          = $order->get_id();
 			$selected_packages = $this->get_selected_packages( $order );
 			$is_packed         = ( false !== $this->get_packaging_metadata( $order ) );
 			$origin            = $this->get_origin_address();
@@ -301,7 +333,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 			}
 
 			$origin_normalized      = (bool) WC_Connect_Options::get_option( 'origin_address', false );
-			$destination_normalized = (bool) get_post_meta( $order_id, '_wc_connect_destination_normalized', true );
+			$destination_normalized = (bool) $order->get_meta( '_wc_connect_destination_normalized', true );
 
 			$form_data = compact( 'is_packed', 'selected_packages', 'origin', 'destination', 'origin_normalized', 'destination_normalized' );
 
@@ -326,9 +358,9 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 			// Set up a dictionary from product ID to quantity in the order, which will be updated by refunds and existing labels later.
 			$quantities_by_product_id = array();
 			foreach ( $order->get_items() as $item ) {
-				$product = WC_Connect_Compatibility::instance()->get_item_product( $order, $item );
+				$product = WC_Connect_Utils::get_item_product( $order, $item );
 				if ( $product && $product->needs_shipping() ) {
-					$product_id                              = WC_Connect_Compatibility::instance()->get_product_id( $product );
+					$product_id                              = $product->get_id();
 					$current_quantity                        = array_key_exists( $product_id, $quantities_by_product_id ) ? $quantities_by_product_id[ $product_id ] : 0;
 					$quantities_by_product_id[ $product_id ] = $current_quantity + $item->get_quantity();
 				}
@@ -342,8 +374,12 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 			// Update the quantity for each refunded product ID in the order.
 			foreach ( $order->get_refunds() as $refund ) {
 				foreach ( $refund->get_items() as $refunded_item ) {
-					$product    = WC_Connect_Compatibility::instance()->get_item_product( $order, $refunded_item );
-					$product_id = WC_Connect_Compatibility::instance()->get_product_id( $product );
+					$product = WC_Connect_Utils::get_item_product( $order, $refunded_item );
+					if ( ! is_a( $product, 'WC_Product' ) ) {
+						continue;
+					}
+
+					$product_id = $product->get_id();
 					if ( array_key_exists( $product_id, $quantities_by_product_id ) ) {
 						$current_count                           = $quantities_by_product_id[ $product_id ];
 						$quantities_by_product_id[ $product_id ] = $current_count - abs( $refunded_item->get_quantity() );
@@ -413,7 +449,9 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 				return false;
 			}
 
-			$order = wc_get_order();
+			global $post;
+
+			$order = WC_Connect_Compatibility::instance()->init_theorder_object( $post );
 			if ( ! $order ) {
 				return false;
 			}
@@ -424,22 +462,34 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 			return $origin['country'] !== $destination['country'];
 		}
 
-		public function should_show_meta_box() {
+		/**
+		 * Check if meta boxes should be displayed.
+		 *
+		 * @param WP_Post $post Post object.
+		 * @return boolean
+		 */
+		public function should_show_meta_box( $post ) {
 			if ( null === $this->show_metabox ) {
-				$this->show_metabox = $this->calculate_should_show_meta_box();
+				$this->show_metabox = $this->calculate_should_show_meta_box( $post );
 			}
 
 			return $this->show_metabox;
 		}
 
-		private function calculate_should_show_meta_box() {
+		/**
+		 * Check if meta boxes should be displayed.
+		 *
+		 * @param WP_Post $post Post object.
+		 * @return bool
+		 */
+		private function calculate_should_show_meta_box( $post ) {
 			// not all users have the permission to manage shipping labels.
 			// if a request is made to the JS backend and the user doesn't have permission, an error would be displayed.
 			if ( ! WC_Connect_Functions::user_can_manage_labels() ) {
 				return false;
 			}
 
-			$order = wc_get_order();
+			$order = WC_Connect_Compatibility::instance()->init_theorder_object( $post );
 
 			if ( ! $order ) {
 				return false;
@@ -450,8 +500,8 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 				return false;
 			}
 
-			// If the order already has purchased labels, show the meta-box no matter what
-			if ( get_post_meta( WC_Connect_Compatibility::instance()->get_order_id( $order ), 'wc_connect_labels', true ) ) {
+			// If the order already has purchased labels, show the meta-box no matter what.
+			if ( $order->get_meta( 'wc_connect_labels', true ) ) {
 				return true;
 			}
 
@@ -467,7 +517,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 
 			// At this point (no packaging data), only show if there's at least one existing and shippable product.
 			foreach ( $order->get_items() as $item ) {
-				$product = WC_Connect_Compatibility::instance()->get_item_product( $order, $item );
+				$product = WC_Connect_Utils::get_item_product( $order, $item );
 				if ( $product && $product->needs_shipping() ) {
 					return true;
 				}
@@ -493,11 +543,11 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 
 		public function get_label_payload( $post_order_or_id ) {
 			$order = wc_get_order( $post_order_or_id );
-			if ( ! $order ) {
+			if ( ! is_a( $order, 'WC_Order' ) ) {
 				return false;
 			}
 
-			$order_id = WC_Connect_Compatibility::instance()->get_order_id( $order );
+			$order_id = $order->get_id();
 			$payload  = array(
 				'orderId'            => $order_id,
 				'paperSize'          => $this->settings_store->get_preferred_paper_size(),
@@ -537,8 +587,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 		public function meta_box( $post, $args ) {
 
 			$connect_order_presenter = new WC_Connect_Order_Presenter();
-			$order                   = wc_get_order( $post );
-			$order_id                = WC_Connect_Compatibility::instance()->get_order_id( $order );
+			$order                   = WC_Connect_Compatibility::instance()->init_theorder_object( $post );
 			$items                   = array_filter( $order->get_items(), array( $this, 'filter_items_needing_shipping' ) );
 			$items_count             = array_reduce( $items, array( $this, 'reducer_items_quantity' ), 0 ) - absint( $order->get_item_count_refunded() );
 			$payload                 = apply_filters(
@@ -547,8 +596,9 @@ if ( ! class_exists( 'WC_Connect_Shipping_Label' ) ) {
 					'order'             => $connect_order_presenter->get_order_for_api( $order ),
 					'accountSettings'   => $this->account_settings->get(),
 					'packagesSettings'  => $this->package_settings->get(),
-					'shippingLabelData' => $this->get_label_payload( $order_id ),
+					'shippingLabelData' => $this->get_label_payload( $order->get_id() ),
 					'continents'        => $this->continents->get(),
+					'euCountries'       => WC()->countries->get_european_union_countries(),
 					'context'           => $args['args']['context'],
 					'items'             => $items_count,
 				),

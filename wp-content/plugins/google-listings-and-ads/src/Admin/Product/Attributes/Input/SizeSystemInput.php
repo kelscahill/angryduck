@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
 class SizeSystemInput extends Select {
 
 	/**
-	 * SizeInput constructor.
+	 * SizeSystemInput constructor.
 	 */
 	public function __construct() {
 		parent::__construct();
@@ -25,5 +25,4 @@ class SizeSystemInput extends Select {
 		$this->set_label( __( 'Size system', 'google-listings-and-ads' ) );
 		$this->set_description( __( 'System in which the size is specified. Recommended for apparel items.', 'google-listings-and-ads' ) );
 	}
-
 }

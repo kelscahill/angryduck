@@ -64,14 +64,13 @@ class AdsService implements OptionsAwareInterface, Service {
 	}
 
 	/**
-	 * Get whether Ads Campaign are migrated.
+	 * Determine whether the Ads account is connected, even when pending billing.
 	 *
-	 * @since 2.0.3
 	 * @return bool
 	 */
-	public function is_migration_completed(): bool {
-		$convert_status = $this->options->get( OptionsInterface::CAMPAIGN_CONVERT_STATUS );
-		return isset( $convert_status['status'] ) && $convert_status['status'] === 'converted';
+	public function connected_account(): bool {
+		$id        = $this->options->get_ads_id();
+		$last_step = $this->account_state->last_incomplete_step();
+		return $id && ( $last_step === '' || $last_step === 'billing' );
 	}
-
 }

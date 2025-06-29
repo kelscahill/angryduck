@@ -1,0 +1,8 @@
+.wholesale_saved_price_text strong {
+  color: #159967
+}
+
+.cart-saved-wholesale-price .wholesale_saved_price_container {
+  background-color: #ebf7ed !important; 
+  text-align: center; 
+}

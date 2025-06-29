@@ -1,0 +1,61 @@
+{
+  "src/blocks/woocommerce/wholesale-savings/index-legacy.tsx": {
+    "file": "blocks/woocommerce/wholesale-savings/index.tsx-legacy.B4XGR5QH.js",
+    "name": "blocks/woocommerce/wholesale-savings/index.tsx",
+    "src": "src/blocks/woocommerce/wholesale-savings/index-legacy.tsx",
+    "isEntry": true,
+    "imports": [
+      "src/blocks/woocommerce/wholesale-savings/style-legacy.scss"
+    ]
+  },
+  "src/blocks/woocommerce/wholesale-savings/index.tsx": {
+    "file": "blocks/woocommerce/wholesale-savings/index.tsx.14LfTKtd.js",
+    "name": "blocks/woocommerce/wholesale-savings/index.tsx",
+    "src": "src/blocks/woocommerce/wholesale-savings/index.tsx",
+    "isEntry": true,
+    "css": [
+      "css/blocks/woocommerce/wholesale-savings/style.CncY7zBN.css"
+    ]
+  },
+  "src/blocks/woocommerce/wholesale-savings/style-legacy.scss": {
+    "file": "blocks/woocommerce/wholesale-savings/style.scss-legacy.BkRteRtm.js",
+    "name": "blocks/woocommerce/wholesale-savings/style.scss",
+    "src": "src/blocks/woocommerce/wholesale-savings/style-legacy.scss",
+    "isEntry": true
+  },
+  "src/blocks/woocommerce/wholesale-savings/style.scss": {
+    "file": "css/blocks/woocommerce/wholesale-savings/style.CncY7zBN.css",
+    "src": "src/blocks/woocommerce/wholesale-savings/style.scss",
+    "isEntry": true
+  },
+  "src/vanilla/cart-checkout-block-surcharge-legacy.ts": {
+    "file": "vanilla/cart-checkout-block-surcharge-legacy.CZGJPBFC.js",
+    "name": "vanilla/cart-checkout-block-surcharge",
+    "src": "src/vanilla/cart-checkout-block-surcharge-legacy.ts",
+    "isEntry": true
+  },
+  "src/vanilla/cart-checkout-block-surcharge.ts": {
+    "file": "vanilla/cart-checkout-block-surcharge.DzxfYDc9.js",
+    "name": "vanilla/cart-checkout-block-surcharge",
+    "src": "src/vanilla/cart-checkout-block-surcharge.ts",
+    "isEntry": true
+  },
+  "src/vanilla/cart-checkout-min-req-legacy.ts": {
+    "file": "vanilla/cart-checkout-min-req-legacy.DtJshdqo.js",
+    "name": "vanilla/cart-checkout-min-req",
+    "src": "src/vanilla/cart-checkout-min-req-legacy.ts",
+    "isEntry": true
+  },
+  "src/vanilla/cart-checkout-min-req.ts": {
+    "file": "vanilla/cart-checkout-min-req.CG7ySK1E.js",
+    "name": "vanilla/cart-checkout-min-req",
+    "src": "src/vanilla/cart-checkout-min-req.ts",
+    "isEntry": true
+  },
+  "vite/legacy-polyfills-legacy": {
+    "file": "polyfills-legacy.CGm7e2z_.js",
+    "name": "polyfills",
+    "src": "vite/legacy-polyfills-legacy",
+    "isEntry": true
+  }
+}

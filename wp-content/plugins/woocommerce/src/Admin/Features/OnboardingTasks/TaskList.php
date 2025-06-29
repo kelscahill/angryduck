@@ -99,12 +99,16 @@ class TaskList {
 	/**
 	 * Array of TaskListSection.
 	 *
+	 * @deprecated 7.2.0
+	 *
 	 * @var array
 	 */
 	private $sections = array();
 
 	/**
 	 * Key value map of task class and id used for sections.
+	 *
+	 * @deprecated 7.2.0
 	 *
 	 * @var array
 	 */
@@ -126,7 +130,6 @@ class TaskList {
 			'options'                 => array(),
 			'visible'                 => true,
 			'display_progress_header' => false,
-			'sections'                => array(),
 		);
 
 		$data = wp_parse_args( $data, $defaults );
@@ -147,12 +150,6 @@ class TaskList {
 		}
 
 		$this->possibly_remove_reminder_bar();
-		$this->sections = array_map(
-			function( $section ) {
-				return new TaskListSection( $section, $this );
-			},
-			$data['sections']
-		);
 	}
 
 	/**
@@ -171,10 +168,23 @@ class TaskList {
 	 * @return bool
 	 */
 	public function is_visible() {
-		if ( ! $this->visible || ! count( $this->get_viewable_tasks() ) > 0 ) {
+		// If the task list is explicitly set to not be visible, return false.
+		if ( ! $this->visible ) {
 			return false;
 		}
-		return ! $this->is_hidden();
+
+		// If the task list is hidden, return false.
+		if ( $this->is_hidden() ) {
+			return false;
+		}
+
+		// If the task list has no viewable tasks, return false.
+		$no_viewable_tasks = count( $this->get_viewable_tasks() ) === 0;
+		if ( $no_viewable_tasks ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
@@ -190,7 +200,7 @@ class TaskList {
 		$viewable_tasks  = $this->get_viewable_tasks();
 		$completed_count = array_reduce(
 			$viewable_tasks,
-			function( $total, $task ) {
+			function ( $total, $task ) {
 				return $task->is_complete() ? $total + 1 : $total;
 			},
 			0
@@ -202,6 +212,7 @@ class TaskList {
 				'action'                => 'remove_card',
 				'completed_task_count'  => $completed_count,
 				'incomplete_task_count' => count( $viewable_tasks ) - $completed_count,
+				'tasklist_id'           => $this->id,
 			)
 		);
 
@@ -239,15 +250,13 @@ class TaskList {
 	 * @return bool
 	 */
 	public function is_complete() {
-		$viewable_tasks = $this->get_viewable_tasks();
+		foreach ( $this->get_viewable_tasks() as $viewable_task ) {
+			if ( $viewable_task->is_complete() === false ) {
+				return false;
+			}
+		}
 
-		return array_reduce(
-			$viewable_tasks,
-			function( $is_complete, $task ) {
-				return ! $task->is_complete() ? false : $is_complete;
-			},
-			true
-		);
+		return true;
 	}
 
 	/**
@@ -276,9 +285,7 @@ class TaskList {
 			return;
 		}
 
-		$task_class_name                             = substr( get_class( $task ), strrpos( get_class( $task ), '\\' ) + 1 );
-		$this->task_class_id_map[ $task_class_name ] = $task->get_id();
-		$this->tasks[]                               = $task;
+		$this->tasks[] = $task;
 	}
 
 	/**
@@ -291,7 +298,7 @@ class TaskList {
 		return current(
 			array_filter(
 				$this->tasks,
-				function( $task ) use ( $task_id ) {
+				function ( $task ) use ( $task_id ) {
 					return $task->get_id() === $task_id;
 				}
 			)
@@ -307,7 +314,7 @@ class TaskList {
 		return array_values(
 			array_filter(
 				$this->tasks,
-				function( $task ) {
+				function ( $task ) {
 					return $task->can_view();
 				}
 			)
@@ -317,9 +324,13 @@ class TaskList {
 	/**
 	 * Get task list sections.
 	 *
+	 * @deprecated 7.2.0
+	 *
 	 * @return array
 	 */
 	public function get_sections() {
+		wc_deprecated_function( __CLASS__ . '::' . __FUNCTION__, '7.2.0' );
+
 		return $this->sections;
 	}
 
@@ -327,19 +338,30 @@ class TaskList {
 	 * Track list completion of viewable tasks.
 	 */
 	public function possibly_track_completion() {
-		if ( ! $this->is_complete() ) {
+		if ( $this->has_previously_completed() ) {
 			return;
 		}
 
-		if ( $this->has_previously_completed() ) {
+		// If it's hidden, completion is tracked via hide method.
+		if ( $this->is_hidden() ) {
+			return;
+		}
+
+		// Expensive check, do it last.
+		if ( ! $this->is_complete() ) {
 			return;
 		}
 
 		$completed_lists   = get_option( self::COMPLETED_OPTION, array() );
 		$completed_lists[] = $this->get_list_id();
-		update_option( self::COMPLETED_OPTION, $completed_lists );
+		update_option( self::COMPLETED_OPTION, $completed_lists, true );
 		$this->maybe_set_default_layout( $completed_lists );
-		$this->record_tracks_event( 'tasks_completed' );
+		$this->record_tracks_event(
+			'tasks_completed',
+			array(
+				'tasklist_id' => $this->id,
+			)
+		);
 	}
 
 	/**
@@ -353,7 +375,7 @@ class TaskList {
 		if ( 0 !== count( $sort_by ) ) {
 			usort(
 				$this->tasks,
-				function( $a, $b ) use ( $sort_by ) {
+				function ( $a, $b ) use ( $sort_by ) {
 					return Task::sort( $a, $b, $sort_by );
 				}
 			);
@@ -405,10 +427,16 @@ class TaskList {
 	public function get_json() {
 		$this->possibly_track_completion();
 		$tasks_json = array();
+
 		foreach ( $this->tasks as $task ) {
-			$json = $task->get_json();
-			if ( $json['canView'] ) {
-				$tasks_json[] = $json;
+			// We have no use for hidden lists, it's expensive to compute individual tasks completion.
+			// Exception: Secret tasklist is always hidden, or a task is always accessible.
+			$list_is_visible = $this->is_visible() || 'secret_tasklist' === $this->id;
+			if ( $list_is_visible || ( method_exists( $task, 'is_always_accessible' ) && $task->is_always_accessible() ) ) {
+				$json = $task->get_json();
+				if ( $json['canView'] ) {
+					$tasks_json[] = $json;
+				}
 			}
 		}
 
@@ -422,12 +450,6 @@ class TaskList {
 			'eventPrefix'           => $this->prefix_event( '' ),
 			'displayProgressHeader' => $this->display_progress_header,
 			'keepCompletedTaskList' => $this->get_keep_completed_task_list(),
-			'sections'              => array_map(
-				function( $section ) {
-					return $section->get_json();
-				},
-				$this->sections
-			),
 		);
 	}
 }

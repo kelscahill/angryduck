@@ -3,10 +3,10 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\API\Site\Controllers;
 
-use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\RESTServer;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\ContainerAwareTrait;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WP;
 use DateTime;
-use Psr\Container\ContainerInterface;
 use WP_REST_Request as Request;
 
 defined( 'ABSPATH' ) || exit;
@@ -14,24 +14,14 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Class BaseReportsController
  *
+ * ContainerAware used for:
+ * - WP
+ *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\API\Site\Controllers
  */
-abstract class BaseReportsController extends BaseController {
+abstract class BaseReportsController extends BaseController implements ContainerAwareInterface {
 
-	/**
-	 * @var ContainerInterface
-	 */
-	protected $container;
-
-	/**
-	 * BaseReportsController constructor.
-	 *
-	 * @param ContainerInterface $container
-	 */
-	public function __construct( ContainerInterface $container ) {
-		$this->container = $container;
-		parent::__construct( $container->get( RESTServer::class ) );
-	}
+	use ContainerAwareTrait;
 
 	/**
 	 * Get the query params for collections.
@@ -39,7 +29,7 @@ abstract class BaseReportsController extends BaseController {
 	 * @return array
 	 */
 	public function get_collection_params(): array {
-		$params = [
+		return [
 			'context'   => $this->get_context_param( [ 'default' => 'view' ] ),
 			'after'     => [
 				'description'       => __( 'Limit response to data after a given ISO8601 compliant date.', 'google-listings-and-ads' ),
@@ -100,18 +90,7 @@ abstract class BaseReportsController extends BaseController {
 				'validate_callback' => 'rest_validate_request_arg',
 			],
 		];
-
-		return $this->add_collection_parameters( $params );
 	}
-
-	/**
-	 * Add collection parameters.
-	 *
-	 * @param array $params Initial set of collection parameters.
-	 *
-	 * @return array
-	 */
-	abstract protected function add_collection_parameters( array $params ): array;
 
 	/**
 	 * Maps query arguments from the REST request.
@@ -120,30 +99,16 @@ abstract class BaseReportsController extends BaseController {
 	 * @return array
 	 */
 	protected function prepare_query_arguments( Request $request ): array {
-		$params   = $this->get_collection_params();
-		$defaults = $this->get_defaults( $params );
-		$args     = wp_parse_args( array_intersect_key( $request->get_query_params(), $params ), $defaults );
+		$args = wp_parse_args(
+			array_intersect_key(
+				$request->get_query_params(),
+				$this->get_collection_params()
+			),
+			$request->get_default_params()
+		);
 
 		$this->normalize_timezones( $args );
 		return $args;
-	}
-
-	/**
-	 * Get parameter defaults.
-	 *
-	 * @param array $params List of parameters.
-	 *
-	 * @return array
-	 */
-	protected function get_defaults( array $params ): array {
-		$defaults = [];
-		foreach ( $params as $key => $param ) {
-			if ( isset( $param['default'] ) ) {
-				$defaults[ $key ] = $param['default'];
-			}
-		}
-
-		return $defaults;
 	}
 
 	/**

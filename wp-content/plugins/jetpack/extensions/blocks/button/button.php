@@ -26,6 +26,9 @@ function register_block() {
 		array(
 			'render_callback' => __NAMESPACE__ . '\render_block',
 			'uses_context'    => array( 'jetpack/parentBlockWidth' ),
+			'selectors'       => array(
+				'border' => '.wp-block-jetpack-button .wp-block-button__link',
+			),
 		)
 	);
 }
@@ -54,7 +57,7 @@ function render_block( $attributes, $content ) {
 	}
 
 	$element   = get_attribute( $attributes, 'element' );
-	$text      = get_attribute( $attributes, 'text' );
+	$text      = wp_kses_post( get_attribute( $attributes, 'text' ) );
 	$unique_id = get_attribute( $attributes, 'uniqueId' );
 	$url       = get_attribute( $attributes, 'url' );
 	$classes   = Blocks::classes( FEATURE_NAME, $attributes, array( 'wp-block-button' ) );
@@ -72,12 +75,16 @@ function render_block( $attributes, $content ) {
 		$button_attributes .= sprintf( ' data-id-attr="%1$s" id="%1$s"', esc_attr( $unique_id ) );
 	}
 
+	if ( ! in_array( $element, array( 'a', 'button', 'input' ), true ) ) {
+		$element = 'a';
+	}
+
 	if ( 'a' === $element ) {
 		$button_attributes .= sprintf( ' href="%s" target="_blank" role="button" rel="noopener noreferrer"', esc_url( $url ) );
 	} elseif ( 'button' === $element ) {
 		$button_attributes .= ' type="submit"';
 	} elseif ( 'input' === $element ) {
-		$button_attributes .= sprintf( ' type="submit" value="%s"', wp_strip_all_tags( $text, true ) );
+		$button_attributes .= sprintf( ' type="submit" value="%s"', esc_attr( wp_strip_all_tags( $text, true ) ) );
 	}
 
 	$button = 'input' === $element
@@ -106,6 +113,7 @@ function get_button_classes( $attributes ) {
 	$has_custom_gradient         = array_key_exists( 'customGradient', $attributes );
 	$has_border_radius           = array_key_exists( 'borderRadius', $attributes );
 	$has_font_size               = array_key_exists( 'fontSize', $attributes );
+	$has_named_border_color      = array_key_exists( 'borderColor', $attributes );
 
 	if ( $has_font_size ) {
 		$classes[] = 'has-' . $attributes['fontSize'] . '-font-size';
@@ -121,6 +129,10 @@ function get_button_classes( $attributes ) {
 	}
 	if ( $has_named_text_color ) {
 		$classes[] = sprintf( 'has-%s-color', $attributes['textColor'] );
+	}
+
+	if ( $has_named_border_color ) {
+		$classes[] = sprintf( 'has-%s-border-color', $attributes['borderColor'] );
 	}
 
 	if (
@@ -162,11 +174,23 @@ function get_button_styles( $attributes ) {
 	$has_named_gradient          = array_key_exists( 'gradient', $attributes );
 	$has_custom_gradient         = array_key_exists( 'customGradient', $attributes );
 	$has_border_radius           = array_key_exists( 'borderRadius', $attributes );
-	$has_width                   = array_key_exists( 'width', $attributes );
 	$has_font_family             = array_key_exists( 'fontFamily', $attributes );
 	$has_typography_styles       = array_key_exists( 'style', $attributes ) && array_key_exists( 'typography', $attributes['style'] );
 	$has_custom_font_size        = $has_typography_styles && array_key_exists( 'fontSize', $attributes['style']['typography'] );
 	$has_custom_text_transform   = $has_typography_styles && array_key_exists( 'textTransform', $attributes['style']['typography'] );
+	$border_styles               = array();
+	$border_attribute            = $attributes['style']['border'] ?? null;
+	$is_border_style_array       = is_array( $border_attribute );
+
+	$has_custom_border_color = $is_border_style_array && isset( $border_attribute['color'] );
+	$has_border_style        = $is_border_style_array && isset( $border_attribute['style'] );
+	$has_border_width        = $is_border_style_array && isset( $border_attribute['width'] );
+	$has_individual_borders  = $is_border_style_array && (
+		isset( $border_attribute['top'] ) ||
+		isset( $border_attribute['right'] ) ||
+		isset( $border_attribute['bottom'] ) ||
+		isset( $border_attribute['left'] )
+	);
 
 	if ( $has_font_family ) {
 		$styles[] = sprintf( 'font-family: %s;', $attributes['fontFamily'] );
@@ -202,9 +226,35 @@ function get_button_styles( $attributes ) {
 		$styles[] = sprintf( 'border-radius: %spx;', $attributes['borderRadius'] );
 	}
 
-	if ( $has_width ) {
-		$styles[] = sprintf( 'width: %s;', $attributes['width'] );
-		$styles[] = 'max-width: 100%';
+	if ( $has_custom_border_color ) {
+		$border_styles['color'] = $attributes['style']['border']['color'];
+	}
+
+	if ( $has_border_style ) {
+		$border_styles['style'] = $attributes['style']['border']['style'];
+	}
+
+	if ( $has_border_width ) {
+		$border_styles['width'] = $attributes['style']['border']['width'];
+	}
+
+	if ( $has_individual_borders ) {
+		foreach ( array( 'top', 'right', 'bottom', 'left' ) as $side ) {
+			$border = $attributes['style']['border'][ $side ] ?? null;
+			if ( is_array( $border ) ) {
+				$border_side_values     = array(
+					'width' => $border['width'] ?? null,
+					'color' => $border['color'] ?? null,
+					'style' => $border['style'] ?? null,
+				);
+				$border_styles[ $side ] = $border_side_values;
+			}
+		}
+	}
+
+	$border_styles = wp_style_engine_get_styles( array( 'border' => $border_styles ) );
+	if ( isset( $border_styles['css'] ) ) {
+		$styles[] = $border_styles['css'];
 	}
 
 	return implode( ' ', $styles );
@@ -222,7 +272,7 @@ function get_button_wrapper_styles( $attributes ) {
 	$has_width = array_key_exists( 'width', $attributes );
 
 	if ( $has_width ) {
-		$styles[] = 'max-width: 100%';
+		$styles[] = sprintf( 'width: %s;', $attributes['width'] );
 	}
 
 	return implode( ' ', $styles );

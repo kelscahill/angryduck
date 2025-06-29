@@ -10,12 +10,12 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\CountryRatesCollection;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\LocationRate;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\ServiceRatesCollection;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\ShippingLocation;
-use Google\Service\ShoppingContent\PostalCodeGroup;
-use Google\Service\ShoppingContent\PostalCodeRange;
-use Google\Service\ShoppingContent\Price;
-use Google\Service\ShoppingContent\RateGroup;
-use Google\Service\ShoppingContent\Service as GoogleShippingService;
-use Google\Service\ShoppingContent\Value;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PostalCodeGroup;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PostalCodeRange;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Price;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RateGroup;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Service as GoogleShippingService;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Value;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -146,8 +146,8 @@ class WCShippingSettingsAdapter extends AbstractShippingSettingsAdapter {
 		$country = $service_collection->get_country();
 		$name    = sprintf(
 		/* translators: %1 is a random 4-digit string, %2 is the country code  */
-			__( '[%1$s] Google Listings and Ads generated service - %2$s', 'google-listings-and-ads' ),
-			sprintf( '%04x', mt_rand( 0, 0xffff ) ),
+			__( '[%1$s] Google for WooCommerce generated service - %2$s', 'google-listings-and-ads' ),
+			sprintf( '%04x', wp_rand( 0, 0xffff ) ),
 			$country
 		);
 

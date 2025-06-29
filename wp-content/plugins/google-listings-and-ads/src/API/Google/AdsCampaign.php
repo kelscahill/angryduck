@@ -14,17 +14,19 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Google\Ads\GoogleAdsClient;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Options\TransientsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WC;
 use Google\Ads\GoogleAds\Util\FieldMasks;
-use Google\Ads\GoogleAds\Util\V11\ResourceNames;
-use Google\Ads\GoogleAds\V11\Common\MaximizeConversionValue;
-use Google\Ads\GoogleAds\V11\Enums\AdvertisingChannelTypeEnum\AdvertisingChannelType;
-use Google\Ads\GoogleAds\V11\Resources\Campaign;
-use Google\Ads\GoogleAds\V11\Resources\Campaign\ShoppingSetting;
-use Google\Ads\GoogleAds\V11\Services\CampaignServiceClient;
-use Google\Ads\GoogleAds\V11\Services\CampaignOperation;
-use Google\Ads\GoogleAds\V11\Services\GoogleAdsRow;
-use Google\Ads\GoogleAds\V11\Services\MutateOperation;
+use Google\Ads\GoogleAds\Util\V18\ResourceNames;
+use Google\Ads\GoogleAds\V18\Common\MaximizeConversionValue;
+use Google\Ads\GoogleAds\V18\Enums\AdvertisingChannelTypeEnum\AdvertisingChannelType;
+use Google\Ads\GoogleAds\V18\Resources\Campaign;
+use Google\Ads\GoogleAds\V18\Resources\Campaign\ShoppingSetting;
+use Google\Ads\GoogleAds\V18\Services\Client\CampaignServiceClient;
+use Google\Ads\GoogleAds\V18\Services\CampaignOperation;
+use Google\Ads\GoogleAds\V18\Services\GoogleAdsRow;
+use Google\Ads\GoogleAds\V18\Services\MutateGoogleAdsRequest;
+use Google\Ads\GoogleAds\V18\Services\MutateOperation;
 use Google\ApiCore\ApiException;
 use Google\ApiCore\ValidationException;
 use Exception;
@@ -35,6 +37,7 @@ use Exception;
  *
  * ContainerAware used for:
  * - AdsAssetGroup
+ * - TransientsInterface
  * - WC
  *
  * @since 1.12.2 Refactored to support PMax and (legacy) SSC.
@@ -43,8 +46,8 @@ use Exception;
  */
 class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 
-	use ApiExceptionTrait;
 	use ContainerAwareTrait;
+	use ExceptionTrait;
 	use OptionsAwareTrait;
 	use MicroTrait;
 
@@ -79,30 +82,38 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 	protected $google_helper;
 
 	/**
+	 * @var AdsCampaignLabel $campaign_label
+	 */
+	protected $campaign_label;
+
+	/**
 	 * AdsCampaign constructor.
 	 *
 	 * @param GoogleAdsClient      $client
 	 * @param AdsCampaignBudget    $budget
 	 * @param AdsCampaignCriterion $criterion
 	 * @param GoogleHelper         $google_helper
+	 * @param AdsCampaignLabel     $campaign_label
 	 */
-	public function __construct( GoogleAdsClient $client, AdsCampaignBudget $budget, AdsCampaignCriterion $criterion, GoogleHelper $google_helper ) {
-		$this->client        = $client;
-		$this->budget        = $budget;
-		$this->criterion     = $criterion;
-		$this->google_helper = $google_helper;
+	public function __construct( GoogleAdsClient $client, AdsCampaignBudget $budget, AdsCampaignCriterion $criterion, GoogleHelper $google_helper, AdsCampaignLabel $campaign_label ) {
+		$this->client         = $client;
+		$this->budget         = $budget;
+		$this->criterion      = $criterion;
+		$this->google_helper  = $google_helper;
+		$this->campaign_label = $campaign_label;
 	}
 
 	/**
 	 * Returns a list of campaigns with targeted locations retrieved from campaign criterion.
 	 *
-	 * @param bool $exclude_removed Exclude removed campaigns (default true).
-	 * @param bool $fetch_criterion Combine the campaign data with criterion data (default true).
+	 * @param bool  $exclude_removed Exclude removed campaigns (default true).
+	 * @param bool  $fetch_criterion Combine the campaign data with criterion data (default true).
+	 * @param array $args Arguments for fetching campaigns, for example: per_page for limiting the number of results.
 	 *
 	 * @return array
 	 * @throws ExceptionWithResponseData When an ApiException is caught.
 	 */
-	public function get_campaigns( bool $exclude_removed = true, bool $fetch_criterion = true ): array {
+	public function get_campaigns( bool $exclude_removed = true, bool $fetch_criterion = true, array $args = [] ): array {
 		try {
 			$query = ( new AdsCampaignQuery() )->set_client( $this->client, $this->options->get_ads_id() );
 
@@ -110,12 +121,29 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 				$query->where( 'campaign.status', 'REMOVED', '!=' );
 			}
 
+			$count               = 0;
 			$campaign_results    = $query->get_results();
 			$converted_campaigns = [];
 
 			foreach ( $campaign_results->iterateAllElements() as $row ) {
+				++$count;
 				$campaign                               = $this->convert_campaign( $row );
 				$converted_campaigns[ $campaign['id'] ] = $campaign;
+
+				// Break early if we request a limited result.
+				if ( ! empty( $args['per_page'] ) && $count >= $args['per_page'] ) {
+					break;
+				}
+			}
+
+			if ( $exclude_removed ) {
+				// Cache campaign count.
+				$campaign_count = $campaign_results->getPage()->getResponseObject()->getTotalResultsCount();
+				$this->container->get( TransientsInterface::class )->set(
+					TransientsInterface::ADS_CAMPAIGN_COUNT,
+					$campaign_count,
+					HOUR_IN_SECONDS * 12
+				);
 			}
 
 			if ( $fetch_criterion ) {
@@ -126,7 +154,7 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 		} catch ( ApiException $e ) {
 			do_action( 'woocommerce_gla_ads_client_exception', $e, __METHOD__ );
 
-			$errors = $this->get_api_exception_errors( $e );
+			$errors = $this->get_exception_errors( $e );
 			throw new ExceptionWithResponseData(
 				/* translators: %s Error message */
 				sprintf( __( 'Error retrieving campaigns: %s', 'google-listings-and-ads' ), reset( $errors ) ),
@@ -169,7 +197,7 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 		} catch ( ApiException $e ) {
 			do_action( 'woocommerce_gla_ads_client_exception', $e, __METHOD__ );
 
-			$errors = $this->get_api_exception_errors( $e );
+			$errors = $this->get_exception_errors( $e );
 			throw new ExceptionWithResponseData(
 				/* translators: %s Error message */
 				sprintf( __( 'Error retrieving campaign: %s', 'google-listings-and-ads' ), reset( $errors ) ),
@@ -220,6 +248,13 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 
 			$campaign_id = $this->mutate( $operations );
 
+			if ( isset( $params['label'] ) ) {
+				$this->campaign_label->assign_label_to_campaign_by_label_name( $campaign_id, $params['label'] );
+			}
+
+			// Clear cached campaign count.
+			$this->container->get( TransientsInterface::class )->delete( TransientsInterface::ADS_CAMPAIGN_COUNT );
+
 			return [
 				'id'      => $campaign_id,
 				'status'  => CampaignStatus::ENABLED,
@@ -229,7 +264,7 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 		} catch ( ApiException $e ) {
 			do_action( 'woocommerce_gla_ads_client_exception', $e, __METHOD__ );
 
-			$errors = $this->get_api_exception_errors( $e );
+			$errors = $this->get_exception_errors( $e );
 			/* translators: %s Error message */
 			$message = sprintf( __( 'Error creating campaign: %s', 'google-listings-and-ads' ), reset( $errors ) );
 
@@ -284,7 +319,7 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 		} catch ( ApiException $e ) {
 			do_action( 'woocommerce_gla_ads_client_exception', $e, __METHOD__ );
 
-			$errors = $this->get_api_exception_errors( $e );
+			$errors = $this->get_exception_errors( $e );
 			throw new ExceptionWithResponseData(
 				/* translators: %s Error message */
 				sprintf( __( 'Error editing campaign: %s', 'google-listings-and-ads' ), reset( $errors ) ),
@@ -314,11 +349,14 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 				$this->delete_operation( $campaign_resource_name ),
 			];
 
+			// Clear cached campaign count.
+			$this->container->get( TransientsInterface::class )->delete( TransientsInterface::ADS_CAMPAIGN_COUNT );
+
 			return $this->mutate( $operations );
 		} catch ( ApiException $e ) {
 			do_action( 'woocommerce_gla_ads_client_exception', $e, __METHOD__ );
 
-			$errors = $this->get_api_exception_errors( $e );
+			$errors = $this->get_exception_errors( $e );
 			/* translators: %s Error message */
 			$message = sprintf( __( 'Error deleting campaign: %s', 'google-listings-and-ads' ), reset( $errors ) );
 
@@ -370,9 +408,9 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 				foreach ( $this->get_campaigns( false, false ) as $campaign ) {
 					if ( CampaignType::PERFORMANCE_MAX !== $campaign['type'] ) {
 						if ( CampaignStatus::REMOVED === $campaign['status'] ) {
-							$old_removed_campaigns++;
+							++$old_removed_campaigns;
 						} else {
-							$old_campaigns++;
+							++$old_campaigns;
 						}
 					}
 				}
@@ -424,11 +462,11 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 				'status'                    => CampaignStatus::number( 'enabled' ),
 				'campaign_budget'           => $this->budget->temporary_resource_name(),
 				'maximize_conversion_value' => new MaximizeConversionValue(),
-				'url_expansion_opt_out'     => true,
+				'url_expansion_opt_out'     => false,
 				'shopping_setting'          => new ShoppingSetting(
 					[
-						'merchant_id'   => $this->options->get_merchant_id(),
-						'sales_country' => $country,
+						'merchant_id' => $this->options->get_merchant_id(),
+						'feed_label'  => $country,
 					]
 				),
 			]
@@ -495,7 +533,7 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 		$shopping = $campaign->getShoppingSetting();
 		if ( $shopping ) {
 			$data += [
-				'country' => $shopping->getSalesCountry(),
+				'country' => $shopping->getFeedLabel(),
 			];
 		}
 
@@ -554,11 +592,10 @@ class AdsCampaign implements ContainerAwareInterface, OptionsAwareInterface {
 	 * @throws ApiException If any of the operations fail.
 	 */
 	protected function mutate( array $operations ): int {
-		$responses = $this->client->getGoogleAdsServiceClient()->mutate(
-			$this->options->get_ads_id(),
-			$operations
-		);
-
+		$request = new MutateGoogleAdsRequest();
+		$request->setCustomerId( $this->options->get_ads_id() );
+		$request->setMutateOperations( $operations );
+		$responses = $this->client->getGoogleAdsServiceClient()->mutate( $request );
 		foreach ( $responses->getMutateOperationResponses() as $response ) {
 			if ( 'campaign_result' === $response->getResponse() ) {
 				$campaign_result = $response->getCampaignResult();

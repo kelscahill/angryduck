@@ -1,0 +1,1 @@
+System.register([],(function(e,t){"use strict";return{execute:function(){!function(e){const{extensionCartUpdate:t}=e.wc.blocksCheckout;e.wp.hooks.addAction("experimental__woocommerce_blocks-checkout-set-active-payment-method","wwpp-block",(e=>{t({namespace:"wwpp-block",cartPropsToReceive:["extensions"],data:{payment_method:e.value}})}))}(window)}}}));

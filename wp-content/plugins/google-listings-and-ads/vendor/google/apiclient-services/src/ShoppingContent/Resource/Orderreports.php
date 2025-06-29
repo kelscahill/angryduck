@@ -15,10 +15,10 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\OrderreportsListDisbursementsResponse;
-use Google\Service\ShoppingContent\OrderreportsListTransactionsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrderreportsListDisbursementsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrderreportsListTransactionsResponse;
 
 /**
  * The "orderreports" collection of methods.
@@ -28,7 +28,7 @@ use Google\Service\ShoppingContent\OrderreportsListTransactionsResponse;
  *   $orderreports = $contentService->orderreports;
  *  </code>
  */
-class Orderreports extends \Google\Service\Resource
+class Orderreports extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves a report for disbursements from your Merchant Center account.
@@ -46,6 +46,7 @@ class Orderreports extends \Google\Service\Resource
    * the response, used for paging.
    * @opt_param string pageToken The token returned by the previous request.
    * @return OrderreportsListDisbursementsResponse
+   * @throws \Google\Service\Exception
    */
   public function listdisbursements($merchantId, $optParams = [])
   {
@@ -71,6 +72,7 @@ class Orderreports extends \Google\Service\Resource
    * @opt_param string transactionStartDate The first date in which transaction
    * occurred. In ISO 8601 format.
    * @return OrderreportsListTransactionsResponse
+   * @throws \Google\Service\Exception
    */
   public function listtransactions($merchantId, $disbursementId, $optParams = [])
   {

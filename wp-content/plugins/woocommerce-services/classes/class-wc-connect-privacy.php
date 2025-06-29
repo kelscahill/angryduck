@@ -33,7 +33,7 @@ class WC_Connect_Privacy {
 			return;
 		}
 
-		$title   = __( 'WooCommerce Shipping & Tax', 'woocommerce-services' );
+		$title   = __( 'WooCommerce Tax', 'woocommerce-services' );
 		$content = wpautop(
 			sprintf(
 				wp_kses(
@@ -68,7 +68,7 @@ class WC_Connect_Privacy {
 
 		?>
 			<div class="notice notice-warning" style="position: relative;">
-				<p><?php esc_html_e( 'Warning: Erasing personal data will cause the ability to reprint or refund WooCommerce Shipping & Tax shipping labels to be lost on the affected orders.', 'woocommerce-services' ); ?></p>
+				<p><?php esc_html_e( 'Warning: Erasing personal data will cause the ability to reprint or refund WooCommerce Tax shipping labels to be lost on the affected orders.', 'woocommerce-services' ); ?></p>
 			</div>
 		<?php
 	}
@@ -104,7 +104,7 @@ class WC_Connect_Privacy {
 	/**
 	 * Hooks into woocommerce_privacy_before_remove_order_personal_data to remove WCS personal data from orders
 	 *
-	 * @param object $order
+	 * @param WC_Order $order WC Order.
 	 */
 	public function label_data_eraser( $order ) {
 		$order_id = $order->get_id();
@@ -119,7 +119,7 @@ class WC_Connect_Privacy {
 		}
 
 		$this->api_client->anonymize_order( $order_id );
-
-		update_post_meta( $order_id, 'wc_connect_labels', $labels );
+		$order->update_meta_data( 'wc_connect_labels', $labels );
+		$order->save();
 	}
 }

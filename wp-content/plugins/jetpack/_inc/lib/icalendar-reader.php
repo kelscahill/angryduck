@@ -6,6 +6,8 @@
  * @package automattic/jetpack
  */
 
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
+
 /**
  * Calendar utilities class.
  *
@@ -42,6 +44,13 @@ class iCalendarReader {
 	 * @var null|DateTimeZone
 	 */
 	public $timezone = null;
+
+	/**
+	 * Last iCalendar keyword parsed.
+	 *
+	 * @var string
+	 */
+	public $last_keyword;
 
 	/**
 	 * Class constructor
@@ -145,13 +154,13 @@ class iCalendarReader {
 				$start_time = preg_replace( '/Z$/', '', $event['DTSTART'] );
 				$start_time = new DateTime( $start_time, $this->timezone );
 				$start_time->setTimeZone( $timezone );
-
-				$end_time = preg_replace( '/Z$/', '', $event['DTEND'] );
-				$end_time = new DateTime( $end_time, $this->timezone );
-				$end_time->setTimeZone( $timezone );
-
 				$event['DTSTART'] = $start_time->format( 'YmdHis\Z' );
-				$event['DTEND']   = $end_time->format( 'YmdHis\Z' );
+				if ( isset( $event['DTEND'] ) ) {
+					$end_time = preg_replace( '/Z$/', '', $event['DTEND'] );
+					$end_time = new DateTime( $end_time, $this->timezone );
+					$end_time->setTimeZone( $timezone );
+					$event['DTEND'] = $end_time->format( 'YmdHis\Z' );
+				}
 			}
 
 			$offsetted_events[] = $event;
@@ -229,9 +238,9 @@ class iCalendarReader {
 
 			// Process events with RRULE before other events.
 			$rrule = isset( $event['RRULE'] ) ? $event['RRULE'] : false;
-			$uid   = $event['UID'];
+			$uid   = isset( $event['UID'] ) ? $event['UID'] : false;
 
-			if ( $rrule && ! in_array( $uid, $set_recurring_events, true ) ) {
+			if ( $rrule && $uid && ! in_array( $uid, $set_recurring_events, true ) ) {
 
 				// Break down the RRULE into digestible chunks.
 				$rrule_array = array();
@@ -339,17 +348,23 @@ class iCalendarReader {
 							$recurring_event_date_start = date( 'Ymd\THis', strtotime( $event['DTSTART'] ) );
 						} else {
 							// Describe the date in the month.
-							if ( isset( $rrule_array['BYDAY'] ) ) {
-								$day_number      = substr( $rrule_array['BYDAY'], 0, 1 );
-								$week_day        = substr( $rrule_array['BYDAY'], 1 );
-								$day_cardinals   = array(
-									1 => 'first',
-									2 => 'second',
-									3 => 'third',
-									4 => 'fourth',
-									5 => 'fifth',
+							if ( isset( $rrule_array['BYDAY'] )
+								&& preg_match( '/^(-?\d)([A-Z]{2})/', $rrule_array['BYDAY'], $matches )
+							) {
+								$day_number = $matches[1];
+								$week_day   = $matches[2];
+
+								$day_cardinals = array(
+									-3 => 'third to last',
+									-2 => 'second to last',
+									-1 => 'last',
+									1  => 'first',
+									2  => 'second',
+									3  => 'third',
+									4  => 'fourth',
+									5  => 'fifth',
 								);
-								$weekdays        = array(
+								$weekdays      = array(
 									'SU' => 'Sunday',
 									'MO' => 'Monday',
 									'TU' => 'Tuesday',
@@ -358,7 +373,10 @@ class iCalendarReader {
 									'FR' => 'Friday',
 									'SA' => 'Saturday',
 								);
-								$event_date_desc = "{$day_cardinals[$day_number]} {$weekdays[$week_day]} of ";
+
+								$day_cardinal    = $day_cardinals[ $day_number ] ?? '';
+								$weekday         = $weekdays[ $week_day ] ?? '';
+								$event_date_desc = "$day_cardinal $weekday of ";
 							} else {
 								$event_date_desc = date( 'd ', strtotime( $event['DTSTART'] ) );
 							}
@@ -369,7 +387,7 @@ class iCalendarReader {
 								$maybe   = strtotime( $event['DTSTART'] );
 								while ( $maybe < $current ) {
 									$maybe = strtotime( '+ ' . ( $interval * $catchup ) . ' months', strtotime( $event['DTSTART'] ) );
-									$catchup++;
+									++$catchup;
 								}
 								$recurring_event_date_start = date( 'Ymd', strtotime( $event_date_desc . date( 'F Y', strtotime( '+ ' . ( $interval * ( $catchup - 1 ) ) . ' months', strtotime( $event['DTSTART'] ) ) ) ) ) . date( '\THis', strtotime( $event['DTSTART'] ) );
 							} else {
@@ -473,7 +491,7 @@ class iCalendarReader {
 										}
 									}
 									$upcoming[] = $event;
-									$count_counter++;
+									++$count_counter;
 								}
 
 								// Move forward one day.
@@ -521,7 +539,7 @@ class iCalendarReader {
 									}
 								}
 								$upcoming[] = $event;
-								$count_counter++;
+								++$count_counter;
 							}
 						}
 
@@ -541,11 +559,8 @@ class iCalendarReader {
 					$set_recurring_events[] = $uid;
 
 				}
-			} else {
-				// Process normal events.
-				if ( strtotime( isset( $event['DTEND'] ) ? $event['DTEND'] : $event['DTSTART'] ) >= $current ) {
-					$upcoming[] = $event;
-				}
+			} elseif ( strtotime( isset( $event['DTEND'] ) ? $event['DTEND'] : $event['DTSTART'] ) >= $current ) { // Process normal events.
+				$upcoming[] = $event;
 			}
 		}
 		return $upcoming;
@@ -566,10 +581,10 @@ class iCalendarReader {
 			return false;
 		}
 
-		// rewrite webcal: URI schem to HTTP.
+		// rewrite webcal: URI scheme to HTTP.
 		$url = preg_replace( '/^webcal/', 'http', $url );
 		// try to fetch.
-		$r = wp_remote_get(
+		$r = wp_safe_remote_get(
 			$url,
 			array(
 				'timeout'   => 3,
@@ -612,11 +627,11 @@ class iCalendarReader {
 				case 'END':
 					switch ( $line ) {
 						case 'BEGIN:VTODO':
-							$this->todo_count++;
+							++$this->todo_count;
 							$type = 'VTODO';
 							break;
 						case 'BEGIN:VEVENT':
-							$this->event_count++;
+							++$this->event_count;
 							$type = 'VEVENT';
 							break;
 						case 'BEGIN:VCALENDAR':
@@ -762,7 +777,7 @@ class iCalendarReader {
 			if ( 2 === count( $keyword ) ) {
 				$tparam = $keyword[1];
 
-				if ( strpos( $tparam, 'TZID' ) !== false ) {
+				if ( str_contains( $tparam, 'TZID' ) ) {
 					$tzid = $this->timezone_from_string( str_replace( 'TZID=', '', $tparam ) );
 				}
 			}
@@ -970,8 +985,7 @@ class iCalendarReader {
 
 		if ( ! $all_day && $this->timezone ) {
 			try {
-				$start_time      = new DateTime( $event['DTSTART'] );
-				$timezone_offset = $this->timezone->getOffset( $start_time );
+				$timezone_offset = $this->timezone->getOffset( new DateTime( $event['DTSTART'] ) );
 				$start          += $timezone_offset;
 
 				if ( $end ) {
@@ -1064,8 +1078,7 @@ function icalendar_get_events( $url = '', $count = 5 ) {
 	 * Find your calendar's address
 	 * https://support.google.com/calendar/bin/answer.py?hl=en&answer=37103
 	 */
-	$ical = new iCalendarReader();
-	return $ical->get_events( $url, $count );
+	return ( new iCalendarReader() )->get_events( $url, $count );
 }
 
 /**
@@ -1077,6 +1090,5 @@ function icalendar_get_events( $url = '', $count = 5 ) {
  * @return mixed bool|string false on failure, rendered HTML string on success.
  */
 function icalendar_render_events( $url = '', $args = array() ) {
-	$ical = new iCalendarReader();
-	return $ical->render( $url, $args );
+	return ( new iCalendarReader() )->render( $url, $args );
 }

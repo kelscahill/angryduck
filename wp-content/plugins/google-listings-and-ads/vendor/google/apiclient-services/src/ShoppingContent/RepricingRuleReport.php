@@ -15,19 +15,31 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
 
-class RepricingRuleReport extends \Google\Collection
+class RepricingRuleReport extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Collection
 {
   protected $collection_key = 'inapplicableProducts';
+  /**
+   * @var RepricingRuleReportBuyboxWinningRuleStats
+   */
+  public $buyboxWinningRuleStats;
   protected $buyboxWinningRuleStatsType = RepricingRuleReportBuyboxWinningRuleStats::class;
   protected $buyboxWinningRuleStatsDataType = '';
+  /**
+   * @var Date
+   */
+  public $date;
   protected $dateType = Date::class;
   protected $dateDataType = '';
   /**
    * @var string[]
    */
   public $impactedProducts;
+  /**
+   * @var InapplicabilityDetails[]
+   */
+  public $inapplicabilityDetails;
   protected $inapplicabilityDetailsType = InapplicabilityDetails::class;
   protected $inapplicabilityDetailsDataType = 'array';
   /**
@@ -42,6 +54,10 @@ class RepricingRuleReport extends \Google\Collection
    * @var string
    */
   public $ruleId;
+  /**
+   * @var PriceAmount
+   */
+  public $totalGmv;
   protected $totalGmvType = PriceAmount::class;
   protected $totalGmvDataType = '';
   /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Google\AuthHandler;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\AuthHandler;
 
 use Exception;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\ClientInterface;
@@ -25,7 +25,7 @@ class AuthHandlerFactory
     /**
      * Builds out a default http handler for the installed version of guzzle.
      *
-     * @return Guzzle5AuthHandler|Guzzle6AuthHandler|Guzzle7AuthHandler
+     * @return Guzzle6AuthHandler|Guzzle7AuthHandler
      * @throws Exception
      */
     public static function build($cache = null, array $cacheConfig = [])
@@ -34,13 +34,10 @@ class AuthHandlerFactory
         if (defined('\Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\ClientInterface::MAJOR_VERSION')) {
             $guzzleVersion = ClientInterface::MAJOR_VERSION;
         } elseif (defined('\Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\ClientInterface::VERSION')) {
-            // @phpstan-ignore-next-line
             $guzzleVersion = (int) substr(ClientInterface::VERSION, 0, 1);
         }
 
         switch ($guzzleVersion) {
-            case 5:
-                return new Guzzle5AuthHandler($cache, $cacheConfig);
             case 6:
                 return new Guzzle6AuthHandler($cache, $cacheConfig);
             case 7:

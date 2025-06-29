@@ -30,7 +30,7 @@ class ActionSchedulerJobMonitor implements Service {
 	protected $monitored_hooks = [];
 
 	/**
-	 * ActionSchedulerInterface constructor.
+	 * ActionSchedulerJobMonitor constructor.
 	 *
 	 * @param ActionSchedulerInterface $action_scheduler
 	 */
@@ -145,7 +145,7 @@ class ActionSchedulerJobMonitor implements Service {
 	 */
 	protected function is_timeout_error( array $error ): bool {
 		return isset( $error['type'] ) && $error['type'] === E_ERROR &&
-			   isset( $error['message'] ) && strpos( $error ['message'], 'Maximum execution time' ) !== false;
+			isset( $error['message'] ) && strpos( $error ['message'], 'Maximum execution time' ) !== false;
 	}
 
 	/**
@@ -206,7 +206,7 @@ class ActionSchedulerJobMonitor implements Service {
 	 * @since 1.7.0
 	 */
 	protected static function get_job_hash( string $hook, ?array $args = null ): string {
-		return hash( 'crc32b', $hook . json_encode( $args ) );
+		return hash( 'crc32b', $hook . wp_json_encode( $args ) );
 	}
 
 	/**
@@ -222,5 +222,4 @@ class ActionSchedulerJobMonitor implements Service {
 	protected function is_monitored_for_timeout( string $hook, ?array $args = null ): bool {
 		return isset( $this->monitored_hooks[ self::get_job_hash( $hook, $args ) ] );
 	}
-
 }

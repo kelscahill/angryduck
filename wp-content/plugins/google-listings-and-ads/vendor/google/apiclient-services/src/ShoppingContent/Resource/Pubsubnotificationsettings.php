@@ -15,9 +15,9 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\PubsubNotificationSettings as PubsubNotificationSettingsModel;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PubsubNotificationSettings as PubsubNotificationSettingsModel;
 
 /**
  * The "pubsubnotificationsettings" collection of methods.
@@ -27,7 +27,7 @@ use Google\Service\ShoppingContent\PubsubNotificationSettings as PubsubNotificat
  *   $pubsubnotificationsettings = $contentService->pubsubnotificationsettings;
  *  </code>
  */
-class Pubsubnotificationsettings extends \Google\Service\Resource
+class Pubsubnotificationsettings extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves a Merchant Center account's pubsub notification settings.
@@ -37,6 +37,7 @@ class Pubsubnotificationsettings extends \Google\Service\Resource
    * notification settings.
    * @param array $optParams Optional parameters.
    * @return PubsubNotificationSettingsModel
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $optParams = [])
   {
@@ -53,6 +54,7 @@ class Pubsubnotificationsettings extends \Google\Service\Resource
    * @param PubsubNotificationSettingsModel $postBody
    * @param array $optParams Optional parameters.
    * @return PubsubNotificationSettingsModel
+   * @throws \Google\Service\Exception
    */
   public function update($merchantId, PubsubNotificationSettingsModel $postBody, $optParams = [])
   {

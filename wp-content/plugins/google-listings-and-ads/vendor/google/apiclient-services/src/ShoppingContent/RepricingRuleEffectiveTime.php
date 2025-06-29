@@ -15,11 +15,15 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
 
-class RepricingRuleEffectiveTime extends \Google\Collection
+class RepricingRuleEffectiveTime extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Collection
 {
   protected $collection_key = 'fixedTimePeriods';
+  /**
+   * @var RepricingRuleEffectiveTimeFixedTimePeriod[]
+   */
+  public $fixedTimePeriods;
   protected $fixedTimePeriodsType = RepricingRuleEffectiveTimeFixedTimePeriod::class;
   protected $fixedTimePeriodsDataType = 'array';
 

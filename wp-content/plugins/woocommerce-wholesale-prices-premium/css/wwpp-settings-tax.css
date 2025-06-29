@@ -1,0 +1,211 @@
+/** Field Controls **/
+#wholesale-role-tax-options-field-controls .field-container {
+    margin-bottom: 20px;
+}
+#wholesale-role-tax-options-field-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+#wholesale-role-tax-options-field-controls .field-container select {
+    display: block;
+    min-width: 300px;
+}
+#wholesale-role-tax-options-field-controls .field-container select#wwpp-tax-exempt-wholesale-role {
+    min-width: 0;
+}
+#wholesale-role-tax-options-field-controls .field-container input[ type="number" ] {
+    display: block;
+    min-width: 170px;
+}
+#wholesale-role-tax-options-field-controls .field-container.wwpp-wholesale-roles-field-container .chosen-container {
+    width: 400px !important;
+}
+#wholesale-role-tax-options-field-controls .field-container.wwpp-wholesale-roles-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+#wholesale-role-tax-options-field-controls .field-container.wwpp-tax-exempt-wholesale-role-field-container select {
+    padding: 0;
+}
+#wholesale-role-tax-options-field-controls .field-container p.desc {
+    font-weight: normal;
+}
+
+/** Button Controls **/
+.wholesale-role-tax-options-button-controls {
+    display: block;
+    margin-bottom: 20px;
+}
+.wholesale-role-tax-options-button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+.wholesale-role-tax-options-button-controls .button {
+    float: left;
+}
+.wholesale-role-tax-options-button-controls #cancel-edit-mapping {
+    margin-right: 10px;
+}
+.wholesale-role-tax-options-button-controls.add-mode #add-mapping {
+    display: inline-block;
+}
+.wholesale-role-tax-options-button-controls.add-mode #save-mapping {
+    display: none;
+}
+.wholesale-role-tax-options-button-controls.add-mode #cancel-edit-mapping {
+    display: none;
+}
+.wholesale-role-tax-options-button-controls.edit-mode #add-mapping {
+    display: none;
+}
+.wholesale-role-tax-options-button-controls.edit-mode #save-mapping {
+    display: inline-block;
+}
+.wholesale-role-tax-options-button-controls.edit-mode #cancel-edit-mapping {
+    display: inline-block;
+}
+.wholesale-role-tax-options-button-controls .spinner {
+    top: 0;
+}
+.wholesale-role-tax-options-button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+}
+
+/** Mapping Table **/
+#wholesale-role-tax-options-mapping thead tr th,
+#wholesale-role-tax-options-mapping tfoot tr th {
+    padding: 15px 10px;
+}
+#wholesale-role-tax-options-mapping tbody tr.edited {
+    background-color: #fff2d8 !important;
+}
+#wholesale-role-tax-options-mapping tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+#wholesale-role-tax-options-mapping tbody tr td.controls .edit {
+    color: green;
+    margin-right: 15px;
+}
+#wholesale-role-tax-options-mapping tbody tr td.controls .delete {
+    color: red;
+}
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Wholesale Role / Tax Class Mapping
+|--------------------------------------------------------------------------
+*/
+
+/** Field Controls **/
+#wholesale-role-tax-class-options-field-controls .field-container {
+    margin-bottom: 20px;
+}
+#wholesale-role-tax-class-options-field-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+#wholesale-role-tax-class-options-field-controls .field-container.wwpp-wholesale-roles-field-container .chosen-container,
+#wholesale-role-tax-class-options-field-controls .field-container.wwpp-tax-class-field-container .chosen-container {
+    width: 400px !important;
+}
+#wholesale-role-tax-class-options-field-controls .field-container.wwpp-wholesale-roles-field-container .chosen-container .chosen-search-input,
+#wholesale-role-tax-class-options-field-controls .field-container.wwpp-tax-class-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+#wholesale-role-tax-class-options-field-controls .field-container select {
+    display: block;
+    min-width: 300px;
+    padding: 0;
+}
+#wholesale-role-tax-class-options-field-controls .field-container p.desc {
+    font-weight: normal;
+}
+
+/** Button Controls **/
+#wholesale-role-tax-class-options-button-controls {
+    display: block;
+    margin-bottom: 20px;
+}
+#wholesale-role-tax-class-options-button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+#wholesale-role-tax-class-options-button-controls .button {
+    float: left;
+}
+#wholesale-role-tax-class-options-button-controls #cancel-edit-mapping {
+    margin-right: 10px;
+}
+#wholesale-role-tax-class-options-button-controls.add-mode #add-mapping {
+    display: inline-block;
+}
+#wholesale-role-tax-class-options-button-controls.add-mode #save-mapping {
+    display: none;
+}
+#wholesale-role-tax-class-options-button-controls.add-mode #cancel-edit-mapping {
+    display: none;
+}
+#wholesale-role-tax-class-options-button-controls.edit-mode #add-mapping {
+    display: none;
+}
+#wholesale-role-tax-class-options-button-controls.edit-mode #save-mapping {
+    display: inline-block;
+}
+#wholesale-role-tax-class-options-button-controls.edit-mode #cancel-edit-mapping {
+    display: inline-block;
+}
+#wholesale-role-tax-class-options-button-controls .spinner {
+    top: 0;
+    float: none;
+    display: inline-block;
+    visibility: hidden;
+}
+#wholesale-role-tax-class-options-button-controls.processing .spinner {
+    visibility: visible;
+}
+
+/** Mapping Controls **/
+#wholesale-role-tax-class-options-mapping thead tr th,
+#wholesale-role-tax-class-options-mapping tfoot tr th {
+    padding: 15px 10px;
+}
+#wholesale-role-tax-class-options-mapping tbody tr ul {
+    margin: 0;
+    padding: 0;
+}
+#wholesale-role-tax-class-options-mapping tbody tr td.controls {
+    text-align: right;
+}
+#wholesale-role-tax-class-options-mapping tbody tr td.controls .edit {
+    cursor: pointer;
+    color: green;
+    display: inline-block;
+}
+#wholesale-role-tax-class-options-mapping tbody tr td.controls .delete {
+    cursor: pointer;
+    color: red;
+    display: inline-block;
+}
+#wholesale-role-tax-class-options-mapping tbody tr.processing {
+    background-color: rgb(255, 232, 199) !important;
+}
+#wholesale-role-tax-class-options-mapping tbody tr > .tax-classes ul li {
+    display: inline-block;
+    padding: 2px 4px;
+    background-color: #ebebeb;
+    border-radius: 4px;
+    border: 1px solid #999999;
+    margin-right: 4px;
+}
+#wholesale-role-tax-class-options-mapping.processing tbody tr td.controls .dashicons {
+    visibility: hidden;
+}

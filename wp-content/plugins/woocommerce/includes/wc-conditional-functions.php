@@ -9,6 +9,7 @@
  */
 
 use Automattic\Jetpack\Constants;
+use Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -93,23 +94,31 @@ if ( ! function_exists( 'is_cart' ) ) {
 	 * @return bool
 	 */
 	function is_cart() {
-		$page_id = wc_get_page_id( 'cart' );
-
-		return ( $page_id && is_page( $page_id ) ) || Constants::is_defined( 'WOOCOMMERCE_CART' ) || wc_post_content_has_shortcode( 'woocommerce_cart' );
+		/**
+		 * Filter to allow for custom logic to determine if the cart page is being viewed.
+		 *
+		 * @since 2.4.0
+		 * @param bool $is_cart Whether the cart page is being viewed.
+		 */
+		return apply_filters( 'woocommerce_is_cart', false ) || Constants::is_defined( 'WOOCOMMERCE_CART' ) || CartCheckoutUtils::is_cart_page();
 	}
 }
 
 if ( ! function_exists( 'is_checkout' ) ) {
 
 	/**
-	 * Is_checkout - Returns true when viewing the checkout page.
+	 * Is_checkout - Returns true when viewing the checkout page, or when processing AJAX requests for updating or processing the checkout.
 	 *
 	 * @return bool
 	 */
 	function is_checkout() {
-		$page_id = wc_get_page_id( 'checkout' );
-
-		return ( $page_id && is_page( $page_id ) ) || wc_post_content_has_shortcode( 'woocommerce_checkout' ) || apply_filters( 'woocommerce_is_checkout', false ) || Constants::is_defined( 'WOOCOMMERCE_CHECKOUT' );
+		/**
+		 * Filter to allow for custom logic to determine if the checkout page is being viewed.
+		 *
+		 * @since 2.4.0
+		 * @param bool $is_checkout Whether the checkout page is being viewed.
+		 */
+		return apply_filters( 'woocommerce_is_checkout', false ) || Constants::is_defined( 'WOOCOMMERCE_CHECKOUT' ) || CartCheckoutUtils::is_checkout_page();
 	}
 }
 
@@ -527,17 +536,50 @@ function wc_current_theme_supports_woocommerce_or_fse() {
 /**
  * Given an element name, returns a class name.
  *
- * If the WP-related function is not defined, return empty string.
+ * If the WP-related function is not defined or current theme is not a FSE theme, return empty string.
  *
  * @param string $element The name of the element.
  *
- * @since 7.1.0
+ * @since 7.0.1
  * @return string
  */
 function wc_wp_theme_get_element_class_name( $element ) {
-	if ( function_exists( 'wp_theme_get_element_class_name' ) ) {
+	if ( wc_current_theme_is_fse_theme() && function_exists( 'wp_theme_get_element_class_name' ) ) {
 		return wp_theme_get_element_class_name( $element );
 	}
 
 	return '';
+}
+
+/**
+ * Given an element name, returns true or false depending on whether the
+ * current theme has styles for that element defined in theme.json.
+ *
+ * If the theme is not a block theme or the WP-related function is not defined,
+ * return false.
+ *
+ * @param string $element The name of the element.
+ *
+ * @since 7.4.0
+ * @return bool
+ */
+function wc_block_theme_has_styles_for_element( $element ) {
+	if (
+		! wc_current_theme_is_fse_theme() ||
+		wc_wp_theme_get_element_class_name( $element ) === ''
+	) {
+		return false;
+	}
+
+	if ( function_exists( 'wp_get_global_styles' ) ) {
+		$global_styles = wp_get_global_styles();
+		if (
+			array_key_exists( 'elements', $global_styles ) &&
+			array_key_exists( $element, $global_styles['elements'] )
+		) {
+			return is_array( $global_styles['elements'][ $element ] );
+		}
+	}
+
+	return false;
 }

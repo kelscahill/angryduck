@@ -1,0 +1,1 @@
+import{r as s,p as c,a0 as a,z as i,i as u}from"./LoadingOutlined.BFkAxzyV.js";function f(r){const t=Symbol("contextKey");return{useProvide:(n,o)=>{const e=s({});return c(t,e),a(()=>{i(e,n,o||{})}),e},useInject:()=>u(t,r)||{}}}export{f as c};

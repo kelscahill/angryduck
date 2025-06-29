@@ -4,6 +4,7 @@ declare( strict_types=1 );
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Admin\Product\Attributes\Input\SizeInput;
+use Automattic\WooCommerce\GoogleListingsAndAds\Product\AttributeMapping\Traits\IsFieldTrait;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -12,7 +13,9 @@ defined( 'ABSPATH' ) || exit;
  *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes
  */
-class Size extends AbstractAttribute {
+class Size extends AbstractAttribute implements WithMappingInterface {
+
+	use IsFieldTrait;
 
 	/**
 	 * Returns the attribute ID.
@@ -49,4 +52,12 @@ class Size extends AbstractAttribute {
 		return SizeInput::class;
 	}
 
+	/**
+	 * Returns the attribute name
+	 *
+	 * @return string
+	 */
+	public static function get_name(): string {
+		return __( 'Size', 'google-listings-and-ads' );
+	}
 }

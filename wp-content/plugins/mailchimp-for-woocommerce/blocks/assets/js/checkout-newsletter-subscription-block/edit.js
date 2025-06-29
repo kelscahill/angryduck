@@ -7,8 +7,9 @@ import {
 	RichText,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody } from '@wordpress/components';
-import { CheckboxControl } from '@woocommerce/blocks-checkout';
+import { PanelBody, RadioControl } from '@wordpress/components';
+import { CheckboxControl  } from '@woocommerce/blocks-checkout';
+
 
 /**
  * Internal dependencies
@@ -16,22 +17,28 @@ import { CheckboxControl } from '@woocommerce/blocks-checkout';
 import './style.scss';
 
 export const Edit = ( { attributes, setAttributes } ) => {
-	const { text, gdprHeadline, gdpr } = attributes;
+	const { text, gdprHeadline, gdpr, gdprStatus, checkboxSettings } = attributes;
 	const blockProps = useBlockProps();
-
+	const checked = gdprStatus === 'check';
 
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
 				<PanelBody title={ __( 'Block options', 'mailchimp-for-woocommerce' ) }>
-					Options for the block go here.
+					<p>{ __('Choose how you want the opt-in to your newsletter checkbox to render at checkout', 'mailchimp-for-woocommerce') }</p>
+					<RadioControl
+						selected={ gdprStatus }
+						options={ checkboxSettings }
+						onChange={ ( value ) => setAttributes( {gdprStatus: value } ) }
+					/>
 				</PanelBody>
 			</InspectorControls>
-			<div style={{display: 'flex'}}>
+			<div style={{display: 'flex', lineHeight: '1.5em', alignItems: 'center'}}>
 				<CheckboxControl
 					id="newsletter-text"
-					checked={ false }
+					checked={ checked }
 					disabled={ true }
+					style={{marginTop: 0}}
 				/>
 				<RichText
 					value={ text }
@@ -40,7 +47,7 @@ export const Edit = ( { attributes, setAttributes } ) => {
 				/>
 			</div>
 			{
-				gdpr && gdpr.length &&
+				gdpr && gdpr.length && gdprStatus != 'hide' &&
 				(
 					<>
 						<div style={{display: 'flex', marginTop: '2rem'}}>
@@ -52,18 +59,16 @@ export const Edit = ( { attributes, setAttributes } ) => {
 						</div>
 						{gdpr.map((gdprItem, index) => {
 							return (
-								<div style={{display: 'flex', marginTop: '1rem'}}>
-									<CheckboxControl
-										id={'gdpr_'+gdprItem.marketing_permission_id}
-										checked={ gdpr[index].enabled }
-										onChange={ () => {
-											gdpr[index].enabled = !gdpr[index].enabled;
-											setAttributes({gdpr: gdpr});
-										}}
-									>
-										<span dangerouslySetInnerHTML={ {__html: gdprItem.text} }/>
-									</CheckboxControl>
-								</div>
+								<CheckboxControl
+									id={'gdpr_'+gdprItem.marketing_permission_id}
+									checked={ gdpr[index].enabled }
+									onChange={ () => {
+										gdpr[index].enabled = !gdpr[index].enabled;
+										setAttributes({gdpr: gdpr});
+									}}
+								>
+									<span dangerouslySetInnerHTML={ {__html: gdprItem.text} }/>
+								</CheckboxControl>
 							)
 						})}
 					</>
@@ -71,7 +76,7 @@ export const Edit = ( { attributes, setAttributes } ) => {
 			}
 		</div>
 	);
-};
+}
 
 // not sure
 export const Save = () => {

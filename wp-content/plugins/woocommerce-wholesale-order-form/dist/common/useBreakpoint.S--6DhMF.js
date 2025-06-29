@@ -1,0 +1,1 @@
+import{s as r,B as u,H as t}from"./LoadingOutlined.BFkAxzyV.js";import{u as a}from"./responsiveObserve.BxgVt-aQ.js";function v(){const e=r({});let s=null;const n=a();return u(()=>{s=n.value.subscribe(o=>{e.value=o})}),t(()=>{n.value.unsubscribe(s)}),e}export{v as u};

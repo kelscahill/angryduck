@@ -6,10 +6,10 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidValue;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
 use Automattic\WooCommerce\GoogleListingsAndAds\Product\WCProductAdapter;
 use Automattic\WooCommerce\GoogleListingsAndAds\Validator\Validatable;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\PriceAmount as GooglePriceAmount;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Promotion as GooglePromotion;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\TimePeriod as GoogleTimePeriod;
 use DateInterval;
-use Google\Service\ShoppingContent\PriceAmount as GooglePriceAmount;
-use Google\Service\ShoppingContent\Promotion as GooglePromotion;
-use Google\Service\ShoppingContent\TimePeriod as GoogleTimePeriod;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use WC_DateTime;
@@ -50,6 +50,8 @@ class WCCouponAdapter extends GooglePromotion implements Validatable {
 
 	protected const DATE_TIME_FORMAT = 'Y-m-d h:i:sa';
 
+	public const COUNTRIES_WITH_FREE_SHIPPING_DESTINATION = [ 'BR', 'IT', 'ES', 'JP', 'NL', 'KR', 'US' ];
+
 	/**
 	 *
 	 * @var int wc_coupon_id
@@ -59,41 +61,39 @@ class WCCouponAdapter extends GooglePromotion implements Validatable {
 	/**
 	 * Initialize this object's properties from an array.
 	 *
-	 * @param array $array
-	 *            Used to seed this object's properties.
+	 * @param array $properties Used to seed this object's properties.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidValue When a WooCommerce coupon is not provided or it is invalid.
 	 */
-	public function mapTypes( $array ) {
-		if ( empty( $array['wc_coupon'] ) ||
-			! $array['wc_coupon'] instanceof WC_Coupon ) {
+	public function mapTypes( $properties ) {
+		if ( empty( $properties['wc_coupon'] ) ||
+			! $properties['wc_coupon'] instanceof WC_Coupon ) {
 				throw InvalidValue::not_instance_of( WC_Coupon::class, 'wc_coupon' );
 		}
 
-		$wc_coupon          = $array['wc_coupon'];
+		$wc_coupon          = $properties['wc_coupon'];
 		$this->wc_coupon_id = $wc_coupon->get_id();
-			$this->map_woocommerce_coupon( $wc_coupon );
+		$this->map_woocommerce_coupon( $wc_coupon, $this->get_coupon_destinations( $properties ) );
 
 		// Google doesn't expect extra fields, so it's best to remove them
-		unset( $array['wc_coupon'] );
+		unset( $properties['wc_coupon'] );
 
-		parent::mapTypes( $array );
+		parent::mapTypes( $properties );
 	}
 
 	/**
 	 * Map the WooCommerce coupon attributes to the current class.
 	 *
 	 * @param WC_Coupon $wc_coupon
+	 * @param string[]  $destinations The destination ID's for the coupon
 	 *
 	 * @return void
 	 */
-	protected function map_woocommerce_coupon( WC_Coupon $wc_coupon ) {
+	protected function map_woocommerce_coupon( WC_Coupon $wc_coupon, array $destinations ) {
 		$this->setRedemptionChannel( self::CHANNEL_ONLINE );
-		$this->setPromotionDestinationIds(
-			[ self::PROMOTION_DESTINATION_ADS, self::PROMOTION_DESTINATION_FREE_LISTING ]
-		);
+		$this->setPromotionDestinationIds( $destinations );
 
 		$content_language = empty( get_locale() ) ? 'en' : strtolower(
 			substr( get_locale(), 0, 2 )
@@ -244,9 +244,25 @@ class WCCouponAdapter extends GooglePromotion implements Validatable {
 			$this->setItemId( $google_product_ids );
 		}
 
-		$wc_excluded_product_ids = $wc_coupon->get_excluded_product_ids();
-		if ( ! empty( $wc_excluded_product_ids ) ) {
-			$google_product_ids      = array_map( $get_offer_id, $wc_excluded_product_ids );
+		// Currently the brand inclusion restriction will override the product inclustion restriction.
+		// It's align with the current coupon discounts behaviour in WooCommerce.
+		$wc_product_ids_in_brand = $this->get_product_ids_in_brand( $wc_coupon );
+		if ( ! empty( $wc_product_ids_in_brand ) ) {
+			$google_product_ids      = array_map( $get_offer_id, $wc_product_ids_in_brand );
+			$has_product_restriction = true;
+			$this->setItemId( $google_product_ids );
+		}
+
+		// Get excluded product IDs and excluded product IDs in brand.
+		$wc_excluded_product_ids          = $wc_coupon->get_excluded_product_ids();
+		$wc_excluded_product_ids_in_brand = $this->get_product_ids_in_brand( $wc_coupon, true );
+		if ( ! empty( $wc_excluded_product_ids ) || ! empty( $wc_excluded_product_ids_in_brand ) ) {
+			$google_product_ids = array_merge(
+				array_map( $get_offer_id, $wc_excluded_product_ids ),
+				array_map( $get_offer_id, $wc_excluded_product_ids_in_brand )
+			);
+			$google_product_ids = array_values( array_unique( $google_product_ids ) );
+
 			$has_product_restriction = true;
 			$this->setItemIdExclusion( $google_product_ids );
 		}
@@ -374,5 +390,51 @@ class WCCouponAdapter extends GooglePromotion implements Validatable {
 	public function setTargetCountry( $targetCountry ) {
 		// set the new target country
 		parent::setTargetCountry( $targetCountry );
+	}
+
+	/**
+	 * Get the destinations allowed per specific country.
+	 *
+	 * @param array $coupon_data The coupon data to get the allowed destinations.
+	 * @return string[] The destinations country based.
+	 */
+	private function get_coupon_destinations( array $coupon_data ): array {
+		$destinations = [ self::PROMOTION_DESTINATION_ADS ];
+		if ( isset( $coupon_data['targetCountry'] ) && in_array( $coupon_data['targetCountry'], self::COUNTRIES_WITH_FREE_SHIPPING_DESTINATION, true ) ) {
+			$destinations[] = self::PROMOTION_DESTINATION_FREE_LISTING;
+		}
+
+		return apply_filters( 'woocommerce_gla_coupon_destinations', $destinations, $coupon_data );
+	}
+
+	/**
+	 * Get the product IDs that belongs to a brand.
+	 *
+	 * @param WC_Coupon $wc_coupon The WC coupon object.
+	 * @param bool      $is_exclude If the product IDs are for exclusion.
+	 * @return string[] The product IDs that belongs to a brand.
+	 */
+	private function get_product_ids_in_brand( WC_Coupon $wc_coupon, bool $is_exclude = false ) {
+		$coupon_id = $wc_coupon->get_id();
+		$meta_key  = $is_exclude ? 'exclude_product_brands' : 'product_brands';
+
+		// Get the brand term IDs if brand restriction is set.
+		$brand_term_ids = get_post_meta( $coupon_id, $meta_key );
+
+		if ( ! is_array( $brand_term_ids ) ) {
+			return [];
+		}
+
+		$product_ids = [];
+		foreach ( $brand_term_ids as $brand_term_id ) {
+			// Get the product IDs that belongs to the brand.
+			$object_ids = get_objects_in_term( $brand_term_id, 'product_brand' );
+			if ( is_wp_error( $object_ids ) ) {
+				continue;
+			}
+			$product_ids = array_merge( $product_ids, $object_ids );
+		}
+
+		return $product_ids;
 	}
 }
