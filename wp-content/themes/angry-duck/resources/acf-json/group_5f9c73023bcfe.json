@@ -6,6 +6,7 @@
             "key": "field_5f9c73224fcf0",
             "label": "Facebook Url",
             "name": "facebook_url",
+            "aria-label": "",
             "type": "url",
             "instructions": "",
             "required": 0,
@@ -22,6 +23,7 @@
             "key": "field_5f9c73384fcf1",
             "label": "Instagram Url",
             "name": "instagram_url",
+            "aria-label": "",
             "type": "url",
             "instructions": "",
             "required": 0,
@@ -32,6 +34,7 @@
                 "id": ""
             },
             "default_value": "",
+            "allow_in_bindings": 1,
             "placeholder": "https:\/\/"
         }
     ],
@@ -52,5 +55,6 @@
     "hide_on_screen": "",
     "active": true,
     "description": "",
-    "modified": 1604105744
+    "show_in_rest": 0,
+    "modified": 1747435890
 }
