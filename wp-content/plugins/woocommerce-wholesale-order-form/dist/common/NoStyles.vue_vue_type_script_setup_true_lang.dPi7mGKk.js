@@ -1,0 +1,1 @@
+import{d as o,o as a,f as s,M as t,L as n,u as e}from"./LoadingOutlined.BFkAxzyV.js";import{c as r}from"./index.Ith4SzXf.js";const i=o({__name:"NoStyles",setup(l){return(c,m)=>(a(),s("p",null,[t("em",null,n(e(r)("noStylesAvailable",e(wp.i18n.__)("No available style settings.","woocommerce-wholesale-order-form"))),1)]))}});export{i as _};

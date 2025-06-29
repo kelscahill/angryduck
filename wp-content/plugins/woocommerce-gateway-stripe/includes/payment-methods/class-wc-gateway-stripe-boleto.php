@@ -1,4 +1,7 @@
 <?php
+
+use Automattic\WooCommerce\Enums\OrderStatus;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -29,14 +32,14 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	/**
 	 * ID used by stripe
 	 */
-	protected $stripe_id = 'boleto';
+	protected $stripe_id = WC_Stripe_Payment_Methods::BOLETO;
 
 	/**
 	 * List of accepted currencies
 	 *
 	 * @var array
 	 */
-	protected $supported_currencies = [ 'BRL' ];
+	protected $supported_currencies = [ WC_Stripe_Currency_Code::BRAZILIAN_REAL ];
 
 	/**
 	 * List of accepted countries
@@ -63,7 +66,7 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	 */
 	protected function update_request_body_on_create_or_update_payment_intent( $body ) {
 		$body['payment_method_options'] = [
-			'boleto' => [
+			WC_Stripe_Payment_Methods::BOLETO => [
 				'expires_after_days' => $this->get_option( 'expiration' ),
 			],
 		];
@@ -76,7 +79,7 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	 * @param array $settings Settings array.
 	 * @return array
 	 */
-	public function get_unique_settings( $settings ) {
+	public function get_unique_settings( $settings = [] ) {
 		$settings[ $this->id . '_expiration' ] = $this->get_option( 'expiration' );
 		return $settings;
 	}
@@ -88,7 +91,7 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	 * @return void
 	 */
 	public function update_unique_settings( WP_REST_Request $request ) {
-		$field_name  = $this->id . '_expiration';
+		$field_name = $this->id . '_expiration';
 		$expiration = $request->get_param( $field_name );
 
 		if ( null === $expiration ) {
@@ -110,8 +113,8 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	 * @return mixed
 	 */
 	public function add_allowed_payment_processing_statuses( $allowed_statuses, $order ) {
-		if ( $this->stripe_id === $order->get_meta( '_stripe_upe_payment_type' ) && ! in_array( 'on-hold', $allowed_statuses ) ) {
-			$allowed_statuses[] = 'on-hold';
+		if ( $this->stripe_id === $order->get_meta( '_stripe_upe_payment_type' ) && ! in_array( OrderStatus::ON_HOLD, $allowed_statuses ) ) {
+			$allowed_statuses[] = OrderStatus::ON_HOLD;
 		}
 
 		return $allowed_statuses;
@@ -123,7 +126,7 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	 * @since 5.8.0
 	 */
 	public function payment_scripts() {
-		if ( ! is_cart() && ! is_checkout() && ! isset( $_GET['pay_for_order'] ) && ! is_add_payment_method_page() ) {
+		if ( ! is_cart() && ! is_checkout() && ! parent::is_valid_pay_for_order_endpoint() && ! is_add_payment_method_page() ) {
 			return;
 		}
 
@@ -138,14 +141,14 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	 */
 	public function payment_fields() {
 		$description = $this->get_description();
-		apply_filters( 'wc_stripe_description', wpautop( wp_kses_post( $description ) ), $this->id )
+		apply_filters( 'wc_stripe_description', wp_kses_post( $description ), $this->id )
 
 		?>
 		<label>CPF/CNPJ: <abbr class="required" title="required">*</abbr></label><br>
 		<input id="stripe_boleto_tax_id" name="stripe_boleto_tax_id" type="text"><br><br>
 		<div class="stripe-source-errors" role="alert"></div>
 
-		<div id="stripe-boleto-payment-data"><?php echo $description; ?></div>
+		<div id="stripe-boleto-payment-data"><?php echo wp_kses( wpautop( $description ), [ 'p' => [] ] ); ?></div>
 		<?php
 	}
 
@@ -180,10 +183,10 @@ class WC_Gateway_Stripe_Boleto extends WC_Stripe_Payment_Gateway_Voucher {
 	protected function get_confirm_payment_data( $order ) {
 		return [
 			'payment_method' => [
-				'boleto'          => [
+				WC_Stripe_Payment_Methods::BOLETO => [
 					'tax_id' => isset( $_POST['stripe_boleto_tax_id'] ) ? wc_clean( wp_unslash( $_POST['stripe_boleto_tax_id'] ) ) : null,
 				],
-				'billing_details' => [
+				'billing_details'                 => [
 					'name'    => $order->get_formatted_billing_full_name(),
 					'email'   => $order->get_billing_email(),
 					'address' => [

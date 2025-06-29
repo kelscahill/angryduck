@@ -5,33 +5,33 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\Admin;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Admin\MetaBox\MetaBoxInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Ads\AdsService;
-use Automattic\WooCommerce\GoogleListingsAndAds\Assets\AdminScriptAsset;
 use Automattic\WooCommerce\GoogleListingsAndAds\Assets\AdminScriptWithBuiltDependenciesAsset;
 use Automattic\WooCommerce\GoogleListingsAndAds\Assets\AdminStyleAsset;
 use Automattic\WooCommerce\GoogleListingsAndAds\Assets\Asset;
 use Automattic\WooCommerce\GoogleListingsAndAds\Assets\AssetsHandlerInterface;
-use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\AdminConditional;
-use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Conditional;
 use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Registerable;
 use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Service;
 use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\ViewFactory;
 use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\MerchantCenterService;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
+use Automattic\WooCommerce\GoogleListingsAndAds\Product\ProductSyncer;
 use Automattic\WooCommerce\GoogleListingsAndAds\Value\BuiltScriptDependencyArray;
 use Automattic\WooCommerce\GoogleListingsAndAds\View\ViewException;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
+use Automattic\WooCommerce\Admin\PageController;
+use Automattic\WooCommerce\GoogleListingsAndAds\Assets\ScriptAsset;
+
 /**
  * Class Admin
  *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\Pages
  */
-class Admin implements Service, Registerable, Conditional, OptionsAwareInterface {
+class Admin implements OptionsAwareInterface, Registerable, Service {
 
-	use AdminConditional;
-	use PluginHelper;
 	use OptionsAwareTrait;
+	use PluginHelper;
 
 	/**
 	 * @var AssetsHandlerInterface
@@ -72,29 +72,37 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 	 * Register a service.
 	 */
 	public function register(): void {
-		$this->assets_handler->add_many( $this->get_assets() );
-
 		add_action(
 			'admin_enqueue_scripts',
-			function() {
-				$this->assets_handler->enqueue_many( $this->get_assets() );
+			function () {
+				if ( PageController::is_admin_page() ) {
+					// Enqueue the required JavaScript scripts and CSS styles of the Media library.
+					wp_enqueue_media();
+				}
+
+				$assets = $this->get_assets();
+
+				$this->assets_handler->register_many( $assets );
+				$this->assets_handler->enqueue_many( $assets );
 			}
 		);
 
 		add_action(
 			"plugin_action_links_{$this->get_plugin_basename()}",
-			function( $links ) {
+			function ( $links ) {
 				return $this->add_plugin_links( $links );
 			}
 		);
 
 		add_action(
 			'wp_default_scripts',
-			function( $scripts ) {
+			function ( $scripts ) {
 				$this->inject_fast_refresh_for_dev( $scripts );
 			},
 			20
 		);
+
+		add_action( 'admin_init', [ $this, 'privacy_policy' ] );
 	}
 
 	/**
@@ -103,8 +111,8 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 	 * @return Asset[]
 	 */
 	protected function get_assets(): array {
-		$wc_admin_condition = function() {
-			return wc_admin_is_registered_page();
+		$wc_admin_condition = function () {
+			return PageController::is_admin_page();
 		};
 
 		$assets[] = ( new AdminScriptWithBuiltDependenciesAsset(
@@ -121,6 +129,7 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 		) )->add_inline_script(
 			'glaData',
 			[
+				'slug'                     => $this->get_slug(),
 				'mcSetupComplete'          => $this->merchant_center->is_setup_complete(),
 				'mcSupportedCountry'       => $this->merchant_center->is_store_country_supported(),
 				'mcSupportedLanguage'      => $this->merchant_center->is_language_supported(),
@@ -130,7 +139,24 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 				'dateFormat'               => get_option( 'date_format' ),
 				'timeFormat'               => get_option( 'time_format' ),
 				'siteLogoUrl'              => wp_get_attachment_image_url( get_theme_mod( 'custom_logo' ), 'full' ),
-
+				'initialWpData'            => [
+					'version' => $this->get_version(),
+					'mcId'    => $this->options->get_merchant_id() ?: null,
+					'adsId'   => $this->options->get_ads_id() ?: null,
+				],
+				'dataViewsScriptUrl'       => add_query_arg(
+					[
+						'version' => (string) filemtime( "{$this->get_root_dir()}/js/build/wp-dataviews-shim.js" ),
+					],
+					(
+						new ScriptAsset(
+							'gla-data-views-shim',
+							'js/build/wp-dataviews-shim',
+							[],
+							(string) filemtime( "{$this->get_root_dir()}/js/build/wp-dataviews-shim.js" ),
+						)
+					)->get_uri(),
+				),
 			]
 		);
 
@@ -147,13 +173,24 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 			return ( null !== $screen && 'product' === $screen->id );
 		};
 
-		$assets[] = ( new AdminScriptAsset(
-			'gla-custom-inputs',
-			'js/build/custom-inputs',
-			[],
-			'',
+		$assets[] = ( new AdminScriptWithBuiltDependenciesAsset(
+			'gla-product-attributes',
+			'js/build/product-attributes',
+			"{$this->get_root_dir()}/js/build/product-attributes.asset.php",
+			new BuiltScriptDependencyArray(
+				[
+					'dependencies' => [],
+					'version'      => (string) filemtime( "{$this->get_root_dir()}/js/build/product-attributes.js" ),
+				]
+			),
 			$product_condition
-		) );
+		) )->add_inline_script(
+			'glaProductData',
+			[
+				'applicableProductTypes' => ProductSyncer::get_supported_product_types(),
+			]
+		);
+
 		$assets[] = ( new AdminStyleAsset(
 			'gla-product-attributes-css',
 			'js/build/product-attributes',
@@ -246,6 +283,27 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 	}
 
 	/**
+	 * Add suggested privacy policy content
+	 *
+	 * @return void
+	 */
+	public function privacy_policy() {
+		$policy_text = sprintf(
+			/* translators: 1) HTML anchor open tag 2) HTML anchor closing tag */
+			esc_html__( 'By using this extension, you may be storing personal data or sharing data with an external service. %1$sLearn more about what data is collected by Google and what you may want to include in your privacy policy%2$s.', 'google-listings-and-ads' ),
+			'<a href="https://support.google.com/adspolicy/answer/54817" target="_blank">',
+			'</a>'
+		);
+
+		// As the extension doesn't offer suggested privacy policy text, the button to copy it is hidden.
+		$content = '
+			<p class="privacy-policy-tutorial">' . $policy_text . '</p>
+			<style>#privacy-settings-accordion-block-google-listings-ads .privacy-settings-accordion-actions { display: none }</style>';
+
+		wp_add_privacy_policy_content( 'Google for WooCommerce', wpautop( $content, false ) );
+	}
+
+	/**
 	 * This method is ONLY used during development.
 	 *
 	 * The runtime.js file is created when the front-end is developed in Fast Refresh mode
@@ -281,12 +339,12 @@ class Admin implements Service, Registerable, Conditional, OptionsAwareInterface
 		$plugin_url = $this->get_plugin_url();
 
 		$scripts->add(
-			'gla-webpack-rumtime',
+			'gla-webpack-runtime',
 			"{$plugin_url}/js/build/runtime.js",
 			[],
 			(string) filemtime( $runtime_path )
 		);
-		$react_script->deps[] = 'gla-webpack-rumtime';
+		$react_script->deps[] = 'gla-webpack-runtime';
 
 		if ( ! in_array( 'wp-react-refresh-entry', $react_script->deps, true ) ) {
 			$scripts->add(

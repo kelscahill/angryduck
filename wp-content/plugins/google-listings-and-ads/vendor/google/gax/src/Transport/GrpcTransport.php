@@ -40,8 +40,8 @@ use Google\ApiCore\ClientStream;
 use Google\ApiCore\GrpcSupportTrait;
 use Google\ApiCore\ServerStream;
 use Google\ApiCore\ServiceAddressTrait;
-use Google\ApiCore\Transport\Grpc\UnaryInterceptorInterface;
 use Google\ApiCore\Transport\Grpc\ServerStreamingCallWrapper;
+use Google\ApiCore\Transport\Grpc\UnaryInterceptorInterface;
 use Google\ApiCore\ValidationException;
 use Google\ApiCore\ValidationTrait;
 use Google\Rpc\Code;
@@ -70,14 +70,14 @@ class GrpcTransport extends BaseStub implements TransportInterface
      * @param Interceptor[]|UnaryInterceptorInterface[] $interceptors *EXPERIMENTAL*
      *        Interceptors used to intercept RPC invocations before a call starts.
      *        Please note that implementations of
-     *        {@see Google\ApiCore\Transport\Grpc\UnaryInterceptorInterface} are
+     *        {@see \Google\ApiCore\Transport\Grpc\UnaryInterceptorInterface} are
      *        considered deprecated and support will be removed in a future
      *        release. To prepare for this, please take the time to convert
      *        `UnaryInterceptorInterface` implementations over to a class which
      *        extends {@see Grpc\Interceptor}.
      * @throws Exception
      */
-    public function __construct($hostname, $opts, Channel $channel = null, array $interceptors = [])
+    public function __construct(string $hostname, array $opts, ?Channel $channel = null, array $interceptors = [])
     {
         if ($interceptors) {
             $channel = Interceptor::intercept(
@@ -98,12 +98,13 @@ class GrpcTransport extends BaseStub implements TransportInterface
      * @param array $config {
      *    Config options used to construct the gRPC transport.
      *
-     *    @type array $stubOpts Options used to construct the gRPC stub.
+     *    @type array $stubOpts Options used to construct the gRPC stub (see
+     *          {@link https://grpc.github.io/grpc/core/group__grpc__arg__keys.html}).
      *    @type Channel $channel Grpc channel to be used.
      *    @type Interceptor[]|UnaryInterceptorInterface[] $interceptors *EXPERIMENTAL*
      *          Interceptors used to intercept RPC invocations before a call starts.
      *          Please note that implementations of
-     *          {@see Google\ApiCore\Transport\Grpc\UnaryInterceptorInterface} are
+     *          {@see \Google\ApiCore\Transport\Grpc\UnaryInterceptorInterface} are
      *          considered deprecated and support will be removed in a future
      *          release. To prepare for this, please take the time to convert
      *          `UnaryInterceptorInterface` implementations over to a class which
@@ -113,7 +114,7 @@ class GrpcTransport extends BaseStub implements TransportInterface
      * @return GrpcTransport
      * @throws ValidationException
      */
-    public static function build($apiEndpoint, array $config = [])
+    public static function build(string $apiEndpoint, array $config = [])
     {
         self::validateGrpcSupport();
         $config += [
@@ -158,6 +159,8 @@ class GrpcTransport extends BaseStub implements TransportInterface
      */
     public function startBidiStreamingCall(Call $call, array $options)
     {
+        $this->verifyUniverseDomain($options);
+
         return new BidiStream(
             $this->_bidiRequest(
                 '/' . $call->getMethod(),
@@ -174,6 +177,9 @@ class GrpcTransport extends BaseStub implements TransportInterface
      */
     public function startClientStreamingCall(Call $call, array $options)
     {
+
+        $this->verifyUniverseDomain($options);
+
         return new ClientStream(
             $this->_clientStreamRequest(
                 '/' . $call->getMethod(),
@@ -190,6 +196,8 @@ class GrpcTransport extends BaseStub implements TransportInterface
      */
     public function startServerStreamingCall(Call $call, array $options)
     {
+        $this->verifyUniverseDomain($options);
+
         $message = $call->getMessage();
 
         if (!$message) {
@@ -215,6 +223,8 @@ class GrpcTransport extends BaseStub implements TransportInterface
      */
     public function startUnaryCall(Call $call, array $options)
     {
+        $this->verifyUniverseDomain($options);
+
         $unaryCall = $this->_simpleRequest(
             '/' . $call->getMethod(),
             $call->getMessage(),
@@ -244,16 +254,19 @@ class GrpcTransport extends BaseStub implements TransportInterface
         return $promise;
     }
 
+    private function verifyUniverseDomain(array $options)
+    {
+        if (isset($options['credentialsWrapper'])) {
+            $options['credentialsWrapper']->checkUniverseDomain();
+        }
+    }
+
     private function getCallOptions(array $options)
     {
-        $callOptions = isset($options['transportOptions']['grpcOptions'])
-            ? $options['transportOptions']['grpcOptions']
-            : [];
+        $callOptions = $options['transportOptions']['grpcOptions'] ?? [];
 
         if (isset($options['credentialsWrapper'])) {
-            $audience = isset($options['audience'])
-                ? $options['audience']
-                : null;
+            $audience = $options['audience'] ?? null;
             $credentialsWrapper = $options['credentialsWrapper'];
             $callOptions['call_credentials_callback'] = $credentialsWrapper
                 ->getAuthorizationHeaderCallback($audience);

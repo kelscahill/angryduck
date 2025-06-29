@@ -1,0 +1,58 @@
+.wwpp-minimum-requirements {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto;
+    text-align: center;
+    width: 24px;
+    margin-left: 5px;
+}
+
+.wwpp-minimum-requirements::before {
+    content: " ";
+    background-image: url("../../images/alert-warning-icon.svg");
+    background-repeat: no-repeat;
+    height: 16px;
+    width: 16px;
+    display: inline-block;
+    background-size: contain;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    top: 2px;
+}
+
+.wwpp-minimum-requirements .wwpp-minimum-tooltiptext {
+    visibility: hidden;
+    color: #6D6D6D;
+    text-align: center;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 120%;
+    left: -100%;
+    width: 184px;
+    margin-left: -60px;
+    background-color: #e7e7e7;
+    box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 16px;
+    padding: 8px;
+}
+
+.wwpp-minimum-requirements .wwpp-minimum-tooltiptext::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 8px;
+    border-style: solid;
+    border-color: #e7e7e7 transparent transparent transparent;
+}
+
+.wwpp-minimum-requirements:hover .wwpp-minimum-tooltiptext {
+    visibility: visible;
+}

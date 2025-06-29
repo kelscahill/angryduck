@@ -1,0 +1,6 @@
+.forminp-initialize_product_visibility_meta_button .spinner,
+.forminp-clear_unused_product_meta_button .spinner {
+    float: none;
+    display: none;
+    visibility: hidden;
+}

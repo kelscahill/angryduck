@@ -7,6 +7,8 @@
  * @uses object $user
  */
 
+_deprecated_file( __FILE__, 'Yoast SEO 23.4' );
+
 /* translators: %1$s expands to Yoast SEO */
 $wpseo_up_settings_header    = sprintf( __( '%1$s settings', 'wordpress-seo' ), 'Yoast SEO' );
 $wpseo_no_index_author_label = sprintf(
@@ -23,7 +25,7 @@ $wpseo_no_index_author_label = sprintf(
 	<?php if ( ! WPSEO_Options::get( 'disable-author' ) ) : ?>
 	<label for="wpseo_author_title"><?php esc_html_e( 'Title to use for Author page', 'wordpress-seo' ); ?></label>
 	<input class="yoast-settings__text regular-text" type="text" id="wpseo_author_title" name="wpseo_author_title"
-		value="<?php echo esc_attr( get_the_author_meta( 'wpseo_title', $user->ID ) ); ?>"/><br>
+		value="<?php echo esc_attr( get_the_author_meta( 'wpseo_title', $user->ID ) ); ?>" /><br>
 
 	<label for="wpseo_author_metadesc"><?php esc_html_e( 'Meta description to use for Author page', 'wordpress-seo' ); ?></label>
 	<textarea rows="5" cols="30" id="wpseo_author_metadesc"
@@ -58,6 +60,18 @@ $wpseo_no_index_author_label = sprintf(
 		<br>
 		<p class="description" id="wpseo_content_analysis_disable_desc">
 			<?php esc_html_e( 'Removes the readability analysis section from the metabox and disables all readability-related suggestions.', 'wordpress-seo' ); ?>
+		</p>
+	<?php endif; ?>
+
+	<?php if ( WPSEO_Options::get( 'inclusive_language_analysis_active', false ) ) : ?>
+		<input class="yoast-settings__checkbox double" type="checkbox" id="wpseo_inclusive_language_analysis_disable"
+			name="wpseo_inclusive_language_analysis_disable" aria-describedby="wpseo_inclusive_language_analysis_disable_desc"
+			value="on" <?php echo ( get_the_author_meta( 'wpseo_inclusive_language_analysis_disable', $user->ID ) === 'on' ) ? 'checked' : ''; ?> />
+		<label class="yoast-label-strong"
+			for="wpseo_inclusive_language_analysis_disable"><?php esc_html_e( 'Disable inclusive language analysis', 'wordpress-seo' ); ?></label>
+		<br>
+		<p class="description" id="wpseo_inclusive_language_analysis_disable_desc">
+			<?php esc_html_e( 'Removes the inclusive language analysis section from the metabox and disables all inclusive language-related suggestions.', 'wordpress-seo' ); ?>
 		</p>
 	<?php endif; ?>
 

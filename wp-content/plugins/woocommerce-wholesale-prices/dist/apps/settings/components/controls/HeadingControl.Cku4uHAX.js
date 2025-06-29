@@ -1,0 +1,1 @@
+import{d as n,t as r,r as c,o as l,c as p,a as i,h as u,u as d,n as m}from"../../index.0FToouit.js";const _={class:"wwp-heading-control"},v=n({__name:"HeadingControl",props:{params:{type:Object,required:!0}},setup(e){const a=e,{params:t}=r(a),s=t.value,o=c(s.classes);return(f,h)=>(l(),p("div",_,[i("h2",{class:m(o.value)},u(d(s).content),3)]))}});export{v as default};

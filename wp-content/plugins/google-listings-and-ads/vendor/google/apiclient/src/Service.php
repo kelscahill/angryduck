@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
-namespace Google;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google;
 
-use Google\Http\Batch;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Http\Batch;
 use TypeError;
 
 class Service
 {
     public $batchPath;
+    /**
+     * Only used in getBatch
+     */
     public $rootUrl;
+    public $rootUrlTemplate;
     public $version;
     public $servicePath;
     public $serviceName;
@@ -65,7 +69,7 @@ class Service
         return new Batch(
             $this->client,
             false,
-            $this->rootUrl,
+            $this->rootUrlTemplate ?? $this->rootUrl,
             $this->batchPath
         );
     }

@@ -1,0 +1,1913 @@
+# Copyright (C) 2025 Rymera Web Co
+# This file is distributed under the GPL          v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Wholesale Order Form 3.0.6.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/code\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-03-12T02:10:39+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: woocommerce-wholesale-order-form\n"
+
+#. Plugin Name of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+#: includes/Classes/License_Manager.php:165
+#: includes/Classes/License_Manager.php:177
+msgid "WooCommerce Wholesale Order Form"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "https://wholesalesuiteplugin.com/"
+msgstr ""
+
+#. Description of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "WooCommerce Extension to Provide Wholesale Product Listing Functionality"
+msgstr ""
+
+#. Author of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "Rymera Web Co"
+msgstr ""
+
+#. Author URI of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "https://rymera.com.au/"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:172
+msgid "%1$sClick here to activate %3$s plugin &rarr;%2$s"
+msgstr ""
+
+#: bootstrap/App.php:184
+msgid "Activate this plugin"
+msgstr ""
+
+#. translators: %1$s = opening <p> tag; %2$s = closing </p> tag; %3$s = WooCommerce Wholesale Order Form
+#: bootstrap/App.php:194
+msgid "%1$sUnable to activate %3$s plugin. Please install and activate WooCoomerce plugin first.%2$s"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:205
+msgid "%1$sClick here to install %3$s plugin &rarr;%2$s"
+msgstr ""
+
+#: bootstrap/App.php:217
+msgid "Install this plugin"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = opening <p> tag; %4$s = closing </p> tag
+#: bootstrap/App.php:235
+msgid "%3$s%1$sWooCommerce Wholesale Order%2$s Form plugin missing dependency:%4$s"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:257
+msgid "%1$sClick here to update WooCommerce Wholesale Prices Plugin &rarr;%2$s"
+msgstr ""
+
+#: bootstrap/App.php:299
+msgid "The class does not have a run method. Please make sure to extend the Abstract_Class class."
+msgstr ""
+
+#: constants.php:254
+msgid "Default Sorting"
+msgstr ""
+
+#: constants.php:255
+msgid "Custom Ordering (menu order) + Name"
+msgstr ""
+
+#: constants.php:256
+#: includes/I18n/order-form.php:178
+msgid "Name"
+msgstr ""
+
+#: constants.php:257
+#: includes/I18n/order-form.php:289
+msgid "Sort by Date"
+msgstr ""
+
+#: constants.php:258
+#: includes/I18n/order-form.php:283
+msgid "SKU"
+msgstr ""
+
+#: includes/Abstracts/Abstract_Shortcode.php:119
+msgid "You do not have permission to view this content."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:173
+msgid "WooCommerce Wholesale Prices Premium"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:181
+msgid "WooCommerce Wholesale Lead Capture"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:187
+#: includes/Classes/Order_Forms_Admin_Page.php:52
+#: includes/Classes/Order_Forms_Admin_Page.php:53
+#: includes/I18n/order-form.php:212
+#: includes/Post_Types/Order_Form_Post_Type.php:34
+#: includes/Post_Types/Order_Form_Post_Type.php:49
+#: includes/Post_Types/Order_Form_Post_Type.php:51
+#: includes/Post_Types/Order_Form_Post_Type.php:53
+#: includes/Post_Types/Order_Form_Post_Type.php:65
+msgid "Order Forms"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:310
+#: includes/Classes/License_Manager.php:459
+#: includes/Classes/License_Manager.php:549
+#: includes/Classes/License_Manager.php:637
+msgid "Security check failed"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:323
+#: includes/Classes/License_Manager.php:470
+msgid "Required parameters not supplied"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:450
+#: includes/Classes/License_Manager.php:538
+#: includes/Classes/License_Manager.php:628
+msgid "Invalid AJAX Operation"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:505
+msgid "Failed to dismiss license notice"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:565
+msgid "Please wait for 60 seconds before refreshing license status again."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:602
+msgid "Failed to refresh license status"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:658
+msgid "Failed to dismiss license reminder pointer"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:707
+msgid "Failed to activate license. Failed to connect to license server. Please contact plugin support."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:854
+#: includes/Classes/License_Manager.php:1281
+msgid "Active"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:856
+#: includes/Classes/License_Manager.php:1284
+msgid "Disabled"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:858
+#: includes/Classes/License_Manager.php:1283
+msgid "Invalid"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:860
+#: includes/Classes/License_Manager.php:1282
+msgid "Expired"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:862
+msgid "Unlicensed"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1203
+msgid "Failed To Save License Details"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1262
+msgid "Oops! Forgot to activate your Wholesale Suite license?"
+msgstr ""
+
+#. Translators: %1$s - line break, %2$s - opening <a> tag, %3$s - closing </a> tag.
+#: includes/Classes/License_Manager.php:1266
+msgid "A valid license key is required for Wholesale Suite's premium plugins. But don't worry! It's super easy to get fully activated.%1$sSimply click here to enter your license and, once done, you'll be finished your setup.%1$sDon't have a license? %2$sClick here%3$s."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1274
+msgid "Close"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1275
+msgid "Enter License Key"
+msgstr ""
+
+#. Translators: %s - the plugin name.
+#: includes/Classes/License_Manager.php:1423
+msgid "Oops! Did you forget to enter your license for %s?"
+msgstr ""
+
+#. Translators: %s - the plugin name.
+#: includes/Classes/License_Manager.php:1429
+msgid "%1$sAction required!%2$s Enter your license for %3$s to continue."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1441
+msgid "Enter your license to full activate Wholesale Suite and gain access to automatic updates, technical support, and premium features."
+msgstr ""
+
+#. Translators: %1$s - the purchase link opening tag, %2$s - the purchase link closing tag.
+#: includes/Classes/License_Manager.php:1445
+msgid "Don’t worry, your wholesale customers & orders completely safe and your premium wholesale features are still working. But you will need to enter a license key to continue using Wholesale Suite. If you don’t have a license, please %1$spurchase one to proceed%2$s."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1463
+msgid "License Key:"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1473
+msgid "License Email:"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1483
+msgid "Activate Key"
+msgstr ""
+
+#. Translators: %1$s - the login link opening tag, %2$s - the login link closing tag.
+#: includes/Classes/License_Manager.php:1491
+msgid "Can’t find your key? %1$sLogin to your account%2$s."
+msgstr ""
+
+#. Translators: %s - the plugin name.
+#: includes/Classes/License_Manager.php:1545
+msgid "%1$sAction required!%2$s Your Wholesale Suite license is about to expire in %3$s days."
+msgstr ""
+
+#. Translators: %s is the license expiration date
+#: includes/Classes/License_Manager.php:1557
+msgid "Your Wholesale Suite license is about to expire in %1$s days and automatic renewals are turned off. The current license will expire on %2$s. Once expired, you won't have access to premium features, plugin updates, or support. To avoid interruptions simply reactivate your subscription."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1569
+msgid "Login & Reactivate"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1572
+#: includes/Classes/License_Manager.php:1632
+#: includes/Classes/License_Manager.php:1698
+#: includes/Classes/License_Manager.php:1731
+#: includes/Classes/License_Manager.php:1762
+msgid "Learn More"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1610
+msgid "Oh no! Your Wholesale Suite license has expired!"
+msgstr ""
+
+#. Translators: %s is the license expiration date
+#: includes/Classes/License_Manager.php:1616
+#: includes/Classes/License_Manager.php:1716
+msgid "Don’t worry, your wholesale customers & orders are completely safe and your premium wholesale features are still working. We’ve also extended premium feature functionality until %s, at which point functionality will become limited."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1624
+msgid "Renew your Wholesale Suite license now to continue receiving automatic updates, technical support, and access to Wholesale Suite premium features."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1629
+#: includes/Classes/WP_Admin.php:118
+#: templates/admin/parts/settings/license/interstitial.php:80
+msgid "Renew License"
+msgstr ""
+
+#. Translators: %1$s - span opening tag, %2$s - span closing tag.
+#: includes/Classes/License_Manager.php:1678
+msgid "%1$sUrgent!%2$s This Wholesale Suite license key has been disabled. This could be due to a number of reasons:"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1686
+msgid "A refund or chargeback was initiated against this license key"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1687
+msgid "The license key may have violated our Terms of Service"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1688
+msgid "There may have been a malfunction with the license key and this is a false positive"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1690
+msgid "Don’t worry, your wholesale customers & orders are completely safe and your premium wholesale features are still working for now, but a valid license is required to continue using Wholesale Suite."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1691
+msgid "If you feel this is a mistake, please reach out to our support team immediately and we'll be happy to help."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1695
+msgid "Contact Support"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1710
+msgid "Oh no! Your Wholesale Suite license has failed to renew!"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1724
+#: includes/Classes/License_Manager.php:1755
+msgid "Login to your Wholesale Suite account to correct this issue to continue receiving automatic updates, technical support, and access to Wholesale Suite premium features."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1728
+#: includes/Classes/License_Manager.php:1759
+msgid "Login & Renew License"
+msgstr ""
+
+#. Translators: %1$s - span opening tag, %2$s - span closing tag.
+#: includes/Classes/License_Manager.php:1747
+msgid "%1$sAction required!%2$s Your license has failed to renew and is now disabled."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1754
+msgid "An active Wholesale Suite license is required to continue receiving automatic updates, technical support, and access to Wholesale Suite premium features."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1864
+#: includes/Classes/License_Manager.php:1865
+#: includes/Classes/WP_Admin.php:122
+#: includes/Classes/WP_Admin.php:125
+msgid "License"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1907
+#: includes/Classes/License_Manager.php:1908
+msgid "WWS License"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1950
+msgid "Wholesale Prices"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1971
+msgid "Wholesale Lead"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:1992
+#: templates/admin/order-forms-admin-page.php:13
+msgid "Wholesale Order Form"
+msgstr ""
+
+#: includes/Classes/Migrate_Form_Data.php:59
+msgid "No forms found."
+msgstr ""
+
+#: includes/Classes/WP_Admin.php:131
+msgid "Getting Started"
+msgstr ""
+
+#. translators: %d = number of order forms migrated
+#: includes/CLI/Cli.php:67
+msgid "Migrated %d Order Form to v3."
+msgid_plural "%d Order Forms migrated to v3."
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/CLI/Cli.php:77
+msgid "Order Forms migrated to v3."
+msgstr ""
+
+#: includes/CLI/Cli.php:130
+msgid "Order Forms imported."
+msgstr ""
+
+#: includes/CLI/Cli.php:135
+msgid "No Order Forms found in the JSON file."
+msgstr ""
+
+#: includes/CLI/Cli.php:194
+msgid "Class Symfony\\Component\\Yaml\\Yaml not found."
+msgstr ""
+
+#. translators: %s = given format
+#: includes/CLI/Cli.php:201
+msgid "Invalid format %%y%s%%n."
+msgstr ""
+
+#. translators: %1$s = format; %2$s = file path in uploads dir
+#: includes/CLI/Cli.php:209
+msgid "Order Forms exported to %1$s format in: %2$s"
+msgstr ""
+
+#: includes/CLI/Cli.php:218
+msgid "No Order Forms found."
+msgstr ""
+
+#. translators: %1$s = opening <strong>; %2$s = closing </strong>
+#: includes/Factories/Migration_Wizard.php:89
+msgid "Congrats! %1$sWholesale Order Form%2$s 2.0 introduces a new form builder, multiple forms, and lots of great new options making it more powerful than ever."
+msgstr ""
+
+#: includes/Factories/Migration_Wizard.php:98
+msgid "Get started by migrating your old form over to the new style. If you're not ready yet, you can choose to do it later via the Order Form Settings area."
+msgstr ""
+
+#: includes/Factories/Migration_Wizard.php:104
+msgid "Wholesale Order Form Migration Wizard"
+msgstr ""
+
+#: includes/Factories/Migration_Wizard.php:112
+msgid "Start Migration Wizard"
+msgstr ""
+
+#: includes/Factories/Order_Form.php:187
+msgid "Invalid order form."
+msgstr ""
+
+#: includes/Factories/Order_Form.php:492
+#: includes/REST/Order_Form.php:163
+msgid "Form title is required."
+msgstr ""
+
+#: includes/Factories/Order_Form.php:498
+msgid "Form body is required."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/Factories/Setup_Wizard.php:97
+msgid "Congratulations! %1$sWholesale Order Forms%2$s plugin has been successfully installed and is ready to be set up."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/Factories/Setup_Wizard.php:107
+msgid "Get Started quickly by clicking %1$s\"Start Setup\"%2$s and we'll guide you through creating your first form."
+msgstr ""
+
+#: includes/Factories/Setup_Wizard.php:116
+msgid "Wholesale Order Form Setup Wizard"
+msgstr ""
+
+#: includes/Factories/Setup_Wizard.php:124
+msgid "Start Setup Wizard"
+msgstr ""
+
+#: includes/Factories/Vite_App.php:458
+msgid "Manifest file not found. Did you run the build script from package.json file?"
+msgstr ""
+
+#: includes/Factories/Vite_App.php:772
+msgid "Order Form Blocks"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity; %4$s = formatted price
+#: includes/Helpers/WWPP.php:249
+msgid "%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s or minimum order subtotal of %1$s%5$s%2$s is required to activate wholesale pricing in the cart."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity; %4$s = formatted price
+#: includes/Helpers/WWPP.php:261
+msgid "%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s and minimum order subtotal of %1$s%5$s%2$s is required to activate wholesale pricing in the cart."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity
+#: includes/Helpers/WWPP.php:274
+msgid "%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s is required to activate wholesale pricing in the cart."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = formatted price
+#: includes/Helpers/WWPP.php:284
+msgid "%1$sNOTE:%2$s A minimum order subtotal of %1$s%3$s%2$s is required to activate wholesale pricing in the cart."
+msgstr ""
+
+#: includes/I18n/order-form.php:13
+#: includes/Shortcodes/WWOF_Product_Listing.php:93
+msgid "Access Denied"
+msgstr ""
+
+#: includes/I18n/order-form.php:14
+#: includes/Shortcodes/WWOF_Product_Listing.php:97
+msgid "You do not have permission to view this order form."
+msgstr ""
+
+#: includes/I18n/order-form.php:15
+msgid "Access Denied Message"
+msgstr ""
+
+#: includes/I18n/order-form.php:16
+msgid "Message to display to users who do not have permission to access the wholesale order form."
+msgstr ""
+
+#: includes/I18n/order-form.php:17
+msgid "Defaults to \"Access Denied\" if left blank."
+msgstr ""
+
+#: includes/I18n/order-form.php:18
+msgid "Defaults to \"You do not have permission to view this order form.\" if left blank."
+msgstr ""
+
+#: includes/I18n/order-form.php:19
+msgid "URL of the login page. Uses default WordPress login URL if left blank."
+msgstr ""
+
+#: includes/I18n/order-form.php:20
+msgid "Action"
+msgstr ""
+
+#: includes/I18n/order-form.php:21
+msgid "Add"
+msgstr ""
+
+#: includes/I18n/order-form.php:22
+msgid "Add Form"
+msgstr ""
+
+#: includes/I18n/order-form.php:23
+msgid "Adding..."
+msgstr ""
+
+#: includes/I18n/order-form.php:24
+msgid "Adding products to cart..."
+msgstr ""
+
+#: includes/I18n/order-form.php:25
+msgid "Additional Note"
+msgstr ""
+
+#: includes/I18n/order-form.php:26
+msgid "Add Row"
+msgstr ""
+
+#: includes/I18n/order-form.php:27
+msgid "Add column to this row"
+msgstr ""
+
+#: includes/I18n/order-form.php:28
+msgid "Add Selected Products to Cart"
+msgstr ""
+
+#: includes/I18n/order-form.php:29
+msgid "Add Selected to Cart"
+msgstr ""
+
+#: includes/I18n/order-form.php:30
+msgid "Add to cart"
+msgstr ""
+
+#: includes/I18n/order-form.php:31
+msgid "Add to Cart Button"
+msgstr ""
+
+#: includes/I18n/order-form.php:32
+msgid "Add to Cart Checkbox"
+msgstr ""
+
+#: includes/I18n/order-form.php:33
+msgid "User Role Filter"
+msgstr ""
+
+#: includes/I18n/order-form.php:34
+msgid "Select User Role(s) to Allow Access"
+msgstr ""
+
+#: includes/I18n/order-form.php:35
+msgid "Allow Favourites"
+msgstr ""
+
+#: includes/I18n/order-form.php:36
+msgid "Allow users to add products to their favourites list."
+msgstr ""
+
+#: includes/I18n/order-form.php:37
+msgid "Allow Public Read"
+msgstr ""
+
+#: includes/I18n/order-form.php:38
+msgid "Allow order form access publicly."
+msgstr ""
+
+#: includes/I18n/order-form.php:39
+msgid "Ascending"
+msgstr ""
+
+#: includes/I18n/order-form.php:40
+msgid "Auto"
+msgstr ""
+
+#: includes/I18n/order-form.php:41
+msgid "Available on backorder"
+msgstr ""
+
+#: includes/I18n/order-form.php:42
+msgid "Box Width"
+msgstr ""
+
+#: includes/I18n/order-form.php:43
+msgid "Button Color"
+msgstr ""
+
+#: includes/I18n/order-form.php:44
+msgid "Button Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:45
+msgid "Button Text Color"
+msgstr ""
+
+#: includes/I18n/order-form.php:46
+msgid "Cancel"
+msgstr ""
+
+#: includes/I18n/order-form.php:47
+msgid "Cart Subtotal"
+msgstr ""
+
+#: includes/I18n/order-form.php:48
+msgid "Categories"
+msgstr ""
+
+#: includes/I18n/order-form.php:49
+msgid "Category Filter"
+msgstr ""
+
+#: includes/I18n/order-form.php:50
+msgid "Choose an option"
+msgstr ""
+
+#: includes/I18n/order-form.php:51
+msgid "Clear Button Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:52
+msgid "Clear Filters"
+msgstr ""
+
+#: includes/I18n/order-form.php:53
+msgid "Click Action"
+msgstr ""
+
+#: includes/I18n/order-form.php:54
+msgid "Column Heading Text"
+msgstr ""
+
+#. translators: %d = column number
+#: includes/I18n/order-form.php:56
+msgid "Column %d Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:57
+msgid "Column Settings"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form.php:59
+msgid "%1$sCombo%2$s &mdash; Recommended for products with large variations (more than 100 variations). With this option selected, variations more than 100 are lazy loaded on scroll down."
+msgstr ""
+
+#: includes/I18n/order-form.php:60
+msgid "Combo (Less Clicks/Faster)"
+msgstr ""
+
+#: includes/I18n/order-form.php:61
+msgid "Copied"
+msgstr ""
+
+#: includes/I18n/order-form.php:62
+msgid "Copy"
+msgstr ""
+
+#: includes/I18n/order-form.php:63
+msgid "Default Category"
+msgstr ""
+
+#. translators: %s = default site login url
+#: includes/I18n/order-form.php:65
+msgid "Default: %s"
+msgstr ""
+
+#: includes/I18n/order-form.php:66
+msgid "Delete"
+msgstr ""
+
+#: includes/I18n/order-form.php:67
+msgid "Delete Column"
+msgstr ""
+
+#: includes/I18n/order-form.php:68
+msgid "Are you sure you want to delete this column?"
+msgstr ""
+
+#: includes/I18n/order-form.php:69
+msgid "Deleted"
+msgstr ""
+
+#: includes/I18n/order-form.php:70
+msgid "Delete Element"
+msgstr ""
+
+#: includes/I18n/order-form.php:71
+msgid "Are you sure you want to delete this element?"
+msgstr ""
+
+#: includes/I18n/order-form.php:72
+msgid "Delete Form"
+msgstr ""
+
+#: includes/I18n/order-form.php:73
+msgid "Are you sure you want to delete this form(s)?"
+msgstr ""
+
+#: includes/I18n/order-form.php:74
+msgid "Delete Row"
+msgstr ""
+
+#: includes/I18n/order-form.php:75
+msgid "Are you sure you want to delete this row?"
+msgstr ""
+
+#: includes/I18n/order-form.php:76
+msgid "Cleanup Old Form Data"
+msgstr ""
+
+#: includes/I18n/order-form.php:77
+msgid "Welcome to version 3.0 of Wholesale Order Form! Your forms have automatically been migrated to the new version. Once you have confirmed everything is working, click below to clean up the old form data."
+msgstr ""
+
+#: includes/I18n/order-form.php:78
+msgid "Are you sure you want to delete V2 Form Data?"
+msgstr ""
+
+#: includes/I18n/order-form.php:79
+msgid "Deleting..."
+msgstr ""
+
+#: includes/I18n/order-form.php:80
+msgid "Descending"
+msgstr ""
+
+#: includes/I18n/order-form.php:81
+msgid "Description"
+msgstr ""
+
+#: includes/I18n/order-form.php:82
+msgid "Display Variation Dropdown"
+msgstr ""
+
+#: includes/I18n/order-form.php:83
+msgid "Add a variation dropdown below the product name."
+msgstr ""
+
+#: includes/I18n/order-form.php:84
+msgid "Done"
+msgstr ""
+
+#: includes/I18n/order-form.php:85
+msgid "Double click to edit"
+msgstr ""
+
+#: includes/I18n/order-form.php:86
+msgid "Draft"
+msgstr ""
+
+#: includes/I18n/order-form.php:87
+msgid "Drop Table Columns Here"
+msgstr ""
+
+#: includes/I18n/order-form.php:88
+msgid "Edit"
+msgstr ""
+
+#: includes/I18n/order-form.php:89
+msgid "Edit Form"
+msgstr ""
+
+#: includes/I18n/order-form.php:90
+msgid "Element Alignment"
+msgstr ""
+
+#: includes/I18n/order-form.php:91
+msgid "Element Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:92
+msgid "Element Width"
+msgstr ""
+
+#: includes/I18n/order-form.php:93
+msgid "Empty Cart"
+msgstr ""
+
+#: includes/I18n/order-form.php:94
+msgid "Empty Cart Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:95
+msgid "Add columns to the form header to display products data."
+msgstr ""
+
+#: includes/I18n/order-form.php:96
+msgid "Enable Add To Cart Notification"
+msgstr ""
+
+#: includes/I18n/order-form.php:97
+msgid "Adds a notification message when adding product(s) to cart."
+msgstr ""
+
+#: includes/I18n/order-form.php:98
+msgid "Add to Cart Link Behavior"
+msgstr ""
+
+#: includes/I18n/order-form.php:99
+msgid "Choose how the link will be opened when clicked."
+msgstr ""
+
+#: includes/I18n/order-form.php:100
+msgid "Open in new tab"
+msgstr ""
+
+#: includes/I18n/order-form.php:101
+msgid "Open in same tab"
+msgstr ""
+
+#: includes/I18n/order-form.php:102
+msgid "Enter form title"
+msgstr ""
+
+#: includes/I18n/order-form.php:103
+msgid "Enter meta key"
+msgstr ""
+
+#: includes/I18n/order-form.php:104
+msgid "Enter meta name"
+msgstr ""
+
+#: includes/I18n/order-form.php:105
+msgid "Enter a number"
+msgstr ""
+
+#: includes/I18n/order-form.php:106
+msgid "Enter Out of Stock Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:107
+msgid "Error"
+msgstr ""
+
+#: includes/I18n/order-form.php:108
+msgid "ERROR"
+msgstr ""
+
+#: includes/I18n/order-form.php:109
+msgid "excl. tax"
+msgstr ""
+
+#: includes/I18n/order-form.php:110
+msgid "Excluding Tax"
+msgstr ""
+
+#: includes/I18n/order-form.php:111
+msgid "Excluded Category"
+msgstr ""
+
+#: includes/I18n/order-form.php:112
+msgid "Exclude Products"
+msgstr ""
+
+#: includes/I18n/order-form.php:113
+msgid "Specify products to hide from the order form. Variations are included in the selection."
+msgstr ""
+
+#: includes/I18n/order-form.php:114
+msgid "Add to Favourites"
+msgstr ""
+
+#: includes/I18n/order-form.php:115
+msgid "Select Favourite Icon"
+msgstr ""
+
+#. translators: %s = field name
+#: includes/I18n/order-form.php:117
+msgid "%s Field Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:118
+msgid "Font Size"
+msgstr ""
+
+#: includes/I18n/order-form.php:119
+msgid "Form Body"
+msgstr ""
+
+#: includes/I18n/order-form.php:120
+msgid "Form Body Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:121
+msgid "Form successfully deleted."
+msgstr ""
+
+#: includes/I18n/order-form.php:122
+msgid "The form has been successfully deleted."
+msgstr ""
+
+#: includes/I18n/order-form.php:123
+msgid "Form Editor"
+msgstr ""
+
+#: includes/I18n/order-form.php:124
+msgid "Click and drag the elements you want on your order form into position."
+msgstr ""
+
+#: includes/I18n/order-form.php:125
+msgid "Form Footer"
+msgstr ""
+
+#: includes/I18n/order-form.php:126
+msgid "Form Footer Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:127
+msgid "Form Header"
+msgstr ""
+
+#: includes/I18n/order-form.php:128
+msgid "Form Header Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:129
+msgid "This Order Form is in \"Draft\" status. It will only be visible to admin users."
+msgstr ""
+
+#: includes/I18n/order-form.php:130
+msgid "Form Pagination"
+msgstr ""
+
+#: includes/I18n/order-form.php:131
+msgid "Form Permissions"
+msgstr ""
+
+#: includes/I18n/order-form.php:132
+msgid "Form Saved"
+msgstr ""
+
+#: includes/I18n/order-form.php:133
+msgid "Your form has been saved successfully!"
+msgstr ""
+
+#. translators: %1$s = "Form Header" or "Form Footer"
+#: includes/I18n/order-form.php:136
+msgid "Currently, set to NOT show %1$s section."
+msgstr ""
+
+#: includes/I18n/order-form.php:137
+msgid "This form can be found on the following locations."
+msgstr ""
+
+#: includes/I18n/order-form.php:138
+msgid "Full Width"
+msgstr ""
+
+#: includes/I18n/order-form.php:139
+msgid "Header/Footer Elements"
+msgstr ""
+
+#: includes/I18n/order-form.php:140
+msgid "Height"
+msgstr ""
+
+#: includes/I18n/order-form.php:141
+msgid "Hide Combo Variation Name Prefix"
+msgstr ""
+
+#: includes/I18n/order-form.php:142
+msgid "Hide Form Title"
+msgstr ""
+
+#: includes/I18n/order-form.php:143
+msgid "Stops the form title from being displayed before the form."
+msgstr ""
+
+#: includes/I18n/order-form.php:144
+msgid "Image"
+msgstr ""
+
+#. translators: %s = image alt/name/index
+#: includes/I18n/order-form.php:146
+msgid "Image: %s"
+msgstr ""
+
+#: includes/I18n/order-form.php:147
+msgid "Image Click Action"
+msgstr ""
+
+#: includes/I18n/order-form.php:148
+msgid "Image Size"
+msgstr ""
+
+#: includes/I18n/order-form.php:149
+msgid "incl. tax"
+msgstr ""
+
+#: includes/I18n/order-form.php:150
+msgid "Including Tax"
+msgstr ""
+
+#: includes/I18n/order-form.php:151
+msgid "Included Category"
+msgstr ""
+
+#: includes/I18n/order-form.php:152
+msgid "Include Products"
+msgstr ""
+
+#: includes/I18n/order-form.php:153
+msgid "Only show this specific products in the order form. Variations are excluded in the selection."
+msgstr ""
+
+#: includes/I18n/order-form.php:154
+msgid "In stock"
+msgstr ""
+
+#: includes/I18n/order-form.php:155
+msgid "In Stock Amount"
+msgstr ""
+
+#: includes/I18n/order-form.php:156
+msgid "In Stock"
+msgstr ""
+
+#: includes/I18n/order-form.php:157
+msgid "Stock not sufficient"
+msgstr ""
+
+#: includes/I18n/order-form.php:158
+msgid "Key"
+msgstr ""
+
+#: includes/I18n/order-form.php:159
+msgid "More results are loaded into the page based on the user scrolling."
+msgstr ""
+
+#: includes/I18n/order-form.php:160
+msgid "Unable to find the element for lazy-loading."
+msgstr ""
+
+#: includes/I18n/order-form.php:161
+msgid "Lazy Loading"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form.php:163
+msgid "%1$sNote:%2$s If pagination element is added in the editor, this will be hidden in the frontend."
+msgstr ""
+
+#: includes/I18n/order-form.php:164
+msgid "Loading..."
+msgstr ""
+
+#: includes/I18n/order-form.php:165
+msgid "Locations"
+msgstr ""
+
+#: includes/I18n/order-form.php:166
+msgid "Login to see prices"
+msgstr ""
+
+#: includes/I18n/order-form.php:167
+msgid "Login URL"
+msgstr ""
+
+#. translators: %d = number of remaining items in stock
+#: includes/I18n/order-form.php:169
+msgid "Only %d left in stock"
+msgstr ""
+
+#: includes/I18n/order-form.php:170
+msgid "Margin"
+msgstr ""
+
+#: includes/I18n/order-form.php:171
+msgid "Max Characters"
+msgstr ""
+
+#: includes/I18n/order-form.php:172
+msgid "Leave blank to display the full short description text."
+msgstr ""
+
+#: includes/I18n/order-form.php:173
+msgid "Menu Order"
+msgstr ""
+
+#: includes/I18n/order-form.php:174
+msgid "Message"
+msgstr ""
+
+#: includes/I18n/order-form.php:175
+msgid "Migrated"
+msgstr ""
+
+#: includes/I18n/order-form.php:176
+msgid "Migrate V2 Form Data"
+msgstr ""
+
+#: includes/I18n/order-form.php:177
+msgid "Migrating..."
+msgstr ""
+
+#: includes/I18n/order-form.php:179
+msgid "Navigate to Single Product Page"
+msgstr ""
+
+#: includes/I18n/order-form.php:180
+msgid " Form(s) deleted."
+msgstr ""
+
+#: includes/I18n/order-form.php:181
+msgid "Your form(s) was successfully deleted."
+msgstr ""
+
+#. translators: %d = stock quantity
+#: includes/I18n/order-form.php:183
+msgid "%d in stock"
+msgstr ""
+
+#: includes/I18n/order-form.php:184
+msgid "No"
+msgstr ""
+
+#: includes/I18n/order-form.php:185
+msgid "You do not have permission to view wholesale product listing."
+msgstr ""
+
+#: includes/I18n/order-form.php:186
+msgid "No available options."
+msgstr ""
+
+#: includes/I18n/order-form.php:187
+msgid "None"
+msgstr ""
+
+#: includes/I18n/order-form.php:188
+msgid "No available style settings."
+msgstr ""
+
+#: includes/I18n/order-form.php:189
+msgid "Not Applicable"
+msgstr ""
+
+#: includes/I18n/order-form.php:190
+msgid "Notification Duration"
+msgstr ""
+
+#: includes/I18n/order-form.php:191
+msgid "Leave empty to use default. Default is 10 seconds."
+msgstr ""
+
+#. translators: %d = number of items added to cart
+#: includes/I18n/order-form.php:193
+msgid "%d product(s) added"
+msgstr ""
+
+#: includes/I18n/order-form.php:194
+msgid "Number"
+msgstr ""
+
+#. translators: %d = number of locations found
+#: includes/I18n/order-form.php:196
+msgid "%d page(s)"
+msgstr ""
+
+#. translators: %d = total number of products
+#: includes/I18n/order-form.php:198
+msgid "%d product(s)"
+msgstr ""
+
+#: includes/I18n/order-form.php:199
+msgid "OK"
+msgstr ""
+
+#: includes/I18n/order-form.php:200
+msgid "Only Show Favourites"
+msgstr ""
+
+#: includes/I18n/order-form.php:201
+msgid "Only show products on users favourites list."
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: includes/I18n/order-form.php:203
+msgid "Please %1$slogin%2$s to view the form with your favourite products."
+msgstr ""
+
+#: includes/I18n/order-form.php:207
+msgid "Open In New Tab"
+msgstr ""
+
+#: includes/I18n/order-form.php:208
+msgid "Open the link in new tab."
+msgstr ""
+
+#: includes/I18n/order-form.php:209
+msgid "Options"
+msgstr ""
+
+#: includes/I18n/order-form.php:210
+msgid "Order Form Elements"
+msgstr ""
+
+#: includes/I18n/order-form.php:211
+msgid "Order Form Name"
+msgstr ""
+
+#: includes/I18n/order-form.php:213
+msgid "Order Form Table"
+msgstr ""
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form.php:215
+msgid "Below is a list of all the order forms for displaying products that you have on your store. Click each form to edit it's settings or add a new form using the %1$sAdd Form%2$s button below. Forms can be placed on pages via the given shortcode or via an editor block. Forms can be reused on multiple pages and you can also query what pages each form appears on."
+msgstr ""
+
+#: includes/I18n/order-form.php:216
+msgid "Out of stock"
+msgstr ""
+
+#: includes/I18n/order-form.php:217
+msgid "Out of Stock Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:218
+msgid "Padding"
+msgstr ""
+
+#: includes/I18n/order-form.php:219
+msgid "Pagination is hidden when \"Lazy Loading\" option is enabled."
+msgstr ""
+
+#: includes/I18n/order-form.php:220
+msgid "Requires the form title and table to be set first."
+msgstr ""
+
+#: includes/I18n/order-form.php:221
+msgid "Permission Options"
+msgstr ""
+
+#: includes/I18n/order-form.php:222
+msgid "Unable to save permissions. Please add at least one role to restrict."
+msgstr ""
+
+#: includes/I18n/order-form.php:223
+msgid "Placeholder"
+msgstr ""
+
+#: includes/I18n/order-form.php:224
+msgid "Please enter a search query."
+msgstr ""
+
+#: includes/I18n/order-form.php:225
+msgid "Popularity"
+msgstr ""
+
+#: includes/I18n/order-form.php:226
+msgid "Popularity Period"
+msgstr ""
+
+#: includes/I18n/order-form.php:227
+msgid "Pre-Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:228
+msgid "Price"
+msgstr ""
+
+#: includes/I18n/order-form.php:229
+msgid "Product Category"
+msgstr ""
+
+#: includes/I18n/order-form.php:230
+msgid "Product Count"
+msgstr ""
+
+#: includes/I18n/order-form.php:231
+msgid "Product ID"
+msgstr ""
+
+#: includes/I18n/order-form.php:232
+msgid "Product ID Click Action"
+msgstr ""
+
+#: includes/I18n/order-form.php:233
+msgid "ID"
+msgstr ""
+
+#: includes/I18n/order-form.php:234
+msgid "Product Image"
+msgstr ""
+
+#: includes/I18n/order-form.php:235
+msgid "Product Meta"
+msgstr ""
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form.php:237
+msgid "Note: Meta key with underscore prefix (%1$s_%2$s) are private hence they will not be displayed."
+msgstr ""
+
+#: includes/I18n/order-form.php:238
+msgid "Meta key with underscore prefix are private hence, this will not work."
+msgstr ""
+
+#: includes/I18n/order-form.php:239
+msgid "Product Name"
+msgstr ""
+
+#: includes/I18n/order-form.php:240
+msgid "Product Name Click Action"
+msgstr ""
+
+#: includes/I18n/order-form.php:241
+msgid "Product Sorting"
+msgstr ""
+
+#: includes/I18n/order-form.php:242
+msgid "Product Sorting By"
+msgstr ""
+
+#: includes/I18n/order-form.php:243
+msgid "Products per page"
+msgstr ""
+
+#: includes/I18n/order-form.php:244
+msgid "Min: 1 &mdash; Max: 100"
+msgstr ""
+
+#: includes/I18n/order-form.php:245
+msgid "Publish"
+msgstr ""
+
+#: includes/I18n/order-form.php:246
+msgid "Published"
+msgstr ""
+
+#: includes/I18n/order-form.php:247
+msgid "Quantity"
+msgstr ""
+
+#: includes/I18n/order-form.php:248
+msgid "Quantity Input"
+msgstr ""
+
+#: includes/I18n/order-form.php:249
+msgid "Remove from cart"
+msgstr ""
+
+#: includes/I18n/order-form.php:250
+msgid "Removing..."
+msgstr ""
+
+#: includes/I18n/order-form.php:251
+msgid "Re-order Column"
+msgstr ""
+
+#: includes/I18n/order-form.php:252
+msgid "Re-order Element"
+msgstr ""
+
+#: includes/I18n/order-form.php:253
+msgid "Re-order Row"
+msgstr ""
+
+#: includes/I18n/order-form.php:254
+msgid "Row Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:255
+msgid "Displayed items include sample mappings for your main wholesale role. Users should only see the mapping for their role in the frontend."
+msgstr ""
+
+#: includes/I18n/order-form.php:256
+msgid "Save"
+msgstr ""
+
+#: includes/I18n/order-form.php:257
+#: templates/admin/parts/settings/license/license-form.php:96
+msgid "Save Changes"
+msgstr ""
+
+#: includes/I18n/order-form.php:258
+msgid "Save Draft"
+msgstr ""
+
+#: includes/I18n/order-form.php:259
+msgid "Saving..."
+msgstr ""
+
+#: includes/I18n/order-form.php:260
+msgid "Search and Clear Buttons"
+msgstr ""
+
+#: includes/I18n/order-form.php:261
+msgid "Search Button Text"
+msgstr ""
+
+#: includes/I18n/order-form.php:262
+msgid "Allow searching by SKU"
+msgstr ""
+
+#: includes/I18n/order-form.php:263
+msgid "Search Input"
+msgstr ""
+
+#: includes/I18n/order-form.php:264
+msgid "Search Products"
+msgstr ""
+
+#. translators: %s = attribute name
+#: includes/I18n/order-form.php:266
+msgid "Select %s"
+msgstr ""
+
+#: includes/I18n/order-form.php:267
+msgid "Select Category"
+msgstr ""
+
+#: includes/I18n/order-form.php:268
+msgid "Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:269
+msgid "Shortcode"
+msgstr ""
+
+#: includes/I18n/order-form.php:270
+msgid "Short Description"
+msgstr ""
+
+#: includes/I18n/order-form.php:271
+msgid "Show Clear Button"
+msgstr ""
+
+#: includes/I18n/order-form.php:272
+msgid "Show a button to clear filters next to the search button."
+msgstr ""
+
+#: includes/I18n/order-form.php:273
+msgid "Show Form Footer"
+msgstr ""
+
+#: includes/I18n/order-form.php:274
+msgid "Show Form Header"
+msgstr ""
+
+#: includes/I18n/order-form.php:275
+msgid "Show Image Popup"
+msgstr ""
+
+#: includes/I18n/order-form.php:276
+msgid "Show Minimum Requirement Notice"
+msgstr ""
+
+#: includes/I18n/order-form.php:277
+msgid "Show wholesale minimum requirement notices above the search form"
+msgstr ""
+
+#: includes/I18n/order-form.php:278
+msgid "Show Product Details Popup"
+msgstr ""
+
+#: includes/I18n/order-form.php:279
+msgid "Show Variations Individually"
+msgstr ""
+
+#: includes/I18n/order-form.php:280
+msgid "Enabling this setting will list down each product variation individually and have its own row in the wholesale order form."
+msgstr ""
+
+#: includes/I18n/order-form.php:281
+msgid "Simplify Add to Cart Notices"
+msgstr ""
+
+#: includes/I18n/order-form.php:282
+msgid "Simplifies the \"Add to Cart Notices\" by displaying icons next to the \"Add to Cart\" button instead of showing popup/slide notifications."
+msgstr ""
+
+#: includes/I18n/order-form.php:284
+msgid "SKU Search"
+msgstr ""
+
+#: includes/I18n/order-form.php:285
+msgid "Smart Visibility"
+msgstr ""
+
+#: includes/I18n/order-form.php:286
+msgid "Hide column when no variable products detected"
+msgstr ""
+
+#: includes/I18n/order-form.php:287
+msgid "Sortable"
+msgstr ""
+
+#: includes/I18n/order-form.php:288
+msgid "Allow sorting the table by this column."
+msgstr ""
+
+#: includes/I18n/order-form.php:290
+msgid "Standard (One Box Per Attribute)"
+msgstr ""
+
+#. translators: %1$s opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form.php:292
+msgid "%1$sStandard%2$s &mdash; Limitation is only up to 100 variations."
+msgstr ""
+
+#: includes/I18n/order-form.php:293
+msgid "Status"
+msgstr ""
+
+#: includes/I18n/order-form.php:294
+msgid "Styles"
+msgstr ""
+
+#: includes/I18n/order-form.php:295
+msgid "Submit on Change"
+msgstr ""
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form.php:297
+msgid "Submit on %1$sENTER%2$s/%1$sRETURN%2$s"
+msgstr ""
+
+#: includes/I18n/order-form.php:298
+msgid "Subtotal: "
+msgstr ""
+
+#: includes/I18n/order-form.php:299
+msgid "Subtotal Suffix"
+msgstr ""
+
+#: includes/I18n/order-form.php:300
+msgid "Successfully added:"
+msgstr ""
+
+#: includes/I18n/order-form.php:301
+msgid "Table Alignment"
+msgstr ""
+
+#: includes/I18n/order-form.php:302
+msgid "TABLE ELEMENTS"
+msgstr ""
+
+#. translators: %s = field name
+#: includes/I18n/order-form.php:304
+msgid "Table %s Field Settings"
+msgstr ""
+
+#: includes/I18n/order-form.php:305
+msgid "Table Width"
+msgstr ""
+
+#: includes/I18n/order-form.php:306
+msgid "Tax Display"
+msgstr ""
+
+#: includes/I18n/order-form.php:307
+msgid "Title"
+msgstr ""
+
+#. translators: %1$d = quantity of the item that was added; %2$d = total quantity of the item in the cart
+#: includes/I18n/order-form.php:309
+msgid "x %1$d = total %2$d item(s)"
+msgstr ""
+
+#: includes/I18n/order-form.php:310
+msgid "Update"
+msgstr ""
+
+#: includes/I18n/order-form.php:311
+msgid "Used in pages:"
+msgstr ""
+
+#: includes/I18n/order-form.php:312
+msgid "Variation Dropdown"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form.php:314
+msgid "%1$sWarning:%2$s Enabling this option might have significant impact on the speed of fetching and/or displaying results in the order form table especially if you have a large number of variations per product."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form.php:316
+msgid "%1$sIf you have products with variation option set to ANY, this will render confusing product items. In this case, we recommend disabling this option.%2$s"
+msgstr ""
+
+#: includes/I18n/order-form.php:317
+msgid "Confirm old form data cleanup"
+msgstr ""
+
+#: includes/I18n/order-form.php:318
+msgid "Variation Style"
+msgstr ""
+
+#: includes/I18n/order-form.php:319
+msgid "View Cart"
+msgstr ""
+
+#: includes/I18n/order-form.php:320
+msgid "Virtual Table"
+msgstr ""
+
+#: includes/I18n/order-form.php:321
+msgid "Enable virtual table to improve rendering performance on very long lists."
+msgstr ""
+
+#: includes/I18n/order-form.php:322
+msgid "Virtual Table Height"
+msgstr ""
+
+#: includes/I18n/order-form.php:323
+msgid "Height of the virtual table."
+msgstr ""
+
+#: includes/I18n/order-form.php:324
+msgid "Wholesale Quantity Based Pricing Table"
+msgstr ""
+
+#: includes/I18n/order-form.php:325
+msgid "Width"
+msgstr ""
+
+#: includes/I18n/order-form.php:326
+msgid "WooCommerce Default"
+msgstr ""
+
+#: includes/I18n/order-form.php:327
+msgid "Yes"
+msgstr ""
+
+#: includes/I18n/order-form.php:328
+msgid "Zero Inventory"
+msgstr ""
+
+#: includes/I18n/order-form.php:329
+msgid "Show products that have zero inventory."
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:50
+msgid "Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:52
+msgid "Parent Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:54
+msgid "View Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:55
+msgid "Add Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:56
+msgid "New Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:57
+msgid "Edit Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:58
+msgid "Update Order Form"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:59
+msgid "Search Order Forms"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:60
+msgid "No Order Form found"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:61
+msgid "No Order Forms found in Trash"
+msgstr ""
+
+#: includes/Post_Types/Order_Form_Post_Type.php:66
+msgid "Order Forms CPT"
+msgstr ""
+
+#: includes/REST/Admin_Notices.php:93
+msgid "Invalid notice key."
+msgstr ""
+
+#: includes/REST/Favourites.php:89
+#: includes/REST/Favourites.php:106
+msgid "Product ID."
+msgstr ""
+
+#: includes/REST/Favourites.php:128
+msgid "Product saved to favourites."
+msgstr ""
+
+#: includes/REST/Favourites.php:130
+msgid "Product already in favourites."
+msgstr ""
+
+#: includes/REST/Favourites.php:149
+msgid "Product removed from favourites."
+msgstr ""
+
+#: includes/REST/Favourites.php:151
+msgid "Product not found in favourites."
+msgstr ""
+
+#: includes/REST/License_Manager.php:101
+msgid "License activation notice dismissed!"
+msgstr ""
+
+#: includes/REST/License_Manager.php:180
+msgid "Failed to activate license. Failed to connect to activation access point. Please contact plugin support."
+msgstr ""
+
+#: includes/REST/License_Manager.php:198
+msgid "Failed to activate license. Activation access point return invalid response. Please contact plugin support."
+msgstr ""
+
+#: includes/REST/License_Manager.php:292
+msgid "Something went wrong activating the license. Please contact plugin support."
+msgstr ""
+
+#: includes/REST/Order_Form.php:170
+msgid "Order Form Table must have columns for display."
+msgstr ""
+
+#: includes/REST/Order_Form.php:218
+msgid "Form could not be updated."
+msgstr ""
+
+#: includes/REST/Order_Form.php:568
+msgid "V2 Order Forms migrated to V3!"
+msgstr ""
+
+#: includes/REST/Order_Form.php:605
+msgid "V2 Order Forms data deleted!"
+msgstr ""
+
+#: includes/REST/Order_Form.php:608
+msgid "No V2 Order Forms found!"
+msgstr ""
+
+#: includes/REST/Setup_Wizard.php:97
+msgid "The setup wizard has been dismissed."
+msgstr ""
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:128
+msgid "Logout and login here"
+msgstr ""
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:129
+msgid "Login Here"
+msgstr ""
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:157
+msgid "No order form ID specified."
+msgstr ""
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:159
+#: includes/Shortcodes/WWOF_Product_Listing.php:166
+msgid "There is a config error on this form. Please contact the site administrator."
+msgstr ""
+
+#. translators: %d = order form ID given to [wwof_product_listing] shortcode
+#: includes/Shortcodes/WWOF_Product_Listing.php:164
+msgid "Order form ID %d does not exist!"
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:70
+msgid "Thank you for choosing Wholesale Suite – the most complete wholesale solution for building wholesale sales into your existing WooCommerce driven store."
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:78
+msgid "To help you get up and running as quickly and as smoothly as possible, we've published a number of getting started guides for our tools. You'll find links to these at any time inside the Help section in the settings for each plugin, but here are the links below so you can read them now."
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:89
+msgid "Wholesale Prices Premium Guide"
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:94
+msgid "Wholesale Prices Guide"
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:99
+msgid "Wholesale Order Form Guide"
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:106
+#: templates/admin/parts/notices/getting-started.php:145
+msgid "Dismiss this notice."
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:124
+msgid "Thank you for choosing Order Form to provide an efficient, optimized ordering experience for your wholesale customers. We know they're going to love it!"
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:131
+msgid "The plugin has already created an order form page which you'll find under the Wholesale menu. We highly recommend reading the getting started guide to help you get up to speed on customizing order form experience."
+msgstr ""
+
+#: templates/admin/parts/notices/getting-started.php:138
+msgid "Read the Getting Started guide"
+msgstr ""
+
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:13
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:18
+msgid "Refetch Plugin Update Data"
+msgstr ""
+
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:21
+msgid "Are you sure you want to refetch plugin update data?"
+msgstr ""
+
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:30
+msgid "This will refetch the plugin update data. Useful for debugging failed plugin update operations."
+msgstr ""
+
+#: templates/admin/parts/settings/help/help-resources.php:14
+#: templates/admin/parts/settings/help/help-resources.php:26
+msgid "Knowledge Base"
+msgstr ""
+
+#: templates/admin/parts/settings/help/help-resources.php:20
+msgid "Looking for documentation? Please see our growing"
+msgstr ""
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: templates/admin/parts/settings/license/interstitial.php:30
+msgid "%1$sUrgent!%2$s Your Wholesale Suite license has expired!"
+msgstr ""
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: templates/admin/parts/settings/license/interstitial.php:40
+msgid "%1$sUrgent!%2$s Your Wholesale Suite license is missing!"
+msgstr ""
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: templates/admin/parts/settings/license/interstitial.php:50
+msgid "%1$sUrgent!%2$s Your Wholesale Suite license is disabled!"
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:59
+msgid "Without an active license, your website front end will still continue to receive wholesale orders, leads and show wholesale pricing but premium functionality has been disabled until a valid license is entered."
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:72
+msgid "No license found"
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:82
+msgid "Enter License Now"
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:84
+msgid "Repurchase New License"
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:88
+msgid "Enter a new license"
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:89
+msgid "Refresh license status"
+msgstr ""
+
+#: templates/admin/parts/settings/license/interstitial.php:91
+msgid "Don’t have a license yet? Purchase here."
+msgstr ""
+
+#: templates/admin/parts/settings/license/license-form.php:39
+msgid "License Expired"
+msgstr ""
+
+#. translators: %1$s = license expiration date; %2$s = <br> tag; %3$s = opening <strong> tag; %4$s = </strong> closing tag; %5$s = opening <a> tag; %6$s = closing </a> tag
+#: templates/admin/parts/settings/license/license-form.php:45
+msgid "The entered license was purchased over 12 months ago and expired on %1$s.%2$sTo continue receiving support & updates please %3$s%5$sclick here to renew your license%6$s.%4$s"
+msgstr ""
+
+#: templates/admin/parts/settings/license/license-form.php:67
+msgid "License Email"
+msgstr ""
+
+#: templates/admin/parts/settings/license/license-form.php:81
+msgid "License Key"
+msgstr ""
+
+#. translators: %s: current server PHP version
+#: woocommerce-wholesale-order-form.bootstrap.php:120
+msgid "WooCommerce Wholesale Order Form plugin requires at least PHP 7.3 to work properly. Your server is currently using PHP %s."
+msgstr ""

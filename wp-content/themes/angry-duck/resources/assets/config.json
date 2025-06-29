@@ -10,7 +10,7 @@
     ]
   },
   "publicPath": "/wp-content/themes/angry-duck",
-  "devUrl": "http://angry-duck.test",
+  "devUrl": "http://angry-duck.local",
   "proxyUrl": "http://localhost:3000",
   "cacheBusting": "[name]_[hash:8]",
   "watch": [

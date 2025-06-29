@@ -1,0 +1,21 @@
+p.submit input[name='save'] {
+    display: none !important;
+}
+#wwlc_help_create_wwlc_pages + .spinner + .desc {
+    margin-left: 20px;
+    display: inline-block;
+    position: relative;
+    top: 3px;
+}
+
+#wwlc_help_create_wwlc_pages + .spinner.visible + .desc {
+    top: -5px;
+}
+
+table.lead-capture-pages tr td a{
+	color: #fff;
+}
+
+table.lead-capture-pages tr td a:hover{
+	color: orange;
+}

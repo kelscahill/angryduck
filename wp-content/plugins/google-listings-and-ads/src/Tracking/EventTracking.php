@@ -6,28 +6,24 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\Tracking;
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\ValidateInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Registerable;
 use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Service;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\ContainerAwareTrait;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Tracking\Events\ActivatedEvents;
 use Automattic\WooCommerce\GoogleListingsAndAds\Tracking\Events\BaseEvent;
+use Automattic\WooCommerce\GoogleListingsAndAds\Tracking\Events\GenericEvents;
 use Automattic\WooCommerce\GoogleListingsAndAds\Tracking\Events\SiteClaimEvents;
 use Automattic\WooCommerce\GoogleListingsAndAds\Tracking\Events\SiteVerificationEvents;
-use Psr\Container\ContainerInterface;
 
 /**
- * Wire up the Google Listings and Ads events to Tracks.
+ * Wire up the Google for WooCommerce events to Tracks.
  * Add all new events to `$events`.
  *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\Tracking
  */
-class EventTracking implements Service, Registerable {
+class EventTracking implements ContainerAwareInterface, Registerable, Service {
 
+	use ContainerAwareTrait;
 	use ValidateInterface;
-
-	/**
-	 * The container object.
-	 *
-	 * @var ContainerInterface
-	 */
-	protected $container;
 
 	/**
 	 * Individual events classes to load.
@@ -35,19 +31,11 @@ class EventTracking implements Service, Registerable {
 	 * @var string[]
 	 */
 	protected $events = [
-		SiteVerificationEvents::class,
-		SiteClaimEvents::class,
 		ActivatedEvents::class,
+		GenericEvents::class,
+		SiteClaimEvents::class,
+		SiteVerificationEvents::class,
 	];
-
-	/**
-	 * EventTracking constructor.
-	 *
-	 * @param ContainerInterface $container The tracks interface object.
-	 */
-	public function __construct( ContainerInterface $container ) {
-		$this->container = $container;
-	}
 
 	/**
 	 * Hook extension tracker data into the WC tracker data.
@@ -55,7 +43,7 @@ class EventTracking implements Service, Registerable {
 	public function register(): void {
 		add_action(
 			'init',
-			function() {
+			function () {
 				$this->register_events();
 			},
 			20 // After WC_Admin loads WC_Tracks class (init 10).

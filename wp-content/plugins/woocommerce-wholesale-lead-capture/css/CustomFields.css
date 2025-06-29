@@ -1,0 +1,10 @@
+p[id^="wwlc_cf_"] .woocommerce-input-wrapper input[type=radio] {
+    width: 1em;
+    display: inline-block;
+}
+
+p[id^="wwlc_cf_"] .woocommerce-input-wrapper input[type=radio]+label {
+    width: calc( 100% - 1.5em );
+    display: inline-block;
+    margin-left: .5em;
+}

@@ -19,9 +19,12 @@ class MailChimp_WooCommerce_Customer {
 	protected $orders_count  = null;
 	protected $total_spent   = null;
 	protected $address;
-	protected $requires_double_optin      = false;
-	protected $original_subscriber_status = null;
-	protected $wordpress_user             = null;
+	protected $marketing_status_updated_at = null;
+	protected $requires_double_optin       = false;
+	protected $original_subscriber_status  = null;
+	protected $wordpress_user              = null;
+    protected $subscribed_in_wordpress     = null;
+    protected $status_in_mailchimp         = null;
 
 	/**
 	 * @return array
@@ -30,11 +33,11 @@ class MailChimp_WooCommerce_Customer {
 		return array(
 			'id'            => 'required',
 			'email_address' => 'required|email',
-			'opt_in_status' => 'required|boolean',
+			'opt_in_status' => 'required|string',
 			'company'       => 'string',
 			'first_name'    => 'string',
 			'last_name'     => 'string',
-			// 'orders_count' => 'integer',
+            // 'orders_count' => 'integer',
 			// 'total_spent' => 'integer',
 		);
 	}
@@ -81,16 +84,45 @@ class MailChimp_WooCommerce_Customer {
 	}
 
 	/**
+	 * @return DateTime|false|mixed|null
+	 */
+    public function getOptInStatusTime() {
+		if ($this->marketing_status_updated_at) {
+			return $this->marketing_status_updated_at;
+		}
+
+		if (($user = $this->getWordpressUser())) {
+			return $this->marketing_status_updated_at = mailchimp_get_marketing_status_updated_at($user->ID);
+		}
+        return null;
+    }
+
+	/**
+	 * @return string
+	 */
+	public function getOptInStatusTimeAsString()
+	{
+		if (($date = $this->getOptInStatusTime())) {
+			return $date->format('D, M j, Y g:i A');
+		}
+		return '';
+	}
+
+
+    /**
 	 * @param null $opt_in_status
 	 * @return MailChimp_WooCommerce_Customer
 	 */
 	public function setOptInStatus( $opt_in_status ) {
-		$this->opt_in_status = $opt_in_status;
-
+        if ( is_bool( $opt_in_status ) ) {
+            $this->opt_in_status = $opt_in_status;
+        } else {
+            $this->opt_in_status = $opt_in_status === '1';
+        }
 		return $this;
 	}
 
-	/**
+    /**
 	 * @return null
 	 */
 	public function getCompany() {
@@ -225,8 +257,10 @@ class MailChimp_WooCommerce_Customer {
 	 */
 	public function wasSubscribedOnOrder( $id ) {
 		// we are saving the post meta for subscribers on each order... so if they have subscribed on checkout
-		$subscriber_meta = get_post_meta( $id, 'mailchimp_woocommerce_is_subscribed', true );
-		$subscribed      = $subscriber_meta === '' ? false : (bool) $subscriber_meta;
+        $order           = wc_get_order($id);
+		$subscriber_meta = $order->get_meta('mailchimp_woocommerce_is_subscribed');
+
+		$subscribed      = $subscriber_meta === '' ? false : $subscriber_meta;
 
 		return $this->original_subscriber_status = $subscribed;
 	}
@@ -266,6 +300,82 @@ class MailChimp_WooCommerce_Customer {
 		return $this->wordpress_user;
 	}
 
+    /**
+     * @return mixed|null
+     */
+    public function getWordpressUserSubscriberStatus()
+    {
+        if (!$this->wordpress_user) {
+            return null;
+        }
+        return get_user_meta($this->wordpress_user->ID, 'mailchimp_woocommerce_is_subscribed', true);
+    }
+
+    /**
+     * @return $this
+     */
+    public function applyWordpressUserSubscribeStatus()
+    {
+        // if we have a local record of the subscriber status we can use this.
+        if (($status = $this->getWordpressUserSubscriberStatus())) {
+            if (in_array($status, array('subscribed', '1', 'pending'), true)) {
+                $this->subscribed_in_wordpress = true;
+                return $this->setOptInStatus(true);
+            }
+            $this->subscribed_in_wordpress = false;
+        }
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSubscribedInWordpress()
+    {
+        if (null === $this->subscribed_in_wordpress) {
+            $this->applyWordpressUserSubscribeStatus();
+        }
+        return $this->subscribed_in_wordpress;
+    }
+
+    /**
+     * @return $this
+     */
+    public function syncSubscriberStatusFromMailchimp()
+    {
+        $this->status_in_mailchimp = null;
+        if (!is_email($this->email_address) || !($list_id = mailchimp_get_list_id())) {
+            return $this;
+        }
+        try {
+            $subscriber = mailchimp_get_api()->member($list_id, $this->email_address);
+            $this->setOptInStatus(in_array($subscriber['status'], array('subscribed', 'pending'), true) );
+            $this->status_in_mailchimp = $subscriber['status'];
+            if ($this->wordpress_user) {
+                $meta_value = null;
+                if ( $subscriber['status'] === 'transactional' ) {
+                    $meta_value = '0';
+                } elseif ( $subscriber['status'] === 'pending' ) {
+                    $meta_value = '1';
+                } elseif ( $subscriber['status'] === 'archived' ) {
+                    $meta_value = 'archived';
+                }
+                $meta_value !== null && update_user_meta($this->wordpress_user->ID, 'mailchimp_woocommerce_is_subscribed', $meta_value);
+            }
+        } catch (Exception $e) {
+
+        }
+        return $this;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getMailchimpStatus()
+    {
+        return $this->status_in_mailchimp;
+    }
+
 	/**
 	 * @return array
 	 */
@@ -276,9 +386,10 @@ class MailChimp_WooCommerce_Customer {
 			array(
 				'id'            => (string) $this->getId(),
 				'email_address' => (string) $this->getEmailAddress(),
-				'opt_in_status' => $this->getOptInStatus(),
-				'company'       => (string) $this->getCompany(),
-				'first_name'    => (string) $this->getFirstName(),
+				'opt_in_status' => false, //$this->getOptInStatus(),
+                'marketing_status_updated_at' => $this->getOptInStatusTimeAsString(),
+                'company'       => (string) $this->getCompany(),
+                'first_name'    => (string) $this->getFirstName(),
 				'last_name'     => (string) $this->getLastName(),
 				// 'orders_count' => (int) $this->getOrdersCount(),
 				// 'total_spent' => floatval(number_format($this->getTotalSpent(), 2, '.', '')),

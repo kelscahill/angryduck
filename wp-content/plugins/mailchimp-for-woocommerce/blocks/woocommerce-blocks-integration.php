@@ -1,13 +1,8 @@
 <?php
 
 use Automattic\WooCommerce\Blocks\Integrations\IntegrationInterface;
-use Automattic\WooCommerce\Blocks\Package;
-use Automattic\WooCommerce\Blocks\Domain\Services\ExtendRestApi;
-use Automattic\WooCommerce\Blocks\StoreApi\Schemas\CheckoutSchema;
-use Automattic\WooCommerce\StoreApi\StoreApi;
-use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
-defined( 'ABSPATH' ) || exit;
 
+defined( 'ABSPATH' ) || exit;
 /**
  * Class Mailchimp_Woocommerce_Newsletter_Blocks_Integration
  *
@@ -34,11 +29,8 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
 		$this->register_frontend_scripts();
         $this->register_editor_scripts();
 		$this->register_editor_blocks();
-		$this->extend_store_api();
 		add_filter( '__experimental_woocommerce_blocks_add_data_attributes_to_block', [ $this, 'add_attributes_to_frontend_blocks' ], 10, 1 );
         add_action('woocommerce_before_order_object_save', [$this, 'capture_from_store_api'], 1);
-        add_action('woocommerce_blocks_checkout_update_order_from_request', [$this, 'order_processed'], 10, 2);
-        //add_action('woocommerce_blocks_checkout_order_processed', [$this, 'order_processed'], 10, 2);
 	}
 
 	/**
@@ -138,6 +130,22 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
         $data = array(
             'optinDefaultText' => __( 'I want to receive updates about products and promotions.', 'mailchimp-newsletter' ),
         );
+        $data['gdprStatus'] = $this->getOptinStatus();
+
+        if (is_user_logged_in()) {
+            $subscribed = is_user_logged_in() && get_user_meta(get_current_user_id(), 'mailchimp_woocommerce_is_subscribed', true);
+        } else {
+            $subscribed = false;
+        }
+
+        $data['userSubscribed'] = $subscribed === true || $subscribed === '1';
+
+        $checkbox_settings = array(
+            [ 'label' => esc_html__( 'Checked by default', 'mailchimp-for-woocommerce' ), 'value' => 'check' ],
+            [ 'label' => esc_html__( 'Unchecked by default', 'mailchimp-for-woocommerce' ), 'value' => 'uncheck' ],
+        );
+
+        $data['checkboxSettings'] = apply_filters('mailchimp_checkout_opt_in_options', $checkbox_settings);;
 
         if (!empty($gdpr)) {
             $data['gdprHeadline'] = __( 'Please select all the ways you would like to hear from us', 'mailchimp-newsletter' );
@@ -174,55 +182,11 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
 	}
 
 	/**
-	 * @throws Exception
-	 */
-	public function extend_store_api()
-    {
-        /** @var ExtendRestApi $extend */
-        /** @var ExtendSchema $extend */
-		$extend = class_exists('Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema') ? StoreApi::container()->get(ExtendSchema::class) : Package::container()->get(ExtendRestApi::class);
-
-		$extend->register_endpoint_data(
-			array(
-				'endpoint'        => CheckoutSchema::IDENTIFIER,
-				'namespace'       => $this->get_name(),
-				'schema_callback' => function() {
-					return array(
-						'optin' => array(
-							'description' => __( 'Subscribe to marketing opt-in.', 'mailchimp-newsletter' ),
-							'type'        => 'boolean',
-							'context'     => array(),
-							'arg_options' => array(
-								'validate_callback' => function( $value ) {
-									if ( ! is_bool( $value ) ) {
-										return new WP_Error( 'api-error', 'value of type ' . gettype( $value ) . ' was posted to the newsletter optin callback' );
-									}
-									return true;
-								},
-							),
-						),
-                        'gdprFields' => array(
-                            'description' => __( 'GDPR marketing opt-in.', 'mailchimp-newsletter' ),
-                            'type'        => 'object',
-                            'context'     => array(),
-                            'arg_options' => array(
-                                'validate_callback' => function( $value ) {
-                                    return true;
-                                },
-                            ),
-                        ),
-					);
-				},
-			)
-		);
-	}
-
-	/**
 	 * Store guest info when they submit email from Store API.
 	 *
 	 * The guest email, first name and last name are captured.
 	 *
-	 * @see \Automattic\WooCommerce\Blocks\StoreApi\Routes\CartUpdateCustomer
+	 * @see \Automattic\WooCommerce\StoreApi\Routes\V1\CartUpdateCustomer
 	 *
 	 * @param WC_Order|WC_Order_Refund $order
 	 *
@@ -252,32 +216,67 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
      * @param WC_Order $order
      * @param $request
      */
-    public function order_processed($order, $request)
+    public static function order_processed($order, $request)
     {
         $meta_key = 'mailchimp_woocommerce_is_subscribed';
         $optin = $request['extensions']['mailchimp-newsletter']['optin'];
         $gdpr_fields = isset($request['extensions']['mailchimp-newsletter']['gdprFields']) ?
             (array) $request['extensions']['mailchimp-newsletter']['gdprFields'] : null;
-
         // update the order meta for the subscription status to support legacy functions
-        update_post_meta($order->get_id(), $meta_key, $optin);
+
+        MailChimp_WooCommerce_HPOS::update_order_meta($order->get_id(), $meta_key, $optin);
+        /*update_post_meta($order->get_id(), $meta_key, $optin);*/
         // let's set the GDPR fields here just in case we need to pull them again.
         if (!empty($gdpr_fields)) {
-            update_post_meta($order->get_id(), "mailchimp_woocommerce_gdpr_fields", $gdpr_fields);
+            MailChimp_WooCommerce_HPOS::update_order_meta($order->get_id(), 'mailchimp_woocommerce_gdpr_fields', $gdpr_fields);
+            //update_post_meta($order->get_id(), "mailchimp_woocommerce_gdpr_fields", $gdpr_fields);
         }
 
+        $tracking = MailChimp_Service::instance()->onNewOrder($order->get_id());
+        // queue up the single order to be processed.
+        $landing_site = isset($tracking) && isset($tracking['landing_site']) ? $tracking['landing_site'] : null;
+        $language = substr( get_locale(), 0, 2 );
+
+        // update the post meta with campaign tracking details for future sync
+        if (!empty($landing_site)) {
+            MailChimp_WooCommerce_HPOS::update_order_meta($order->get_id(), 'mailchimp_woocommerce_landing_site', $landing_site);
+        }
+
+        $handler = new MailChimp_WooCommerce_Single_Order($order->get_id(), null, $landing_site, $language, $gdpr_fields);
+        $handler->is_update = false;
+        $handler->is_admin_save = is_admin();
+
+        mailchimp_handle_or_queue($handler, 15);
+    }
+
+    /**
+     * @param WC_Order $order
+     */
+    public static function order_customer_processed( $order )
+    {
+        // extract a new order object to take the relevant meta fields
+        $wc_order   = wc_get_order( $order->get_id() );
+        $meta_key   = 'mailchimp_woocommerce_is_subscribed';
+        $optin      = $wc_order->get_meta( $meta_key );
+        $gdpr_fields = $wc_order->get_meta( 'mailchimp_woocommerce_gdpr_fields' );
+
         // if the user id exists
-        if (($user_id = $order->get_user_id())) {
+        if ( ( $user_id = $wc_order->get_user_id() ) ) {
             // update the user subscription meta
-            update_user_meta($user_id, $meta_key, $optin);
+            update_user_meta( $user_id, $meta_key, $optin );
             // submit this if there's a proper user ID and is a subscriber.
-            if ((bool) $optin) {
+            if ( (bool) $optin ) {
                 // probably need to add the GDPR fields and language in to this submission next.
-                $language = null;
-                mailchimp_handle_or_queue(
+				$language = get_user_meta($user_id, 'locale', true);
+				if (strpos($language, '_') !== false) {
+					$languageArray = explode('_', $language);
+					$language = $languageArray[0];
+				}
+
+				mailchimp_handle_or_queue(
                     new MailChimp_WooCommerce_User_Submit(
                         $user_id,
-                        true,
+                        '1',
                         null,
                         $language,
                         $gdpr_fields
@@ -285,26 +284,6 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
                 );
             }
         }
-
-        $tracking = MailChimp_Service::instance()->onNewOrder($order->get_id());
-        // queue up the single order to be processed.
-        $campaign_id = isset($tracking) && isset($tracking['campaign_id']) ? $tracking['campaign_id'] : null;
-        $landing_site = isset($tracking) && isset($tracking['landing_site']) ? $tracking['landing_site'] : null;
-        $language = substr( get_locale(), 0, 2 );
-
-        // update the post meta with campaign tracking details for future sync
-        if (!empty($campaign_id)) {
-            update_post_meta($order->get_id(), 'mailchimp_woocommerce_campaign_id', $campaign_id);
-        }
-        if (!empty($landing_site)) {
-            update_post_meta($order->get_id(), 'mailchimp_woocommerce_landing_site', $landing_site);
-        }
-
-        $handler = new MailChimp_WooCommerce_Single_Order($order->get_id(), null, $campaign_id, $landing_site, $language, $gdpr_fields);
-        $handler->is_update = false;
-        $handler->is_admin_save = is_admin();
-
-        mailchimp_handle_or_queue($handler, 15);
     }
 
     /**
@@ -316,6 +295,34 @@ class Mailchimp_Woocommerce_Newsletter_Blocks_Integration implements Integration
             return false;
         }
         return mailchimp_get_api();
+    }
+
+    /**
+     * @return bool
+     */
+    protected function getOptinStatus()
+    {
+        $mailchimp_newsletter = new MailChimp_Newsletter();
+        // if the user has chosen to hide the checkbox, don't do anything.
+        if ( ( $default_setting = $mailchimp_newsletter->getOption('mailchimp_checkbox_defaults', 'check') ) === 'hide') {
+            return 'hide';
+        }
+
+        // if the user chose 'check' or nothing at all, we default to true.
+        $default_checked = $default_setting === 'check';
+        $status = $default_checked;
+
+        // if the user is logged in, we will pull the 'is_subscribed' property out of the meta for the value.
+        // otherwise we use the default settings.
+        if (is_user_logged_in()) {
+            $status = get_user_meta(get_current_user_id(), 'mailchimp_woocommerce_is_subscribed', true);
+            /// if the user is logged in - and is already subscribed - just ignore this checkbox.
+            if ($status === '' || $status === null) {
+                $status = $default_checked;
+            }
+        }
+
+        return $status === true || $status === '1' ? 'check' : 'uncheck';
     }
 
     /**

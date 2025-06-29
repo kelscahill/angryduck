@@ -3,8 +3,10 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\API\Google;
 
-use Automattic\WooCommerce\GoogleListingsAndAds\DB\Query\ShippingRateQuery as RateQuery;
-use Automattic\WooCommerce\GoogleListingsAndAds\DB\Query\ShippingTimeQuery as TimeQuery;
+use Automattic\WooCommerce\GoogleListingsAndAds\DB\Query\ShippingRateQuery;
+use Automattic\WooCommerce\GoogleListingsAndAds\DB\Query\ShippingTimeQuery;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\ContainerAwareTrait;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\TargetAudience;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WC;
@@ -12,34 +14,51 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\CountryRatesCollection;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\GoogleAdapter\DBShippingSettingsAdapter;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\GoogleAdapter\WCShippingSettingsAdapter;
 use Automattic\WooCommerce\GoogleListingsAndAds\Shipping\ShippingZone;
-use Google\Service\ShoppingContent;
-use Google\Service\ShoppingContent\AccountAddress;
-use Google\Service\ShoppingContent\AccountTax;
-use Google\Service\ShoppingContent\AccountTaxTaxRule as TaxRule;
-use Google\Service\ShoppingContent\ShippingSettings;
-use Psr\Container\ContainerInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountAddress;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountTax;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountTaxTaxRule as TaxRule;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ShippingSettings;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
  * Class Settings
  *
+ * Container used for:
+ * - OptionsInterface
+ * - ShippingRateQuery
+ * - ShippingTimeQuery
+ * - ShippingZone
+ * - ShoppingContent
+ * - TargetAudience
+ * - WC
+ *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\API\Google
  */
-class Settings {
+class Settings implements ContainerAwareInterface {
 
+	use ContainerAwareTrait;
 	use LocationIDTrait;
 
-	/** @var ContainerInterface */
-	protected $container;
-
 	/**
-	 * Settings constructor.
+	 * Return a set of formatted settings which can be used in tracking.
 	 *
-	 * @param ContainerInterface $container
+	 * @since 2.5.16
+	 *
+	 * @return array
 	 */
-	public function __construct( ContainerInterface $container ) {
-		$this->container = $container;
+	public function get_settings_for_tracking() {
+		$settings = $this->get_settings();
+
+		return [
+			'shipping_rate'           => $settings['shipping_rate'] ?? '',
+			'offers_free_shipping'    => (bool) ( $settings['offers_free_shipping'] ?? false ),
+			'free_shipping_threshold' => (float) ( $settings['free_shipping_threshold'] ?? 0 ),
+			'shipping_time'           => $settings['shipping_time'] ?? '',
+			'tax_rate'                => $settings['tax_rate'] ?? '',
+			'target_countries'        => join( ',', $this->get_target_countries() ),
+		];
 	}
 
 	/**
@@ -177,8 +196,8 @@ class Settings {
 		static $times = null;
 
 		if ( null === $times ) {
-			$time_query = $this->container->get( TimeQuery::class );
-			$times      = array_column( $time_query->get_results(), 'time', 'country' );
+			$time_query = $this->container->get( ShippingTimeQuery::class );
+			$times      = $time_query->get_all_shipping_times();
 		}
 
 		return $times;
@@ -190,7 +209,7 @@ class Settings {
 	 * @return array
 	 */
 	protected function get_shipping_rates_from_database(): array {
-		$rate_query = $this->container->get( RateQuery::class );
+		$rate_query = $this->container->get( ShippingRateQuery::class );
 
 		return $rate_query->get_results();
 	}
@@ -257,10 +276,7 @@ class Settings {
 	 * @return string
 	 */
 	protected function get_store_country(): string {
-		/** @var WC $wc */
-		$wc = $this->container->get( WC::class );
-
-		return $wc->get_wc_countries()->get_base_country();
+		return $this->container->get( WC::class )->get_base_country();
 	}
 
 	/**
@@ -392,5 +408,20 @@ class Settings {
 	protected function get_settings(): array {
 		$settings = $this->get_options_object()->get( OptionsInterface::MERCHANT_CENTER );
 		return is_array( $settings ) ? $settings : [];
+	}
+
+	/**
+	 * Return a list of target countries or all.
+	 *
+	 * @return array
+	 */
+	protected function get_target_countries(): array {
+		$target_audience = $this->get_options_object()->get( OptionsInterface::TARGET_AUDIENCE );
+
+		if ( isset( $target_audience['location'] ) && 'all' === $target_audience['location'] ) {
+			return [ 'all' ];
+		}
+
+		return $target_audience['countries'] ?? [];
 	}
 }

@@ -1,4 +1,7 @@
 <?php
+
+use Automattic\WooCommerce\Enums\OrderStatus;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -17,7 +20,7 @@ class WC_Gateway_Stripe_Oxxo extends WC_Stripe_Payment_Gateway_Voucher {
 	 *
 	 * @var string
 	 */
-	const ID = 'stripe_boleto';
+	const ID = 'stripe_oxxo';
 
 	/**
 	 * ID used by WooCommerce to identify the payment method
@@ -29,14 +32,14 @@ class WC_Gateway_Stripe_Oxxo extends WC_Stripe_Payment_Gateway_Voucher {
 	/**
 	 * ID used by stripe
 	 */
-	protected $stripe_id = 'oxxo';
+	protected $stripe_id = WC_Stripe_Payment_Methods::OXXO;
 
 	/**
 	 * List of accepted currencies
 	 *
 	 * @var array
 	 */
-	protected $supported_currencies = [ 'MXN' ];
+	protected $supported_currencies = [ WC_Stripe_Currency_Code::MEXICAN_PESO ];
 
 	/**
 	 * List of accepted countries
@@ -64,8 +67,8 @@ class WC_Gateway_Stripe_Oxxo extends WC_Stripe_Payment_Gateway_Voucher {
 	 * @return mixed
 	 */
 	public function add_allowed_payment_processing_statuses( $allowed_statuses, $order ) {
-		if ( $this->stripe_id === $order->get_meta( '_stripe_upe_payment_type' ) && ! in_array( 'on-hold', $allowed_statuses ) ) {
-			$allowed_statuses[] = 'on-hold';
+		if ( $this->stripe_id === $order->get_meta( '_stripe_upe_payment_type' ) && ! in_array( OrderStatus::ON_HOLD, $allowed_statuses, true ) ) {
+			$allowed_statuses[] = OrderStatus::ON_HOLD;
 		}
 
 		return $allowed_statuses;
@@ -78,11 +81,11 @@ class WC_Gateway_Stripe_Oxxo extends WC_Stripe_Payment_Gateway_Voucher {
 	 */
 	public function payment_fields() {
 		$description = $this->get_description();
-		apply_filters( 'wc_stripe_description', wpautop( wp_kses_post( $description ) ), $this->id )
+		apply_filters( 'wc_stripe_description', wp_kses_post( $description ), $this->id )
 		?>
 		<div class="stripe-source-errors" role="alert"></div>
 
-		<div id="stripe-boleto-payment-data"><?php echo $description; ?></div>
+		<div id="stripe-boleto-payment-data"><?php echo wp_kses( wpautop( $description ), [ 'p' => [] ] ); ?></div>
 		<?php
 	}
 

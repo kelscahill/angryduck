@@ -5,6 +5,8 @@ use Automattic\Jetpack\Connection\Client;
 defined( 'VIDEOPRESS_MIN_WIDTH' ) || define( 'VIDEOPRESS_MIN_WIDTH', 60 );
 defined( 'VIDEOPRESS_DEFAULT_WIDTH' ) || define( 'VIDEOPRESS_DEFAULT_WIDTH', 640 );
 
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
+
 /**
  * VideoPress Privacy constants.
  */
@@ -26,6 +28,16 @@ function videopress_is_valid_guid( $guid ) {
 		return true;
 	}
 	return false;
+}
+
+/**
+ * Validates user-supplied video preload setting.
+ *
+ * @param mixed $value the preload value to validate.
+ * @return bool
+ */
+function videopress_is_valid_preload( $value ) {
+	return in_array( strtolower( $value ), array( 'auto', 'metadata', 'none' ), true );
 }
 
 /**
@@ -188,7 +200,7 @@ function videopress_cleanup_media_library() {
 				// Force delete the attachment, because we don't want it appearing in the trash.
 				wp_delete_attachment( $post->ID, true );
 
-				$cleaned++;
+				++$cleaned;
 			}
 		}
 	}
@@ -412,7 +424,7 @@ function videopress_is_attachment_without_guid( $post_id ) {
 function is_videopress_attachment( $post_id ) {
 	$post = get_post( $post_id );
 
-	if ( is_wp_error( $post ) ) {
+	if ( ! $post instanceof WP_Post ) {
 		return false;
 	}
 
@@ -474,24 +486,30 @@ function videopress_make_resumable_upload_path( $blog_id ) {
  *
  * @param int $blog_id Blog ID.
  * @param int $post_id Post ID.
- * @return bool|stdClass
+ * @return stdClass
  */
 function video_get_info_by_blogpostid( $blog_id, $post_id ) {
 	$post = get_post( $post_id );
 
 	$video_info                  = new stdClass();
-	$video_info->post_id         = $post_id;
+	$video_info->post_id         = 0;
+	$video_info->description     = '';
+	$video_info->title           = '';
+	$video_info->caption         = '';
 	$video_info->blog_id         = $blog_id;
 	$video_info->guid            = null;
 	$video_info->finish_date_gmt = '0000-00-00 00:00:00';
 	$video_info->rating          = null;
-	$video_info->description     = $post->post_content;
-	$video_info->title           = $post->post_title;
-	$video_info->caption         = $post->post_excerpt;
+	$video_info->privacy_setting = VIDEOPRESS_PRIVACY::SITE_DEFAULT;
 
-	if ( is_wp_error( $post ) ) {
+	if ( ! $post ) {
 		return $video_info;
 	}
+
+	$video_info->post_id     = $post_id;
+	$video_info->description = $post->post_content;
+	$video_info->title       = $post->post_title;
+	$video_info->caption     = $post->post_excerpt;
 
 	if ( 'video/videopress' !== $post->post_mime_type ) {
 		return $video_info;
@@ -505,6 +523,7 @@ function video_get_info_by_blogpostid( $blog_id, $post_id ) {
 		$videopress_meta             = $meta['videopress'];
 		$video_info->rating          = isset( $videopress_meta['rating'] ) ? $videopress_meta['rating'] : null;
 		$video_info->allow_download  = isset( $videopress_meta['allow_download'] ) ? $videopress_meta['allow_download'] : 0;
+		$video_info->display_embed   = isset( $videopress_meta['display_embed'] ) ? $videopress_meta['display_embed'] : 0;
 		$video_info->privacy_setting = ! isset( $videopress_meta['privacy_setting'] ) ? VIDEOPRESS_PRIVACY::SITE_DEFAULT : $videopress_meta['privacy_setting'];
 	}
 
@@ -712,6 +731,10 @@ function videopress_get_attachment_url( $post_id ) {
  * @return string filtered content
  */
 function jetpack_videopress_flash_embed_filter( $content ) {
+	// This receives data from the `the_content` filter, which unfortunately sometimes has bad content passed along as a param.
+	if ( ! is_string( $content ) ) {
+		return $content;
+	}
 	$regex   = '%<embed[^>]*+>(?:\s*</embed>)?%i';
 	$content = preg_replace_callback(
 		$regex,
@@ -760,10 +783,6 @@ if ( ! function_exists( 'wp_startswith' ) ) :
 		$haystack = (string) $haystack;
 		$needle   = (string) $needle;
 
-		if ( function_exists( 'str_starts_with' ) ) { // remove when PHP 8.0 is the minimum supported.
-			return str_starts_with( $haystack, $needle ); // phpcs:ignore PHPCompatibility.FunctionUse.NewFunctions
-		}
-
-		return 0 === strpos( $haystack, $needle );
+		return str_starts_with( $haystack, $needle );
 	}
 endif;

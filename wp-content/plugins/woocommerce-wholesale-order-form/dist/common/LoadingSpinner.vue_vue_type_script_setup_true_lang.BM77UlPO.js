@@ -1,0 +1,1 @@
+import{d as e,h as t,o as a,k as i,u as n,ap as r}from"./LoadingOutlined.BFkAxzyV.js";import{S as s}from"./index.CjASPO7n.js";const m=e({__name:"LoadingSpinner",setup(p){const o=t(r,{style:{fontSize:"24px"},spin:!0});return(c,_)=>(a(),i(n(s),{indicator:n(o)},null,8,["indicator"]))}});export{m as _};

@@ -32,37 +32,18 @@
 
 namespace Google\ApiCore\Transport\Rest;
 
-use Psr\Http\Message\StreamInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
 class JsonStreamDecoder
 {
     const ESCAPE_CHAR = '\\';
 
-    /**
-     * @var StreamInterface
-     */
-    private $stream;
-
-    /**
-     * @var bool
-     */
-    private $closeCalled = false;
-
-    /**
-     * @var string
-     */
-    private $decodeType;
-
-    /**
-     * @var bool
-     */
-    private $ignoreUnknown = true;
-
-    /**
-     * @var int
-     */
-    private $readChunkSize = 1024;
+    private StreamInterface $stream;
+    private bool $closeCalled = false;
+    private string $decodeType;
+    private bool $ignoreUnknown = true;
+    private int $readChunkSize = 1024;
 
     /**
      * JsonStreamDecoder is a HTTP-JSON response stream decoder for JSON-ecoded
@@ -86,7 +67,7 @@ class JsonStreamDecoder
      *
      * @experimental
      */
-    public function __construct(StreamInterface $stream, $decodeType, $options = [])
+    public function __construct(StreamInterface $stream, string $decodeType, array $options = [])
     {
         $this->stream = $stream;
         $this->decodeType = $decodeType;

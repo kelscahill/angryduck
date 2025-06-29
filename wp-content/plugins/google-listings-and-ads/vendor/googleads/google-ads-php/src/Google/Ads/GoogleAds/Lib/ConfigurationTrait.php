@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
 trait ConfigurationTrait
 {
     private $developerToken;
+    private $useCloudOrgForApiAccess;
     private $loginCustomerId;
     private $linkedCustomerId;
     private $endpoint;
@@ -45,6 +46,7 @@ trait ConfigurationTrait
     private $unaryMiddlewares;
     private $streamingMiddlewares;
     private $grpcInterceptors;
+    private $httpHandler;
 
     /**
      * Gets the developer token.
@@ -54,6 +56,16 @@ trait ConfigurationTrait
     public function getDeveloperToken()
     {
         return $this->developerToken;
+    }
+
+    /**
+     * Returns true when this library is set to use Google Cloud organization for API access.
+     *
+     * @return bool
+     */
+    public function useCloudOrgForApiAccess()
+    {
+        return $this->useCloudOrgForApiAccess;
     }
 
     /**
@@ -176,7 +188,7 @@ trait ConfigurationTrait
         return $this->streamingMiddlewares;
     }
 
-    /*
+    /**
      * Gets the gRPC interceptors.
      *
      * @return Interceptor[] the gRPC interceptors
@@ -184,5 +196,15 @@ trait ConfigurationTrait
     public function getGrpcInterceptors()
     {
         return $this->grpcInterceptors;
+    }
+
+    /**
+     * Gets the REST HTTP handler.
+     *
+     * @return callable
+     */
+    public function getHttpHandler()
+    {
+        return $this->httpHandler;
     }
 }

@@ -1,0 +1,1 @@
+import{d as a,l as o,m as n,B as s,X as t}from"../../../../common/vue.esm-bundler.Eb_t0ZuK.js";const r={class:"tw-flex"},c={class:"tw-w-2/3"},d={class:"tw-w-1/3"},m=a({__name:"RightSidebar",setup(l){return(e,i)=>(o(),n("div",r,[s("main",c,[t(e.$slots,"default")]),s("aside",d,[t(e.$slots,"sidebar")])]))}});export{m as default};

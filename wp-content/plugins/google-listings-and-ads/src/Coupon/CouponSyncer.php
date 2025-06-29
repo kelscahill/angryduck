@@ -9,7 +9,7 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Service;
 use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\MerchantCenterService;
 use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\TargetAudience;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WC;
-use Google\Exception as GoogleException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Exception as GoogleException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Exception;
 use WC_Coupon;
@@ -78,7 +78,8 @@ class CouponSyncer implements Service {
 		ValidatorInterface $validator,
 		MerchantCenterService $merchant_center,
 		TargetAudience $target_audience,
-		WC $wc ) {
+		WC $wc
+	) {
 		$this->google_service  = $google_service;
 		$this->coupon_helper   = $coupon_helper;
 		$this->validator       = $validator;
@@ -141,7 +142,7 @@ class CouponSyncer implements Service {
 				sprintf(
 					'Skipping coupon (ID: %s) because it does not pass validation: %s',
 					$coupon->get_id(),
-					json_encode( $validation_result )
+					wp_json_encode( $validation_result )
 				),
 				__METHOD__
 			);
@@ -155,7 +156,7 @@ class CouponSyncer implements Service {
 				sprintf(
 					'Start to upload coupon (ID: %s) as promotion structure: %s',
 					$coupon->get_id(),
-					json_encode( $adapted_coupon )
+					wp_json_encode( $adapted_coupon )
 				),
 				__METHOD__
 			);
@@ -171,7 +172,7 @@ class CouponSyncer implements Service {
 				'woocommerce_gla_debug_message',
 				sprintf(
 					"Submitted promotion:\n%s",
-					json_encode( $adapted_coupon )
+					wp_json_encode( $adapted_coupon )
 				),
 				__METHOD__
 			);
@@ -194,7 +195,7 @@ class CouponSyncer implements Service {
 				'woocommerce_gla_debug_message',
 				sprintf(
 					"Promotion failed to sync with Merchant Center:\n%s",
-					json_encode( $invalid_promotion )
+					wp_json_encode( $invalid_promotion )
 				),
 				__METHOD__
 			);
@@ -260,7 +261,7 @@ class CouponSyncer implements Service {
 					sprintf(
 						'Start to delete coupon (ID: %s) as promotion structure: %s',
 						$coupon->get_wc_coupon_id(),
-						json_encode( $adapted_coupon )
+						wp_json_encode( $adapted_coupon )
 					),
 					__METHOD__
 				);
@@ -309,7 +310,7 @@ class CouponSyncer implements Service {
 				sprintf(
 					"Failed to delete %s promotions from Merchant Center:\n%s",
 					count( $invalid_promotions ),
-					json_encode( $invalid_promotions )
+					wp_json_encode( $invalid_promotions )
 				),
 				__METHOD__
 			);
@@ -328,7 +329,7 @@ class CouponSyncer implements Service {
 			sprintf(
 				"Deleted %s promoitons:\n%s",
 				count( $deleted_promotions ),
-				json_encode( $deleted_promotions )
+				wp_json_encode( $deleted_promotions )
 			),
 			__METHOD__
 		);
@@ -455,9 +456,9 @@ class CouponSyncer implements Service {
 	}
 
 	/**
-	 * Validates whether Merchant Center is set up and connected.
+	 * Validates whether Merchant Center is connected and ready for pushing data.
 	 *
-	 * @throws CouponSyncerException If Google Merchant Center is not set up and connected.
+	 * @throws CouponSyncerException If Google Merchant Center is not set up and connected or is not ready for pushing data.
 	 */
 	protected function validate_merchant_center_setup(): void {
 		if ( ! $this->merchant_center->is_ready_for_syncing() ) {
@@ -470,6 +471,21 @@ class CouponSyncer implements Service {
 			throw new CouponSyncerException(
 				__(
 					'Google Merchant Center has not been set up correctly. Please review your configuration.',
+					'google-listings-and-ads'
+				)
+			);
+		}
+
+		if ( ! $this->merchant_center->should_push() ) {
+			do_action(
+				'woocommerce_gla_error',
+				'Cannot push any coupons because they are being fetched automatically.',
+				__METHOD__
+			);
+
+			throw new CouponSyncerException(
+				__(
+					'Pushing Coupons will not run if the automatic data fetching is enabled. Please review your configuration in Google Listing and Ads settings.',
 					'google-listings-and-ads'
 				)
 			);

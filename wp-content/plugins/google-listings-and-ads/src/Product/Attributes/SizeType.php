@@ -4,6 +4,7 @@ declare( strict_types=1 );
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Admin\Product\Attributes\Input\SizeTypeInput;
+use Automattic\WooCommerce\GoogleListingsAndAds\Product\AttributeMapping\Traits\IsEnumTrait;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -13,7 +14,9 @@ defined( 'ABSPATH' ) || exit;
  * @see https://support.google.com/merchants/answer/6324497
  * @package Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes
  */
-class SizeType extends AbstractAttribute implements WithValueOptionsInterface {
+class SizeType extends AbstractAttribute implements WithValueOptionsInterface, WithMappingInterface {
+
+	use IsEnumTrait;
 
 	/**
 	 * Returns the attribute ID.
@@ -68,4 +71,12 @@ class SizeType extends AbstractAttribute implements WithValueOptionsInterface {
 		return SizeTypeInput::class;
 	}
 
+	/**
+	 * Returns the attribute name
+	 *
+	 * @return string
+	 */
+	public static function get_name(): string {
+		return __( 'Size Type', 'google-listings-and-ads' );
+	}
 }

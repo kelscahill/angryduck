@@ -24,14 +24,17 @@ class MailChimp_WooCommerce_Transform_Products {
 			'count'    => 0,
 			'stuffed'  => false,
 			'items'    => array(),
+            'has_next_page' => false
 		);
 
-		if ( ( ( $products = $this->getProductPostsIds( $page, $limit ) ) && ! empty( $products ) ) ) {
-			foreach ( $products as $post_id ) {
+		if ( ( $products = $this->getProductPostsIds( $page, $limit ) ) && ! empty( $products['items'] )) {
+			foreach ( $products['items'] as $post_id ) {
 				$response->items[] = $post_id;
 				$response->count++;
 			}
-		}
+
+            $response->has_next_page = $products['has_next_page'];
+        }
 
 		$response->stuffed = $response->count > 0 && (int) $response->count === (int) $limit;
 
@@ -66,32 +69,39 @@ class MailChimp_WooCommerce_Transform_Products {
 	}
 
 	/**
-	 * @param WP_Post $post
+	 * @param $woo
 	 * @param null    $fallback_title
 	 *
 	 * @return MailChimp_WooCommerce_Product
 	 * @throws Exception
 	 */
-	public function transform( WP_Post $post, $fallback_title = null ) {
-		if ( ! ( $woo = wc_get_product( $post ) ) ) {
-			return $this->wooProductNotLoadedCorrectly( $post, $fallback_title );
-		}
-
-		$variant_posts = $this->getProductVariantPosts( $post->ID );
+	public function transform( $woo, $fallback_title = null ) {
+		$variant_posts = $this->getProductVariantPosts( $woo->get_id() );
 
 		$variants = $variant_posts ? array_merge( array( $woo ), $variant_posts ) : array( $woo );
 
-		$is_variant = count( $variants ) > 1;
-
 		$product = new MailChimp_WooCommerce_Product();
 
+		if ( class_exists( 'SitePress' ) && function_exists( 'wpml_switch_language_action' ) ) {
+			$get_language_args  = array( 'element_id' => $woo->get_id(), 'element_type' => 'product' );
+			$post_language_info = apply_filters( 'wpml_element_language_details', null, $get_language_args );
+
+            if (!empty($post_language_info->language_code)) {
+                wpml_switch_language_action( $post_language_info->language_code );
+            }
+		}
+
 		$product->setId( $woo->get_id() );
-		$product->setHandle( $post->post_name );
-		$product->setImageUrl( $this->getProductImage( $post ) );
-		$product->setDescription( $post->post_content );
-		$product->setPublishedAtForeign( mailchimp_date_utc( $post->post_date ) );
+		$product->setHandle( urldecode($woo->get_slug() ) );
+		$product->setImageUrl( $this->getProductImage( $woo ) );
+		$product->setDescription( $woo->get_description() );
+        if ($woo->get_date_created()) {
+            $product->setPublishedAtForeign( mailchimp_date_utc( $woo->get_date_created() ) );
+        } else {
+            mailchimp_debug('product.transform', 'failed to get created date', ['product' => $woo]);
+        }
 		$product->setTitle( $woo->get_title() );
-		$product->setUrl( $woo->get_permalink() );
+		$product->setUrl( urldecode( $woo->get_permalink() ) );
 
 		$original_vendor = '';
 		if ( in_array( 'woocommerce-product-vendors/woocommerce-product-vendors.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) || defined( 'WC_PRODUCT_VENDORS_VERSION' ) ) {
@@ -157,7 +167,7 @@ class MailChimp_WooCommerce_Transform_Products {
 		}
 
 		$variant->setId( $woo->get_id() );
-		$variant->setUrl( $woo->get_permalink() );
+		$variant->setUrl( urldecode( $woo->get_permalink() ) );
 		$variant->setImageUrl( $this->getProductImage( $post ) );
 		$variant->setPrice( $woo->get_price() );
 		$variant->setSku( $woo->get_sku() );
@@ -199,9 +209,9 @@ class MailChimp_WooCommerce_Transform_Products {
 			}
 
 			$variant->setTitle( implode( ' :: ', $title ) );
-			$variant->setVisibility( ( $woo->variation_is_visible() ? 'visible' : '' ) );
+			$variant->setVisibility( ( $woo->variation_is_visible() ? 'visible' : 'hidden' ) );
 		} else {
-			$variant->setVisibility( ( $woo->is_visible() ? 'visible' : '' ) );
+			$variant->setVisibility( ( $woo->is_visible() ? 'visible' : 'hidden' ) );
 			$variant->setTitle( $woo->get_title() );
 		}
 
@@ -220,9 +230,11 @@ class MailChimp_WooCommerce_Transform_Products {
 			$offset = ( ( $page - 1 ) * $posts );
 		}
 
+        $limit = $posts + 1;
+
 		$params = array(
 			'post_type'      => array_merge( array_keys( wc_get_product_types() ), array( 'product' ) ),
-			'posts_per_page' => $posts,
+			'posts_per_page' => $limit,
 			'post_status'    => array( 'private', 'publish', 'draft' ),
 			'offset'         => $offset,
 			'orderby'        => 'ID',
@@ -232,16 +244,32 @@ class MailChimp_WooCommerce_Transform_Products {
 
 		$products = get_posts( $params );
 
+        $has_next_page = count( $products ) > $posts;
+
+        if ( $has_next_page ) {
+            array_pop( $products );
+        }
+
 		if ( empty( $products ) ) {
 			sleep( 2 );
 			$products = get_posts( $params );
-			if ( empty( $products ) ) {
+
+            $has_next_page = count( $products ) > $posts;
+
+            if ( $has_next_page ) {
+                array_pop( $products );
+            }
+
+            if ( empty( $products ) ) {
 				return false;
 			}
 		}
 
-		return $products;
-	}
+        return [
+            'items' => $products,
+            'has_next_page' => $has_next_page,
+        ];
+    }
 
 	/**
 	 * @param $id

@@ -5,6 +5,8 @@
  * @package automattic/jetpack
  */
 
+use Automattic\Jetpack\Image_CDN\Image_CDN_Core;
+
 /**
  * Useful for finding an image to display alongside/in representation of a specific post.
  *
@@ -44,7 +46,7 @@ class Jetpack_PostImages {
 		$permalink = get_permalink( $post->ID );
 
 		// Mechanic: Somebody set us up the bomb.
-		$old_post                  = $GLOBALS['post'];
+		$old_post                  = $GLOBALS['post'] ?? null;
 		$GLOBALS['post']           = $post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		$old_shortcodes            = $GLOBALS['shortcode_tags'];
 		$GLOBALS['shortcode_tags'] = array( 'slideshow' => $old_shortcodes['slideshow'] ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -104,12 +106,46 @@ class Jetpack_PostImages {
 	}
 
 	/**
+	 * Filtering out images with broken URL from galleries.
+	 *
+	 * @param array $galleries Galleries.
+	 * @return array $filtered_galleries
+	 */
+	public static function filter_gallery_urls( $galleries ) {
+		$filtered_galleries = array();
+		foreach ( $galleries as $this_gallery ) {
+			if ( ! isset( $this_gallery['src'] ) ) {
+				continue;
+			}
+			$ids = isset( $this_gallery['ids'] ) ? explode( ',', $this_gallery['ids'] ) : array();
+			// Make sure 'src' array isn't associative and has no holes.
+			$this_gallery['src'] = array_values( $this_gallery['src'] );
+			foreach ( $this_gallery['src'] as $idx => $src_url ) {
+				if ( filter_var( $src_url, FILTER_VALIDATE_URL, FILTER_FLAG_PATH_REQUIRED ) === false ) {
+					unset( $this_gallery['src'][ $idx ] );
+					unset( $ids[ $idx ] );
+				}
+			}
+			if ( isset( $this_gallery['ids'] ) ) {
+				$this_gallery['ids'] = implode( ',', $ids );
+			}
+			// Remove any holes we introduced.
+			$this_gallery['src']  = array_values( $this_gallery['src'] );
+			$filtered_galleries[] = $this_gallery;
+		}
+
+		return $filtered_galleries;
+	}
+
+	/**
 	 * If a gallery is detected, then get all the images from it.
 	 *
 	 * @param int $post_id Post ID.
+	 * @param int $width Minimum image width to consider.
+	 * @param int $height Minimum image height to consider.
 	 * @return array Images.
 	 */
-	public static function from_gallery( $post_id ) {
+	public static function from_gallery( $post_id, $width = 200, $height = 200 ) {
 		$images = array();
 
 		$post = get_post( $post_id );
@@ -121,6 +157,7 @@ class Jetpack_PostImages {
 		if ( ! empty( $post->post_password ) ) {
 			return $images;
 		}
+		add_filter( 'get_post_galleries', array( __CLASS__, 'filter_gallery_urls' ), 999999 );
 
 		$permalink = get_permalink( $post->ID );
 
@@ -145,20 +182,35 @@ class Jetpack_PostImages {
 		// phpcs:enable WordPress.WP.GlobalVariablesOverride.Prohibited
 
 		foreach ( $galleries as $gallery ) {
-			if ( isset( $gallery['type'] ) && 'slideshow' === $gallery['type'] && ! empty( $gallery['ids'] ) ) {
+			if ( ! empty( $gallery['ids'] ) ) {
 				$image_ids  = explode( ',', $gallery['ids'] );
 				$image_size = isset( $gallery['size'] ) ? $gallery['size'] : 'thumbnail';
 				foreach ( $image_ids as $image_id ) {
 					$image = wp_get_attachment_image_src( $image_id, $image_size );
+					$meta  = wp_get_attachment_metadata( $image_id );
+
+					if ( isset( $gallery['type'] ) && 'slideshow' === $gallery['type'] ) {
+						// Must be larger than 200x200 (or user-specified).
+						if ( ! isset( $meta['width'] ) || $meta['width'] < $width ) {
+							continue;
+						}
+						if ( ! isset( $meta['height'] ) || $meta['height'] < $height ) {
+							continue;
+						}
+					}
+
 					if ( ! empty( $image[0] ) ) {
 						list( $raw_src ) = explode( '?', $image[0] ); // pull off any Query string (?w=250).
 						$raw_src         = wp_specialchars_decode( $raw_src ); // rawify it.
 						$raw_src         = esc_url_raw( $raw_src ); // clean it.
 						$images[]        = array(
-							'type' => 'image',
-							'from' => 'gallery',
-							'src'  => $raw_src,
-							'href' => $permalink,
+							'type'       => 'image',
+							'from'       => 'gallery',
+							'src'        => $raw_src,
+							'src_width'  => $meta['width'] ?? 0,
+							'src_height' => $meta['height'] ?? 0,
+							'href'       => $permalink,
+							'alt_text'   => self::get_alt_text( $image_id ),
 						);
 					}
 				}
@@ -231,6 +283,10 @@ class Jetpack_PostImages {
 
 		foreach ( $html_images as $html_image ) {
 			$src = wp_parse_url( $html_image['src'] );
+			if ( ! $src || empty( $src['path'] ) ) {
+				continue;
+			}
+
 			// strip off any query strings from src.
 			if ( ! empty( $src['scheme'] ) && ! empty( $src['host'] ) ) {
 				$inserted_images[] = $src['scheme'] . '://' . $src['host'] . $src['path'];
@@ -282,8 +338,8 @@ class Jetpack_PostImages {
 			if ( ! isset( $meta['height'] ) || $meta['height'] < $height ) {
 				return $images;
 			}
-
-			$too_big = ( ( ! empty( $meta['width'] ) && $meta['width'] > 1200 ) || ( ! empty( $meta['height'] ) && $meta['height'] > 1200 ) );
+			$max_dimension = self::get_max_thumbnail_dimension();
+			$too_big       = ( ( ! empty( $meta['width'] ) && $meta['width'] > $max_dimension ) || ( ! empty( $meta['height'] ) && $meta['height'] > $max_dimension ) );
 
 			if (
 				$too_big &&
@@ -292,7 +348,11 @@ class Jetpack_PostImages {
 					( defined( 'IS_WPCOM' ) && IS_WPCOM )
 				)
 			) {
-				$img_src = wp_get_attachment_image_src( $thumb, array( 1200, 1200 ) );
+				$size        = self::determine_thumbnail_size_for_photon( $meta['width'], $meta['height'] );
+				$photon_args = array(
+					'fit' => $size['width'] . ',' . $size['height'],
+				);
+				$img_src     = array( Image_CDN_Core::cdn_url( wp_get_attachment_url( $thumb ), $photon_args ), $size['width'], $size['height'], true ); // Match the signature of wp_get_attachment_image_src
 			} else {
 				$img_src = wp_get_attachment_image_src( $thumb, 'full' );
 			}
@@ -300,7 +360,7 @@ class Jetpack_PostImages {
 				// If wp_get_attachment_image_src returns false but we know that there should be an image that could be used.
 				// we try a bit harder and user the data that we have.
 				$thumb_post_data = get_post( $thumb );
-				$img_src         = array( $thumb_post_data->guid, $meta['width'], $meta['height'] );
+				$img_src         = array( $thumb_post_data->guid ?? null, $meta['width'], $meta['height'] );
 			}
 
 			// Let's try to use the postmeta if we can, since it seems to be
@@ -439,10 +499,18 @@ class Jetpack_PostImages {
 		// Let's grab all image tags from the HTML.
 		$dom_doc = new DOMDocument();
 
+		// DOMDocument defaults to ISO-8859 because we're loading only the post content, without head tag.
+		// Fix: Enforce encoding with meta tag.
+		$charset = get_option( 'blog_charset' );
+		if ( empty( $charset ) || ! preg_match( '/^[a-zA-Z0-9_-]+$/', $charset ) ) {
+			$charset = 'UTF-8';
+		}
+		$html_prefix = sprintf( '<meta http-equiv="Content-Type" content="text/html; charset=%s">', esc_attr( $charset ) );
+
 		// The @ is not enough to suppress errors when dealing with libxml,
 		// we have to tell it directly how we want to handle errors.
 		libxml_use_internal_errors( true );
-		@$dom_doc->loadHTML( $html_info['html'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		@$dom_doc->loadHTML( $html_prefix . $html_info['html'] ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		libxml_use_internal_errors( false );
 
 		$image_tags = $dom_doc->getElementsByTagName( 'img' );
@@ -460,9 +528,38 @@ class Jetpack_PostImages {
 				continue;
 			}
 
+			// Do not grab Gravatar images.
+			if ( stripos( $img_src, 'gravatar.com' ) ) {
+				continue;
+			}
+
+			// First try to get the width and height from the img attributes, but if they are not set, check to see if they are specified in the url. WordPress automatically names files like foo-1024x768.jpg during the upload process
+			$width  = (int) $image_tag->getAttribute( 'width' );
+			$height = (int) $image_tag->getAttribute( 'height' );
+			if ( 0 === $width && 0 === $height ) {
+				preg_match( '/-([0-9]{1,5})x([0-9]{1,5})\.(?:jpg|jpeg|png|gif|webp)$/i', $img_src, $matches );
+				if ( ! empty( $matches[1] ) ) {
+					$width = (int) $matches[1];
+				}
+				if ( ! empty( $matches[2] ) ) {
+					$height = (int) $matches[2];
+				}
+			}
+			// If width and height are still 0, try to get the id of the image from the class, e.g. wp-image-1234
+			if ( 0 === $width && 0 === $height ) {
+
+				preg_match( '/wp-image-([0-9]+)/', $image_tag->getAttribute( 'class' ), $matches );
+				if ( ! empty( $matches[1] ) ) {
+					$attachment_id = $matches[1];
+					$meta          = wp_get_attachment_metadata( $attachment_id );
+					$height        = $meta['height'] ?? 0;
+					$width         = $meta['width'] ?? 0;
+				}
+			}
+
 			$meta = array(
-				'width'    => (int) $image_tag->getAttribute( 'width' ),
-				'height'   => (int) $image_tag->getAttribute( 'height' ),
+				'width'    => $width,
+				'height'   => $height,
 				'alt_text' => $image_tag->getAttribute( 'alt' ),
 			);
 
@@ -491,15 +588,18 @@ class Jetpack_PostImages {
 				continue;
 			}
 
-			$images[] = array(
+			$image = array(
 				'type'       => 'image',
 				'from'       => 'html',
 				'src'        => $img_src,
 				'src_width'  => $meta['width'],
 				'src_height' => $meta['height'],
 				'href'       => $html_info['post_url'],
-				'alt_text'   => $meta['alt_text'],
 			);
+			if ( ! empty( $meta['alt_text'] ) ) {
+				$image['alt_text'] = $meta['alt_text'];
+			}
+			$images[] = $image;
 		}
 		return $images;
 	}
@@ -724,6 +824,52 @@ class Jetpack_PostImages {
 	}
 
 	/**
+	 * Takes an image and base pixel dimensions and returns a srcset for the
+	 * resized and cropped images, based on a fixed set of multipliers.
+	 *
+	 * @param  array $image Array containing details of the image.
+	 * @param  int   $base_width Base image width (i.e., the width at 1x).
+	 * @param  int   $base_height Base image height (i.e., the height at 1x).
+	 * @param  bool  $use_widths Whether to generate the srcset with widths instead of multipliers.
+	 * @return string The srcset for the image.
+	 */
+	public static function generate_cropped_srcset( $image, $base_width, $base_height, $use_widths = false ) {
+		$srcset = '';
+
+		if ( ! is_array( $image ) || empty( $image['src'] ) || empty( $image['src_width'] ) ) {
+			return $srcset;
+		}
+
+		$multipliers   = array( 1, 1.5, 2, 3, 4 );
+		$srcset_values = array();
+		foreach ( $multipliers as $multiplier ) {
+			$srcset_width  = (int) ( $base_width * $multiplier );
+			$srcset_height = (int) ( $base_height * $multiplier );
+			if ( $srcset_width < 1 || $srcset_width > $image['src_width'] ) {
+				break;
+			}
+
+			$srcset_url = self::fit_image_url(
+				$image['src'],
+				$srcset_width,
+				$srcset_height
+			);
+
+			if ( $use_widths ) {
+				$srcset_values[] = "{$srcset_url} {$srcset_width}w";
+			} else {
+				$srcset_values[] = "{$srcset_url} {$multiplier}x";
+			}
+		}
+
+		if ( count( $srcset_values ) > 1 ) {
+			$srcset = implode( ', ', $srcset_values );
+		}
+
+		return $srcset;
+	}
+
+	/**
 	 * Takes an image URL and pixel dimensions then returns a URL for the
 	 * resized and cropped image.
 	 *
@@ -756,7 +902,7 @@ class Jetpack_PostImages {
 
 		// If WPCOM hosted image use native transformations.
 		$img_host = wp_parse_url( $src, PHP_URL_HOST );
-		if ( '.files.wordpress.com' === substr( $img_host, -20 ) ) {
+		if ( $img_host && str_ends_with( $img_host, '.files.wordpress.com' ) ) {
 			return add_query_arg(
 				array(
 					'w'    => $width,
@@ -767,9 +913,9 @@ class Jetpack_PostImages {
 			);
 		}
 
-		// Use Photon magic.
-		if ( function_exists( 'jetpack_photon_url' ) ) {
-			return jetpack_photon_url( $src, array( 'resize' => "$width,$height" ) );
+		// Use image cdn magic.
+		if ( class_exists( Image_CDN_Core::class ) && method_exists( Image_CDN_Core::class, 'cdn_url' ) ) {
+			return Image_CDN_Core::cdn_url( $src, array( 'resize' => "$width,$height" ) );
 		}
 
 		// Arg... no way to resize image using WordPress.com infrastructure!
@@ -955,5 +1101,70 @@ class Jetpack_PostImages {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Determine the size to use with Photon for a thumbnail image.
+	 * Images larger than the maximum thumbnail dimension in either dimension are resized to maintain aspect ratio.
+	 *
+	 * @since 14.6
+	 * @see https://github.com/Automattic/jetpack/issues/40349
+	 *
+	 * @param int $width Original image width.
+	 * @param int $height Original image height.
+	 * @return array Array containing the width and height to use with Photon (null means auto).
+	 */
+	public static function determine_thumbnail_size_for_photon( $width, $height ) {
+		$max_dimension = self::get_max_thumbnail_dimension();
+
+		// If neither dimension exceeds max size, return original dimensions.
+		if ( $width <= $max_dimension && $height <= $max_dimension ) {
+			return array(
+				'width'  => $width,
+				'height' => $height,
+			);
+		}
+
+		if ( $width >= $height ) {
+			// For landscape or square images.
+			$dims = image_resize_dimensions( $width, $height, $max_dimension, 0 ); // Height will be calculated automatically.
+		} else {
+			// For portrait images.
+			$dims = image_resize_dimensions( $width, $height, 0, $max_dimension ); // Width will be calculated automatically.
+		}
+
+		// $dims can be false if the image is virtually the same size as the max dimension, e.g. wp_fuzzy_number_match.
+		if ( $dims && isset( $dims[4] ) && isset( $dims[5] ) ) {
+			return array(
+				'width'  => $dims[4],
+				'height' => $dims[5],
+			);
+		}
+
+			return array(
+				'width'  => $width,
+				'height' => $height,
+			);
+	}
+
+	/**
+	 * Function to provide the maximum dimension for a thumbnail image.
+	 * Filterable via the `jetpack_post_images_max_dimension` filter.
+	 *
+	 * @since 14.6
+	 * @see https://github.com/Automattic/jetpack/issues/40349
+	 *
+	 * @return int The maximum dimension for a thumbnail image.
+	 */
+	public static function get_max_thumbnail_dimension() {
+		/**
+		 * Filter the maximum dimension allowed for a thumbnail image.
+		 * The default value is 1200 pixels.
+		 *
+		 * @since 14.6
+		 *
+		 * @param int $max_dimension Maximum dimension in pixels.
+		 */
+		return (int) apply_filters( 'jetpack_post_images_max_thumbnail_dimension', 1200 );
 	}
 }

@@ -482,10 +482,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( '-- Building Master Sitemap.' );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Master(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'master',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return;
+		}
 
 		if ( 0 < $max[ JP_PAGE_SITEMAP_TYPE ]['number'] ) {
 			if ( 1 === $max[ JP_PAGE_SITEMAP_TYPE ]['number'] ) {
@@ -587,10 +592,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( "-- Building $debug_name" );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Page(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'page',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return false;
+		}
 
 		// Add entry for the main page (only if we're at the first one) and it isn't already going to be included as a page.
 		if ( 1 === $number && 'page' !== get_option( 'show_on_front' ) ) {
@@ -686,6 +696,9 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 
 					if ( true === $buffer->append( $item['xml'] ) ) {
 						$last_post_id = -$index;
+						if ( isset( $url['lastmod'] ) ) {
+							$buffer->view_time( jp_sitemap_datetime( $url['lastmod'] ) );
+						}
 					} else {
 						break;
 					}
@@ -760,10 +773,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( "-- Building $debug_name" );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Image(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'image',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return false;
+		}
 
 		// Add as many items to the buffer as possible.
 		while ( false === $buffer->is_full() ) {
@@ -839,10 +857,15 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			$this->logger->report( "-- Building $debug_name" );
 		}
 
-		$buffer = new Jetpack_Sitemap_Buffer_Video(
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'video',
 			JP_SITEMAP_MAX_ITEMS,
 			JP_SITEMAP_MAX_BYTES
 		);
+
+		if ( ! $buffer ) {
+			return false;
+		}
 
 		// Add as many items to the buffer as possible.
 		while ( false === $buffer->is_full() ) {
@@ -1056,6 +1079,16 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	 * @return string The news sitemap xml.
 	 */
 	public function news_sitemap_xml() {
+		$buffer = Jetpack_Sitemap_Buffer_Factory::create(
+			'news',
+			JP_SITEMAP_MAX_ITEMS,
+			JP_SITEMAP_MAX_BYTES
+		);
+
+		if ( ! $buffer ) {
+			return '';
+		}
+
 		$the_stored_news_sitemap = get_transient( 'jetpack_news_sitemap_xml' );
 
 		if ( false === $the_stored_news_sitemap ) {
@@ -1078,18 +1111,16 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 				JP_NEWS_SITEMAP_MAX_ITEMS
 			);
 
-			$buffer = new Jetpack_Sitemap_Buffer_News(
-				min( $item_limit, JP_NEWS_SITEMAP_MAX_ITEMS ),
-				JP_SITEMAP_MAX_BYTES
-			);
+			$posts = $this->librarian->query_most_recent_posts( $item_limit );
+			if ( empty( $posts ) ) {
+				$buffer->append( array( 'url' => array( 'loc' => home_url( '/' ) ) ) );
+			} else {
+				foreach ( $posts as $post ) {
+					$current_item = $this->post_to_news_sitemap_item( $post );
 
-			$posts = $this->librarian->query_most_recent_posts( JP_NEWS_SITEMAP_MAX_ITEMS );
-
-			foreach ( $posts as $post ) {
-				$current_item = $this->post_to_news_sitemap_item( $post );
-
-				if ( false === $buffer->append( $current_item['xml'] ) ) {
-					break;
+					if ( $current_item['xml'] !== null && false === $buffer->append( $current_item['xml'] ) ) {
+						break;
+					}
 				}
 			}
 
@@ -1246,9 +1277,6 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 			),
 		);
 
-		$item_array['url']['image:image']['image:title']   = $post->post_title;
-		$item_array['url']['image:image']['image:caption'] = $post->post_excerpt;
-
 		/**
 		 * Filter associative array with data to build <url> node
 		 * and its descendants for current post in image sitemap.
@@ -1290,7 +1318,7 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	private function video_post_to_sitemap_item( $post ) {
 
 		/**
-		 * Filter condition to allow skipping specific image posts in the sitemap.
+		 * Filter condition to allow skipping specific video posts in the sitemap.
 		 *
 		 * @module sitemaps
 		 *
@@ -1396,6 +1424,9 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 	 */
 	private function post_to_news_sitemap_item( $post ) {
 
+		// Exclude posts with meta 'jetpack_seo_noindex' set true from the Jetpack news sitemap.
+		add_filter( 'jetpack_sitemap_news_skip_post', array( 'Jetpack_SEO_Posts', 'exclude_noindex_posts_from_jetpack_sitemap' ), 10, 2 );
+
 		/**
 		 * Filter condition to allow skipping specific posts in news sitemap.
 		 *
@@ -1441,7 +1472,7 @@ class Jetpack_Sitemap_Builder { // phpcs:ignore Generic.Files.OneObjectStructure
 				'lastmod'   => jp_sitemap_datetime( $post->post_modified_gmt ),
 				'news:news' => array(
 					'news:publication'      => array(
-						'news:name'     => html_entity_decode( get_bloginfo( 'name' ) ),
+						'news:name'     => html_entity_decode( get_bloginfo( 'name' ), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401 ),
 						'news:language' => $language,
 					),
 					/** This filter is already documented in core/wp-includes/feed.php */

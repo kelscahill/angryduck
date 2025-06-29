@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-namespace Google\AccessToken;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\AccessToken;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\HttpHandler\HttpHandlerFactory;
-use Google\Client;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Client;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\ClientInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7\Request;
@@ -39,7 +39,7 @@ class Revoke
      * Instantiates the class, but does not initiate the login flow, leaving it
      * to the discretion of the caller.
      */
-    public function __construct(ClientInterface $http = null)
+    public function __construct(?ClientInterface $http = null)
     {
         $this->http = $http;
     }

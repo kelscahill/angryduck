@@ -37,6 +37,7 @@ class MailChimp_WooCommerce_Order {
 	protected $tracking_url         = '';
 	protected $tracking_number      = '';
 	protected $tracking_carrier     = '';
+	protected $processed_at         = null;
 
 	/**
 	 * @param $bool
@@ -112,7 +113,6 @@ class MailChimp_WooCommerce_Order {
 			'id'                   => 'required|string',
 			'landing_site'         => 'required|string',
 			'customer'             => 'required',
-			'campaign_id'          => 'string',
 			'financial_status'     => 'string',
 			'fulfillment_status'   => 'string',
 			'currency_code'        => 'required|currency_code',
@@ -228,19 +228,13 @@ class MailChimp_WooCommerce_Order {
 	}
 
 	/**
-	 * @param $id
+	 * @param $campaign_id
 	 *
 	 * @return $this
-	 * @throws MailChimp_WooCommerce_Error
-	 * @throws MailChimp_WooCommerce_RateLimitError
-	 * @throws MailChimp_WooCommerce_ServerError
 	 */
-	public function setCampaignId( $id ) {
-		$api = MailChimp_WooCommerce_MailChimpApi::getInstance();
-		$cid = trim( $id );
-		if ( ! empty( $cid ) && $campaign = $api->getCampaign( $cid, false ) ) {
-			$this->campaign_id = $campaign['id'];
-		}
+	public function setCampaignId( $campaign_id ) {
+		$this->campaign_id = $campaign_id;
+
 		return $this;
 	}
 
@@ -398,15 +392,21 @@ class MailChimp_WooCommerce_Order {
 	 */
 	public function setProcessedAt( DateTime $time ) {
 		$this->processed_at_foreign = $time->format( 'Y-m-d H:i:s' );
-
+		$this->processed_at = $time;
 		return $this;
 	}
 
 	/**
-	 * @return null
+	 * @return null|DateTime
 	 */
 	public function getProcessedAt() {
 		return $this->processed_at_foreign;
+	}
+
+	public function getProcessedAtDate() {
+		return !empty($this->processed_at) ?
+			$this->processed_at :
+			(!empty($this->processed_at_foreign) ? new DateTime($this->processed_at_foreign) : null);
 	}
 
 	/**
@@ -579,15 +579,12 @@ class MailChimp_WooCommerce_Order {
 	 * @return array
 	 */
 	public function toArray() {
-		$campaign_id = (string) $this->getCampaignId();
 		$this->setTrackingInfo();
 		return mailchimp_array_remove_empty(
 			array(
 				'id'                   => (string) $this->getId(),
 				'landing_site'         => (string) $this->getLandingSite(),
 				'customer'             => $this->getCustomer()->toArray(),
-				// 'campaign_id' => (string) $this->getCampaignId(),
-				'outreach'             => $campaign_id ? array( 'id' => $campaign_id ) : null,
 				'financial_status'     => (string) $this->getFinancialStatus(),
 				'fulfillment_status'   => (string) $this->getFulfillmentStatus(),
 				'currency_code'        => (string) $this->getCurrencyCode(),
@@ -624,7 +621,6 @@ class MailChimp_WooCommerce_Order {
 		$singles = array(
 			'id',
 			'landing_site',
-			'campaign_id',
 			'financial_status',
 			'fulfillment_status',
 			'currency_code',
@@ -673,13 +669,18 @@ class MailChimp_WooCommerce_Order {
 			$this->setCustomer( $customer_object->fromArray( $data['customer'] ) );
 		}
 
+		// apply the campaign id from the response if there is one.
+		if (array_key_exists('outreach', $data) && !empty($data['outreach']) && array_key_exists('id', $data['outreach'])) {
+			$this->setCampaignId($data['outreach']['id']);
+		}
+
 		return $this;
 	}
 	/**
 	 * Set Tracking info before the job gets executed
 	 */
 	public function setTrackingInfo() {
-		// Support for woocomemrce shipment tracking plugin (https://woocommerce.com/products/shipment-tracking)
+		// Support for woocommerce shipment tracking plugin (https://woocommerce.com/products/shipment-tracking)
 		if ( function_exists( 'wc_st_add_tracking_number' ) && class_exists( 'WC_Shipment_Tracking_Actions' ) ) {
 			$trackings = get_post_meta( (int) $this->getId(), '_wc_shipment_tracking_items', true );
 			if ( empty( $trackings ) ) {
@@ -702,7 +703,7 @@ class MailChimp_WooCommerce_Order {
 			}
 		}
 
-		// Support for woocoomerce shipping plugin (https://woocommerce.com/woocommerce-shipping/)
+		// Support for woocommerce shipping plugin (https://woocommerce.com/woocommerce-shipping/)
 		if ( class_exists( 'WC_Connect_Loader' ) ) {
 			$label_data = get_post_meta( (int) $this->getId(), 'wc_connect_labels', true );
 			// return an empty array if the data doesn't exist.

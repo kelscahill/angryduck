@@ -109,7 +109,7 @@ class UserRefreshCredentials extends CredentialsLoader implements GetQuotaProjec
      *     @type string $id_token
      * }
      */
-    public function fetchAuthToken(callable $httpHandler = null)
+    public function fetchAuthToken(?callable $httpHandler = null)
     {
         return $this->auth->fetchAuthToken($httpHandler);
     }
@@ -138,5 +138,15 @@ class UserRefreshCredentials extends CredentialsLoader implements GetQuotaProjec
     public function getQuotaProject()
     {
         return $this->quotaProject;
+    }
+
+    /**
+     * Get the granted scopes (if they exist) for the last fetched token.
+     *
+     * @return string|null
+     */
+    public function getGrantedScope()
+    {
+        return $this->auth->getGrantedScope();
     }
 }

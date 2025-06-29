@@ -1,0 +1,101 @@
+/** Field Controls **/
+.wr-pg-mapping-controls .field-container {
+    margin-bottom: 20px;
+}
+.wr-pg-mapping-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+.wr-pg-mapping-controls .field-container select {
+    display: block;
+    min-width: 350px;
+}
+.wr-pg-mapping-controls .field-container.wwpp-wr-pg-wholesale-roles-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+.wr-pg-mapping-controls .field-container p.desc {
+    font-weight: normal;
+}
+.wr-pg-mapping-controls .field-container .chosen-choices {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+
+/** Button Controls **/
+.wr-pg-button-controls {
+    display: block;
+    margin-bottom: 40px;
+}
+.wr-pg-button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+.wr-pg-button-controls .button {
+    float: left;
+}
+.wr-pg-button-controls #wr-pg-cancel-edit-mapping {
+    margin-right: 10px;
+}
+.wr-pg-button-controls.add-mode #wr-pg-add-mapping {
+    display: inline-block;
+}
+.wr-pg-button-controls.add-mode #wr-pg-save-mapping {
+    display: none;
+}
+.wr-pg-button-controls.add-mode #wr-pg-cancel-edit-mapping {
+    display: none;
+}
+.wr-pg-button-controls.edit-mode #wr-pg-add-mapping {
+    display: none;
+}
+.wr-pg-button-controls.edit-mode #wr-pg-save-mapping {
+    display: inline-block;
+}
+.wr-pg-button-controls.edit-mode #wr-pg-cancel-edit-mapping {
+    display: inline-block;
+}
+.wr-pg-button-controls .spinner {
+    top: 0;
+}
+.wr-pg-button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+}
+
+
+/** mapping Table **/
+#wr-pg-mapping thead tr th,
+#wr-pg-mapping tfoot tr th {
+    padding: 15px 10px;
+}
+#wr-pg-mapping tbody tr.edited {
+    background-color: #fff2d8 !important;
+}
+#wr-pg-mapping tbody tr td.meta .payment-gateways ul,
+#wr-pg-mapping tbody tr td.payment-gateways-text ul {
+    margin: 0;
+}
+#wr-pg-mapping tbody tr td.meta .payment-gateways ul li,
+#wr-pg-mapping tbody tr td.payment-gateways-text ul li {
+    display: inline-block;
+    padding: 2px 4px;
+    background-color: #ebebeb;
+    border-radius: 4px;
+    border: 1px solid #999999;
+    margin-right: 4px;
+}
+#wr-pg-mapping tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+#wr-pg-mapping tbody tr td.controls .edit {
+    color: green;
+    margin-right: 15px;
+}
+#wr-pg-mapping tbody tr td.controls .delete {
+    color: red;
+}

@@ -1,14 +1,15 @@
 <?php
 /*
-Plugin Name: WP Migrate DB Pro
+Plugin Name: WP Migrate
 Plugin URI: https://deliciousbrains.com/wp-migrate-db-pro/
-Description: Export, push, and pull to migrate your WordPress databases.
-Author: Delicious Brains
-Version: 1.9.14
+Description: Migrate between any two environments. Push, pull, and export full sites. Find and replace content including serialized data. Import and back up the database.
+Author: WP Engine
+Version: 2.7.4
 Author URI: https://deliciousbrains.com
 Network: True
 Text Domain: wp-migrate-db
 Domain Path: /languages/
+Update URI: https://deliciousbrains.com/wp-migrate-db-pro/
 */
 
 // Copyright (c) 2013 Delicious Brains. All rights reserved.
@@ -21,36 +22,42 @@ Domain Path: /languages/
 // WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 // **********************************************************************
-$wpmdb_base_path                                       = dirname( __FILE__ );
-$GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['version'] = '1.9.14';
-$GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['folder']  = basename( plugin_dir_path( __FILE__ ) );
-$GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['abspath'] = $wpmdb_base_path;
 
-if ( ! defined( 'WPMDB_MINIMUM_PHP_VERSION' ) ) {
-	define( 'WPMDB_MINIMUM_PHP_VERSION', '5.4' );
+defined( 'ABSPATH' ) || exit;
+
+require_once 'version.php';
+
+if ( ! defined( 'WPMDBPRO_FILE' ) ) {
+	// Defines the path to the main plugin file.
+	define( 'WPMDBPRO_FILE', __FILE__ );
+
+	// Defines the path to be used for includes.
+	define( 'WPMDBPRO_PATH', plugin_dir_path( WPMDBPRO_FILE ) );
 }
+
+$GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['folder']  = basename( WPMDBPRO_PATH );
+$GLOBALS['wpmdb_meta']['wp-migrate-db-pro']['abspath'] = untrailingslashit( WPMDBPRO_PATH );
+
+define( 'WPMDB_PRO', true );
+
+// TODO: Replace with checked-in prefixed libraries >>>
+// NOTE: This path is updated during the build process.
+$plugin_root = '/';
+
+if ( ! defined( 'WPMDB_VENDOR_DIR' ) ) {
+	define( 'WPMDB_VENDOR_DIR', __DIR__ . $plugin_root . "vendor" );
+}
+
+require WPMDB_VENDOR_DIR . '/autoload.php';
+// TODO: Replace with checked-in prefixed libraries <<<
+
+require 'setup-plugin.php';
 
 if ( version_compare( PHP_VERSION, WPMDB_MINIMUM_PHP_VERSION, '>=' ) ) {
-	require_once $wpmdb_base_path . '/class/autoload.php';
-	require_once $wpmdb_base_path . '/setup-mdb-pro.php';
-}
-
-if ( ! function_exists( 'wpmdb_deactivate_other_instances' ) ) {
-	require_once $wpmdb_base_path . '/class/deactivate.php';
-}
-
-add_action( 'activated_plugin', 'wpmdb_deactivate_other_instances' );
-
-if ( ! class_exists( 'WPMDB_PHP_Checker' ) ) {
-	require_once $wpmdb_base_path . '/php-checker.php';
-}
-
-$php_checker = new WPMDB_PHP_Checker( __FILE__, WPMDB_MINIMUM_PHP_VERSION );
-if ( ! $php_checker->is_compatible_check() ) {
-	register_activation_hook( __FILE__, array( 'WPMDB_PHP_Checker', 'wpmdb_pro_php_version_too_low' ) );
+	require_once WPMDBPRO_PATH . 'class/autoload.php';
+	require_once WPMDBPRO_PATH . 'setup-mdb-pro.php';
 }
 
 function wpmdb_pro_remove_mu_plugin() {
 	do_action( 'wp_migrate_db_remove_compatibility_plugin' );
 }
-

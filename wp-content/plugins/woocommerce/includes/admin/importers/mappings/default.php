@@ -5,6 +5,8 @@
  * @package WooCommerce\Admin\Importers
  */
 
+use Automattic\WooCommerce\Internal\CostOfGoodsSold\CostOfGoodsSoldController;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -32,7 +34,7 @@ function wc_importer_current_locale() {
  * @return array
  */
 function wc_importer_default_english_mappings( $mappings ) {
-	if ( 'en_US' === wc_importer_current_locale() ) {
+	if ( 'en_US' === wc_importer_current_locale() && is_array( $mappings ) && count( $mappings ) > 0 ) {
 		return $mappings;
 	}
 
@@ -80,6 +82,10 @@ function wc_importer_default_english_mappings( $mappings ) {
 		'Position'                                => 'menu_order',
 	);
 
+	if ( wc_get_container()->get( CostOfGoodsSoldController::class )->feature_is_enabled() ) {
+		$new_mappings['Cost of goods'] = 'cogs_value';
+	}
+
 	return array_merge( $mappings, $new_mappings );
 }
 add_filter( 'woocommerce_csv_product_import_mapping_default_columns', 'wc_importer_default_english_mappings', 100 );
@@ -92,7 +98,7 @@ add_filter( 'woocommerce_csv_product_import_mapping_default_columns', 'wc_import
  * @return array
  */
 function wc_importer_default_special_english_mappings( $mappings ) {
-	if ( 'en_US' === wc_importer_current_locale() ) {
+	if ( 'en_US' === wc_importer_current_locale() && is_array( $mappings ) && count( $mappings ) > 0 ) {
 		return $mappings;
 	}
 

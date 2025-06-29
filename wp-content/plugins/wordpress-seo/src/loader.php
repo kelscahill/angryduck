@@ -2,7 +2,6 @@
 
 namespace Yoast\WP\SEO;
 
-use Exception;
 use Throwable;
 use WP_CLI;
 use YoastSEO_Vendor\Symfony\Component\DependencyInjection\ContainerInterface;
@@ -250,8 +249,8 @@ class Loader {
 	 */
 	protected function conditionals_are_met( $loadable_class ) {
 		// In production environments do not fatal if the class does not exist but log and fail gracefully.
-		if ( YOAST_ENVIRONMENT === 'production' && ! \class_exists( $loadable_class ) ) {
-			if ( \defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		if ( \YOAST_ENVIRONMENT === 'production' && ! \class_exists( $loadable_class ) ) {
+			if ( \defined( 'WP_DEBUG' ) && \WP_DEBUG ) {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				\error_log(
 					\sprintf(
@@ -279,32 +278,21 @@ class Loader {
 	/**
 	 * Gets a class from the container.
 	 *
-	 * @param string $class The class name.
+	 * @param string $class_name The class name.
 	 *
 	 * @return object|null The class or, in production environments, null if it does not exist.
 	 *
 	 * @throws Throwable If the class does not exist in development environments.
-	 * @throws Exception If the class does not exist in development environments.
 	 */
-	protected function get_class( $class ) {
+	protected function get_class( $class_name ) {
 		try {
-			return $this->container->get( $class );
+			return $this->container->get( $class_name );
 		} catch ( Throwable $e ) {
 			// In production environments do not fatal if the class could not be constructed but log and fail gracefully.
-			if ( YOAST_ENVIRONMENT === 'production' ) {
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			if ( \YOAST_ENVIRONMENT === 'production' ) {
+				if ( \defined( 'WP_DEBUG' ) && \WP_DEBUG ) {
 					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-					error_log( $e->getMessage() );
-				}
-				return null;
-			}
-			throw $e;
-		} catch ( Exception $e ) { // Also catch Exception for PHP 5.6 compatibility.
-			// In production environments do not fatal if the class could not be constructed but log and fail gracefully.
-			if ( YOAST_ENVIRONMENT === 'production' ) {
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-					error_log( $e->getMessage() );
+					\error_log( $e->getMessage() );
 				}
 				return null;
 			}

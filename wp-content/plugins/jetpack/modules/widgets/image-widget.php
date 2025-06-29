@@ -6,6 +6,8 @@
  * First Introduced: 1.2
  */
 
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
+
 add_action( 'widgets_init', 'jetpack_image_widget_init', 11 );
 /**
  * Register the widget for use in Appearance -> Widgets
@@ -35,10 +37,6 @@ class Jetpack_Image_Widget extends WP_Widget {
 				'customize_selective_refresh' => true,
 			)
 		);
-
-		if ( is_active_widget( false, false, $this->id_base ) || is_active_widget( false, false, 'monster' ) || is_customize_preview() ) {
-			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_style' ) );
-		}
 	}
 
 	/**
@@ -77,6 +75,9 @@ class Jetpack_Image_Widget extends WP_Widget {
 
 		if ( $instance['img_url'] ) {
 
+			// Enqueue front end assets.
+			$this->enqueue_style();
+
 			$output = '<img src="' . esc_url( $instance['img_url'] ) . '" ';
 
 			if ( '' !== (string) $instance['alt_text'] ) {
@@ -96,9 +97,7 @@ class Jetpack_Image_Widget extends WP_Widget {
 			}
 			$output .= '/>';
 
-			if ( class_exists( 'Jetpack_Photon' ) && Jetpack::is_module_active( 'photon' ) ) {
-				$output = Jetpack_Photon::filter_the_content( $output );
-			}
+			$output = apply_filters( 'jetpack_image_cdn_content', $output );
 
 			if ( $instance['link'] ) {
 				$target = ! empty( $instance['link_target_blank'] )
@@ -116,21 +115,19 @@ class Jetpack_Image_Widget extends WP_Widget {
 				</figure>'; // wp_kses_post caption on update.
 			}
 			echo '<div class="jetpack-image-container">' . do_shortcode( $output ) . '</div>';
-		} else {
-			if ( current_user_can( 'edit_theme_options' ) ) {
-				echo '<p>' . wp_kses(
-					sprintf(
-						/* translators: %s link to the widget settings page. */
-						__( 'Image missing or invalid URL. Please check the Image widget URL in your <a href="%s">widget settings</a>.', 'jetpack' ),
-						admin_url( 'widgets.php' )
+		} elseif ( current_user_can( 'edit_theme_options' ) ) {
+			echo '<p>' . wp_kses(
+				sprintf(
+					/* translators: %s link to the widget settings page. */
+					__( 'Image missing or invalid URL. Please check the Image widget URL in your <a href="%s">widget settings</a>.', 'jetpack' ),
+					admin_url( 'widgets.php' )
+				),
+				array(
+					'a' => array(
+						'href' => array(),
 					),
-					array(
-						'a' => array(
-							'href' => array(),
-						),
-					)
-				) . '</p>';
-			}
+				)
+			) . '</p>';
 		}
 
 		echo "\n" . $args['after_widget']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -188,7 +185,7 @@ class Jetpack_Image_Widget extends WP_Widget {
 				$height                 = $size[1];
 				$instance['img_height'] = absint( $height );
 
-				unlink( $tmp_file );
+				wp_delete_file( $tmp_file );
 			} else {
 				$instance['img_width']  = $new_img_width;
 				$instance['img_height'] = $new_img_height;
@@ -207,6 +204,7 @@ class Jetpack_Image_Widget extends WP_Widget {
 	 * @see WP_Widget::form()
 	 *
 	 * @param array $instance Previously saved values from database.
+	 * @return string|void
 	 */
 	public function form( $instance ) {
 		// Defaults.

@@ -63,6 +63,14 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 				$result['email_receipts'] = true;
 			}
 
+			if ( ! isset( $result['use_last_service'] ) ) {
+				$result['use_last_service'] = false;
+			}
+
+			if ( ! isset( $result['use_last_package'] ) ) {
+				$result['use_last_package'] = true;
+			}
+
 			return $result;
 		}
 
@@ -104,10 +112,7 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 		}
 
 		public function can_user_manage_payment_methods() {
-			global $current_user;
-			$master_user = WC_Connect_Jetpack::get_master_user();
-			return WC_Connect_Jetpack::is_development_mode() ||
-				( is_a( $master_user, 'WP_User' ) && $current_user->ID === $master_user->ID );
+			return WC_Connect_Jetpack::is_offline_mode() || WC_Connect_Jetpack::is_current_user_connection_owner();
 		}
 
 		public function get_origin_address() {
@@ -137,7 +142,7 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 			}
 
 			$stored_address_fields    = WC_Connect_Options::get_option( 'origin_address', array() );
-			$merged_fields            = array_merge( $wc_address_fields, $stored_address_fields );
+			$merged_fields            = is_array( $stored_address_fields ) ? array_merge( $wc_address_fields, $stored_address_fields ) : $wc_address_fields;
 			$merged_fields['company'] = html_entity_decode( $merged_fields['company'], ENT_QUOTES ); // Decode again for any existing stores that had some html entities saved in the option.
 			return $merged_fields;
 		}
@@ -232,7 +237,13 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 		 * @return array
 		 */
 		public function get_label_order_meta_data( $order_id ) {
-			$label_data = get_post_meta( (int) $order_id, 'wc_connect_labels', true );
+			$order = wc_get_order( $order_id );
+
+			if ( ! $order instanceof WC_Order ) {
+				return array();
+			}
+
+			$label_data = $order->get_meta( 'wc_connect_labels', true );
 			// return an empty array if the data doesn't exist.
 			if ( ! $label_data ) {
 				return array();
@@ -256,6 +267,7 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 		 */
 		public function update_label_order_meta_data( $order_id, $new_label_data ) {
 			$result      = $new_label_data;
+			$order       = wc_get_order( $order_id );
 			$labels_data = $this->get_label_order_meta_data( $order_id );
 			foreach ( $labels_data as $index => $label_data ) {
 				if ( $label_data['label_id'] === $new_label_data->label_id ) {
@@ -268,7 +280,8 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 					}
 				}
 			}
-			update_post_meta( $order_id, 'wc_connect_labels', $labels_data );
+			$order->update_meta_data( 'wc_connect_labels', $labels_data );
+			$order->save();
 			return $result;
 		}
 
@@ -281,7 +294,9 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 		public function add_labels_to_order( $order_id, $new_labels ) {
 			$labels_data = $this->get_label_order_meta_data( $order_id );
 			$labels_data = array_merge( $new_labels, $labels_data );
-			update_post_meta( $order_id, 'wc_connect_labels', $labels_data );
+			$order       = wc_get_order( $order_id );
+			$order->update_meta_data( 'wc_connect_labels', $labels_data );
+			$order->save();
 		}
 
 		public function update_origin_address( $address ) {
@@ -298,8 +313,14 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 			// remove api-specific fields.
 			unset( $new_address['address'], $new_address['name'] );
 
-			$order->set_address( $new_address, 'shipping' );
-			update_post_meta( $order_id, '_wc_connect_destination_normalized', true );
+			foreach ( $new_address as $key => $value ) {
+				if ( method_exists( $order, 'set_shipping_' . $key ) ) {
+					call_user_func( array( $order, 'set_shipping_' . $key ), $value );
+				}
+			}
+
+			$order->update_meta_data( '_wc_connect_destination_normalized', true );
+			$order->save();
 		}
 
 		protected function sort_services( $a, $b ) {
@@ -317,11 +338,10 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 			}
 
 			return ( $a->instance_id > $b->instance_id ) ? 1 : -1;
-
 		}
 
 		/**
-		 * Returns the service type and id for each enabled WooCommerce Shipping & Tax service
+		 * Returns the service type and id for each enabled WooCommerce Tax service
 		 *
 		 * Shipping services also include instance_id and shipping zone id
 		 *
@@ -357,6 +377,7 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 			}
 
 			global $wpdb;
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared --- Need to use interpolated for the `IN()` condition
 			$methods = $wpdb->get_results(
 				"SELECT * FROM {$wpdb->prefix}woocommerce_shipping_zone_methods " .
 				"LEFT JOIN {$wpdb->prefix}woocommerce_shipping_zones " .
@@ -364,6 +385,7 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 				"WHERE method_id IN ({$escaped_list}) " .
 				'ORDER BY zone_order, instance_id;'
 			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			if ( empty( $methods ) ) {
 				return $enabled_services;
@@ -592,6 +614,31 @@ if ( ! class_exists( 'WC_Connect_Service_Settings_Store' ) ) {
 			}
 
 			return $lookup;
+		}
+
+		public function is_eligible_for_migration() {
+			$migration_state = intval( get_option( 'wcshipping_migration_state', 0 ) );
+
+			// If the migration state is greater than "COMPLETED", then we can assume that the next part of the migration
+			// state is being handled by WooCommerce Shipping.
+			if ( $migration_state > WC_Connect_WCST_To_WCShipping_Migration_State_Enum::COMPLETED ) {
+				return false;
+			}
+
+			// Hide the migration notification if the site has any active shipping methods defined by WCS&T.
+			if ( ! empty( $this->get_enabled_services() ) ) {
+				return false;
+			}
+
+			$migration_dismissed = false;
+			if ( isset( $_COOKIE[ WC_Connect_Loader::MIGRATION_DISMISSAL_COOKIE_KEY ] ) && (int) $_COOKIE[ WC_Connect_Loader::MIGRATION_DISMISSAL_COOKIE_KEY ] === 1 ) {
+				$migration_dismissed = true;
+			}
+
+			$migration_pending = ! $migration_state || WC_Connect_WCST_To_WCShipping_Migration_State_Enum::COMPLETED !== $migration_state;
+			$migration_enabled = $this->service_schemas_store->is_wcship_wctax_migration_enabled();
+
+			return $migration_pending && $migration_enabled && ! $migration_dismissed;
 		}
 
 		private function translate_unit( $value ) {

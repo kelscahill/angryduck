@@ -15,18 +15,19 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\LiaSettings as LiaSettingsModel;
-use Google\Service\ShoppingContent\LiasettingsCustomBatchRequest;
-use Google\Service\ShoppingContent\LiasettingsCustomBatchResponse;
-use Google\Service\ShoppingContent\LiasettingsGetAccessibleGmbAccountsResponse;
-use Google\Service\ShoppingContent\LiasettingsListPosDataProvidersResponse;
-use Google\Service\ShoppingContent\LiasettingsListResponse;
-use Google\Service\ShoppingContent\LiasettingsRequestGmbAccessResponse;
-use Google\Service\ShoppingContent\LiasettingsRequestInventoryVerificationResponse;
-use Google\Service\ShoppingContent\LiasettingsSetInventoryVerificationContactResponse;
-use Google\Service\ShoppingContent\LiasettingsSetPosDataProviderResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiaOmnichannelExperience;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiaSettings as LiaSettingsModel;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsCustomBatchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsCustomBatchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsGetAccessibleGmbAccountsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsListPosDataProvidersResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsRequestGmbAccessResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsRequestInventoryVerificationResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsSetInventoryVerificationContactResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\LiasettingsSetPosDataProviderResponse;
 
 /**
  * The "liasettings" collection of methods.
@@ -36,7 +37,7 @@ use Google\Service\ShoppingContent\LiasettingsSetPosDataProviderResponse;
  *   $liasettings = $contentService->liasettings;
  *  </code>
  */
-class Liasettings extends \Google\Service\Resource
+class Liasettings extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves and/or updates the LIA settings of multiple accounts in a single
@@ -45,6 +46,7 @@ class Liasettings extends \Google\Service\Resource
    * @param LiasettingsCustomBatchRequest $postBody
    * @param array $optParams Optional parameters.
    * @return LiasettingsCustomBatchResponse
+   * @throws \Google\Service\Exception
    */
   public function custombatch(LiasettingsCustomBatchRequest $postBody, $optParams = [])
   {
@@ -62,6 +64,7 @@ class Liasettings extends \Google\Service\Resource
    * settings.
    * @param array $optParams Optional parameters.
    * @return LiaSettingsModel
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $accountId, $optParams = [])
   {
@@ -80,6 +83,7 @@ class Liasettings extends \Google\Service\Resource
    * accessible Business Profiles.
    * @param array $optParams Optional parameters.
    * @return LiasettingsGetAccessibleGmbAccountsResponse
+   * @throws \Google\Service\Exception
    */
   public function getaccessiblegmbaccounts($merchantId, $accountId, $optParams = [])
   {
@@ -99,6 +103,7 @@ class Liasettings extends \Google\Service\Resource
    * the response, used for paging.
    * @opt_param string pageToken The token returned by the previous request.
    * @return LiasettingsListResponse
+   * @throws \Google\Service\Exception
    */
   public function listLiasettings($merchantId, $optParams = [])
   {
@@ -112,6 +117,7 @@ class Liasettings extends \Google\Service\Resource
    *
    * @param array $optParams Optional parameters.
    * @return LiasettingsListPosDataProvidersResponse
+   * @throws \Google\Service\Exception
    */
   public function listposdataproviders($optParams = [])
   {
@@ -131,6 +137,7 @@ class Liasettings extends \Google\Service\Resource
    * @param string $gmbEmail The email of the Business Profile.
    * @param array $optParams Optional parameters.
    * @return LiasettingsRequestGmbAccessResponse
+   * @throws \Google\Service\Exception
    */
   public function requestgmbaccess($merchantId, $accountId, $gmbEmail, $optParams = [])
   {
@@ -151,6 +158,7 @@ class Liasettings extends \Google\Service\Resource
    * requested.
    * @param array $optParams Optional parameters.
    * @return LiasettingsRequestInventoryVerificationResponse
+   * @throws \Google\Service\Exception
    */
   public function requestinventoryverification($merchantId, $accountId, $country, $optParams = [])
   {
@@ -175,12 +183,46 @@ class Liasettings extends \Google\Service\Resource
    * @param string $contactEmail The email of the inventory verification contact.
    * @param array $optParams Optional parameters.
    * @return LiasettingsSetInventoryVerificationContactResponse
+   * @throws \Google\Service\Exception
    */
   public function setinventoryverificationcontact($merchantId, $accountId, $country, $language, $contactName, $contactEmail, $optParams = [])
   {
     $params = ['merchantId' => $merchantId, 'accountId' => $accountId, 'country' => $country, 'language' => $language, 'contactName' => $contactName, 'contactEmail' => $contactEmail];
     $params = array_merge($params, $optParams);
     return $this->call('setinventoryverificationcontact', [$params], LiasettingsSetInventoryVerificationContactResponse::class);
+  }
+  /**
+   * Sets the omnichannel experience for the specified country. Only supported for
+   * merchants whose POS data provider is trusted to enable the corresponding
+   * experience. For more context, see these help articles [about
+   * LFP](https://support.google.com/merchants/answer/7676652) and [how to get
+   * started](https://support.google.com/merchants/answer/7676578) with it.
+   * (liasettings.setomnichannelexperience)
+   *
+   * @param string $merchantId The ID of the managing account. If this parameter
+   * is not the same as accountId, then this account must be a multi-client
+   * account and `accountId` must be the ID of a sub-account of this account.
+   * @param string $accountId The ID of the account for which to retrieve
+   * accessible Business Profiles.
+   * @param array $optParams Optional parameters.
+   *
+   * @opt_param string country The CLDR country code (for example, "US") for which
+   * the omnichannel experience is selected.
+   * @opt_param string lsfType The Local Store Front (LSF) type for this country.
+   * Acceptable values are: - "`ghlsf`" (Google-Hosted Local Store Front) -
+   * "`mhlsfBasic`" (Merchant-Hosted Local Store Front Basic) - "`mhlsfFull`"
+   * (Merchant-Hosted Local Store Front Full) More details about these types can
+   * be found here.
+   * @opt_param string pickupTypes The Pickup types for this country. Acceptable
+   * values are: - "`pickupToday`" - "`pickupLater`"
+   * @return LiaOmnichannelExperience
+   * @throws \Google\Service\Exception
+   */
+  public function setomnichannelexperience($merchantId, $accountId, $optParams = [])
+  {
+    $params = ['merchantId' => $merchantId, 'accountId' => $accountId];
+    $params = array_merge($params, $optParams);
+    return $this->call('setomnichannelexperience', [$params], LiaOmnichannelExperience::class);
   }
   /**
    * Sets the POS data provider for the specified country.
@@ -199,6 +241,7 @@ class Liasettings extends \Google\Service\Resource
    * @opt_param string posExternalAccountId The account ID by which this merchant
    * is known to the POS data provider.
    * @return LiasettingsSetPosDataProviderResponse
+   * @throws \Google\Service\Exception
    */
   public function setposdataprovider($merchantId, $accountId, $country, $optParams = [])
   {
@@ -218,6 +261,7 @@ class Liasettings extends \Google\Service\Resource
    * @param LiaSettingsModel $postBody
    * @param array $optParams Optional parameters.
    * @return LiaSettingsModel
+   * @throws \Google\Service\Exception
    */
   public function update($merchantId, $accountId, LiaSettingsModel $postBody, $optParams = [])
   {

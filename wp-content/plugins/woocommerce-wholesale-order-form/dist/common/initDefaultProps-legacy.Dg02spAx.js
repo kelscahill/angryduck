@@ -1,0 +1,1 @@
+System.register(["./LoadingOutlined-legacy.CPhLaklC.js"],(function(e,t){"use strict";var r;return{setters:[e=>{r=e.z}],execute:function(){e("i",((e,t)=>{const n=r({},e);return Object.keys(t).forEach((e=>{const r=n[e];if(!r)throw new Error(`not have ${e} prop`);r.type||r.default?r.default=t[e]:r.def?r.def(t[e]):n[e]={type:r,default:t[e]}})),n}))}}}));

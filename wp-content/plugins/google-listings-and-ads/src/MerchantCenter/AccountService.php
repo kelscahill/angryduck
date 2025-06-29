@@ -3,25 +3,33 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter;
 
+use Automattic\Jetpack\Connection\Client;
+use Automattic\WooCommerce\GoogleListingsAndAds\API\Google\Ads;
 use Automattic\WooCommerce\GoogleListingsAndAds\API\Google\Merchant;
 use Automattic\WooCommerce\GoogleListingsAndAds\API\Google\Middleware;
 use Automattic\WooCommerce\GoogleListingsAndAds\API\Google\SiteVerification;
+use Automattic\WooCommerce\GoogleListingsAndAds\API\WP\NotificationsService;
+use Automattic\WooCommerce\GoogleListingsAndAds\API\WP\OAuthService;
 use Automattic\WooCommerce\GoogleListingsAndAds\DB\Table\MerchantIssueTable;
 use Automattic\WooCommerce\GoogleListingsAndAds\DB\Table\ShippingRateTable;
 use Automattic\WooCommerce\GoogleListingsAndAds\DB\Table\ShippingTimeTable;
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\ApiNotReady;
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\ExceptionWithResponseData;
 use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Service;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\ContainerAwareTrait;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Jobs\CleanupSyncedProducts;
-use Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter\MerchantCenterService;
+use Automattic\WooCommerce\GoogleListingsAndAds\Jobs\JobRepository;
+use Automattic\WooCommerce\GoogleListingsAndAds\Options\AdsAccountState;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\MerchantAccountState;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\TransientsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerInterface;
 use Exception;
-use Psr\Container\ContainerInterface;
+use Jetpack_Options;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -29,9 +37,10 @@ defined( 'ABSPATH' ) || exit;
  * Class AccountService
  *
  * Container used to access:
- * - CleanupSyncedProducts
+ * - Ads
+ * - AdsAccountState
+ * - JobRepository
  * - Merchant
- * - MerchantAccountState
  * - MerchantCenterService
  * - MerchantIssueTable
  * - MerchantStatuses
@@ -43,15 +52,11 @@ defined( 'ABSPATH' ) || exit;
  * @since 1.12.0
  * @package Automattic\WooCommerce\GoogleListingsAndAds\MerchantCenter
  */
-class AccountService implements OptionsAwareInterface, Service {
+class AccountService implements ContainerAwareInterface, OptionsAwareInterface, Service {
 
+	use ContainerAwareTrait;
 	use OptionsAwareTrait;
 	use PluginHelper;
-
-	/**
-	 * @var ContainerInterface
-	 */
-	protected $container;
 
 	/**
 	 * @var MerchantAccountState
@@ -75,11 +80,10 @@ class AccountService implements OptionsAwareInterface, Service {
 	/**
 	 * AccountService constructor.
 	 *
-	 * @param ContainerInterface $container
+	 * @param MerchantAccountState $state
 	 */
-	public function __construct( ContainerInterface $container ) {
-		$this->state     = $container->get( MerchantAccountState::class );
-		$this->container = $container;
+	public function __construct( MerchantAccountState $state ) {
+		$this->state = $state;
 	}
 
 	/**
@@ -216,10 +220,23 @@ class AccountService implements OptionsAwareInterface, Service {
 	 * @return array
 	 */
 	public function get_connected_status(): array {
-		$id     = $this->options->get_merchant_id();
+		/** @var NotificationsService $notifications_service */
+		$notifications_service = $this->container->get( NotificationsService::class );
+
+		$id                    = $this->options->get_merchant_id();
+		$wpcom_rest_api_status = $this->options->get( OptionsInterface::WPCOM_REST_API_STATUS );
+
+		// If token is revoked outside the extension. Set the status as error to force the merchant to grant access again.
+		if ( $wpcom_rest_api_status === 'approved' && ! $this->is_wpcom_api_status_healthy() ) {
+			$wpcom_rest_api_status = OAuthService::STATUS_ERROR;
+			$this->options->update( OptionsInterface::WPCOM_REST_API_STATUS, $wpcom_rest_api_status );
+		}
+
 		$status = [
-			'id'     => $id,
-			'status' => $id ? 'connected' : 'disconnected',
+			'id'                           => $id,
+			'status'                       => $id ? 'connected' : 'disconnected',
+			'notification_service_enabled' => $notifications_service->is_enabled(),
+			'wpcom_rest_api_status'        => $wpcom_rest_api_status,
 		];
 
 		$incomplete = $this->state->last_incomplete_step();
@@ -259,7 +276,7 @@ class AccountService implements OptionsAwareInterface, Service {
 		$this->container->get( ShippingRateTable::class )->truncate();
 		$this->container->get( ShippingTimeTable::class )->truncate();
 
-		$this->container->get( CleanupSyncedProducts::class )->schedule();
+		$this->container->get( JobRepository::class )->get( CleanupSyncedProducts::class )->schedule();
 
 		$this->container->get( TransientsInterface::class )->delete( TransientsInterface::MC_ACCOUNT_REVIEW );
 		$this->container->get( TransientsInterface::class )->delete( TransientsInterface::URL_MATCHES );
@@ -329,6 +346,17 @@ class AccountService implements OptionsAwareInterface, Service {
 						} else {
 							$merchant->claimwebsite();
 						}
+						break;
+					case 'link_ads':
+						// Continue to next step if Ads account is not connected yet.
+						if ( ! $this->options->get_ads_id() ) {
+							// Save step as pending and continue the foreach loop with `continue 2`.
+							$state[ $name ]['status'] = MerchantAccountState::STEP_PENDING;
+							$this->state->update( $state );
+							continue 2;
+						}
+
+						$this->link_ads_account();
 						break;
 					default:
 						throw new Exception(
@@ -427,7 +455,7 @@ class AccountService implements OptionsAwareInterface, Service {
 
 		/** @var Account $account */
 		$account     = $merchant->get_account( $merchant_id );
-		$account_url = $account->getWebsiteUrl();
+		$account_url = $account->getWebsiteUrl() ?: '';
 
 		if ( untrailingslashit( $site_url ) !== untrailingslashit( $account_url ) ) {
 
@@ -470,6 +498,28 @@ class AccountService implements OptionsAwareInterface, Service {
 	}
 
 	/**
+	 * Get the callback function for linking an Ads account.
+	 *
+	 * @throws Exception When the merchant account hasn't been set yet.
+	 */
+	private function link_ads_account() {
+		if ( ! $this->options->get_merchant_id() ) {
+			throw new Exception( 'A Merchant Center account must be connected' );
+		}
+
+		$ads_state = $this->container->get( AdsAccountState::class );
+
+		// Create link for Merchant and accept it in Ads.
+		$waiting_acceptance = $this->container->get( Merchant::class )->link_ads_id( $this->options->get_ads_id() );
+
+		if ( $waiting_acceptance ) {
+			$this->container->get( Ads::class )->accept_merchant_link( $this->options->get_merchant_id() );
+		}
+
+		$ads_state->complete_step( 'link_merchant' );
+	}
+
+	/**
 	 * Prepares an Exception to be thrown with Merchant data:
 	 * - Ensure it has the merchant_id value
 	 * - Default to a 400 error code
@@ -480,7 +530,7 @@ class AccountService implements OptionsAwareInterface, Service {
 	 *
 	 * @return ExceptionWithResponseData
 	 */
-	private function prepare_exception( string $message, array $data = [], int $code = null ): ExceptionWithResponseData {
+	private function prepare_exception( string $message, array $data = [], ?int $code = null ): ExceptionWithResponseData {
 		$merchant_id = $this->options->get_merchant_id();
 
 		if ( $merchant_id && ! isset( $data['id'] ) ) {
@@ -488,5 +538,140 @@ class AccountService implements OptionsAwareInterface, Service {
 		}
 
 		return new ExceptionWithResponseData( $message, $code ?: 400, null, $data );
+	}
+
+	/**
+	 * Delete the option regarding WPCOM authorization
+	 *
+	 * @return bool
+	 */
+	public function reset_wpcom_api_authorization_data(): bool {
+		$this->delete_wpcom_api_auth_nonce();
+		$this->delete_wpcom_api_status_transient();
+		return $this->options->delete( OptionsInterface::WPCOM_REST_API_STATUS );
+	}
+
+	/**
+	 * Update the status of the merchant granting access to Google's WPCOM app in the database.
+	 * Before updating the status in the DB it will compare the nonce stored in the DB with the nonce passed to the API.
+	 *
+	 * @param string $status The status of the merchant granting access to Google's WPCOM app.
+	 * @param string $nonce  The nonce provided by Google in the URL query parameter when Google redirects back to merchant's site.
+	 *
+	 * @return bool
+	 * @throws ExceptionWithResponseData If the stored nonce / nonce from query param is not provided, or the nonces mismatch.
+	 */
+	public function update_wpcom_api_authorization( string $status, string $nonce ): bool {
+		try {
+			$stored_nonce = $this->options->get( OptionsInterface::GOOGLE_WPCOM_AUTH_NONCE );
+			if ( empty( $stored_nonce ) ) {
+				throw $this->prepare_exception(
+					__( 'No stored nonce found in the database, skip updating auth status.', 'google-listings-and-ads' )
+				);
+			}
+
+			if ( empty( $nonce ) ) {
+				throw $this->prepare_exception(
+					__( 'Nonce is not provided, skip updating auth status.', 'google-listings-and-ads' )
+				);
+			}
+
+			if ( $stored_nonce !== $nonce ) {
+				$this->delete_wpcom_api_auth_nonce();
+				throw $this->prepare_exception(
+					__( 'Nonces mismatch, skip updating auth status.', 'google-listings-and-ads' )
+				);
+			}
+
+			$this->delete_wpcom_api_auth_nonce();
+
+			/**
+			* When the WPCOM Authorization status has been updated.
+			*
+			* @event update_wpcom_api_authorization
+			* @property string status The status of the request.
+			* @property int|null blog_id The blog ID.
+			*/
+			do_action(
+				'woocommerce_gla_track_event',
+				'update_wpcom_api_authorization',
+				[
+					'status'  => $status,
+					'blog_id' => Jetpack_Options::get_option( 'id' ),
+				]
+			);
+
+			$this->delete_wpcom_api_status_transient();
+			return $this->options->update( OptionsInterface::WPCOM_REST_API_STATUS, $status );
+		} catch ( ExceptionWithResponseData $e ) {
+
+			/**
+			* When the WPCOM Authorization status has been updated with errors.
+			*
+			* @event update_wpcom_api_authorization
+			* @property string status The status of the request.
+			* @property int|null blog_id The blog ID.
+			*/
+			do_action(
+				'woocommerce_gla_track_event',
+				'update_wpcom_api_authorization',
+				[
+					'status'  => $e->getMessage(),
+					'blog_id' => Jetpack_Options::get_option( 'id' ),
+				]
+			);
+
+			throw $e;
+		}
+	}
+
+	/**
+	 * Delete the nonce of "verifying Google is the one redirect back to merchant site and set the auth status" in the database.
+	 *
+	 * @return bool
+	 */
+	public function delete_wpcom_api_auth_nonce(): bool {
+		return $this->options->delete( OptionsInterface::GOOGLE_WPCOM_AUTH_NONCE );
+	}
+
+	/**
+	 * Deletes the transient storing the WPCOM Status data.
+	 */
+	public function delete_wpcom_api_status_transient(): void {
+		$transients = $this->container->get( TransientsInterface::class );
+		$transients->delete( TransientsInterface::WPCOM_API_STATUS );
+	}
+
+	/**
+	 * Check if the WPCOM API Status is healthy by doing a request to /wc/partners/google/remote-site-status endpoint in WPCOM.
+	 *
+	 * @return bool True when the status is healthy, false otherwise.
+	 */
+	public function is_wpcom_api_status_healthy() {
+		/** @var TransientsInterface $transients */
+		$transients = $this->container->get( TransientsInterface::class );
+		$status     = $transients->get( TransientsInterface::WPCOM_API_STATUS );
+
+		if ( ! $status ) {
+
+			$integration_status_args = [
+				'method'  => 'GET',
+				'timeout' => 30,
+				'url'     => 'https://public-api.wordpress.com/wpcom/v2/sites/' . Jetpack_Options::get_option( 'id' ) . '/wc/partners/google/remote-site-status',
+				'user_id' => get_current_user_id(),
+			];
+
+			$integration_remote_request_response = Client::remote_request( $integration_status_args, null );
+
+			if ( is_wp_error( $integration_remote_request_response ) ) {
+				$status = [ 'is_healthy' => false ];
+			} else {
+				$status = json_decode( wp_remote_retrieve_body( $integration_remote_request_response ), true ) ?? [ 'is_healthy' => false ];
+			}
+
+			$transients->set( TransientsInterface::WPCOM_API_STATUS, $status, MINUTE_IN_SECONDS * 30 );
+		}
+
+		return isset( $status['is_healthy'] ) && $status['is_healthy'] && $status['is_wc_rest_api_healthy'] && $status['is_partner_token_healthy'];
 	}
 }

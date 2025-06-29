@@ -1,5 +1,7 @@
 <?php
 
+use Automattic\Jetpack\Constants;
+
 // No direct access please
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -27,16 +29,15 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 
 			$this->validator         = $validator;
 			$this->wc_connect_loader = $wc_connect_loader;
-
 		}
 
 		/**
-		 * Requests the available services for this site from the WooCommerce Shipping & Tax Server
+		 * Requests the available services for this site from the WooCommerce Tax Server
 		 *
 		 * @return array|WP_Error
 		 */
 		public function get_service_schemas() {
-			$response_body = $this->request( 'POST', '/services' );
+			$response_body = $this->request( 'POST', '/services', array( 'settings' => array( 'wcship_migration_supported' => true ) ) );
 
 			if ( is_wp_error( $response_body ) ) {
 				return $response_body;
@@ -51,7 +52,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
-		 * Validates the settings for a given service with the WooCommerce Shipping & Tax Server
+		 * Validates the settings for a given service with the WooCommerce Tax Server
 		 *
 		 * @param $service_slug
 		 * @param $service_settings
@@ -61,7 +62,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		public function validate_service_settings( $service_slug, $service_settings ) {
 			// Make sure the service slug only contains dashes, underscores or letters
 			if ( 1 === preg_match( '/[^a-z_\-]/i', $service_slug ) ) {
-				return new WP_Error( 'invalid_service_slug', __( 'Invalid WooCommerce Shipping & Tax service slug provided', 'woocommerce-services' ) );
+				return new WP_Error( 'invalid_service_slug', __( 'Invalid WooCommerce Tax service slug provided', 'woocommerce-services' ) );
 			}
 
 			return $this->request( 'POST', "/services/{$service_slug}/settings", array( 'service_settings' => $service_settings ) );
@@ -136,7 +137,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
-		 * Gets shipping rates (for checkout) from the WooCommerce Shipping & Tax Server
+		 * Gets shipping rates (for checkout) from the WooCommerce Tax Server
 		 *
 		 * @param $services All settings for all services we want rates for
 		 * @param $package Package provided to WC_Shipping_Method::calculate_shipping()
@@ -193,7 +194,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
-		 * Asks the WooCommerce Shipping & Tax server for an array of payment methods
+		 * Asks the WooCommerce Tax server for an array of payment methods
 		 *
 		 * @return mixed|WP_Error
 		 */
@@ -202,7 +203,16 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
-		 * Gets shipping rates (for labels) from the WooCommerce Shipping & Tax Server
+		 * Retrieve Sift configurations.
+		 *
+		 * @return object|WP_Error
+		 */
+		public function get_sift_configuration() {
+			return $this->request( 'GET', '/payment/sift' );
+		}
+
+		/**
+		 * Gets shipping rates (for labels) from the WooCommerce Tax Server
 		 *
 		 * @param array $request - array(
 		 *  'packages' => array(
@@ -344,7 +354,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
-		 * Tests the connection to the WooCommerce Shipping & Tax Server
+		 * Tests the connection to the WooCommerce Tax Server
 		 *
 		 * @return true|WP_Error
 		 */
@@ -401,7 +411,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		/**
-		 * Sends a request to the WooCommerce Shipping & Tax Server
+		 * Sends a request to the WooCommerce Tax Server
 		 *
 		 * @param $method
 		 * @param $path
@@ -426,7 +436,8 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			if ( is_wp_error( $authorization ) ) {
 				return $authorization;
 			}
-			$args['headers']['Authorization'] = $authorization;
+			$args['headers']['Authorization']  = $authorization;
+			$args['headers']['X-Woo-Settings'] = $this->get_request_additional_header();
 
 			$http_timeout = 60; // 1 minute
 
@@ -439,6 +450,44 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			$response = wp_remote_request( $proxy_url, $args );
 
 			return $response;
+		}
+
+		/**
+		 * Get useful settings values for use in a requests
+		 *
+		 * @return array
+		 */
+		protected function get_settings_values() {
+			return array(
+				'store_guid'           => $this->get_guid(),
+				'base_city'            => WC()->countries->get_base_city(),
+				'base_country'         => WC()->countries->get_base_country(),
+				'base_state'           => WC()->countries->get_base_state(),
+				'base_postcode'        => WC()->countries->get_base_postcode(),
+				'currency'             => get_woocommerce_currency(),
+				'dimension_unit'       => strtolower( get_option( 'woocommerce_dimension_unit' ) ),
+				'weight_unit'          => strtolower( get_option( 'woocommerce_weight_unit' ) ),
+				'wcs_version'          => WC_Connect_Loader::get_wcs_version(),
+				'jetpack_version'      => 'embed-' . WC_Connect_Jetpack::get_jetpack_connection_package_version(),
+				'is_atomic'            => WC_Connect_Jetpack::is_atomic_site(),
+				'wc_version'           => WC()->version,
+				'wp_version'           => get_bloginfo( 'version' ),
+				'last_services_update' => WC_Connect_Options::get_option( 'services_last_update', 0 ),
+				'last_heartbeat'       => WC_Connect_Options::get_option( 'last_heartbeat', 0 ),
+				'last_rate_request'    => WC_Connect_Options::get_option( 'last_rate_request', 0 ),
+				'active_services'      => $this->wc_connect_loader->get_active_services(),
+				'disable_stats'        => WC_Connect_Jetpack::is_staging_site(),
+				'taxes_enabled'        => wc_tax_enabled() && 'yes' === get_option( 'wc_connect_taxes_enabled' ),
+			);
+		}
+
+		/**
+		 * Add useful WP/WC/WCC information for use in a request header
+		 *
+		 * @return json
+		 */
+		protected function get_request_additional_header() {
+			return json_encode( $this->get_settings_values() );
 		}
 
 		/**
@@ -456,34 +505,14 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			// Add interesting fields to the body of each request
 			$body['settings'] = wp_parse_args(
 				$body['settings'],
-				array(
-					'store_guid'           => $this->get_guid(),
-					'base_city'            => WC()->countries->get_base_city(),
-					'base_country'         => WC()->countries->get_base_country(),
-					'base_state'           => WC()->countries->get_base_state(),
-					'base_postcode'        => WC()->countries->get_base_postcode(),
-					'currency'             => get_woocommerce_currency(),
-					'dimension_unit'       => strtolower( get_option( 'woocommerce_dimension_unit' ) ),
-					'weight_unit'          => strtolower( get_option( 'woocommerce_weight_unit' ) ),
-					'wcs_version'          => WC_Connect_Loader::get_wcs_version(),
-					'jetpack_version'      => JETPACK__VERSION,
-					'is_atomic'            => WC_Connect_Jetpack::is_atomic_site(),
-					'wc_version'           => WC()->version,
-					'wp_version'           => get_bloginfo( 'version' ),
-					'last_services_update' => WC_Connect_Options::get_option( 'services_last_update', 0 ),
-					'last_heartbeat'       => WC_Connect_Options::get_option( 'last_heartbeat', 0 ),
-					'last_rate_request'    => WC_Connect_Options::get_option( 'last_rate_request', 0 ),
-					'active_services'      => $this->wc_connect_loader->get_active_services(),
-					'disable_stats'        => WC_Connect_Jetpack::is_staging_site(),
-					'taxes_enabled'        => wc_tax_enabled() && 'yes' === get_option( 'wc_connect_taxes_enabled' ),
-				)
+				$this->get_settings_values()
 			);
 
 			return $body;
 		}
 
 		/**
-		 * Generates headers for our request to the WooCommerce Shipping & Tax Server
+		 * Generates headers for our request to the WooCommerce Tax Server
 		 *
 		 * @return array|WP_Error
 		 */
@@ -512,24 +541,24 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 		}
 
 		protected function authorization_header() {
-			$token = WC_Connect_Jetpack::get_master_user_access_token( 0 );
+			$token = WC_Connect_Jetpack::get_blog_access_token();
 			$token = apply_filters( 'wc_connect_jetpack_access_token', $token );
 			if ( ! $token || empty( $token->secret ) ) {
 				return new WP_Error(
 					'missing_token',
-					__( 'Unable to send request to WooCommerce Shipping & Tax server. Jetpack Token is missing', 'woocommerce-services' )
+					__( 'Unable to send request to WooCommerce Tax server. WordPress.com token is missing', 'woocommerce-services' )
 				);
 			}
 
 			if ( false === strpos( $token->secret, '.' ) ) {
 				return new WP_Error(
 					'invalid_token',
-					__( 'Unable to send request to WooCommerce Shipping & Tax server. Jetpack Token is malformed.', 'woocommerce-services' )
+					__( 'Unable to send request to WooCommerce Tax server. WordPress.com token is malformed.', 'woocommerce-services' )
 				);
 			}
 
 			list( $token_key, $token_secret ) = explode( '.', $token->secret );
-			$token_key                        = sprintf( '%s:%d:%d', $token_key, JETPACK__API_VERSION, $token->external_user_id );
+			$token_key                        = sprintf( '%s:%d:%d', $token_key, Constants::get_constant( 'JETPACK__API_VERSION' ), $token->external_user_id );
 			$time_diff                        = (int) Jetpack_Options::get_option( 'time_diff' );
 			$timestamp                        = time() + $time_diff;
 			$nonce                            = wp_generate_password( 10, false );
@@ -585,7 +614,7 @@ if ( ! class_exists( 'WC_Connect_API_Client' ) ) {
 			if ( $local_time < time() - 600 || $local_time > time() + 300 ) {
 				return new WP_Error(
 					'invalid_signature',
-					__( 'Unable to send request to WooCommerce Shipping & Tax server. The timestamp generated for the signature is too old.', 'woocommerce-services' )
+					__( 'Unable to send request to WooCommerce Tax server. The timestamp generated for the signature is too old.', 'woocommerce-services' )
 				);
 			}
 

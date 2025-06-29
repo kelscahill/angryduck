@@ -5,18 +5,20 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\Product;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidValue;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
+use Automattic\WooCommerce\GoogleListingsAndAds\Product\AttributeMapping\AttributeMappingHelper;
 use Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes\Condition;
 use Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes\SizeSystem;
 use Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes\SizeType;
 use Automattic\WooCommerce\GoogleListingsAndAds\Product\Attributes\AgeGroup;
 use Automattic\WooCommerce\GoogleListingsAndAds\Validator\GooglePriceConstraint;
+use Automattic\WooCommerce\GoogleListingsAndAds\Validator\ImageUrlConstraint;
 use Automattic\WooCommerce\GoogleListingsAndAds\Validator\Validatable;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Price as GooglePrice;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Product as GoogleProduct;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ProductShipping as GoogleProductShipping;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ProductShippingDimension as GoogleProductShippingDimension;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ProductShippingWeight as GoogleProductShippingWeight;
 use DateInterval;
-use Google\Service\ShoppingContent\Price as GooglePrice;
-use Google\Service\ShoppingContent\Product as GoogleProduct;
-use Google\Service\ShoppingContent\ProductShipping as GoogleProductShipping;
-use Google\Service\ShoppingContent\ProductShippingDimension as GoogleProductShippingDimension;
-use Google\Service\ShoppingContent\ProductShippingWeight as GoogleProductShippingWeight;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
@@ -62,43 +64,52 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 	protected $tax_excluded;
 
 	/**
+	 * @var array Product category ids
+	 */
+	protected $product_category_ids;
+
+	/**
 	 * Initialize this object's properties from an array.
 	 *
-	 * @param array $array Used to seed this object's properties.
+	 * @param array $properties Used to seed this object's properties.
 	 *
 	 * @return void
 	 *
 	 * @throws InvalidValue When a WooCommerce product is not provided or it is invalid.
 	 */
-	public function mapTypes( $array ) {
-		if ( empty( $array['wc_product'] ) || ! $array['wc_product'] instanceof WC_Product ) {
+	public function mapTypes( $properties ) {
+		if ( empty( $properties['wc_product'] ) || ! $properties['wc_product'] instanceof WC_Product ) {
 			throw InvalidValue::not_instance_of( WC_Product::class, 'wc_product' );
 		}
 
 		// throw an exception if the parent product isn't provided and this is a variation
-		if ( $array['wc_product'] instanceof WC_Product_Variation &&
-			 ( empty( $array['parent_wc_product'] ) || ! $array['parent_wc_product'] instanceof WC_Product_Variable )
+		if ( $properties['wc_product'] instanceof WC_Product_Variation &&
+			( empty( $properties['parent_wc_product'] ) || ! $properties['parent_wc_product'] instanceof WC_Product_Variable )
 		) {
 			throw InvalidValue::not_instance_of( WC_Product_Variable::class, 'parent_wc_product' );
 		}
 
-		if ( empty( $array['targetCountry'] ) ) {
+		if ( empty( $properties['targetCountry'] ) ) {
 			throw InvalidValue::is_empty( 'targetCountry' );
 		}
 
-		$this->wc_product        = $array['wc_product'];
-		$this->parent_wc_product = $array['parent_wc_product'] ?? null;
+		$this->wc_product        = $properties['wc_product'];
+		$this->parent_wc_product = $properties['parent_wc_product'] ?? null;
 
-		$this->map_gla_attributes( $array['gla_attributes'] ?? [] );
+		$mapping_rules  = $properties['mapping_rules'] ?? [];
+		$gla_attributes = $properties['gla_attributes'] ?? [];
 
 		// Google doesn't expect extra fields, so it's best to remove them
-		unset( $array['wc_product'] );
-		unset( $array['parent_wc_product'] );
-		unset( $array['gla_attributes'] );
+		unset( $properties['wc_product'] );
+		unset( $properties['parent_wc_product'] );
+		unset( $properties['gla_attributes'] );
+		unset( $properties['mapping_rules'] );
 
-		parent::mapTypes( $array );
-
+		parent::mapTypes( $properties );
 		$this->map_woocommerce_product();
+		$this->map_attribute_mapping_rules( $mapping_rules );
+		$this->map_gla_attributes( $gla_attributes );
+		$this->map_gtin();
 
 		// Allow users to override the product's attributes using a WordPress filter.
 		$this->override_attributes();
@@ -116,13 +127,12 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 		$this->setContentLanguage( $content_language );
 
 		$this->map_wc_product_id()
-			 ->map_wc_general_attributes()
-			 ->map_product_categories()
-			 ->map_wc_product_image( self::IMAGE_SIZE_FULL )
-			 ->map_wc_availability()
-			 ->map_wc_product_shipping()
-			 ->map_wc_prices();
-
+			->map_wc_general_attributes()
+			->map_product_categories()
+			->map_wc_product_image( self::IMAGE_SIZE_FULL )
+			->map_wc_availability()
+			->map_wc_product_shipping()
+			->map_wc_prices();
 	}
 
 	/**
@@ -185,19 +195,23 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 	 */
 	protected function map_product_categories() {
 		// set product type using merchants defined product categories
-		$base_product_id      = $this->is_variation() ? $this->parent_wc_product->get_id() : $this->wc_product->get_id();
-		$product_category_ids = wc_get_product_cat_ids( $base_product_id );
-		if ( ! empty( $product_category_ids ) ) {
-			$google_product_types = self::convert_product_types( $product_category_ids );
+		$base_product_id = $this->is_variation() ? $this->parent_wc_product->get_id() : $this->wc_product->get_id();
+
+		// Fetch only selected term ids without parents.
+		$this->product_category_ids = wc_get_product_term_ids( $base_product_id, 'product_cat' );
+
+		if ( ! empty( $this->product_category_ids ) ) {
+			$google_product_types = self::convert_product_types( $this->product_category_ids );
 			do_action(
 				'woocommerce_gla_debug_message',
 				sprintf(
 					'Product category (ID: %s): %s.',
 					$base_product_id,
-					json_encode( $google_product_types )
+					wp_json_encode( $google_product_types )
 				),
 				__METHOD__
 			);
+			$google_product_types = array_slice( $google_product_types, 0, 10 );
 			$this->setProductTypes( $google_product_types );
 		}
 		return $this;
@@ -225,6 +239,7 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 	}
 
 	/**
+	 * Return category names including ancestors, separated by ">"
 	 *
 	 * @param int $category_id
 	 *
@@ -258,7 +273,16 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 	 * @return string
 	 */
 	public static function get_google_product_offer_id( string $slug, int $product_id ): string {
-		return "{$slug}_{$product_id}";
+		/**
+		 * Filters a WooCommerce product ID to be used as the Merchant Center product ID.
+		 *
+		 * @param string $mc_product_id Default generated Merchant Center product ID.
+		 * @param int    $product_id    WooCommerce product ID.
+		 * @since 2.4.6
+		 *
+		 * @return string Merchant Center product ID corresponding to the given WooCommerce product ID.
+		 */
+		return apply_filters( 'woocommerce_gla_get_google_product_offer_id', "{$slug}_{$product_id}", $product_id );
 	}
 
 	/**
@@ -409,7 +433,7 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 			$weight_unit    = apply_filters( 'woocommerce_gla_weight_unit', get_option( 'woocommerce_weight_unit' ) );
 
 			$this->map_wc_shipping_dimensions( $dimension_unit )
-				 ->map_wc_shipping_weight( $weight_unit );
+				->map_wc_shipping_weight( $weight_unit );
 		}
 
 		// Set the product's shipping class slug as the shipping label.
@@ -549,6 +573,12 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 		}
 
 		$weight = wc_get_weight( $this->wc_product->get_weight(), $unit );
+
+		// Use lb if the unit is lbs, since GMC uses lb.
+		if ( 'lbs' === $unit ) {
+			$unit = 'lb';
+		}
+
 		$this->setShippingWeight(
 			new GoogleProductShippingWeight(
 				[
@@ -640,8 +670,10 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 		$regular_price = $product->get_regular_price();
 		$sale_price    = $product->get_sale_price();
 		$active_price  = $product->get_price();
-		if ( ( empty( $sale_price ) && $active_price < $regular_price ) ||
-			 ( ! empty( $sale_price ) && $active_price < $sale_price ) ) {
+		if (
+			( empty( $sale_price ) && $active_price < $regular_price ) ||
+			( ! empty( $sale_price ) && $active_price < $sale_price )
+		) {
 			$sale_price = $active_price;
 		}
 
@@ -693,23 +725,26 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 
 		$now = new WC_DateTime();
 		// if we have a sale end date in the future, but no start date, set the start date to now()
-		if ( ! empty( $end_date ) &&
-			 $end_date > $now &&
-			 empty( $start_date )
+		if (
+			! empty( $end_date ) &&
+			$end_date > $now &&
+			empty( $start_date )
 		) {
 			$start_date = $now;
 		}
 		// if we have a sale start date in the past, but no end date, do not include the start date.
-		if ( ! empty( $start_date ) &&
-			 $start_date < $now &&
-			 empty( $end_date )
+		if (
+			! empty( $start_date ) &&
+			$start_date < $now &&
+			empty( $end_date )
 		) {
 			$start_date = null;
 		}
 		// if we have a start date in the future, but no end date, assume a one-day sale.
-		if ( ! empty( $start_date ) &&
-			 $start_date > $now &&
-			 empty( $end_date )
+		if (
+			! empty( $start_date ) &&
+			$start_date > $now &&
+			empty( $end_date )
 		) {
 			$end_date = clone $start_date;
 			$end_date->add( new DateInterval( 'P1D' ) );
@@ -737,7 +772,17 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 	 * @return bool
 	 */
 	public function is_virtual(): bool {
-		return false !== $this->wc_product->is_virtual();
+		$is_virtual = $this->wc_product->is_virtual();
+
+		/**
+		 * Filters the virtual property value of a product.
+		 *
+		 * @param bool       $is_virtual Whether a product is virtual
+		 * @param WC_Product $product    WooCommerce product
+		 */
+		$is_virtual = apply_filters( 'woocommerce_gla_product_property_value_is_virtual', $is_virtual, $this->wc_product );
+
+		return false !== $is_virtual;
 	}
 
 	/**
@@ -752,14 +797,12 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 		$metadata->addPropertyConstraint( 'link', new Assert\Url() );
 
 		$metadata->addPropertyConstraint( 'imageLink', new Assert\NotBlank() );
-		$metadata->addPropertyConstraint( 'imageLink', new Assert\Url( [ 'normalizer' => 'Normalizer::normalize' ] ) );
+		$metadata->addPropertyConstraint( 'imageLink', new ImageUrlConstraint() );
 		$metadata->addPropertyConstraint(
 			'additionalImageLinks',
 			new Assert\All(
 				[
-					'constraints' => [
-						new Assert\Url( [ 'normalizer' => 'Normalizer::normalize' ] ),
-					],
+					'constraints' => [ new ImageUrlConstraint() ],
 				]
 			)
 		);
@@ -869,7 +912,7 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 				 * @param WC_Product $wc_product      The WooCommerce product object.
 				 *
 				 * @see AttributeManager::ATTRIBUTES for the list of attributes that their values can be modified using this filter.
-				 * @see WCProductAdapter::override_attributes for the docuemntation of the `woocommerce_gla_product_attribute_values` filter.
+				 * @see WCProductAdapter::override_attributes for the documentation of the `woocommerce_gla_product_attribute_values` filter.
 				 */
 				$gla_attributes[ $attribute_id ] = apply_filters( "woocommerce_gla_product_attribute_value_{$attribute_id}", $attribute_value, $this->get_wc_product() );
 			}
@@ -880,6 +923,29 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 		// Size
 		if ( ! empty( $attributes['size'] ) ) {
 			$this->setSizes( [ $attributes['size'] ] );
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Map the WooCommerce core global unique ID (GTIN) value if it's available.
+	 *
+	 * @since 2.9.0
+	 *
+	 * @return $this
+	 */
+	protected function map_gtin(): WCProductAdapter {
+		// compatibility-code "WC < 9.2" -- Core global unique ID field was added in 9.2
+		if ( ! method_exists( $this->wc_product, 'get_global_unique_id' ) ) {
+			return $this;
+		}
+
+		// avoid dashes and other unsupported format
+		$global_unique_id = preg_replace( '/[^0-9]/', '', $this->wc_product->get_global_unique_id() );
+
+		if ( ! empty( $global_unique_id ) ) {
+			$this->setGtin( $global_unique_id );
 		}
 
 		return $this;
@@ -902,5 +968,223 @@ class WCProductAdapter extends GoogleProduct implements Validatable {
 
 		// product shipping information is also country based
 		$this->map_wc_product_shipping();
+	}
+
+	/**
+	 * Performs the attribute mapping.
+	 * This function applies rules setting values for the different attributes in the product.
+	 *
+	 * @param array $mapping_rules The set of rules to apply
+	 */
+	protected function map_attribute_mapping_rules( array $mapping_rules ) {
+		$attributes = [];
+
+		if ( empty( $mapping_rules ) ) {
+			return $this;
+		}
+
+		foreach ( $mapping_rules as $mapping_rule ) {
+			if ( $this->rule_match_conditions( $mapping_rule ) ) {
+				$attribute_id                = $mapping_rule['attribute'];
+				$attributes[ $attribute_id ] = $this->format_attribute(
+					apply_filters(
+						"woocommerce_gla_product_attribute_value_{$attribute_id}",
+						$this->get_source( $mapping_rule['source'] ),
+						$this->get_wc_product()
+					),
+					$attribute_id
+				);
+			}
+		}
+
+		parent::mapTypes( $attributes );
+
+		// Size
+		if ( ! empty( $attributes['size'] ) ) {
+			$this->setSizes( [ $attributes['size'] ] );
+		}
+
+		return $this;
+	}
+
+
+	/**
+	 * Get a source value for attribute mapping
+	 *
+	 * @param string $source The source to get the value
+	 * @return string The source value for this product
+	 */
+	protected function get_source( string $source ) {
+		$source_type = null;
+
+		$type_separator = strpos( $source, ':' );
+
+		if ( $type_separator ) {
+			$source_type  = substr( $source, 0, $type_separator );
+			$source_value = substr( $source, $type_separator + 1 );
+		}
+
+		// Detect if the source_type is kind of product, taxonomy or attribute. Otherwise, we take it the full source as a static value.
+		switch ( $source_type ) {
+			case 'product':
+				return $this->get_product_field( $source_value );
+			case 'taxonomy':
+				return $this->get_product_taxonomy( $source_value );
+			case 'attribute':
+				return $this->get_custom_attribute( $source_value );
+			default:
+				return $source;
+		}
+	}
+
+	/**
+	 * Check if the current product match the conditions for applying the Attribute mapping rule.
+	 * For now the conditions are just matching with the product category conditions.
+	 *
+	 * @param array $rule The attribute mapping rule
+	 * @return bool True if the rule is applicable
+	 */
+	protected function rule_match_conditions( array $rule ): bool {
+		$attribute               = $rule['attribute'];
+		$category_condition_type = $rule['category_condition_type'];
+
+		if ( $category_condition_type === AttributeMappingHelper::CATEGORY_CONDITION_TYPE_ALL ) {
+			return true;
+		}
+
+		// size is not the real attribute, the real attribute is sizes
+		if ( ! property_exists( $this, $attribute ) && $attribute !== 'size' ) {
+			return false;
+		}
+
+		$categories                = explode( ',', $rule['categories'] );
+		$contains_rules_categories = ! empty( array_intersect( $categories, $this->product_category_ids ) );
+
+		if ( $category_condition_type === AttributeMappingHelper::CATEGORY_CONDITION_TYPE_ONLY ) {
+			return $contains_rules_categories;
+		}
+
+		return ! $contains_rules_categories;
+	}
+
+	/**
+	 * Get taxonomy source type for attribute mapping
+	 *
+	 * @param string $taxonomy The taxonomy to get
+	 * @return string The taxonomy value
+	 */
+	protected function get_product_taxonomy( $taxonomy ) {
+		$product = $this->get_wc_product();
+
+		if ( $product->is_type( 'variation' ) ) {
+			$values = $product->get_attribute( $taxonomy );
+
+			if ( ! $values ) { // if taxonomy is not a global attribute (ie product_tag), attempt to get is with wc_get_product_terms
+				$values = $this->get_taxonomy_term_names( $product->get_id(), $taxonomy );
+			}
+
+			if ( ! $values ) { // if the value is still not available at this point, we try to get it from the parent
+				$parent = wc_get_product( $product->get_parent_id() );
+				$values = $parent->get_attribute( $taxonomy );
+
+				if ( ! $values ) {
+					$values = $this->get_taxonomy_term_names( $parent->get_id(), $taxonomy );
+				}
+			}
+
+			if ( is_string( $values ) ) {
+				$values = explode( ', ', $values );
+			}
+		} else {
+			$values = $this->get_taxonomy_term_names( $product->get_id(), $taxonomy );
+		}
+
+		if ( empty( $values ) || is_wp_error( $values ) ) {
+			return '';
+		}
+
+		return $values[0];
+	}
+
+	/**
+	 * Get product source type  for attribute mapping.
+	 * Those are fields belonging to the product core data. Like title, weight, SKU...
+	 *
+	 * @param string $field The field to get
+	 * @return string|null The field value (null if data is not available)
+	 */
+	protected function get_product_field( $field ) {
+		$product = $this->get_wc_product();
+
+		if ( 'weight_with_unit' === $field ) {
+			$weight = $product->get_weight();
+			return $weight ? $weight . ' ' . get_option( 'woocommerce_weight_unit' ) : null;
+		}
+
+		if ( is_callable( [ $product, 'get_' . $field ] ) ) {
+			$getter = 'get_' . $field;
+			return $product->$getter();
+		}
+
+		return '';
+	}
+
+	/**
+	 *
+	 * Formats the attribute for sending it via Google API
+	 *
+	 * @param string $value The value to format
+	 * @param string $attribute_id The attribute ID for which this value belongs
+	 * @return string|bool|int The attribute formatted based on theit attribute type
+	 */
+	protected function format_attribute( $value, $attribute_id ) {
+		$attribute = AttributeMappingHelper::get_attribute_by_id( $attribute_id );
+
+		if ( in_array( $attribute::get_value_type(), [ 'bool', 'boolean' ], true ) ) {
+			return wc_string_to_bool( $value );
+		}
+
+		if ( in_array( $attribute::get_value_type(), [ 'int', 'integer' ], true ) ) {
+			return (int) $value;
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Gets a custom attribute from a product
+	 *
+	 * @param string $attribute_name - The attribute name to get.
+	 * @return string|null The attribute value or null if no value is found
+	 */
+	protected function get_custom_attribute( $attribute_name ) {
+		$product = $this->get_wc_product();
+
+		$attribute_value = $product->get_attribute( $attribute_name );
+
+		if ( ! $attribute_value ) {
+			$attribute_value = $product->get_meta( $attribute_name );
+		}
+
+		// We only support scalar values.
+		if ( ! is_scalar( $attribute_value ) ) {
+			return '';
+		}
+
+		$values = explode( WC_DELIMITER, (string) $attribute_value );
+		$values = array_filter( array_map( 'trim', $values ) );
+		return empty( $values ) ? '' : $values[0];
+	}
+
+	/**
+	 * Get a taxonomy term names from a product using
+	 *
+	 * @param int    $product_id - The product ID to get the taxonomy term
+	 * @param string $taxonomy - The taxonomy to get.
+	 * @return string[] An array of term names.
+	 */
+	protected function get_taxonomy_term_names( $product_id, $taxonomy ) {
+		$values = wc_get_product_terms( $product_id, $taxonomy );
+		return wp_list_pluck( $values, 'name' );
 	}
 }

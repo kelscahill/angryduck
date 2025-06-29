@@ -5,6 +5,8 @@
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds;
 
+use Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure\Conditional;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\DependencyManagement\AdminServiceProvider;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\DependencyManagement\CoreServiceProvider;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\DependencyManagement\DBServiceProvider;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\DependencyManagement\GoogleServiceProvider;
@@ -15,16 +17,16 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Internal\DependencyManagement\RE
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\DependencyManagement\ThirdPartyServiceProvider;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\League\Container\Container as LeagueContainer;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerExceptionInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\NotFoundExceptionInterface;
 
 /**
- * PSR11 compliant dependency injection container for Google Listings and Ads.
+ * PSR11 compliant dependency injection container for Google for WooCommerce.
  *
  * Classes in the `src` directory should specify dependencies from that directory via constructor arguments
  * with type hints. If an instance of the container itself is needed, the type hint to use is
- * \Psr\Container\ContainerInterface.
+ * Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerInterface.
  *
  * Classes in the `src` directory should interact with anything outside (especially WordPress functions) by using
  * the classes in the `Proxies` directory. The exception is idempotent functions (e.g. `wp_parse_url`), which
@@ -51,6 +53,7 @@ final class Container implements ContainerInterface {
 		JobServiceProvider::class,
 		IntegrationServiceProvider::class,
 		DBServiceProvider::class,
+		AdminServiceProvider::class,
 	];
 
 	/**
@@ -61,18 +64,24 @@ final class Container implements ContainerInterface {
 	private $container;
 
 	/**
-	 * Class constructor.
+	 * Container constructor.
 	 *
 	 * @param LeagueContainer|null $container
 	 */
 	public function __construct( ?LeagueContainer $container = null ) {
 		$this->container = $container ?? new LeagueContainer();
-		$this->container->share( ContainerInterface::class, $this );
+		$this->container->addShared( ContainerInterface::class, $this );
 		$this->container->inflector( ContainerAwareInterface::class )
 			->invokeMethod( 'set_container', [ ContainerInterface::class ] );
 
 		foreach ( $this->service_providers as $service_provider_class ) {
-			$this->container->addServiceProvider( $service_provider_class );
+			$service_provider = new $service_provider_class();
+			$implements       = class_implements( $service_provider );
+			if ( array_key_exists( Conditional::class, $implements ) && ! $service_provider->is_needed() ) {
+				continue;
+			}
+
+			$this->container->addServiceProvider( $service_provider );
 		}
 	}
 

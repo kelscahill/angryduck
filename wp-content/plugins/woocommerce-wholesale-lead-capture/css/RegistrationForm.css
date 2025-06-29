@@ -1,0 +1,126 @@
+#wwlc-registration-form .field-set.terms_privacy-field {
+    margin: 0 0 1.41575em;
+}
+
+#wwlc-registration-form .field-set .checkbox_options_holder.default-terms-privacy-field {
+    display: flex;
+    align-items: center;
+}
+
+#wwlc-registration-form .field-set .checkbox_options_holder.default-terms-privacy-field p {
+    margin: 0 0 0 7px;
+}
+
+#wwlc-registration-form .field-set .checkbox_options_holder,
+#wwlc-registration-form .field-set .radio_options_holder {
+    display: block;
+}
+
+#wwlc-registration-form .field-set.err .checkbox_options_holder,
+#wwlc-registration-form .field-set.err .radio_options_holder {
+    background-color: #ffdfde;
+}
+
+#wwlc-registration-form .field-set .checkbox_options,
+#wwlc-registration-form .field-set .radio_options {
+    display: block;
+}
+
+#wwlc-registration-form .field-set .checkbox_options input[ type="checkbox"],
+#wwlc-registration-form .field-set .radio_options input[ type="radio"] {
+    margin-right: 10px;
+}
+
+#wwlc-registration-form .select2-container,
+#wwlc-registration-form .field-set select {
+    min-width: 250px;
+    width: 100% !important;
+}
+
+#wwlc-registration-form .field-set input[ type="number"] {
+    min-width: 200px;
+}
+
+#wwlc-registration-form .field-set.radio-field-set label {
+    display: inline;
+}
+
+#wwlc-registration-form .field-set label {
+    display: block;
+}
+
+#wwlc-registration-form .field-set label:after {
+    content: '\a';
+    white-space: pre;
+}
+
+#wwlc-registration-form .wwlc_form_field.err {
+    background-color: #ffdfde;
+}
+
+#wwlc-registration-form .inline-error {
+    display: inline-block;
+    margin-left: 5px;
+    color: #ff6060;
+}
+
+#wwlc-registration-form .wwlc-loader {
+    display: none;
+    padding: 0px 12px;
+    margin-left: 10px;
+    background: url("../images/spinner.gif") no-repeat;
+}
+
+#wwlc-registration-form #wwlc-password-strength {
+    display: none;
+    background-color: #eee;
+    border: 1px solid #ddd;
+    color: #23282d;
+    margin: 5px 5px 5px 0px;
+    padding: 3px 5px;
+    text-align: center;
+    width: 15em;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+#wwlc-registration-form #wwlc-password-strength.bad {
+    background-color: #fbc5a9;
+    border-color: #f78b53;
+}
+
+#wwlc-registration-form #wwlc-password-strength.good {
+    background-color: #ffe399;
+    border-color: #ffc733;
+}
+
+#wwlc-registration-form #wwlc-password-strength.strong {
+    background-color: #c1e1b9;
+    border-color: #83c373;
+}
+
+#wwlc-registration-form #wwlc-password-strength.short {
+    background-color: #f1adad;
+    border-color: #e35b5b;
+}
+
+#wwlc-registration-form .wwlc-password-field-confirm-weak {
+    display: none;
+}
+
+#wwlc-registration-form .terms-conditions-wrap {
+    border: 1px solid #eee;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+#wwlc-registration-form .wwlc_checkboxes_container,
+#wwlc-registration-form .wwlc_checkboxes_container label.checkbox_options {
+    display: block;
+}
+
+a#log-in:after {
+    content: "|";
+    margin: 0 10px;
+}

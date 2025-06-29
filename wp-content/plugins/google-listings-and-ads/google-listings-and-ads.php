@@ -1,19 +1,23 @@
 <?php
 /**
- * Plugin Name: Google Listings and Ads
+ * Plugin Name: Google for WooCommerce
  * Plugin URL: https://wordpress.org/plugins/google-listings-and-ads/
  * Description: Native integration with Google that allows merchants to easily display their products across Google’s network.
- * Version: 2.2.0
+ * Version: 3.0.0
  * Author: WooCommerce
  * Author URI: https://woocommerce.com/
  * Text Domain: google-listings-and-ads
- * Requires at least: 5.7
- * Tested up to: 6.0
+ * Requires at least: 6.1
+ * Tested up to: 6.8
  * Requires PHP: 7.4
- *
- * WC requires at least: 6.8
- * WC tested up to: 7.0
+ * Requires PHP Architecture: 64 bits
+ * Requires Plugins: woocommerce
+ * WC requires at least: 7.9
+ * WC tested up to: 9.9
  * Woo:
+ *
+ * License: GPLv3
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  *
  * @package WooCommerce\Admin
  */
@@ -24,13 +28,14 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Autoloader;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Requirements\PluginValidator;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Requirements\VersionValidator;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginFactory;
-use Psr\Container\ContainerInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerInterface;
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WC_GLA_VERSION', '2.2.0' ); // WRCS: DEFINED_VERSION.
+define( 'WC_GLA_VERSION', '3.0.0' ); // WRCS: DEFINED_VERSION.
 define( 'WC_GLA_MIN_PHP_VER', '7.4' );
-define( 'WC_GLA_MIN_WC_VER', '6.8' );
+define( 'WC_GLA_MIN_WC_VER', '7.9' );
 
 // Load and initialize the autoloader.
 require_once __DIR__ . '/src/Autoloader.php';
@@ -38,7 +43,7 @@ if ( ! Autoloader::init() ) {
 	return;
 }
 
-// Validate the required versions of everything our plugin depends on.
+// Validate PHP Version and Architecture
 if ( ! VersionValidator::instance()->validate() ) {
 	return;
 }
@@ -48,6 +53,18 @@ register_activation_hook(
 	__FILE__,
 	function () {
 		PluginFactory::instance()->activate();
+	}
+);
+
+// HPOS compatibility declaration.
+add_action(
+	'before_woocommerce_init',
+	function () {
+		if ( class_exists( FeaturesUtil::class ) ) {
+			FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__ );
+			FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__ );
+			FeaturesUtil::declare_compatibility( 'product_block_editor', __FILE__ );
+		}
 	}
 );
 
@@ -88,7 +105,7 @@ function woogle_get_container(): ContainerInterface {
  */
 add_action(
 	'plugins_loaded',
-	function() {
+	function () {
 		// Check requirements.
 		if ( ! PluginValidator::validate() ) {
 			return;

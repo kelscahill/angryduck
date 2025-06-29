@@ -7,6 +7,7 @@
 
 namespace Automattic\Jetpack\Sync;
 
+use Automattic\Jetpack\Connection\Manager;
 use Automattic\Jetpack\Connection\Urls;
 use Automattic\Jetpack\Constants;
 use Automattic\Jetpack\Modules as Jetpack_Modules;
@@ -402,8 +403,8 @@ class Functions {
 	 *
 	 * @deprecated 1.23.1
 	 *
-	 * @param callable $callable Function to retrieve URL option.
-	 * @param string   $new_value URL Protocol to set URLs to.
+	 * @param string $callable Function name that was used to retrieve URL option.
+	 * @param string $new_value URL Protocol to set URLs to.
 	 * @return string Normalized URL.
 	 */
 	public static function get_protocol_normalized_url( $callable, $new_value ) {
@@ -583,10 +584,12 @@ class Functions {
 	/**
 	 * Returns if the current theme is a Full Site Editing theme.
 	 *
+	 * @since 1.49.0 Uses wp_is_block_theme() instead of deprecated gutenberg_is_fse_theme().
+	 *
 	 * @return bool Theme is a Full Site Editing theme.
 	 */
 	public static function get_is_fse_theme() {
-		return function_exists( 'gutenberg_is_fse_theme' ) && gutenberg_is_fse_theme();
+		return wp_is_block_theme();
 	}
 
 	/**
@@ -594,8 +597,8 @@ class Functions {
 	 *
 	 * @since 1.21.0
 	 *
-	 * @param array|obj $any        Source data to be cleaned up.
-	 * @param array     $seen_nodes Built array of nodes.
+	 * @param mixed $any        Source data to be cleaned up.
+	 * @param array $seen_nodes Built array of nodes.
 	 *
 	 * @return array
 	 */
@@ -627,7 +630,6 @@ class Functions {
 		}
 
 		return $any;
-
 	}
 
 	/**
@@ -665,11 +667,114 @@ class Functions {
 	/**
 	 * Return the list of active Jetpack modules.
 	 *
-	 * @since $$next_version$$
+	 * @since 1.34.0
 	 *
 	 * @return array
 	 */
 	public static function get_active_modules() {
 		return ( new Jetpack_Modules() )->get_active();
+	}
+
+	/**
+	 * Return a list of PHP modules that we want to track.
+	 *
+	 * @since 1.50.0
+	 *
+	 * @return array
+	 */
+	public static function get_loaded_extensions() {
+		if ( function_exists( 'get_loaded_extensions' ) ) {
+			return get_loaded_extensions();
+		}
+
+		// If a hosting provider has blocked get_loaded_extensions for any reason,
+		// we check extensions manually.
+
+		$extensions_to_check = array(
+			'libxml' => array( 'class' => 'libXMLError' ),
+			'xml'    => array( 'function' => 'xml_parse' ),
+			'dom'    => array( 'class' => 'DOMDocument' ),
+			'xdebug' => array( 'function' => 'xdebug_break' ),
+		);
+
+		$enabled_extensions = array();
+		foreach ( $extensions_to_check as $extension_name => $extension ) {
+			if (
+				( isset( $extension['function'] )
+				&& function_exists( $extension['function'] ) )
+				|| class_exists( $extension['class'] )
+			) {
+				$enabled_extensions[] = $extension_name;
+			}
+		}
+
+		return $enabled_extensions;
+	}
+
+	/**
+	 * Return the list of active connected Jetpack plugins.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return array
+	 */
+	public static function get_jetpack_connection_active_plugins() {
+		return ( new Manager() )->get_connected_plugins();
+	}
+
+	/**
+	 * Return the list of active sync modules.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @return array
+	 */
+	public static function get_jetpack_sync_active_modules() {
+
+		/** This filter is documented in projects/packages/sync/src/class-modules.php */
+		$modules = apply_filters( 'jetpack_sync_modules', Modules::DEFAULT_SYNC_MODULES );
+		$modules = array_unique( $modules );
+		$modules = array_map( 'wp_normalize_path', $modules );
+		return $modules;
+	}
+
+	/**
+	 * Return the list of Jetpack package versions.
+	 *
+	 * @since 4.11.1
+	 *
+	 * @return array
+	 */
+	public static function get_jetpack_package_versions() {
+		return apply_filters( 'jetpack_package_versions', array() );
+	}
+
+	/**
+	 * Get the environment type with support for 'sandbox'.
+	 *
+	 * Extends WordPress core's wp_get_environment_type() to support additional
+	 * environment types like 'sandbox'.
+	 *
+	 * @return string Environment type (local, development, staging, production, or sandbox).
+	 */
+	public static function get_environment_type() {
+		$env_type = '';
+
+		if ( function_exists( 'getenv' ) ) {
+			$has_env = getenv( 'WP_ENVIRONMENT_TYPE' );
+			if ( false !== $has_env ) {
+				$env_type = $has_env;
+			}
+		}
+
+		if ( defined( 'WP_ENVIRONMENT_TYPE' ) && WP_ENVIRONMENT_TYPE ) {
+			$env_type = WP_ENVIRONMENT_TYPE;
+		}
+
+		if ( 'sandbox' === $env_type ) {
+			return 'sandbox';
+		}
+
+		return wp_get_environment_type();
 	}
 }

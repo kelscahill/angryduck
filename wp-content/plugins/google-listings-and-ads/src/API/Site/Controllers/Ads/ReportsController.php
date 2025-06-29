@@ -15,6 +15,10 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Class ReportsController
  *
+ * ContainerAware used for:
+ * - AdsReport
+ * - WP (in parent class)
+ *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\API\Site\Controllers\Ads
  */
 class ReportsController extends BaseReportsController {
@@ -56,7 +60,7 @@ class ReportsController extends BaseReportsController {
 	 * @return callable
 	 */
 	protected function get_programs_report_callback(): callable {
-		return function( Request $request ) {
+		return function ( Request $request ) {
 			try {
 				/** @var AdsReport $ads */
 				$ads  = $this->container->get( AdsReport::class );
@@ -74,7 +78,7 @@ class ReportsController extends BaseReportsController {
 	 * @return callable
 	 */
 	protected function get_products_report_callback(): callable {
-		return function( Request $request ) {
+		return function ( Request $request ) {
 			try {
 				/** @var AdsReport $ads */
 				$ads  = $this->container->get( AdsReport::class );
@@ -87,13 +91,13 @@ class ReportsController extends BaseReportsController {
 	}
 
 	/**
-	 * Add collection parameters.
-	 *
-	 * @param array $params Initial set of collection parameters.
+	 * Get the query params for collections.
 	 *
 	 * @return array
 	 */
-	protected function add_collection_parameters( array $params ): array {
+	public function get_collection_params(): array {
+		$params = parent::get_collection_params();
+
 		$params['interval'] = [
 			'description'       => __( 'Time interval to use for segments in the returned data.', 'google-listings-and-ads' ),
 			'type'              => 'string',

@@ -61,29 +61,30 @@ class OperationResponse
     const DEFAULT_MAX_POLLING_INTERVAL = 60000;
     const DEFAULT_MAX_POLLING_DURATION = 0;
 
-    private $operationName;
-    private $operationsClient;
+    private string $operationName;
+    private ?object $operationsClient;
 
-    private $operationReturnType;
-    private $metadataReturnType;
-    private $defaultPollSettings = [
+    private ?string $operationReturnType;
+    private ?string $metadataReturnType;
+    private array $defaultPollSettings = [
         'initialPollDelayMillis' => self::DEFAULT_POLLING_INTERVAL,
         'pollDelayMultiplier' => self::DEFAULT_POLLING_MULTIPLIER,
         'maxPollDelayMillis' => self::DEFAULT_MAX_POLLING_INTERVAL,
         'totalPollTimeoutMillis' => self::DEFAULT_MAX_POLLING_DURATION,
     ];
 
-    private $lastProtoResponse;
-    private $deleted = false;
+    private ?object $lastProtoResponse;
+    private bool $deleted = false;
 
-    private $additionalArgs;
-    private $getOperationMethod;
-    private $cancelOperationMethod;
-    private $deleteOperationMethod;
-    private $operationStatusMethod;
+    private array $additionalArgs;
+    private string $getOperationMethod;
+    private ?string $cancelOperationMethod;
+    private ?string $deleteOperationMethod;
+    private string $operationStatusMethod;
+    /** @var mixed */
     private $operationStatusDoneValue;
-    private $operationErrorCodeMethod;
-    private $operationErrorMessageMethod;
+    private ?string $operationErrorCodeMethod;
+    private ?string $operationErrorMessageMethod;
 
     /**
      * OperationResponse constructor.
@@ -110,7 +111,7 @@ class OperationResponse
      *     @type string $operationErrorMessageMethod The method on the operation to get the error status
      * }
      */
-    public function __construct($operationName, $operationsClient, $options = [])
+    public function __construct(string $operationName, $operationsClient, array $options = [])
     {
         $this->operationName = $operationName;
         $this->operationsClient = $operationsClient;
@@ -234,7 +235,7 @@ class OperationResponse
      * @throws ValidationException
      * @return bool Indicates if the operation completed.
      */
-    public function pollUntilComplete($options = [])
+    public function pollUntilComplete(array $options = [])
     {
         if ($this->isDone()) {
             return true;
@@ -436,7 +437,6 @@ class OperationResponse
             return null;
         }
         // @TODO: This is probably not doing anything and can be removed in the next release.
-        // @phpstan-ignore-next-line
         if (is_null($any->getValue())) {
             return null;
         }

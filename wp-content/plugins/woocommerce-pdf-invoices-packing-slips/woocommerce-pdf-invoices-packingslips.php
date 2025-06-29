@@ -1,16 +1,17 @@
 <?php
 /**
  * Plugin Name:          PDF Invoices & Packing Slips for WooCommerce
+ * Requires Plugins:     woocommerce
  * Plugin URI:           https://wpovernight.com/downloads/woocommerce-pdf-invoices-packing-slips-bundle/
- * Description:          Create, print & email PDF invoices & packing slips for WooCommerce orders.
- * Version:              3.2.4
+ * Description:          Create, print & email PDF or UBL Invoices & PDF Packing Slips for WooCommerce orders.
+ * Version:              4.5.2
  * Author:               WP Overnight
  * Author URI:           https://www.wpovernight.com
  * License:              GPLv2 or later
  * License URI:          https://opensource.org/licenses/gpl-license.php
  * Text Domain:          woocommerce-pdf-invoices-packing-slips
- * WC requires at least: 3.0
- * WC tested up to:      7.1
+ * WC requires at least: 3.3
+ * WC tested up to:      9.9
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,10 +22,24 @@ if ( ! class_exists( 'WPO_WCPDF' ) ) :
 
 class WPO_WCPDF {
 
-	public $version = '3.2.4';
+	public $version              = '4.5.2';
+	public $version_php          = '7.4';
+	public $version_woo          = '3.3';
+	public $version_wp           = '4.4';
 	public $plugin_basename;
-	public $legacy_mode;
-	public $legacy_textdomain;
+	public $legacy_addons;
+	public $third_party_plugins;
+	public $order_util;
+	public $file_system;
+	public $settings;
+	public $documents;
+	public $main;
+	public $endpoint;
+	public $assets;
+	public $admin;
+	public $frontend;
+	public $install;
+	public $font_synchronizer;
 
 	protected static $_instance = null;
 
@@ -44,21 +59,48 @@ class WPO_WCPDF {
 	 * Constructor
 	 */
 	public function __construct() {
+		require $this->plugin_path() . '/vendor/autoload.php';
+		require $this->plugin_path() . '/vendor/strauss/autoload.php';
+
 		$this->plugin_basename = plugin_basename(__FILE__);
+		$this->legacy_addons   = apply_filters( 'wpo_wcpdf_legacy_addons', array(
+			'ubl-woocommerce-pdf-invoices.php'     => 'UBL Invoices for WooCommerce',
+			'woocommerce-pdf-ips-number-tools.php' => 'PDF Invoices & Packing Slips for WooCommerce - Number Tools',
+		) );
 
 		$this->define( 'WPO_WCPDF_VERSION', $this->version );
 
 		// load the localisation & classes
-		add_action( 'plugins_loaded', array( $this, 'translations' ) );
-		add_action( 'plugins_loaded', array( $this, 'load_classes' ), 9 );
-		add_action( 'in_plugin_update_message-'.$this->plugin_basename, array( $this, 'in_plugin_update_message' ) );
+		add_action( 'init', array( $this, 'translations' ), 8 );
+		add_action( 'init', array( $this, 'load_classes' ), 9 ); // Pro runs on default 10, if this runs after it will not work
+		add_action( 'in_plugin_update_message-' . $this->plugin_basename, array( $this, 'in_plugin_update_message' ) );
+		add_action( 'before_woocommerce_init', array( $this, 'woocommerce_hpos_compatible' ) );
 		add_action( 'admin_notices', array( $this, 'nginx_detected' ) );
 		add_action( 'admin_notices', array( $this, 'mailpoet_mta_detected' ) );
+		add_action( 'admin_notices', array( $this, 'rtl_detected' ) );
+		add_action( 'admin_notices', array( $this, 'yearly_reset_action_missing_notice' ) );
+		add_action( 'admin_notices', array( $this, 'legacy_addon_notices' ) );
+		add_action( 'admin_notices', array( $this, 'unstable_option_announcement_notice' ) );
+		add_action( 'admin_notices', array( $this, 'new_unstable_version_available_notice' ) );
+		add_action( 'wpo_wcpdf_new_github_prerelease_available', array( $this, 'set_new_unstable_version_available_option' ), 10, 3 );
+		add_action( 'init', array( '\\WPO\\IPS\\Semaphore', 'init_cleanup' ), 999 ); // wait AS to initialize
 
-		// legacy textdomain fallback
-		if ( $this->legacy_textdomain_enabled() === true ) {
-			add_filter( 'load_textdomain_mofile', array( $this, 'textdomain_fallback' ), 10, 2 );
+		// deactivate legacy extensions if activated
+		register_activation_hook( __FILE__, array( $this, 'deactivate_legacy_addons' ) );
+	}
+
+	public function is_dependency_version_supported( $dependency ) {
+		switch ( $dependency ) {
+			case 'php':
+				return defined( 'PHP_VERSION' ) && version_compare( PHP_VERSION, $this->version_php, '>=' );
+			case 'woo':
+				return defined( 'WC_VERSION' ) && version_compare( WC_VERSION, $this->version_woo, '>=' );
+			case 'wp':
+				global $wp_version;
+				return version_compare( $wp_version, $this->version_wp, '>=' );
 		}
+
+		return false;
 	}
 
 	/**
@@ -72,25 +114,16 @@ class WPO_WCPDF {
 		}
 	}
 
-
 	/**
 	 * Load the translation / textdomain files
-	 * 
+	 *
 	 * Note: the first-loaded translation file overrides any following ones if the same translation is present
 	 */
 	public function translations() {
-		if ( function_exists( 'determine_locale' ) ) { // WP5.0+
-			$locale = determine_locale();
-		} else {
-			$locale = is_admin() && function_exists( 'get_user_locale' ) ? get_user_locale() : get_locale();
-		}
-		$locale = apply_filters( 'plugin_locale', $locale, 'woocommerce-pdf-invoices-packing-slips' );
+		$locale = $this->determine_locale();
 		$dir    = trailingslashit( WP_LANG_DIR );
 
 		$textdomains = array( 'woocommerce-pdf-invoices-packing-slips' );
-		if ( $this->legacy_mode_enabled() === true ) {
-			$textdomains[] = 'wpo_wcpdf';
-		}
 
 		/**
 		 * Frontend/global Locale. Looks in:
@@ -109,162 +142,90 @@ class WPO_WCPDF {
 	}
 
 	/**
-	 * Maintain backwards compatibility with old translation files
-	 * Uses old .mo file if it exists in any of the override locations
-	 */
-	public function textdomain_fallback( $mo, $textdomain ) {
-		$plugin_domain = 'woocommerce-pdf-invoices-packing-slips';
-		$old_domain = 'wpo_wcpdf';
-
-		if ( $textdomain !== $plugin_domain && $textdomain !== $old_domain ) {
-			return $mo;
-		}
-
-		$mopath = trailingslashit( dirname( $mo ) );
-		$mofile = basename( $mo );
-
-		if ( $textdomain == $old_domain ) {
-			$textdomain = $plugin_domain;
-			$mofile = str_replace( $old_domain, $textdomain, $mofile );
-		}
-
-		if ( $textdomain === $plugin_domain ) {
-			$old_mofile = str_replace( $textdomain, $old_domain, $mofile );
-			if ( file_exists( $mopath.$old_mofile ) ) {
-				// we have an old override - use it
-				return $mopath.$old_mofile;
-			}
-
-			// prevent loading outdated language packs
-			$pofile = str_replace( '.mo', '.po', $mofile );
-			if ( file_exists( $mopath.$pofile ) ) {
-				// load po file
-				$podata = file_get_contents( $mopath.$pofile );
-				// set revision date threshold
-				$block_before = strtotime( '2017-05-15' );
-				// read revision date
-				preg_match( '~PO-Revision-Date: (.*?)\\\n~s', $podata, $matches );
-				if ( isset( $matches[1] ) ) {
-					$revision_date = $matches[1];
-					if ( $revision_timestamp = strtotime( $revision_date ) ) {
-						// check if revision is before threshold date
-						if ( $revision_timestamp < $block_before ) {
-							// try bundled
-							$bundled_file = $this->plugin_path() . '/languages/'. $mofile;
-							if ( file_exists( $bundled_file ) ) {
-								return $bundled_file;
-							} else {
-								return '';
-							}
-							// delete po & mo file if possible
-							// @unlink($pofile);
-							// @unlink($mofile);
-						}
-					}
-				}
-			}
-		}
-
-		return $mopath.$mofile;
-	}
-
-	/**
 	 * Load the main plugin classes and functions
 	 */
 	public function includes() {
-		// Third party compatibility
-		include_once( $this->plugin_path() . '/includes/compatibility/class-wcpdf-compatibility-third-party-plugins.php' );
+		// plugin legacy class mapping
+		include_once $this->plugin_path() . '/wpo-ips-legacy-class-alias-mapping.php';
+
+		// plugin functions
+		include_once $this->plugin_path() . '/wpo-ips-functions.php';
+		include_once $this->plugin_path() . '/wpo-ips-functions-ubl.php';
+
+		// Compatibility classes
+		$this->third_party_plugins = \WPO\IPS\Compatibility\ThirdPartyPlugins::instance();
+		$this->order_util          = \WPO\IPS\Compatibility\OrderUtil::instance();
+		$this->file_system         = \WPO\IPS\Compatibility\FileSystem::instance();
 
 		// Plugin classes
-		include_once( $this->plugin_path() . '/includes/wcpdf-functions.php' );
-		$this->settings  = include_once( $this->plugin_path() . '/includes/class-wcpdf-settings.php' );
-		$this->documents = include_once( $this->plugin_path() . '/includes/class-wcpdf-documents.php' );
-		$this->main      = include_once( $this->plugin_path() . '/includes/class-wcpdf-main.php' );
-		$this->endpoint  = include_once( $this->plugin_path() . '/includes/class-wcpdf-endpoint.php' );
-		include_once( $this->plugin_path() . '/includes/class-wcpdf-assets.php' );
-		$this->admin     = include_once( $this->plugin_path() . '/includes/class-wcpdf-admin.php' );
-		include_once( $this->plugin_path() . '/includes/class-wcpdf-frontend.php' );
-		include_once( $this->plugin_path() . '/includes/class-wcpdf-install.php' );
-		include_once( $this->plugin_path() . '/includes/class-wcpdf-font-synchronizer.php' );
-
-		// Backwards compatibility with self
-		include_once( $this->plugin_path() . '/includes/legacy/class-wcpdf-legacy.php' );
-		include_once( $this->plugin_path() . '/includes/legacy/class-wcpdf-legacy-deprecated-hooks.php' );
+		$this->settings            = \WPO\IPS\Settings::instance();
+		$this->documents           = \WPO\IPS\Documents::instance();
+		$this->main                = \WPO\IPS\Main::instance();
+		$this->endpoint            = \WPO\IPS\Endpoint::instance();
+		$this->assets              = \WPO\IPS\Assets::instance();
+		$this->admin               = \WPO\IPS\Admin::instance();
+		$this->frontend            = \WPO\IPS\Frontend::instance();
+		$this->install             = \WPO\IPS\Install::instance();
+		$this->font_synchronizer   = \WPO\IPS\FontSynchronizer::instance();
 	}
-	
 
 	/**
 	 * Instantiate classes when woocommerce is activated
 	 */
 	public function load_classes() {
-		if ( $this->is_woocommerce_activated() === false ) {
-			add_action( 'admin_notices', array ( $this, 'need_woocommerce' ) );
+		if ( ! $this->dependencies_are_ready() ) {
 			return;
 		}
 
-		if ( $this->is_woocommerce_version_supported() === false ) {
-			add_action( 'admin_notices', array ( $this, 'need_woocommerce_3_0' ) );
-			return;
-		}
-
-		if ( version_compare( PHP_VERSION, '5.6', '<' ) ) {
-			add_action( 'admin_notices', array ( $this, 'required_php_version' ) );
-			return;
-		}
-
-		if ( has_filter( 'wpo_wcpdf_pdf_maker' ) === false && version_compare( PHP_VERSION, '7.1', '<' ) ) {
-			add_filter( 'wpo_wcpdf_document_is_allowed', '__return_false', 99999 );
-			add_action( 'admin_notices', array ( $this, 'required_php_version' ) );
-		}
+		add_action( 'admin_init', array( $this, 'deactivate_legacy_addons') );
 
 		// all systems ready - GO!
 		$this->includes();
 	}
 
 	/**
-	 * Check if legacy mode is enabled
+	 * Check if WooCommerce and PHP dependencies are met.
+	 * If not, show the appropriate admin notices.
+	 *
+	 * @return bool
 	 */
-	public function legacy_mode_enabled() {
-		if (!isset($this->legacy_mode)) {
-			$debug_settings = get_option( 'wpo_wcpdf_settings_debug', array() );
-			$this->legacy_mode = isset($debug_settings['legacy_mode']);
-		}
-		return $this->legacy_mode;
-	}
-
-	/**
-	 * Check if legacy textdomain fallback is enabled
-	 */
-	public function legacy_textdomain_enabled() {
-		if (!isset($this->legacy_textdomain)) {
-			$debug_settings = get_option( 'wpo_wcpdf_settings_debug', array() );
-			$this->legacy_textdomain = isset($debug_settings['legacy_textdomain']);
-		}
-		return $this->legacy_textdomain;
-	}
-
-	/**
-	 * Check if woocommerce version is supported
-	 */
-	public function is_woocommerce_version_supported() {
-		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '3.0', '>=' ) ) {
-			return true;
-		} else {
+	public function dependencies_are_ready(): bool {
+		// Check if WooCommerce is activated and meets the minimum version
+		if ( ! $this->is_woocommerce_activated() || ! $this->is_dependency_version_supported( 'woo' ) ) {
+			add_action( 'admin_notices', array( $this, 'need_woocommerce' ) );
 			return false;
 		}
+
+		// Check if PHP version is supported
+		if ( ! has_filter( 'wpo_wcpdf_pdf_maker' ) && ! $this->is_dependency_version_supported( 'php' ) ) {
+			add_filter( 'wpo_wcpdf_document_is_allowed', '__return_false', 99999 );
+			add_action( 'admin_notices', array( $this, 'required_php_version' ) );
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
-	 * Woocommerce version < 3.0 notice
+	 * WooCommerce notice.
+	 *
+	 * @return void
 	 */
-	public function need_woocommerce_3_0() {
-		/* translators: <a> tags */
-		$error = sprintf( esc_html__( 'PDF Invoices & Packing Slips for WooCommerce requires %1$sWooCommerce%2$s version 3.0 or higher!' , 'woocommerce-pdf-invoices-packing-slips' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">', '</a>' );
-		
-		$message = '<div class="error"><p>' . $error . '</p></div>';
-	
-		echo $message;
-}
+	public function need_woocommerce() {
+		$error_message = sprintf(
+			/* translators: 1. open anchor tag, 2. close anchor tag, 3. Woo version */
+			esc_html__( 'PDF Invoices & Packing Slips for WooCommerce requires %1$sWooCommerce%2$s version %3$s or higher to be installed & activated!' , 'woocommerce-pdf-invoices-packing-slips' ),
+			'<a href="http://wordpress.org/extend/plugins/woocommerce/">',
+			'</a>',
+			esc_attr( $this->version_woo )
+		);
+
+		$message  = '<div class="error">';
+		$message .= sprintf( '<p>%s</p>', $error_message );
+		$message .= '</div>';
+
+		echo wp_kses_post( $message );
+	}
 
 	/**
 	 * Check if woocommerce is activated
@@ -274,42 +235,44 @@ class WPO_WCPDF {
 		$site_plugins = is_multisite() ? (array) maybe_unserialize( get_site_option('active_sitewide_plugins' ) ) : array();
 
 		if ( in_array( 'woocommerce/woocommerce.php', $blog_plugins ) || isset( $site_plugins['woocommerce/woocommerce.php'] ) ) {
-			return true;
+			$is_wc_activated = true;
 		} else {
-			return false;
+			$is_wc_activated = false;
 		}
+		return apply_filters( 'wpo_wcpdf_is_woocommerce_activated', $is_wc_activated );
 	}
 
 	/**
-	 * WooCommerce not active notice.
+	 * Declares WooCommerce HPOS compatibility.
 	 *
 	 * @return void
 	 */
-	public function need_woocommerce() {
-		/* translators: <a> tags */
-		$error = sprintf( esc_html__( 'PDF Invoices & Packing Slips for WooCommerce requires %1$sWooCommerce%2$s to be installed & activated!' , 'woocommerce-pdf-invoices-packing-slips' ), '<a href="http://wordpress.org/extend/plugins/woocommerce/">', '</a>' );
-		
-		$message = '<div class="error"><p>' . $error . '</p></div>';
-	
-		echo $message;
+	public function woocommerce_hpos_compatible() {
+		if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+		}
 	}
 
 	/**
 	 * PHP version requirement notice
 	 */
 	public function required_php_version() {
-		$error_message	= __( 'PDF Invoices & Packing Slips for WooCommerce requires PHP 7.1 (7.4 or higher recommended).', 'woocommerce-pdf-invoices-packing-slips' );
-		/* translators: <a> tags */
-		$php_message	= __( 'We strongly recommend to %1$supdate your PHP version%2$s.', 'woocommerce-pdf-invoices-packing-slips' );
-		/* translators: <a> tags */
-		$add_on_message	= __( 'If you cannot upgrade your PHP version, you can download %1$sthis addon%2$s to enable backwards compatibility with PHP5.6.', 'woocommerce-pdf-invoices-packing-slips' );
+		$error_message = sprintf(
+			/* translators: PHP version */
+			esc_html__( 'PDF Invoices & Packing Slips for WooCommerce requires PHP %s or higher.', 'woocommerce-pdf-invoices-packing-slips' ),
+			esc_attr( $this->version_php )
+		);
 
-		$message = '<div class="error">';
+		$php_message = sprintf(
+			/* translators: <a> tags */
+			esc_html__( 'We strongly recommend to %1$supdate your PHP version%2$s.', 'woocommerce-pdf-invoices-packing-slips' ),
+			'<a href="https://docs.wpovernight.com/general/how-to-update-your-php-version/" target="_blank">',
+			'</a>'
+		);
+
+		$message  = '<div class="error">';
 		$message .= sprintf( '<p>%s</p>', $error_message );
-		$message .= sprintf( '<p>'.$php_message.'</p>', '<a href="https://docs.wpovernight.com/general/how-to-update-your-php-version/" target="_blank">', '</a>' );
-		if ( version_compare( PHP_VERSION, '5.6', '>' ) ) {
-			$message .= sprintf( '<p>'.$add_on_message.'</p>', '<a href="https://docs.wpovernight.com/woocommerce-pdf-invoices-packing-slips/backwards-compatibility-with-php-5-6/" target="_blank">', '</a>' );
-		}
+		$message .= sprintf( '<p>%s</p>', $php_message );
 		$message .= '</div>';
 
 		echo wp_kses_post( $message );
@@ -367,6 +330,9 @@ class WPO_WCPDF {
 				$upgrade_notice .= '</p><p class="wpo_wcpdf_upgrade_notice">';
 
 				foreach ( $notices as $index => $line ) {
+					if ( empty( $line ) ) {
+						continue;
+					}
 					$upgrade_notice .= preg_replace( '~\[([^\]]*)\]\(([^\)]*)\)~', '<a href="${2}">${1}</a>', $line );
 				}
 			}
@@ -380,42 +346,58 @@ class WPO_WCPDF {
 		if ( empty( $this->main ) ) {
 			return;
 		}
-		$tmp_path = $this->main->get_tmp_path('attachments');
-		$server_software   = isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '';
-		$random_string = $this->main->get_random_string();
 
-		if ( stristr( $server_software, 'nginx' ) && ( current_user_can( 'manage_shop_settings' ) || current_user_can( 'manage_woocommerce' ) ) && ! get_option('wpo_wcpdf_hide_nginx_notice') && ! $random_string ) {
+		$tmp_path        = $this->main->get_tmp_path( 'attachments' );
+		$server_software = isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '';
+		$random_string   = $this->main->get_random_string();
+
+		if ( stristr( $server_software, 'nginx' ) && $this->settings->user_can_manage_settings() && ! get_option( 'wpo_wcpdf_hide_nginx_notice' ) && ! $random_string ) {
 			ob_start();
 			?>
 			<div class="error">
-				<img src="<?php echo $this->plugin_url() . "/assets/images/nginx.svg"; ?>" style="margin-top:10px;">
+				<img src="<?php echo esc_url( $this->plugin_url() . '/assets/images/nginx.svg' ); ?>" style="margin-top:10px;">
 				<?php /* translators: directory path */ ?>
-				<p><?php printf( __( 'The PDF files in %s are not currently protected due to your site running on <strong>NGINX</strong>.', 'woocommerce-pdf-invoices-packing-slips' ), '<strong>' . $tmp_path . '</strong>' ); ?></p>
-				<p><?php _e( 'To protect them, you must click the button below.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
-				<p><a class="button" href="<?php echo esc_url( add_query_arg( 'wpo_wcpdf_protect_pdf_directory', 'true' ) ); ?>"><?php _e( 'Generate random temporary folder name', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
-				<p><a href="<?php echo esc_url( add_query_arg( 'wpo_wcpdf_hide_nginx_notice', 'true' ) ); ?>"><?php _e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+				<p><?php printf( esc_html__( 'The PDF files in %s are not currently protected due to your site running on <strong>NGINX</strong>.', 'woocommerce-pdf-invoices-packing-slips' ), '<strong>' . wpo_wcpdf_escape_url_path_or_base64( $tmp_path ) . '</strong>' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
+				<p><?php esc_html_e( 'To protect them, you must click the button below.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
+				<p><a class="button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'wpo_wcpdf_protect_pdf_directory', 'true' ), 'protect_pdf_directory_nonce' ) ); ?>"><?php esc_html_e( 'Generate random temporary folder name', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+				<p><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'wpo_wcpdf_hide_nginx_notice', 'true' ), 'hide_nginx_notice_nonce' ) ); ?>"><?php esc_html_e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
 			</div>
 			<?php
+
 			echo wp_kses_post( ob_get_clean() );
 		}
 
 		// protect PDF directory
-		if ( isset( $_GET['wpo_wcpdf_protect_pdf_directory'] ) ) {
-			$this->main->generate_random_string();
-			$old_path = $this->main->get_tmp_base( false );
-			$new_path = $this->main->get_tmp_base();
-			$this->main->copy_directory( $old_path, $new_path );
-			// save option to hide nginx notice
-			update_option( 'wpo_wcpdf_hide_nginx_notice', true );
-			wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
-			exit;
+		if ( isset( $_REQUEST['wpo_wcpdf_protect_pdf_directory'] ) && isset( $_REQUEST['_wpnonce'] ) ) {
+			// validate nonce
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'protect_pdf_directory_nonce' ) ) {
+				wcpdf_log_error( 'You do not have sufficient permissions to perform this action: wpo_wcpdf_protect_pdf_directory' );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			} else {
+				$this->main->generate_random_string();
+				$old_path = $this->main->get_tmp_base( false );
+				$new_path = $this->main->get_tmp_base();
+				$this->main->copy_directory( $old_path, $new_path );
+				// save option to hide nginx notice
+				update_option( 'wpo_wcpdf_hide_nginx_notice', true );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			}
 		}
 
 		// save option to hide nginx notice
-		if ( isset( $_GET['wpo_wcpdf_hide_nginx_notice'] ) ) {
-			update_option( 'wpo_wcpdf_hide_nginx_notice', true );
-			wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
-			exit;
+		if ( isset( $_REQUEST['wpo_wcpdf_hide_nginx_notice'] ) && isset( $_REQUEST['_wpnonce'] ) ) {
+			// validate nonce
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'hide_nginx_notice_nonce' ) ) {
+				wcpdf_log_error( 'You do not have sufficient permissions to perform this action: wpo_wcpdf_hide_nginx_notice' );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			} else {
+				update_option( 'wpo_wcpdf_hide_nginx_notice', true );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			}
 		}
 	}
 
@@ -433,11 +415,11 @@ class WPO_WCPDF {
 				ob_start();
 				?>
 				<div class="error">
-					<img src="<?php echo $this->plugin_url() . "/assets/images/mailpoet.svg"; ?>" style="margin-top:10px;">
-					<p><?php _e( 'When sending emails with MailPoet 3 and the active sending method is <strong>MailPoet Sending Service</strong> or <strong>Your web host / web server</strong>, MailPoet does not include the <strong>PDF Invoices & Packing Slips for WooCommerce</strong> attachments in the emails.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
-					<p><?php _e( 'To fix this you should select <strong>The default WordPress sending method (default)</strong> on the <strong>Advanced tab</strong>.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
-					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=mailpoet-settings#/advanced' ) ); ?>"><?php _e( 'Change MailPoet sending method to WordPress (default)', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
-					<p><a href="<?php echo esc_url( add_query_arg( 'wpo_wcpdf_hide_mailpoet_notice', 'true' ) ); ?>"><?php _e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+					<img src="<?php echo esc_url( $this->plugin_url() . '/assets/images/mailpoet.svg' ); ?>" style="margin-top:10px;">
+					<p><?php echo wp_kses_post( 'When sending emails with MailPoet 3 and the active sending method is <strong>MailPoet Sending Service</strong> or <strong>Your web host / web server</strong>, MailPoet does not include the <strong>PDF Invoices & Packing Slips for WooCommerce</strong> attachments in the emails.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
+					<p><?php echo wp_kses_post( 'To fix this you should select <strong>The default WordPress sending method (default)</strong> on the <strong>Advanced tab</strong>.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
+					<p><a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=mailpoet-settings#/advanced' ) ); ?>"><?php esc_html_e( 'Change MailPoet sending method to WordPress (default)', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+					<p><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'wpo_wcpdf_hide_mailpoet_notice', 'true' ), 'hide_mailpoet_notice_nonce' ) ); ?>"><?php esc_html_e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
 				</div>
 				<?php
 				echo wp_kses_post( ob_get_clean() );
@@ -445,10 +427,338 @@ class WPO_WCPDF {
 		}
 
 		// save option to hide mailpoet notice
-		if ( isset( $_GET['wpo_wcpdf_hide_mailpoet_notice'] ) ) {
-			update_option( 'wpo_wcpdf_hide_mailpoet_notice', true );
-			wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+		if ( isset( $_REQUEST['wpo_wcpdf_hide_mailpoet_notice'] ) && isset( $_REQUEST['_wpnonce'] ) ) {
+			// validate nonce
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'hide_mailpoet_notice_nonce' ) ) {
+				wcpdf_log_error( 'You do not have sufficient permissions to perform this action: wpo_wcpdf_hide_mailpoet_notice' );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			} else {
+				update_option( 'wpo_wcpdf_hide_mailpoet_notice', true );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * RTL detected notice
+	 *
+	 * @return void
+	 */
+	public function rtl_detected() {
+		if ( ! is_super_admin() ) {
+			return;
+		}
+
+		if ( is_rtl() && ! get_option( 'wpo_wcpdf_hide_rtl_notice' ) ) {
+			ob_start();
+			?>
+			<div class="notice notice-warning">
+				<p><?php esc_html_e( 'PDF Invoices & Packing Slips for WooCommerce detected that your current site locale is right-to-left (RTL) which the current PDF engine does not support it. Please consider installing our mPDF extension that is compatible.', 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
+				<p><a class="button" href="<?php echo esc_url( 'https://github.com/wpovernight/woocommerce-pdf-ips-mpdf/releases/latest' ); ?>" target="_blank"><?php esc_html_e( 'Download mPDF extension', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+				<p><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'wpo_wcpdf_hide_rtl_notice', 'true' ), 'hide_rtl_notice_nonce' ) ); ?>"><?php esc_html_e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+			</div>
+			<?php
+			echo wp_kses_post( ob_get_clean() );
+		}
+
+		// save option to hide notice
+		if ( isset( $_REQUEST['wpo_wcpdf_hide_rtl_notice'] ) && isset( $_REQUEST['_wpnonce'] ) ) {
+			// validate nonce
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'hide_rtl_notice_nonce' ) ) {
+				wcpdf_log_error( 'You do not have sufficient permissions to perform this action: wpo_wcpdf_hide_rtl_notice' );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			} else {
+				update_option( 'wpo_wcpdf_hide_rtl_notice', true );
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * Yearly reset action missing notice
+	 *
+	 * @return void
+	 */
+	public function yearly_reset_action_missing_notice(): void {
+		if ( ! $this->settings->maybe_schedule_yearly_reset_numbers() ) {
+			return;
+		}
+
+		if ( ! function_exists( '\\as_get_scheduled_actions' ) ) {
+			wcpdf_log_error( 'Action Scheduler function not available. Cannot verify if the yearly numbering reset action is scheduled.', 'critical' );
+			return;
+		}
+
+		$current_date   = new \DateTime();
+		$end_of_year    = new \DateTime( 'last day of December' );
+		$days_remaining = $current_date->diff( $end_of_year )->days;
+
+		// Check if the current date is within the last 30 days of the year
+		if ( $days_remaining <= 30 && ! $this->settings->yearly_reset_action_is_scheduled() ) {
+			ob_start();
+			?>
+			<div class="notice notice-error">
+				<p><?php esc_html_e( "The year-end is approaching, and we noticed that your PDF Invoices & Packing Slips for WooCommerce plugin doesn't have the scheduled action to reset invoice numbers annually, even though you've explicitly enabled this setting in the document options. Click the button below to schedule the action before the year ends.", 'woocommerce-pdf-invoices-packing-slips' ); ?></p>
+				<p><a class="button" href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'wpo_wcpdf_schedule_yearly_reset_action', 'true' ), 'schedule_yearly_reset_action_nonce' ) ); ?>"><?php esc_html_e( 'Schedule the action now', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+			</div>
+			<?php
+			echo wp_kses_post( ob_get_clean() );
+		}
+
+		// Schedule yearly reset action
+		if ( isset( $_REQUEST['wpo_wcpdf_schedule_yearly_reset_action'] ) && isset( $_REQUEST['_wpnonce'] ) ) {
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'schedule_yearly_reset_action_nonce' ) ) {
+				wcpdf_log_error( 'You do not have sufficient permissions to perform this action: wpo_wcpdf_schedule_yearly_reset_action' );
+			} else {
+				$this->settings->schedule_yearly_reset_numbers();
+				wcpdf_log_error( 'Yearly reset numbering system rescheduled!', 'info' );
+			}
+
+			wp_redirect( 'admin.php?page=wpo_wcpdf_options_page&tab=debug&section=status' );
 			exit;
+		}
+	}
+
+	/**
+	 * Get an array of all active plugins, including multisite
+	 * @return array active plugin paths
+	 */
+	public function get_active_plugins() {
+		$active_plugins = (array) apply_filters( 'active_plugins', get_option( 'active_plugins' ) );
+		if ( is_multisite() ) {
+			// get_site_option( 'active_sitewide_plugins', array() ) returns a 'reversed list'
+			// like [hello-dolly/hello.php] => 1369572703 so we do array_keys to make the array
+			// compatible with $active_plugins
+			$active_sitewide_plugins = (array) array_keys( get_site_option( 'active_sitewide_plugins', array() ) );
+			// merge arrays and remove doubles
+			$active_plugins = (array) array_unique( array_merge( $active_plugins, $active_sitewide_plugins ) );
+		}
+
+		return $active_plugins;
+	}
+
+	public function deactivate_legacy_addons() {
+		foreach ( $this->legacy_addons as $filename => $name ) {
+			$legacy_addon = $this->plugin_is_activated( $filename );
+
+			if ( ! empty( $legacy_addon ) ) {
+				deactivate_plugins( $legacy_addon );
+				$transient_name = $this->get_legacy_addon_transient_name( $filename );
+				set_transient( $transient_name, 'yes', DAY_IN_SECONDS );
+			}
+		}
+	}
+
+	public function plugin_is_activated( $filename ) {
+		$active_plugins = $this->get_active_plugins();
+		$active_plugin  = '';
+
+		foreach ( $active_plugins as $plugin ) {
+			if ( ! empty( $plugin ) && false !== strpos( $plugin, $filename ) ) {
+				$active_plugin = $plugin;
+				break;
+			}
+		}
+
+		return $active_plugin;
+	}
+
+	public function get_legacy_addon_transient_name( $filename ) {
+		$filename_without_ext = basename( $filename, '.php' );
+		$legacy_addon_name    = str_replace( '-', '_', $filename_without_ext );
+
+		return "wpo_wcpdf_legacy_addon_{$legacy_addon_name}";
+	}
+
+	public function legacy_addon_notices() {
+		foreach ( $this->legacy_addons as $filename => $name ) {
+			$transient_name = $this->get_legacy_addon_transient_name( $filename );
+			$query_arg      = "{$transient_name}_notice";
+
+			if ( get_transient( $transient_name ) ) {
+				ob_start();
+				?>
+				<div class="notice notice-warning">
+					<p>
+						<?php
+							printf(
+								/* translators: legacy addon name */
+								esc_html__( 'While updating the PDF Invoices & Packing Slips for WooCommerce plugin we\'ve noticed our legacy %s add-on was active on your site. This functionality is now incorporated into the core plugin. We\'ve deactivated the add-on for you, and you are free to uninstall it.', 'woocommerce-pdf-invoices-packing-slips' ),
+								'<strong>' . esc_attr( $name ) . '</strong>'
+							);
+						?>
+					</p>
+					<p><a href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( $query_arg => true ) ), 'wcpdf_legacy_addon_notice' ) ); ?>"><?php esc_html_e( 'Hide this message', 'woocommerce-pdf-invoices-packing-slips' ); ?></a></p>
+				</div>
+				<?php
+				echo wp_kses_post( ob_get_clean() );
+			}
+
+			// save option to hide legacy addon notice
+			if ( isset( $_REQUEST[ $query_arg ] ) && isset( $_REQUEST['_wpnonce'] ) ) {
+				if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'wcpdf_legacy_addon_notice' ) ) {
+					wcpdf_log_error( 'You do not have sufficient permissions to perform this action: ' . $query_arg );
+				} else {
+					delete_transient( $transient_name );
+				}
+
+				wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * Show a one-time notice about the new "Check for unstable versions" option.
+	 *
+	 * @return void
+	 */
+	public function unstable_option_announcement_notice(): void {
+		$dismiss_option = 'wpo_wcpdf_dismiss_unstable_option_announcement';
+		$dismiss_arg    = 'wpo_wcpdf_dismiss_unstable_option_announcement';
+		$nonce_action   = 'wcpdf_dismiss_unstable_option_announcement';
+
+		// Bail if already dismissed or user cannot manage settings
+		if ( wc_string_to_bool( get_option( $dismiss_option ) ) || ! $this->settings->user_can_manage_settings() ) {
+			return;
+		}
+
+		// Handle dismissal
+		if ( isset( $_GET[ $dismiss_arg ] ) && isset( $_GET['_wpnonce'] ) ) {
+			if ( wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), $nonce_action ) ) {
+				update_option( $dismiss_option, 'yes' );
+			} else {
+				wcpdf_log_error( 'Invalid nonce while dismissing unstable version feature notice.' );
+			}
+
+			wp_redirect( remove_query_arg( array( $dismiss_arg, '_wpnonce' ) ) );
+			exit;
+		}
+
+		// Build dismiss URL
+		$dismiss_url = wp_nonce_url(
+			add_query_arg( $dismiss_arg, '1' ),
+			$nonce_action
+		);
+		?>
+		<div class="notice notice-info">
+			<p>
+				<?php
+					printf(
+						/* translators: %s: Plugin name */
+						esc_html__( 'We\'ve added a new option to %s that lets you check for beta and pre-release versions.', 'woocommerce-pdf-invoices-packing-slips' ),
+						'<strong>' . esc_html__( 'PDF Invoices & Packing Slips for WooCommerce', 'woocommerce-pdf-invoices-packing-slips' ) . '</strong>'
+					);
+				?>
+			</p>
+			<p>
+				<?php esc_html_e( 'If you\'d like to help improve the plugin by testing early releases on a staging site, you can enable this feature from the advanced settings.', 'woocommerce-pdf-invoices-packing-slips' ); ?>
+			</p>
+			<p>
+				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=wpo_wcpdf_options_page&tab=debug#check_unstable_versions' ) ); ?>">
+					<?php esc_html_e( 'Go to settings', 'woocommerce-pdf-invoices-packing-slips' ); ?>
+				</a>
+				<a class="button" href="<?php echo esc_url( $dismiss_url ); ?>">
+					<?php esc_html_e( 'Dismiss this notice', 'woocommerce-pdf-invoices-packing-slips' ); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Display a notice when a new unstable version is available.
+	 *
+	 * @return void
+	 */
+	public function new_unstable_version_available_notice(): void {
+		$debug_settings         = $this->settings->debug_settings;
+		$check_unstable_enabled = isset( $debug_settings['check_unstable_versions'] );
+		$unstable_state         = get_option( 'wpo_wcpdf_unstable_version_state', array() );
+		$current_tag            = isset( $unstable_state['tag'] ) ? $unstable_state['tag'] : '';
+		$is_dismissed           = isset( $unstable_state['dismissed'] ) ? $unstable_state['dismissed'] : false;
+		$hide_version_arg       = 'wpo_wcpdf_hide_unstable_version';
+
+		// Don't show the notice if disabled or dismissed
+		if ( ! $check_unstable_enabled || empty( $current_tag ) || $is_dismissed ) {
+			return;
+		}
+
+		// Handle dismissal
+		if ( isset( $_GET[ $hide_version_arg ] ) && isset( $_GET['_wpnonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
+			if ( wp_verify_nonce( $nonce, 'wcpdf_hide_unstable_version' ) ) {
+				update_option( 'wpo_wcpdf_unstable_version_state', array(
+					'tag'       => $current_tag,
+					'dismissed' => true,
+				) );
+			} else {
+				wcpdf_log_error( 'Invalid nonce while hiding unstable version notice.' );
+			}
+
+			wp_redirect( admin_url( 'admin.php?page=wpo_wcpdf_options_page' ) );
+			exit;
+		}
+
+		// Display the notice
+		?>
+		<div class="notice notice-info">
+			<p>
+				<?php
+					printf(
+						/* translators: 1. new unstable version, 2. plugin name */
+						esc_html__( 'A new unstable version (%1$s) of %2$s is available.', 'woocommerce-pdf-invoices-packing-slips' ),
+						esc_html( $current_tag ),
+						'<strong>' . esc_html__( 'PDF Invoices & Packing Slips for WooCommerce', 'woocommerce-pdf-invoices-packing-slips' ) . '</strong>'
+					);
+				?>
+			</p>
+			<p>
+				<span class="dashicons dashicons-download"></span>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=wpo_wcpdf_options_page&tab=debug&section=status' ) ); ?>">
+					<?php esc_html_e( 'Download from the status page', 'woocommerce-pdf-invoices-packing-slips' ); ?>
+				</a>
+			</p>
+			<p>
+				<a class="button button-primary" href="<?php echo esc_url( wp_nonce_url( add_query_arg( array( $hide_version_arg => true ) ), 'wcpdf_hide_unstable_version' ) ); ?>">
+					<?php esc_html_e( 'Hide this version', 'woocommerce-pdf-invoices-packing-slips' ); ?>
+				</a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Store the new unstable version if version checking is enabled.
+	 *
+	 * @param array  $unstable The unstable version data.
+	 * @param string $owner    GitHub repo owner.
+	 * @param string $repo     GitHub repo name.
+	 * @return void
+	 */
+	public function set_new_unstable_version_available_option( array $unstable, string $owner, string $repo ): void {
+		$debug_settings = $this->settings->debug_settings;
+		$enabled        = isset( $debug_settings['check_unstable_versions'] );
+		$new_tag        = sanitize_text_field( $unstable['tag'] );
+
+		if (
+			$enabled &&
+			! empty( $new_tag ) &&
+			'wpovernight' === $owner &&
+			'woocommerce-pdf-invoices-packing-slips' === $repo
+		) {
+			$current = get_option( 'wpo_wcpdf_unstable_version_state', array() );
+
+			if ( ! isset( $current['tag'] ) || $current['tag'] !== $new_tag ) {
+				update_option( 'wpo_wcpdf_unstable_version_state', array(
+					'tag'       => $new_tag,
+					'dismissed' => false,
+				) );
+			}
 		}
 	}
 
@@ -468,6 +778,19 @@ class WPO_WCPDF {
 		return untrailingslashit( plugin_dir_path( __FILE__ ) );
 	}
 
+	/**
+	 * Determine the site locale
+	 */
+	public function determine_locale() {
+		if ( function_exists( 'determine_locale' ) ) { // WP5.0+
+			$locale = determine_locale();
+		} else {
+			$locale = is_admin() && function_exists( 'get_user_locale' ) ? get_user_locale() : get_locale();
+		}
+
+		return apply_filters( 'plugin_locale', $locale, 'woocommerce-pdf-invoices-packing-slips' );
+	}
+
 } // class WPO_WCPDF
 
 endif; // class_exists
@@ -483,15 +806,3 @@ function WPO_WCPDF() {
 }
 
 WPO_WCPDF(); // load plugin
-
-// legacy class for plugin detecting
-if ( !class_exists( 'WooCommerce_PDF_Invoices' ) ) {
-	class WooCommerce_PDF_Invoices{
-		public static $version;
-
-		public function __construct() {
-			self::$version = WPO_WCPDF()->version;
-		}
-	}
-	new WooCommerce_PDF_Invoices();
-}

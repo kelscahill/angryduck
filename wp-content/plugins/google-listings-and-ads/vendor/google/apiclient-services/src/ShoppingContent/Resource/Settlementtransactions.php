@@ -15,9 +15,9 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\SettlementtransactionsListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\SettlementtransactionsListResponse;
 
 /**
  * The "settlementtransactions" collection of methods.
@@ -27,7 +27,7 @@ use Google\Service\ShoppingContent\SettlementtransactionsListResponse;
  *   $settlementtransactions = $contentService->settlementtransactions;
  *  </code>
  */
-class Settlementtransactions extends \Google\Service\Resource
+class Settlementtransactions extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves a list of transactions for the settlement.
@@ -45,6 +45,7 @@ class Settlementtransactions extends \Google\Service\Resource
    * @opt_param string transactionIds The list of transactions to return. If not
    * set, all transactions will be returned.
    * @return SettlementtransactionsListResponse
+   * @throws \Google\Service\Exception
    */
   public function listSettlementtransactions($merchantId, $settlementId, $optParams = [])
   {

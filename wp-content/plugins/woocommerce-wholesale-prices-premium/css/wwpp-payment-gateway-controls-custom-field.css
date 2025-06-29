@@ -1,0 +1,90 @@
+/** Field Controls **/
+.surcharge-controls .field-container {
+    margin-bottom: 20px;
+}
+.surcharge-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+.surcharge-controls .field-container select {
+    display: block;
+    min-width: 350px;
+}
+.surcharge-controls .field-container.wwpp-wholesale-roles-field-container .chosen-container .chosen-search-input,
+.surcharge-controls .field-container.wwpp-payment-gateway-field-container .chosen-container .chosen-search-input,
+.surcharge-controls .field-container.wwpp-surcharge-type-field-container .chosen-container .chosen-search-input,
+.surcharge-controls .field-container.wwpp-surcharge-taxable-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+.surcharge-controls .field-container p.desc {
+    font-weight: normal;
+}
+
+
+/** Button Controls **/
+.button-controls {
+    display: block;
+    margin-bottom: 40px;
+}
+.button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+.button-controls .button {
+    float: left;
+}
+.button-controls #cancel-edit-surcharge {
+    margin-right: 10px;
+}
+.button-controls.add-mode #add-surcharge {
+    display: inline-block;
+}
+.button-controls.add-mode #save-surcharge {
+    display: none;
+}
+.button-controls.add-mode #cancel-edit-surcharge {
+    display: none;
+}
+.button-controls.edit-mode #add-surcharge {
+    display: none;
+}
+.button-controls.edit-mode #save-surcharge {
+    display: inline-block;
+}
+.button-controls.edit-mode #cancel-edit-surcharge {
+    display: inline-block;
+}
+.button-controls .spinner {
+    top: 0;
+}
+.button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+}
+
+
+/** Surcharge Table **/
+#wholesale-payment-gateway-surcharge thead tr th,
+#wholesale-payment-gateway-surcharge tfoot tr th {
+    padding: 15px 10px;
+}
+#wholesale-payment-gateway-surcharge tbody tr.edited {
+    background-color: #fff2d8 !important;
+}
+#wholesale-payment-gateway-surcharge tbody tr td.taxable {
+    text-transform: capitalize;
+}
+#wholesale-payment-gateway-surcharge tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+#wholesale-payment-gateway-surcharge tbody tr td.controls .edit {
+    color: green;
+    margin-right: 15px;
+}
+#wholesale-payment-gateway-surcharge tbody tr td.controls .delete {
+    color: red;
+}

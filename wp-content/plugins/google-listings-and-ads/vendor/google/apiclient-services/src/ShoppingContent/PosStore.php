@@ -15,9 +15,9 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
 
-class PosStore extends \Google\Collection
+class PosStore extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Collection
 {
   protected $collection_key = 'gcidCategory';
   /**
@@ -28,6 +28,14 @@ class PosStore extends \Google\Collection
    * @var string
    */
   public $kind;
+  /**
+   * @var string
+   */
+  public $matchingStatus;
+  /**
+   * @var string
+   */
+  public $matchingStatusHint;
   /**
    * @var string
    */
@@ -80,6 +88,34 @@ class PosStore extends \Google\Collection
   public function getKind()
   {
     return $this->kind;
+  }
+  /**
+   * @param string
+   */
+  public function setMatchingStatus($matchingStatus)
+  {
+    $this->matchingStatus = $matchingStatus;
+  }
+  /**
+   * @return string
+   */
+  public function getMatchingStatus()
+  {
+    return $this->matchingStatus;
+  }
+  /**
+   * @param string
+   */
+  public function setMatchingStatusHint($matchingStatusHint)
+  {
+    $this->matchingStatusHint = $matchingStatusHint;
+  }
+  /**
+   * @return string
+   */
+  public function getMatchingStatusHint()
+  {
+    return $this->matchingStatusHint;
   }
   /**
    * @param string

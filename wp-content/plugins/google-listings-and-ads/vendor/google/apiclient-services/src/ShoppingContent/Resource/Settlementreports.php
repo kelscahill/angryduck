@@ -15,10 +15,10 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\SettlementReport;
-use Google\Service\ShoppingContent\SettlementreportsListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\SettlementReport;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\SettlementreportsListResponse;
 
 /**
  * The "settlementreports" collection of methods.
@@ -28,7 +28,7 @@ use Google\Service\ShoppingContent\SettlementreportsListResponse;
  *   $settlementreports = $contentService->settlementreports;
  *  </code>
  */
-class Settlementreports extends \Google\Service\Resource
+class Settlementreports extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves a settlement report from your Merchant Center account.
@@ -39,6 +39,7 @@ class Settlementreports extends \Google\Service\Resource
    * @param string $settlementId The Google-provided ID of the settlement.
    * @param array $optParams Optional parameters.
    * @return SettlementReport
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $settlementId, $optParams = [])
   {
@@ -63,6 +64,7 @@ class Settlementreports extends \Google\Service\Resource
    * @opt_param string transferStartDate Obtains settlements which have
    * transactions after this date (inclusively), in ISO 8601 format.
    * @return SettlementreportsListResponse
+   * @throws \Google\Service\Exception
    */
   public function listSettlementreports($merchantId, $optParams = [])
   {

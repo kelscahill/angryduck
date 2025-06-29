@@ -1,6 +1,6 @@
 <?php
 
-namespace Google\AuthHandler;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\AuthHandler;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\CredentialsLoader;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\FetchAuthTokenCache;
@@ -20,7 +20,7 @@ class Guzzle6AuthHandler
     protected $cache;
     protected $cacheConfig;
 
-    public function __construct(CacheItemPoolInterface $cache = null, array $cacheConfig = [])
+    public function __construct(?CacheItemPoolInterface $cache = null, array $cacheConfig = [])
     {
         $this->cache = $cache;
         $this->cacheConfig = $cacheConfig;
@@ -29,7 +29,7 @@ class Guzzle6AuthHandler
     public function attachCredentials(
         ClientInterface $http,
         CredentialsLoader $credentials,
-        callable $tokenCallback = null
+        ?callable $tokenCallback = null
     ) {
         // use the provided cache
         if ($this->cache) {
@@ -46,7 +46,7 @@ class Guzzle6AuthHandler
     public function attachCredentialsCache(
         ClientInterface $http,
         FetchAuthTokenCache $credentials,
-        callable $tokenCallback = null
+        ?callable $tokenCallback = null
     ) {
         // if we end up needing to make an HTTP request to retrieve credentials, we
         // can use our existing one, but we need to throw exceptions so the error
@@ -105,11 +105,6 @@ class Guzzle6AuthHandler
 
     private function createAuthHttp(ClientInterface $http)
     {
-        return new Client([
-            'base_uri' => $http->getConfig('base_uri'),
-            'http_errors' => true,
-            'verify' => $http->getConfig('verify'),
-            'proxy' => $http->getConfig('proxy'),
-        ]);
+        return new Client(['http_errors' => true] + $http->getConfig());
     }
 }

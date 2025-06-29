@@ -1,0 +1,1 @@
+System.register(["../apps/settings/index-legacy.CV2KRSvP.js"],(function(e,t){"use strict";var n,s,r,c,u;return{setters:[e=>{n=e.S,s=e.M,r=e.ao,c=e._,u=e.K}],execute:function(){e("c",(function(e){const t=Symbol("contextKey");return{useProvide:(e,u)=>{const o=n({});return s(t,o),r((()=>{c(o,e,u||{})})),o},useInject:()=>u(t,e)||{}}}))}}}));

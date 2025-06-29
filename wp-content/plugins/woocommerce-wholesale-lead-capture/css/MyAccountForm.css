@@ -1,0 +1,19 @@
+.wwlc-account-details-field-file {
+    margin-bottom: 20px;
+}
+
+.wwlc-account-details-field {
+    margin-bottom: 20px;
+}
+
+.wwlc-account-details-field .inline-error {
+    margin-left: 5px;
+    color: #ff6060;
+}
+
+.wwlc-account-details-field .wwlc-loader {
+    display: none;
+    padding: 0px 12px;
+    margin-left: 10px;
+    background: url("../images/spinner.gif") no-repeat;
+}

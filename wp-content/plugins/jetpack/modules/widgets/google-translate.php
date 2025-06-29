@@ -1,7 +1,4 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
-
-use Automattic\Jetpack\Assets;
-
 /**
  * Plugin Name: Google Translate Widget for WordPress.com
  * Plugin URI: https://automattic.com
@@ -11,8 +8,13 @@ use Automattic\Jetpack\Assets;
  * Author URI: https://automattic.com
  * Text Domain: jetpack
  */
+
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
+
+use Automattic\Jetpack\Assets;
+
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit( 0 );
 }
 
 /**
@@ -180,6 +182,7 @@ class Jetpack_Google_Translate_Widget extends WP_Widget {
 	 * @see WP_Widget::form()
 	 *
 	 * @param array $instance Previously saved values from database.
+	 * @return string|void
 	 */
 	public function form( $instance ) {
 		$title = isset( $instance['title'] ) ? $instance['title'] : false;
@@ -212,7 +215,6 @@ class Jetpack_Google_Translate_Widget extends WP_Widget {
 		}
 		return $instance;
 	}
-
 }
 
 /**

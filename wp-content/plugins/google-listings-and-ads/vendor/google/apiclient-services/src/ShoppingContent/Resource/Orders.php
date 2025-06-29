@@ -15,47 +15,47 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\CaptureOrderRequest;
-use Google\Service\ShoppingContent\CaptureOrderResponse;
-use Google\Service\ShoppingContent\Order;
-use Google\Service\ShoppingContent\OrdersAcknowledgeRequest;
-use Google\Service\ShoppingContent\OrdersAcknowledgeResponse;
-use Google\Service\ShoppingContent\OrdersAdvanceTestOrderResponse;
-use Google\Service\ShoppingContent\OrdersCancelLineItemRequest;
-use Google\Service\ShoppingContent\OrdersCancelLineItemResponse;
-use Google\Service\ShoppingContent\OrdersCancelRequest;
-use Google\Service\ShoppingContent\OrdersCancelResponse;
-use Google\Service\ShoppingContent\OrdersCancelTestOrderByCustomerRequest;
-use Google\Service\ShoppingContent\OrdersCancelTestOrderByCustomerResponse;
-use Google\Service\ShoppingContent\OrdersCreateTestOrderRequest;
-use Google\Service\ShoppingContent\OrdersCreateTestOrderResponse;
-use Google\Service\ShoppingContent\OrdersCreateTestReturnRequest;
-use Google\Service\ShoppingContent\OrdersCreateTestReturnResponse;
-use Google\Service\ShoppingContent\OrdersGetByMerchantOrderIdResponse;
-use Google\Service\ShoppingContent\OrdersGetTestOrderTemplateResponse;
-use Google\Service\ShoppingContent\OrdersInStoreRefundLineItemRequest;
-use Google\Service\ShoppingContent\OrdersInStoreRefundLineItemResponse;
-use Google\Service\ShoppingContent\OrdersListResponse;
-use Google\Service\ShoppingContent\OrdersRefundItemRequest;
-use Google\Service\ShoppingContent\OrdersRefundItemResponse;
-use Google\Service\ShoppingContent\OrdersRefundOrderRequest;
-use Google\Service\ShoppingContent\OrdersRefundOrderResponse;
-use Google\Service\ShoppingContent\OrdersRejectReturnLineItemRequest;
-use Google\Service\ShoppingContent\OrdersRejectReturnLineItemResponse;
-use Google\Service\ShoppingContent\OrdersReturnRefundLineItemRequest;
-use Google\Service\ShoppingContent\OrdersReturnRefundLineItemResponse;
-use Google\Service\ShoppingContent\OrdersSetLineItemMetadataRequest;
-use Google\Service\ShoppingContent\OrdersSetLineItemMetadataResponse;
-use Google\Service\ShoppingContent\OrdersShipLineItemsRequest;
-use Google\Service\ShoppingContent\OrdersShipLineItemsResponse;
-use Google\Service\ShoppingContent\OrdersUpdateLineItemShippingDetailsRequest;
-use Google\Service\ShoppingContent\OrdersUpdateLineItemShippingDetailsResponse;
-use Google\Service\ShoppingContent\OrdersUpdateMerchantOrderIdRequest;
-use Google\Service\ShoppingContent\OrdersUpdateMerchantOrderIdResponse;
-use Google\Service\ShoppingContent\OrdersUpdateShipmentRequest;
-use Google\Service\ShoppingContent\OrdersUpdateShipmentResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\CaptureOrderRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\CaptureOrderResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Order;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersAcknowledgeRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersAcknowledgeResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersAdvanceTestOrderResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCancelLineItemRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCancelLineItemResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCancelRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCancelResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCancelTestOrderByCustomerRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCancelTestOrderByCustomerResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCreateTestOrderRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCreateTestOrderResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCreateTestReturnRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersCreateTestReturnResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersGetByMerchantOrderIdResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersGetTestOrderTemplateResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersInStoreRefundLineItemRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersInStoreRefundLineItemResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersRefundItemRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersRefundItemResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersRefundOrderRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersRefundOrderResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersRejectReturnLineItemRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersRejectReturnLineItemResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersReturnRefundLineItemRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersReturnRefundLineItemResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersSetLineItemMetadataRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersSetLineItemMetadataResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersShipLineItemsRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersShipLineItemsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersUpdateLineItemShippingDetailsRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersUpdateLineItemShippingDetailsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersUpdateMerchantOrderIdRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersUpdateMerchantOrderIdResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersUpdateShipmentRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\OrdersUpdateShipmentResponse;
 
 /**
  * The "orders" collection of methods.
@@ -65,7 +65,7 @@ use Google\Service\ShoppingContent\OrdersUpdateShipmentResponse;
  *   $orders = $contentService->orders;
  *  </code>
  */
-class Orders extends \Google\Service\Resource
+class Orders extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Marks an order as acknowledged. (orders.acknowledge)
@@ -76,6 +76,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersAcknowledgeRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersAcknowledgeResponse
+   * @throws \Google\Service\Exception
    */
   public function acknowledge($merchantId, $orderId, OrdersAcknowledgeRequest $postBody, $optParams = [])
   {
@@ -92,6 +93,7 @@ class Orders extends \Google\Service\Resource
    * @param string $orderId The ID of the test order to modify.
    * @param array $optParams Optional parameters.
    * @return OrdersAdvanceTestOrderResponse
+   * @throws \Google\Service\Exception
    */
   public function advancetestorder($merchantId, $orderId, $optParams = [])
   {
@@ -108,6 +110,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersCancelRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersCancelResponse
+   * @throws \Google\Service\Exception
    */
   public function cancel($merchantId, $orderId, OrdersCancelRequest $postBody, $optParams = [])
   {
@@ -124,6 +127,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersCancelLineItemRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersCancelLineItemResponse
+   * @throws \Google\Service\Exception
    */
   public function cancellineitem($merchantId, $orderId, OrdersCancelLineItemRequest $postBody, $optParams = [])
   {
@@ -141,6 +145,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersCancelTestOrderByCustomerRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersCancelTestOrderByCustomerResponse
+   * @throws \Google\Service\Exception
    */
   public function canceltestorderbycustomer($merchantId, $orderId, OrdersCancelTestOrderByCustomerRequest $postBody, $optParams = [])
   {
@@ -168,6 +173,7 @@ class Orders extends \Google\Service\Resource
    * @param CaptureOrderRequest $postBody
    * @param array $optParams Optional parameters.
    * @return CaptureOrderResponse
+   * @throws \Google\Service\Exception
    */
   public function captureOrder($merchantId, $orderId, CaptureOrderRequest $postBody, $optParams = [])
   {
@@ -183,6 +189,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersCreateTestOrderRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersCreateTestOrderResponse
+   * @throws \Google\Service\Exception
    */
   public function createtestorder($merchantId, OrdersCreateTestOrderRequest $postBody, $optParams = [])
   {
@@ -199,6 +206,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersCreateTestReturnRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersCreateTestReturnResponse
+   * @throws \Google\Service\Exception
    */
   public function createtestreturn($merchantId, $orderId, OrdersCreateTestReturnRequest $postBody, $optParams = [])
   {
@@ -214,6 +222,7 @@ class Orders extends \Google\Service\Resource
    * @param string $orderId The ID of the order.
    * @param array $optParams Optional parameters.
    * @return Order
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $orderId, $optParams = [])
   {
@@ -229,6 +238,7 @@ class Orders extends \Google\Service\Resource
    * @param string $merchantOrderId The merchant order ID to be looked for.
    * @param array $optParams Optional parameters.
    * @return OrdersGetByMerchantOrderIdResponse
+   * @throws \Google\Service\Exception
    */
   public function getbymerchantorderid($merchantId, $merchantOrderId, $optParams = [])
   {
@@ -248,6 +258,7 @@ class Orders extends \Google\Service\Resource
    * @opt_param string country The country of the template to retrieve. Defaults
    * to "`US`".
    * @return OrdersGetTestOrderTemplateResponse
+   * @throws \Google\Service\Exception
    */
   public function gettestordertemplate($merchantId, $templateName, $optParams = [])
   {
@@ -272,6 +283,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersInStoreRefundLineItemRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersInStoreRefundLineItemResponse
+   * @throws \Google\Service\Exception
    */
   public function instorerefundlineitem($merchantId, $orderId, OrdersInStoreRefundLineItemRequest $postBody, $optParams = [])
   {
@@ -307,6 +319,7 @@ class Orders extends \Google\Service\Resource
    * `partiallyDelivered`, `delivered`, `partiallyReturned`, `returned`, and
    * `canceled`.
    * @return OrdersListResponse
+   * @throws \Google\Service\Exception
    */
   public function listOrders($merchantId, $optParams = [])
   {
@@ -323,6 +336,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersRefundItemRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersRefundItemResponse
+   * @throws \Google\Service\Exception
    */
   public function refunditem($merchantId, $orderId, OrdersRefundItemRequest $postBody, $optParams = [])
   {
@@ -339,6 +353,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersRefundOrderRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersRefundOrderResponse
+   * @throws \Google\Service\Exception
    */
   public function refundorder($merchantId, $orderId, OrdersRefundOrderRequest $postBody, $optParams = [])
   {
@@ -355,6 +370,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersRejectReturnLineItemRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersRejectReturnLineItemResponse
+   * @throws \Google\Service\Exception
    */
   public function rejectreturnlineitem($merchantId, $orderId, OrdersRejectReturnLineItemRequest $postBody, $optParams = [])
   {
@@ -377,6 +393,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersReturnRefundLineItemRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersReturnRefundLineItemResponse
+   * @throws \Google\Service\Exception
    */
   public function returnrefundlineitem($merchantId, $orderId, OrdersReturnRefundLineItemRequest $postBody, $optParams = [])
   {
@@ -397,6 +414,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersSetLineItemMetadataRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersSetLineItemMetadataResponse
+   * @throws \Google\Service\Exception
    */
   public function setlineitemmetadata($merchantId, $orderId, OrdersSetLineItemMetadataRequest $postBody, $optParams = [])
   {
@@ -413,6 +431,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersShipLineItemsRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersShipLineItemsResponse
+   * @throws \Google\Service\Exception
    */
   public function shiplineitems($merchantId, $orderId, OrdersShipLineItemsRequest $postBody, $optParams = [])
   {
@@ -430,6 +449,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersUpdateLineItemShippingDetailsRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersUpdateLineItemShippingDetailsResponse
+   * @throws \Google\Service\Exception
    */
   public function updatelineitemshippingdetails($merchantId, $orderId, OrdersUpdateLineItemShippingDetailsRequest $postBody, $optParams = [])
   {
@@ -447,6 +467,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersUpdateMerchantOrderIdRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersUpdateMerchantOrderIdResponse
+   * @throws \Google\Service\Exception
    */
   public function updatemerchantorderid($merchantId, $orderId, OrdersUpdateMerchantOrderIdRequest $postBody, $optParams = [])
   {
@@ -464,6 +485,7 @@ class Orders extends \Google\Service\Resource
    * @param OrdersUpdateShipmentRequest $postBody
    * @param array $optParams Optional parameters.
    * @return OrdersUpdateShipmentResponse
+   * @throws \Google\Service\Exception
    */
   public function updateshipment($merchantId, $orderId, OrdersUpdateShipmentRequest $postBody, $optParams = [])
   {

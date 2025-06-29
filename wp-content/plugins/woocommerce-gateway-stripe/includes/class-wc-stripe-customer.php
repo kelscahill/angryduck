@@ -20,7 +20,14 @@ class WC_Stripe_Customer {
 	 */
 	const STRIPE_PAYMENT_METHODS = [
 		WC_Stripe_UPE_Payment_Method_CC::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_LINK::STRIPE_ID,
 		WC_Stripe_UPE_Payment_Method_Sepa::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_Cash_App_Pay::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_ACH::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_ACSS::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_Bacs_Debit::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_Amazon_Pay::STRIPE_ID,
+		WC_Stripe_UPE_Payment_Method_Becs_Debit::STRIPE_ID,
 	];
 
 	/**
@@ -122,9 +129,7 @@ class WC_Stripe_Customer {
 	 * @return array
 	 */
 	protected function generate_customer_request( $args = [] ) {
-		$billing_email = isset( $_POST['billing_email'] ) ? filter_var( wp_unslash( $_POST['billing_email'] ), FILTER_SANITIZE_EMAIL ) : '';
-		$user          = $this->get_user();
-
+		$user = $this->get_user();
 		if ( $user ) {
 			$billing_first_name = get_user_meta( $user->ID, 'billing_first_name', true );
 			$billing_last_name  = get_user_meta( $user->ID, 'billing_last_name', true );
@@ -152,8 +157,9 @@ class WC_Stripe_Customer {
 				$defaults['name'] = $billing_full_name;
 			}
 		} else {
-			$billing_first_name = isset( $_POST['billing_first_name'] ) ? filter_var( wp_unslash( $_POST['billing_first_name'] ), FILTER_SANITIZE_STRING ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
-			$billing_last_name  = isset( $_POST['billing_last_name'] ) ? filter_var( wp_unslash( $_POST['billing_last_name'] ), FILTER_SANITIZE_STRING ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+			$billing_email      = $this->get_billing_data_field( 'billing_email', $args );
+			$billing_first_name = $this->get_billing_data_field( 'billing_first_name', $args );
+			$billing_last_name  = $this->get_billing_data_field( 'billing_last_name', $args );
 
 			// translators: %1$s First name, %2$s Second name.
 			$description = sprintf( __( 'Name: %1$s %2$s, Guest', 'woocommerce-gateway-stripe' ), $billing_first_name, $billing_last_name );
@@ -173,7 +179,131 @@ class WC_Stripe_Customer {
 		$defaults['metadata']          = apply_filters( 'wc_stripe_customer_metadata', $metadata, $user );
 		$defaults['preferred_locales'] = $this->get_customer_preferred_locale( $user );
 
+		// Add customer address default values.
+		$address_fields = [
+			'line1'       => 'billing_address_1',
+			'line2'       => 'billing_address_2',
+			'postal_code' => 'billing_postcode',
+			'city'        => 'billing_city',
+			'state'       => 'billing_state',
+			'country'     => 'billing_country',
+		];
+		foreach ( $address_fields as $key => $field ) {
+			if ( $user ) {
+				$defaults['address'][ $key ] = get_user_meta( $user->ID, $field, true );
+			} else {
+				$defaults['address'][ $key ] = $this->get_billing_data_field( $field, $args );
+			}
+		}
+
 		return wp_parse_args( $args, $defaults );
+	}
+
+	/**
+	 * Get value of billing data field, either from POST or order object.
+	 *
+	 * @param string $field Field name.
+	 * @param array  $args  Additional arguments (optional).
+	 *
+	 * @return string
+	 */
+	private function get_billing_data_field( $field, $args = [] ) {
+		$valid_fields = [
+			'billing_email',
+			'billing_first_name',
+			'billing_last_name',
+			'billing_address_1',
+			'billing_address_2',
+			'billing_postcode',
+			'billing_city',
+			'billing_state',
+			'billing_country',
+		];
+
+		// Restrict field parameter to list of known billing fields.
+		if ( ! in_array( $field, $valid_fields, true ) ) {
+			return '';
+		}
+
+		// Prioritize POST data, if available.
+		if ( isset( $_POST[ $field ] ) ) {
+			if ( 'billing_email' === $field ) {
+				return filter_var( wp_unslash( $_POST[ $field ] ), FILTER_SANITIZE_EMAIL ); // phpcs:ignore WordPress.Security.NonceVerification
+			}
+
+			return filter_var( wp_unslash( $_POST[ $field ] ), FILTER_SANITIZE_SPECIAL_CHARS ); // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif ( isset( $args['order'] ) && $args['order'] instanceof WC_Order ) {
+			switch ( $field ) {
+				case 'billing_email':
+					return $args['order']->get_billing_email();
+				case 'billing_first_name':
+					return $args['order']->get_billing_first_name();
+				case 'billing_last_name':
+					return $args['order']->get_billing_last_name();
+				case 'billing_address_1':
+					return $args['order']->get_billing_address_1();
+				case 'billing_address_2':
+					return $args['order']->get_billing_address_2();
+				case 'billing_postcode':
+					return $args['order']->get_billing_postcode();
+				case 'billing_city':
+					return $args['order']->get_billing_city();
+				case 'billing_state':
+					return $args['order']->get_billing_state();
+				case 'billing_country':
+					return $args['order']->get_billing_country();
+				default:
+					return '';
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * If customer does not exist, create a new customer. Else retrieve the Stripe customer through the API to check it's existence.
+	 * Recreate the customer if it does not exist in this Stripe account.
+	 *
+	 * @return string Customer ID
+	 *
+	 * @throws WC_Stripe_Exception
+	 */
+	public function maybe_create_customer() {
+		if ( ! $this->get_id() ) {
+			return $this->set_id( $this->create_customer() );
+		}
+
+		$response = WC_Stripe_API::retrieve( 'customers/' . $this->get_id() );
+
+		if ( ! empty( $response->error ) ) {
+			if ( $this->is_no_such_customer_error( $response->error ) ) {
+				// This can happen when switching the main Stripe account or importing users from another site.
+				// Recreate the customer in this case.
+				return $this->recreate_customer();
+			}
+
+			throw new WC_Stripe_Exception( print_r( $response, true ), $response->error->message );
+		}
+
+		return $response->id;
+	}
+
+	/**
+	 * Search for an existing customer in Stripe account by email and name.
+	 *
+	 * @param string $email Customer email.
+	 * @param string $name  Customer name.
+	 * @return array
+	 */
+	public function get_existing_customer( $email, $name ) {
+		$search_query    = [ 'query' => 'name:\'' . $name . '\' AND email:\'' . $email . '\'' ];
+		$search_response = WC_Stripe_API::request( $search_query, 'customers/search', 'GET' );
+
+		if ( ! empty( $search_response->error ) ) {
+			return [];
+		}
+
+		return $search_response->data[0] ?? [];
 	}
 
 	/**
@@ -183,8 +313,18 @@ class WC_Stripe_Customer {
 	 * @return WP_Error|int
 	 */
 	public function create_customer( $args = [] ) {
-		$args     = $this->generate_customer_request( $args );
-		$response = WC_Stripe_API::request( apply_filters( 'wc_stripe_create_customer_args', $args ), 'customers' );
+		$args = $this->generate_customer_request( $args );
+
+		// For guest users, check if a customer already exists with the same email and name in Stripe account before creating a new one.
+		if ( ! $this->get_id() && 0 === $this->get_user_id() ) {
+			$response = $this->get_existing_customer( $args['email'], $args['name'] );
+		}
+
+		if ( empty( $response ) ) {
+			$response = WC_Stripe_API::request( apply_filters( 'wc_stripe_create_customer_args', $args ), 'customers' );
+		} else {
+			$response = WC_Stripe_API::request( apply_filters( 'wc_stripe_update_customer_args', $args ), 'customers/' . $response->id );
+		}
 
 		if ( ! empty( $response->error ) ) {
 			throw new WC_Stripe_Exception( print_r( $response, true ), $response->error->message );
@@ -253,7 +393,7 @@ class WC_Stripe_Customer {
 	 */
 	public function update_or_create_customer( $args = [], $is_retry = false ) {
 		if ( empty( $this->get_id() ) ) {
-			return $this->recreate_customer();
+			return $this->recreate_customer( $args );
 		} else {
 			return $this->update_customer( $args, true );
 		}
@@ -297,7 +437,7 @@ class WC_Stripe_Customer {
 	 * @return WP_Error|int
 	 */
 	public function add_source( $source_id ) {
-		$response = WC_Stripe_API::retrieve( 'sources/' . $source_id );
+		$response = WC_Stripe_API::get_payment_method( $source_id );
 
 		if ( ! empty( $response->error ) || is_wp_error( $response ) ) {
 			return $response;
@@ -309,35 +449,38 @@ class WC_Stripe_Customer {
 		if ( $this->get_user_id() && class_exists( 'WC_Payment_Token_CC' ) ) {
 			if ( ! empty( $response->type ) ) {
 				switch ( $response->type ) {
-					case 'alipay':
+					case WC_Stripe_Payment_Methods::ALIPAY:
 						break;
-					case 'sepa_debit':
+					case WC_Stripe_Payment_Methods::SEPA_DEBIT:
 						$wc_token = new WC_Payment_Token_SEPA();
 						$wc_token->set_token( $response->id );
 						$wc_token->set_gateway_id( 'stripe_sepa' );
 						$wc_token->set_last4( $response->sepa_debit->last4 );
+						$wc_token->set_fingerprint( $response->sepa_debit->fingerprint );
 						break;
 					default:
-						if ( 'source' === $response->object && 'card' === $response->type ) {
-							$wc_token = new WC_Payment_Token_CC();
+						if ( WC_Stripe_Helper::is_card_payment_method( $response ) ) {
+							$wc_token = new WC_Stripe_Payment_Token_CC();
 							$wc_token->set_token( $response->id );
 							$wc_token->set_gateway_id( 'stripe' );
 							$wc_token->set_card_type( strtolower( $response->card->brand ) );
 							$wc_token->set_last4( $response->card->last4 );
 							$wc_token->set_expiry_month( $response->card->exp_month );
 							$wc_token->set_expiry_year( $response->card->exp_year );
+							$wc_token->set_fingerprint( $response->card->fingerprint );
 						}
 						break;
 				}
 			} else {
 				// Legacy.
-				$wc_token = new WC_Payment_Token_CC();
+				$wc_token = new WC_Stripe_Payment_Token_CC();
 				$wc_token->set_token( $response->id );
 				$wc_token->set_gateway_id( 'stripe' );
 				$wc_token->set_card_type( strtolower( $response->brand ) );
 				$wc_token->set_last4( $response->last4 );
 				$wc_token->set_expiry_month( $response->exp_month );
 				$wc_token->set_expiry_year( $response->exp_year );
+				$wc_token->set_fingerprint( $response->fingerprint );
 			}
 
 			$wc_token->set_user_id( $this->get_user_id() );
@@ -362,12 +505,7 @@ class WC_Stripe_Customer {
 			$this->set_id( $this->create_customer() );
 		}
 
-		$response = WC_Stripe_API::request(
-			[
-				'source' => $source_id,
-			],
-			'customers/' . $this->get_id() . '/sources'
-		);
+		$response = WC_Stripe_API::attach_payment_method_to_customer( $this->get_id(), $source_id );
 
 		if ( ! empty( $response->error ) ) {
 			// It is possible the WC user once was linked to a customer on Stripe
@@ -377,7 +515,7 @@ class WC_Stripe_Customer {
 				$this->recreate_customer();
 				return $this->attach_source( $source_id );
 			} elseif ( $this->is_source_already_attached_error( $response->error ) ) {
-				return WC_Stripe_API::request( [], 'sources/' . $source_id, 'GET' );
+				return WC_Stripe_API::get_payment_method( $source_id );
 			} else {
 				return $response;
 			}
@@ -406,7 +544,7 @@ class WC_Stripe_Customer {
 				[
 					'limit' => 100,
 				],
-				'customers/' . $this->get_id() . '/sources',
+				'customers/' . $this->get_id() . '/payment_methods',
 				'GET'
 			);
 
@@ -470,11 +608,11 @@ class WC_Stripe_Customer {
 	 * @param string $source_id
 	 */
 	public function delete_source( $source_id ) {
-		if ( ! $this->get_id() ) {
+		if ( empty( $source_id ) || ! $this->get_id() ) {
 			return false;
 		}
 
-		$response = WC_Stripe_API::request( [], 'customers/' . $this->get_id() . '/sources/' . sanitize_text_field( $source_id ), 'DELETE' );
+		$response = WC_Stripe_API::detach_payment_method_from_customer( $this->get_id(), $source_id );
 
 		$this->clear_cache();
 
@@ -497,7 +635,7 @@ class WC_Stripe_Customer {
 			return false;
 		}
 
-		$response = WC_Stripe_API::request( [], "payment_methods/$payment_method_id/detach", 'POST' );
+		$response = WC_Stripe_API::detach_payment_method_from_customer( $this->get_id(), $payment_method_id );
 
 		$this->clear_cache();
 
@@ -603,11 +741,13 @@ class WC_Stripe_Customer {
 	/**
 	 * Recreates the customer for this user.
 	 *
+	 * @param array $args Additional arguments for the request (optional).
+	 *
 	 * @return string ID of the new Customer object.
 	 */
-	private function recreate_customer() {
+	private function recreate_customer( $args = [] ) {
 		$this->delete_id_from_meta();
-		return $this->create_customer();
+		return $this->create_customer( $args );
 	}
 
 	/**
@@ -622,31 +762,34 @@ class WC_Stripe_Customer {
 		// Options based on Stripe locales.
 		// https://support.stripe.com/questions/language-options-for-customer-emails
 		$stripe_locales = [
-			'ar'    => 'ar-AR',
-			'da_DK' => 'da-DK',
-			'de_DE' => 'de-DE',
-			'en'    => 'en-US',
-			'es_ES' => 'es-ES',
-			'es_CL' => 'es-419',
-			'es_AR' => 'es-419',
-			'es_CO' => 'es-419',
-			'es_PE' => 'es-419',
-			'es_UY' => 'es-419',
-			'es_PR' => 'es-419',
-			'es_GT' => 'es-419',
-			'es_EC' => 'es-419',
-			'es_MX' => 'es-419',
-			'es_VE' => 'es-419',
-			'es_CR' => 'es-419',
-			'fi'    => 'fi-FI',
-			'fr_FR' => 'fr-FR',
-			'he_IL' => 'he-IL',
-			'it_IT' => 'it-IT',
-			'ja'    => 'ja-JP',
-			'nl_NL' => 'nl-NL',
-			'nn_NO' => 'no-NO',
-			'pt_BR' => 'pt-BR',
-			'sv_SE' => 'sv-SE',
+			'ar'             => 'ar-AR',
+			'da_DK'          => 'da-DK',
+			'de_CH'          => 'de-DE',
+			'de_CH_informal' => 'de-DE',
+			'de_DE'          => 'de-DE',
+			'de_DE_formal'   => 'de-DE',
+			'en'             => 'en-US',
+			'es_ES'          => 'es-ES',
+			'es_CL'          => 'es-419',
+			'es_AR'          => 'es-419',
+			'es_CO'          => 'es-419',
+			'es_PE'          => 'es-419',
+			'es_UY'          => 'es-419',
+			'es_PR'          => 'es-419',
+			'es_GT'          => 'es-419',
+			'es_EC'          => 'es-419',
+			'es_MX'          => 'es-419',
+			'es_VE'          => 'es-419',
+			'es_CR'          => 'es-419',
+			'fi'             => 'fi-FI',
+			'fr_FR'          => 'fr-FR',
+			'he_IL'          => 'he-IL',
+			'it_IT'          => 'it-IT',
+			'ja'             => 'ja-JP',
+			'nl_NL'          => 'nl-NL',
+			'nn_NO'          => 'no-NO',
+			'pt_BR'          => 'pt-BR',
+			'sv_SE'          => 'sv-SE',
 		];
 
 		$preferred = isset( $stripe_locales[ $locale ] ) ? $stripe_locales[ $locale ] : 'en-US';
@@ -668,12 +811,12 @@ class WC_Stripe_Customer {
 	 * Given a WC_Order or WC_Customer, returns an array representing a Stripe customer object.
 	 * At least one parameter has to not be null.
 	 *
-	 * @param WC_Order    $wc_order    The Woo order to parse.
-	 * @param WC_Customer $wc_customer The Woo customer to parse.
+	 * @param WC_Order|null    $wc_order    The Woo order to parse.
+	 * @param WC_Customer|null $wc_customer The Woo customer to parse.
 	 *
 	 * @return array Customer data.
 	 */
-	public static function map_customer_data( WC_Order $wc_order = null, WC_Customer $wc_customer = null ) {
+	public static function map_customer_data( ?WC_Order $wc_order = null, ?WC_Customer $wc_customer = null ) {
 		if ( null === $wc_customer && null === $wc_order ) {
 			return [];
 		}

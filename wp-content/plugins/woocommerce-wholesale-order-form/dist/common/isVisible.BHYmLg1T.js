@@ -1,0 +1,1 @@
+const r=t=>{if(!t)return!1;if(t.offsetParent)return!0;if(t.getBBox){const i=t.getBBox();if(i.width||i.height)return!0}if(t.getBoundingClientRect){const i=t.getBoundingClientRect();if(i.width||i.height)return!0}return!1};export{r as i};

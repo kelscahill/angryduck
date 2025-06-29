@@ -1,0 +1,1 @@
+System.register([],(function(t,e){"use strict";return{execute:function(){t("f",(function(){let t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:[];for(let e=0,n=t.length;e<n;e++)if(void 0!==t[e])return t[e]}))}}}));

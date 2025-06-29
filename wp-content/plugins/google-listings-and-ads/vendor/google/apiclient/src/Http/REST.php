@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-namespace Google\Http;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Http;
 
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Auth\HttpHandler\HttpHandlerFactory;
-use Google\Service\Exception as GoogleServiceException;
-use Google\Task\Runner;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Exception as GoogleServiceException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Task\Runner;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\ClientInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Exception\RequestException;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Psr7\Response;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\RequestInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\ResponseInterface;
 
 /**
  * This class implements the RESTful transport of apiServiceRequest()'s
@@ -55,7 +55,7 @@ class REST
         $runner = new Runner(
             $config,
             sprintf('%s %s', $request->getMethod(), (string) $request->getUri()),
-            [get_class(), 'doExecute'],
+            [self::class, 'doExecute'],
             [$client, $request, $expectedClass]
         );
 
@@ -120,7 +120,7 @@ class REST
      */
     public static function decodeHttpResponse(
         ResponseInterface $response,
-        RequestInterface $request = null,
+        ?RequestInterface $request = null,
         $expectedClass = null
     ) {
         $code = $response->getStatusCode();
@@ -147,7 +147,7 @@ class REST
         return $response;
     }
 
-    private static function decodeBody(ResponseInterface $response, RequestInterface $request = null)
+    private static function decodeBody(ResponseInterface $response, ?RequestInterface $request = null)
     {
         if (self::isAltMedia($request)) {
             // don't decode the body, it's probably a really long string
@@ -157,7 +157,7 @@ class REST
         return (string) $response->getBody();
     }
 
-    private static function determineExpectedClass($expectedClass, RequestInterface $request = null)
+    private static function determineExpectedClass($expectedClass, ?RequestInterface $request = null)
     {
         // "false" is used to explicitly prevent an expected class from being returned
         if (false === $expectedClass) {
@@ -184,7 +184,7 @@ class REST
         return null;
     }
 
-    private static function isAltMedia(RequestInterface $request = null)
+    private static function isAltMedia(?RequestInterface $request = null)
     {
         if ($request && $qs = $request->getUri()->getQuery()) {
             parse_str($qs, $query);

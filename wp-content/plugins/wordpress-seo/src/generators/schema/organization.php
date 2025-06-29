@@ -47,9 +47,15 @@ class Organization extends Abstract_Schema_Piece {
 		$organization['logo']  = $logo;
 		$organization['image'] = [ '@id' => $logo['@id'] ];
 
-		$same_as = \array_values( \array_unique( $this->fetch_social_profiles() ) );
+		$same_as = \array_values( \array_unique( \array_filter( $this->fetch_social_profiles() ) ) );
 		if ( ! empty( $same_as ) ) {
 			$organization['sameAs'] = $same_as;
+		}
+
+		if ( \is_array( $this->context->schema_page_type ) && \in_array( 'ProfilePage', $this->context->schema_page_type, true ) ) {
+			$organization['mainEntityOfPage'] = [
+				'@id' => $this->context->main_schema_id,
+			];
 		}
 
 		return $organization;
@@ -61,24 +67,19 @@ class Organization extends Abstract_Schema_Piece {
 	 * @return array An array of social profiles.
 	 */
 	private function fetch_social_profiles() {
-		$social_profiles = $this->helpers->options->get( 'other_social_urls', [] );
-		$profiles        = \array_map( '\urldecode', \array_filter( $social_profiles ) );
+		$profiles = $this->helpers->social_profiles->get_organization_social_profiles();
 
-		$facebook = $this->helpers->options->get( 'facebook_site', '' );
-		if ( $facebook !== '' ) {
-			$profiles[] = \urldecode( $facebook );
-		}
-
-		$twitter = $this->helpers->options->get( 'twitter_site', '' );
-		if ( $twitter !== '' ) {
-			$profiles[] = 'https://twitter.com/' . $twitter;
+		if ( isset( $profiles['other_social_urls'] ) ) {
+			$other_social_urls = $profiles['other_social_urls'];
+			unset( $profiles['other_social_urls'] );
+			$profiles = \array_merge( $profiles, $other_social_urls );
 		}
 
 		/**
 		 * Filter: 'wpseo_schema_organization_social_profiles' - Allows filtering social profiles for the
 		 * represented organization.
 		 *
-		 * @api string[] $profiles
+		 * @param string[] $profiles
 		 */
 		$profiles = \apply_filters( 'wpseo_schema_organization_social_profiles', $profiles );
 

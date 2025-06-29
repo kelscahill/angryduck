@@ -13,6 +13,8 @@ new WPCOM_JSON_API_GET_Site_Endpoint(
 		'path_labels'                          => array(
 			'$site' => '(int|string) Site ID or domain',
 		),
+		'rest_route'                           => '/site',
+		'rest_min_jp_version'                  => '14.5-a.2',
 		'allow_jetpack_site_auth'              => true,
 
 		'allow_fallback_to_jetpack_blog_token' => true,
@@ -40,6 +42,7 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 	 */
 	public static $site_format = array(
 		'ID'                          => '(int) Site ID',
+		'slug'                        => '(string) Slug of site',
 		'name'                        => '(string) Title of site',
 		'description'                 => '(string) Tagline or description of site',
 		'URL'                         => '(string) Full URL to the site',
@@ -64,6 +67,8 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'options'                     => '(array) An array of options/settings for the blog. Only viewable by users with post editing rights to the site. Note: Post formats is deprecated, please see /sites/$id/post-formats/',
 		'p2_thumbnail_elements'       => '(array) Details used to render a thumbnail of the site. P2020 themed sites only.',
 		'plan'                        => '(array) Details of the current plan for this site.',
+		'products'                    => '(array) Details of the current products for this site.',
+		'zendesk_site_meta'           => '(array) Site meta data for Zendesk.',
 		'updates'                     => '(array) An array of available updates for plugins, themes, wordpress, and languages.',
 		'jetpack_modules'             => '(array) A list of active Jetpack modules.',
 		'meta'                        => '(object) Meta data',
@@ -74,7 +79,16 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'is_fse_eligible'             => '(bool) If the site is capable of Full Site Editing or not',
 		'is_core_site_editor_enabled' => '(bool) If the site has the core site editor enabled.',
 		'is_wpcom_atomic'             => '(bool) If the site is a WP.com Atomic one.',
+		'is_wpcom_staging_site'       => '(bool) If the site is a WP.com staging site.',
 		'user_interactions'           => '(array) An array of user interactions with a site.',
+		'was_ecommerce_trial'         => '(bool) If the site ever used an eCommerce trial.',
+		'was_upgraded_from_trial'     => '(bool) If the site ever upgraded to a paid plan from a trial.',
+		'was_migration_trial'         => '(bool) If the site ever used a migration trial.',
+		'was_hosting_trial'           => '(bool) If the site ever used a hosting trial.',
+		'wpcom_site_setup'            => '(string) The WP.com site setup identifier.',
+		'is_deleted'                  => '(bool) If the site flagged as deleted.',
+		'is_a4a_client'               => '(bool) If the site is an A4A client site.',
+		'is_a4a_dev_site'             => '(bool) If the site is an A4A dev site.',
 	);
 
 	/**
@@ -99,6 +113,7 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'is_private',
 		'is_coming_soon',
 		'is_following',
+		'organization_id',
 		'meta',
 		'launch_status',
 		'site_migration',
@@ -106,6 +121,10 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'is_fse_eligible',
 		'is_core_site_editor_enabled',
 		'is_wpcom_atomic',
+		'is_wpcom_staging_site',
+		'is_deleted',
+		'is_a4a_client',
+		'is_a4a_dev_site',
 	);
 
 	/**
@@ -126,6 +145,7 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'unmapped_url',
 		'featured_images_enabled',
 		'theme_slug',
+		'theme_errors',
 		'header_image',
 		'background_color',
 		'image_default_link_type',
@@ -170,30 +190,38 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'signup_is_store',
 		'has_pending_automated_transfer',
 		'woocommerce_is_active',
+		'editing_toolkit_is_active',
 		'design_type',
 		'site_goals',
 		'site_segment',
+		'site_source_slug',
 		'import_engine',
+		'is_pending_plan',
 		'is_wpforteams_site',
 		'p2_hub_blog_id',
 		'site_creation_flow',
 		'is_cloud_eligible',
 		'selected_features',
 		'anchor_podcast',
+		'was_created_with_blank_canvas_design',
+		'videopress_storage_used',
 		'is_difm_lite_in_progress',
-		'difm_lite_site_options',
 		'site_intent',
-	);
-
-	/**
-	 * List of DIFM Lite options to be displayed
-	 *
-	 * @var array $displayed_difm_lite_site_options
-	 */
-	protected static $displayed_difm_lite_site_options = array(
-		'site_category',
-		'is_website_content_submitted',
-		'selected_page_titles',
+		'site_partner_bundle',
+		'onboarding_segment',
+		'site_vertical_id',
+		'blogging_prompts_settings',
+		'launchpad_screen',
+		'launchpad_checklist_tasks_statuses',
+		'migration_source_site_domain',
+		'wpcom_production_blog_id',
+		'wpcom_staging_blog_ids',
+		'can_blaze',
+		'wpcom_site_setup',
+		'is_commercial',
+		'is_commercial_reasons',
+		'wpcom_admin_interface',
+		'wpcom_classic_early_release',
 	);
 
 	/**
@@ -202,9 +230,16 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 	 * @var array $jetpack_response_field_additions
 	 */
 	protected static $jetpack_response_field_additions = array(
+		'slug',
 		'subscribers_count',
 		'site_migration',
 		'site_owner',
+		'is_wpcom_staging_site',
+		'was_ecommerce_trial',
+		'was_migration_trial',
+		'was_hosting_trial',
+		'was_upgraded_from_trial',
+		'is_a4a_dev_site',
 	);
 
 	/**
@@ -231,6 +266,7 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		'is_wpcom_atomic',
 		'is_wpcom_store',
 		'woocommerce_is_active',
+		'editing_toolkit_is_active',
 		'frame_nonce',
 		'jetpack_frame_nonce',
 		'design_type',
@@ -240,12 +276,33 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		// See https://github.com/Automattic/jetpack/blob/58638f46094b36f5df9cbc4570006544f0ad300c/sal/class.json-api-site-base.php#L387.
 		'created_at',
 		'updated_at',
+		'is_pending_plan',
+		'is_cloud_eligible',
+		'videopress_storage_used',
+		'blogging_prompts_settings',
+		'wpcom_production_blog_id',
+		'wpcom_staging_blog_ids',
+		'is_commercial',
+		'is_commercial_reasons',
+		'wpcom_admin_interface',
+		'wpcom_classic_early_release',
+	);
+
+	/**
+	 * Current enabled trials.
+	 *
+	 * @var array $jetpack_enabled_trials
+	 */
+	public static $jetpack_enabled_trials = array(
+		'was_ecommerce_trial' => 'ecommerce',
+		'was_migration_trial' => 'migration',
+		'was_hosting_trial'   => 'hosting',
 	);
 
 	/**
 	 * Site
 	 *
-	 * @var $site.
+	 * @var SAL_Site $site.
 	 */
 	private $site;
 
@@ -282,6 +339,7 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 			$blog_id = $api->token_details['blog_id'];
 		}
 
+		add_filter( 'wpcom_allow_jetpack_blog_token', '__return_true' );
 		$blog_id = $this->api->switch_to_blog_and_validate_user( $this->api->get_blog_id( $blog_id ) );
 		if ( is_wp_error( $blog_id ) ) {
 			return $blog_id;
@@ -364,7 +422,7 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 	 */
 	private function has_blog_access( $token_details ) {
 		$token_details = (array) $token_details;
-		if ( ! isset( $token_details['access'], $token_details['auth'], $token_details['blog_id'] ) ) {
+		if ( ! isset( $token_details['access'] ) || ! isset( $token_details['auth'] ) || ! isset( $token_details['blog_id'] ) ) {
 			return false;
 		}
 
@@ -407,6 +465,9 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		switch ( $key ) {
 			case 'ID':
 				$response[ $key ] = $this->site->blog_id;
+				break;
+			case 'slug':
+				$response[ $key ] = $this->site->get_slug();
 				break;
 			case 'name':
 				$response[ $key ] = $this->site->get_name();
@@ -535,11 +596,36 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 			case 'is_wpcom_atomic':
 				$response[ $key ] = $this->site->is_wpcom_atomic();
 				break;
+			case 'is_wpcom_staging_site':
+				$response[ $key ] = $this->site->is_wpcom_staging_site();
+				break;
 			case 'user_interactions':
 				$response[ $key ] = $this->site->get_user_interactions();
 				break;
 			case 'p2_thumbnail_elements':
 				$response[ $key ] = $this->site->get_p2_thumbnail_elements();
+				break;
+			case 'was_ecommerce_trial':
+				$response[ $key ] = $this->site->was_trial( self::$jetpack_enabled_trials['was_ecommerce_trial'] );
+				break;
+			case 'was_migration_trial':
+				$response[ $key ] = $this->site->was_trial( self::$jetpack_enabled_trials['was_migration_trial'] );
+				break;
+			case 'was_hosting_trial':
+				$response[ $key ] = $this->site->was_trial( self::$jetpack_enabled_trials['was_hosting_trial'] );
+				break;
+			case 'was_upgraded_from_trial':
+				$response[ $key ] = $this->site->was_upgraded_from_trial();
+				break;
+			case 'is_deleted':
+				$response[ $key ] = $this->site->is_deleted();
+				break;
+			case 'is_a4a_client':
+				$response[ $key ] = $this->site->is_a4a_client();
+				break;
+			case 'is_a4a_dev_site':
+				$response[ $key ] = $this->site->is_a4a_dev_site();
+				break;
 		}
 
 		do_action( 'post_render_site_response_key', $key );
@@ -590,6 +676,9 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 					break;
 				case 'theme_slug':
 					$options[ $key ] = $site->get_theme_slug();
+					break;
+				case 'theme_errors':
+					$options[ $key ] = $site->get_theme_errors();
 					break;
 				case 'header_image':
 					$options[ $key ] = $site->get_header_image();
@@ -738,17 +827,20 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 				case 'woocommerce_is_active':
 					$options[ $key ] = $site->woocommerce_is_active();
 					break;
+				case 'editing_toolkit_is_active':
+					$options[ $key ] = $site->editing_toolkit_is_active();
+					break;
 				case 'design_type':
 					$options[ $key ] = $site->get_design_type();
-					break;
-				case 'site_goals':
-					$options[ $key ] = $site->get_site_goals();
 					break;
 				case 'site_segment':
 					$options[ $key ] = $site->get_site_segment();
 					break;
 				case 'import_engine':
 					$options[ $key ] = $site->get_import_engine();
+					break;
+				case 'is_pending_plan':
+					$options[ $key ] = $site->is_pending_plan();
 					break;
 
 				case 'is_wpforteams_site':
@@ -764,6 +856,12 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 						$options[ $key ] = $site_creation_flow;
 					}
 					break;
+				case 'site_source_slug':
+					$site_source_slug = $site->get_site_source_slug();
+					if ( $site_source_slug ) {
+						$options[ $key ] = $site_source_slug;
+					}
+					break;
 				case 'is_cloud_eligible':
 					$options[ $key ] = $site->is_cloud_eligible();
 					break;
@@ -776,26 +874,67 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 				case 'anchor_podcast':
 					$options[ $key ] = $site->get_anchor_podcast();
 					break;
+				case 'was_created_with_blank_canvas_design':
+					$options[ $key ] = $site->was_created_with_blank_canvas_design();
+					break;
+				case 'videopress_storage_used':
+					$options[ $key ] = $this->site->get_videopress_storage_used();
+					break;
 				case 'is_difm_lite_in_progress':
 					$options[ $key ] = $site->is_difm_lite_in_progress();
 					break;
-				case 'difm_lite_site_options':
-					$difm_lite_options          = $site->get_difm_lite_site_options();
-					$visible_options            = self::$displayed_difm_lite_site_options;
-					$filtered_difm_lite_options = new stdClass();
-					if ( $difm_lite_options ) {
-						$filtered_difm_lite_options = array_filter(
-							$difm_lite_options,
-							function ( $key ) use ( $visible_options ) {
-								return in_array( $key, $visible_options, true );
-							},
-							ARRAY_FILTER_USE_KEY
-						);
-					}
-					$options[ $key ] = $filtered_difm_lite_options;
-					break;
 				case 'site_intent':
 					$options[ $key ] = $site->get_site_intent();
+					break;
+				case 'site_partner_bundle':
+					$options[ $key ] = $site->get_site_partner_bundle();
+					break;
+				case 'site_goals':
+					$options[ $key ] = $site->get_site_goals();
+					break;
+				case 'onboarding_segment':
+					$options[ $key ] = $site->get_onboarding_segment();
+					break;
+				case 'site_vertical_id':
+					$options[ $key ] = $site->get_site_vertical_id();
+					break;
+				case 'blogging_prompts_settings':
+					if ( current_user_can( 'edit_posts' ) ) {
+						$options[ $key ] = $site->get_blogging_prompts_settings( get_current_user_id(), $site->blog_id );
+					}
+					break;
+				case 'launchpad_screen':
+					$options[ $key ] = $site->get_launchpad_screen();
+					break;
+				case 'launchpad_checklist_tasks_statuses':
+					$options[ $key ] = $site->get_launchpad_checklist_tasks_statuses();
+					break;
+				case 'migration_source_site_domain':
+					$options[ $key ] = $site->get_migration_source_site_domain();
+					break;
+				case 'wpcom_production_blog_id':
+					$options[ $key ] = $site->get_wpcom_production_blog_id();
+					break;
+				case 'wpcom_staging_blog_ids':
+					$options[ $key ] = $site->get_wpcom_staging_blog_ids();
+					break;
+				case 'can_blaze':
+					$options[ $key ] = $site->can_blaze();
+					break;
+				case 'wpcom_site_setup':
+					$options[ $key ] = $site->get_wpcom_site_setup();
+					break;
+				case 'is_commercial':
+					$options[ $key ] = $site->is_commercial();
+					break;
+				case 'is_commercial_reasons':
+					$options[ $key ] = $site->get_is_commercial_reasons();
+					break;
+				case 'wpcom_admin_interface':
+					$options[ $key ] = $site->get_wpcom_admin_interface();
+					break;
+				case 'wpcom_classic_early_release':
+					$options[ $key ] = $site->get_wpcom_classic_early_release();
 					break;
 			}
 		}
@@ -866,8 +1005,18 @@ class WPCOM_JSON_API_GET_Site_Endpoint extends WPCOM_JSON_API_Endpoint {
 		}
 
 		// render additional options.
-		if ( $response->options ) {
+		if ( isset( $response->options ) && $response->options ) {
 			$wpcom_options_response = $this->render_option_keys( self::$jetpack_response_option_additions );
+
+			// Remove heic from jetpack (and atomic) sites so that the iOS app know to convert the file format into a JPEG.
+			// heic fromat is currently not supported by for uploading.
+			// See https://jetpackp2.wordpress.com/2020/08/19/image-uploads-in-the-wp-ios-app-broken
+			if ( $this->site->is_jetpack() && isset( $response->options['allowed_file_types'] ) ) {
+				$remove_file_types                       = array(
+					'heic',
+				);
+				$response->options['allowed_file_types'] = array_values( array_diff( $response->options['allowed_file_types'], $remove_file_types ) );
+			}
 
 			foreach ( $wpcom_options_response as $key => $value ) {
 				$response->options[ $key ] = $value;

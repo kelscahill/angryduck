@@ -1,0 +1,1 @@
+import{d as c,t as n,o as l,c as p,a as e,u as a,n as i}from"../../index.0FToouit.js";const m={class:"wwp-img-control"},u=["src"],g=c({__name:"ImageControl",props:{params:{type:Object,required:!0}},setup(t){const o=t,{params:r}=n(o),s=r.value;return(d,_)=>(l(),p("div",m,[e("div",{class:i(a(s).classes)},[e("img",{width:300,src:a(s).url},null,8,u)],2)]))}});export{g as default};

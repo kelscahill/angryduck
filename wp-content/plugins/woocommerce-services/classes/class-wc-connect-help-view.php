@@ -78,56 +78,35 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 			}
 			$health_items['woocommerce'] = $health_item;
 
-			// Jetpack
-			// Only one of the following should present
-			// Check that Jetpack is active
-			// Check that Jetpack is connected
-			include_once ABSPATH . 'wp-admin/includes/plugin.php'; // required for is_plugin_active
-			$is_connected = WC_Connect_Jetpack::is_active() || WC_Connect_Jetpack::is_development_mode();
-			if ( ! is_plugin_active( 'jetpack/jetpack.php' ) ) {
+			if ( WC_Connect_Jetpack::is_offline_mode() ) {
 				$health_item = array(
-					'state'   => 'error',
-					'message' => sprintf(
-						__( 'Please install and activate the Jetpack plugin, version %s or higher', 'woocommerce-services' ),
-						WOOCOMMERCE_CONNECT_MINIMUM_JETPACK_VERSION
-					),
+					'state'   => 'warning',
+					'message' => __( 'This site is working in offline mode. This mode is activated when running the site on a local machine or if developer mode is enabled', 'woocommerce-services' ),
 				);
-			} elseif ( version_compare( JETPACK__VERSION, WOOCOMMERCE_CONNECT_MINIMUM_JETPACK_VERSION, '<' ) ) {
+			} elseif ( ! WC_Connect_Jetpack::is_connected() ) {
 				$health_item = array(
 					'state'   => 'error',
-					'message' => sprintf(
-						__( 'Jetpack %1$s or higher is required (You are running %2$s)', 'woocommerce-services' ),
-						WOOCOMMERCE_CONNECT_MINIMUM_JETPACK_VERSION,
-						JETPACK__VERSION
-					),
-				);
-			} elseif ( ! $is_connected ) {
-				$health_item = array(
-					'state'   => 'error',
-					'message' => __( 'Jetpack is not connected to WordPress.com. Make sure the Jetpack plugin is installed, activated, and connected.', 'woocommerce-services' ),
+					'message' => __( 'Not connected to WordPress.com', 'woocommerce-services' ),
 				);
 			} elseif ( WC_Connect_Jetpack::is_staging_site() ) {
 				$health_item = array(
 					'state'   => 'warning',
-					'message' => __( 'This is a Jetpack staging site', 'woocommerce-services' ),
+					'message' => __( 'This site was identified as a staging site', 'woocommerce-services' ),
 				);
 			} else {
 				$health_item = array(
 					'state'   => 'success',
-					'message' => sprintf(
-						__( 'Jetpack %s is connected and working correctly', 'woocommerce-services' ),
-						JETPACK__VERSION
-					),
+					'message' => __( 'Connected to WordPress.com', 'woocommerce-services' ),
 				);
 			}
-			$health_items['jetpack'] = $health_item;
+			$health_items['wpcom_connection'] = $health_item;
 
 			// Automated taxes status
 			$health_items['automated_taxes'] = $this->get_tax_health_item();
 
-			// Lastly, do the WooCommerce Shipping & Tax health check
+			// Lastly, do the WooCommerce Tax health check
 			// Check that we have schema
-			// Check that we are able to talk to the WooCommerce Shipping & Tax server
+			// Check that we are able to talk to the WooCommerce Tax server
 			$schemas                              = $this->service_schemas_store->get_service_schemas();
 			$last_fetch_timestamp                 = $this->service_schemas_store->get_last_fetch_timestamp();
 			$health_items['woocommerce_services'] = array(
@@ -138,6 +117,10 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 			);
 
 			return $health_items;
+		}
+
+		protected function is_shipping_loaded() {
+			return ! in_array( 'woocommerce-shipping/woocommerce-shipping.php', get_option( 'active_plugins' ) );
 		}
 
 		protected function get_services_items() {
@@ -199,7 +182,7 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 		}
 
 		/**
-		 * Gets the last 10 lines from the WooCommerce Shipping & Tax log by feature, if it exists
+		 * Gets the last 10 lines from the WooCommerce Tax log by feature, if it exists
 		 */
 		protected function get_debug_log_data( $feature = '' ) {
 			$data       = new stdClass();
@@ -271,7 +254,7 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 			if ( ! is_array( $tabs ) ) {
 				$tabs = array();
 			}
-			$tabs['connect'] = _x( 'WooCommerce Shipping & Tax', 'The WooCommerce Shipping & Tax brandname', 'woocommerce-services' );
+			$tabs['connect'] = _x( 'WooCommerce Tax', 'The WooCommerce Tax brandname', 'woocommerce-services' );
 			return $tabs;
 		}
 
@@ -282,15 +265,17 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 		 */
 		protected function get_form_data() {
 			return array(
-				'health_items'    => $this->get_health_items(),
-				'services'        => $this->get_services_items(),
-				'logging_enabled' => $this->logger->is_logging_enabled(),
-				'debug_enabled'   => $this->logger->is_debug_enabled(),
-				'logs'            => array(
+				'health_items'       => $this->get_health_items(),
+				'services'           => $this->get_services_items(),
+				'logging_enabled'    => $this->logger->is_logging_enabled(),
+				'debug_enabled'      => $this->logger->is_debug_enabled(),
+				'logs'               => array(
 					'shipping' => $this->get_debug_log_data( 'shipping' ),
 					'taxes'    => $this->get_debug_log_data( 'taxes' ),
 					'other'    => $this->get_debug_log_data(),
 				),
+				'tax_rate_backups'   => WC_Connect_Functions::get_backed_up_tax_rate_files(),
+				'is_shipping_loaded' => $this->is_shipping_loaded(),
 			);
 		}
 
@@ -300,7 +285,7 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 		public function page() {
 			?>
 				<h2>
-					<?php _e( 'WooCommerce Shipping & Tax Status', 'woocommerce-services' ); ?>
+					<?php esc_html_e( 'WooCommerce Tax Status', 'woocommerce-services' ); ?>
 				</h2>
 			<?php
 
@@ -316,8 +301,9 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 				'enqueue_wc_connect_script',
 				'wc-connect-admin-test-print',
 				array(
-					'storeOptions' => $this->service_settings_store->get_store_options(),
-					'paperSize'    => $this->service_settings_store->get_preferred_paper_size(),
+					'isShippingLoaded' => $this->is_shipping_loaded(),
+					'storeOptions'     => $this->service_settings_store->get_store_options(),
+					'paperSize'        => $this->service_settings_store->get_preferred_paper_size(),
 				)
 			);
 		}
@@ -328,42 +314,42 @@ if ( ! class_exists( 'WC_Connect_Help_View' ) ) {
 		protected function get_tax_health_item() {
 			$store_country = WC()->countries->get_base_country();
 			if ( ! $this->taxjar_integration->is_supported_country( $store_country ) ) {
-				return [
+				return array(
 					'state'              => 'error',
 					'settings_link_type' => '',
 					'message'            => sprintf( __( 'Your store\'s country (%s) is not supported. Automated taxes functionality is disabled', 'woocommerce-services' ), $store_country ),
-				];
+				);
 			}
 
 			if ( class_exists( 'WC_Taxjar' ) ) {
-				return [
+				return array(
 					'state'              => 'error',
 					'settings_link_type' => '',
 					'message'            => __( 'TaxJar extension detected. Automated taxes functionality is disabled', 'woocommerce-services' ),
-				];
+				);
 			}
 
 			if ( ! wc_tax_enabled() ) {
-				return [
+				return array(
 					'state'              => 'error',
 					'settings_link_type' => 'general',
 					'message'            => __( 'The core WooCommerce taxes functionality is disabled. Please ensure the "Enable tax rates and calculations" setting is turned "on" in the WooCommerce settings page', 'woocommerce-services' ),
-				];
+				);
 			}
 
 			if ( ! $this->taxjar_integration->is_enabled() ) {
-				return [
+				return array(
 					'state'              => 'error',
 					'settings_link_type' => 'tax',
 					'message'            => __( 'The automated taxes functionality is disabled. Enable the "Automated taxes" setting on the WooCommerce settings page', 'woocommerce-services' ),
-				];
+				);
 			}
 
-			return [
+			return array(
 				'state'              => 'success',
 				'settings_link_type' => 'tax',
 				'message'            => __( 'Automated taxes are enabled', 'woocommerce-services' ),
-			];
+			);
 		}
 	}
 

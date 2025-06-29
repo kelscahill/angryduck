@@ -32,7 +32,7 @@ class ScriptWithBuiltDependenciesAsset extends ScriptAsset {
 		string $uri,
 		string $build_dependency_path,
 		DependencyArray $fallback_dependency_data,
-		callable $enqueue_condition_callback = null,
+		?callable $enqueue_condition_callback = null,
 		bool $in_footer = true
 	) {
 		$dependency_data = $this->get_dependency_data( $build_dependency_path, $fallback_dependency_data );
@@ -59,7 +59,8 @@ class ScriptWithBuiltDependenciesAsset extends ScriptAsset {
 			if ( ! is_readable( $build_dependency_path ) ) {
 				return $fallback;
 			}
-
+			// Reason of exclusion: These files are being loaded manually in the function call with no user input
+			// nosemgrep: audit.php.lang.security.file.inclusion-arg
 			return new DependencyArray( include $build_dependency_path );
 		} catch ( Throwable $e ) {
 			do_action( 'woocommerce_gla_exception', $e, __METHOD__ );

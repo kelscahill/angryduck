@@ -31,19 +31,18 @@
  */
 namespace Google\ApiCore\Middleware;
 
-use Google\ApiCore\CredentialsWrapper;
 use Google\ApiCore\Call;
+use Google\ApiCore\CredentialsWrapper;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Promise\PromiseInterface;
 
 /**
 * Middleware which adds a CredentialsWrapper object to the call options.
 */
-class CredentialsWrapperMiddleware
+class CredentialsWrapperMiddleware implements MiddlewareInterface
 {
     /** @var callable */
     private $nextHandler;
-
-    /** @var CredentialsWrapper */
-    private $credentialsWrapper;
+    private CredentialsWrapper $credentialsWrapper;
 
     public function __construct(
         callable $nextHandler,

@@ -3,7 +3,19 @@
  * REST API Options Controller
  *
  * Handles requests to get and update options in the wp_options table.
+ *
+ * IMPORTANT: This API is for legacy support only. DO NOT add new options here. See p90Yrv-2vK-p2#comment-6482 for more details.
+ * For new settings/options, use Settings REST API (https://woocommerce.github.io/woocommerce-rest-api-docs/#setting-option-properties) or create dedicated endpoints instead.
+ *
+ * Example:
+ * - Use register_rest_route() to create a new endpoint
+ * - Follow WooCommerce REST API standards
+ * - Implement proper permission checks
+ * - Add proper documentation
+ * See Automattic\WooCommerce\Admin\API\OnboardingProfile for examples.
  */
+
+declare(strict_types=1);
 
 namespace Automattic\WooCommerce\Admin\API;
 
@@ -69,9 +81,9 @@ class Options extends \WC_REST_Data_Controller {
 	 * @return WP_Error|boolean
 	 */
 	public function get_item_permissions_check( $request ) {
-		$params = explode( ',', $request['options'] );
+		$params = ( isset( $request['options'] ) && is_string( $request['options'] ) ) ? explode( ',', $request['options'] ) : array();
 
-		if ( ! isset( $request['options'] ) || ! is_array( $params ) ) {
+		if ( ! $params ) {
 			return new \WP_Error( 'woocommerce_rest_cannot_view', __( 'You must supply an array of options.', 'woocommerce' ), 500 );
 		}
 
@@ -99,7 +111,13 @@ class Options extends \WC_REST_Data_Controller {
 			return $permissions[ $option ];
 		}
 
-		wc_deprecated_function( 'Automattic\WooCommerce\Admin\API\Options::' . ( $is_update ? 'update_options' : 'get_options' ), '3.1' );
+		wc_deprecated_function( 'Automattic\WooCommerce\Admin\API\Options::' . ( $is_update ? 'update_options' : 'get_options' ), '6.3' );
+
+		// Disallow option updates in non-production environments unless the option is whitelisted, prompting developers to create specific endpoints in case they miss the deprecation notice.
+		if ( 'production' !== wp_get_environment_type() ) {
+			return false;
+		}
+
 		return current_user_can( 'manage_options' );
 	}
 
@@ -133,7 +151,7 @@ class Options extends \WC_REST_Data_Controller {
 	 */
 	public function get_option_permissions( $request ) {
 		$permissions = self::get_default_option_permissions();
-		return apply_filters_deprecated( 'woocommerce_rest_api_option_permissions', array( $permissions, $request ), '3.1.0' );
+		return apply_filters_deprecated( 'woocommerce_rest_api_option_permissions', array( $permissions, $request ), '6.3.0' );
 	}
 
 	/**
@@ -142,8 +160,13 @@ class Options extends \WC_REST_Data_Controller {
 	 * @return array
 	 */
 	public static function get_default_option_permissions() {
-		$is_woocommerce_admin    = \Automattic\WooCommerce\Internal\Admin\Homescreen::is_admin_user();
-		$woocommerce_permissions = array(
+		$is_woocommerce_admin = \Automattic\WooCommerce\Internal\Admin\Homescreen::is_admin_user();
+
+		/**
+		 * IMPORTANT: This list is frozen for legacy support.
+		 * New options MUST use dedicated endpoints instead of being added here.
+		 */
+		$legacy_whitelisted_options = array(
 			'woocommerce_setup_jetpack_opted_in',
 			'woocommerce_stripe_settings',
 			'woocommerce-ppcp-settings',
@@ -155,22 +178,17 @@ class Options extends \WC_REST_Data_Controller {
 			'woocommerce_shipping_dismissed_timestamp',
 			'woocommerce_allow_tracking',
 			'woocommerce_task_list_keep_completed',
-			'woocommerce_task_list_prompt_shown',
 			'woocommerce_default_homepage_layout',
 			'woocommerce_setup_jetpack_opted_in',
 			'woocommerce_no_sales_tax',
 			'woocommerce_calc_taxes',
 			'woocommerce_bacs_settings',
 			'woocommerce_bacs_accounts',
-			'woocommerce_task_list_prompt_shown',
 			'woocommerce_settings_shipping_recommendations_hidden',
 			'woocommerce_task_list_dismissed_tasks',
 			'woocommerce_setting_payments_recommendations_hidden',
 			'woocommerce_navigation_favorites_tooltip_hidden',
-			'woocommerce_marketing_overview_welcome_hidden',
 			'woocommerce_admin_transient_notices_queue',
-			'woocommerce_task_list_welcome_modal_dismissed',
-			'woocommerce_welcome_from_calypso_modal_dismissed',
 			'woocommerce_task_list_hidden',
 			'woocommerce_task_list_complete',
 			'woocommerce_extended_task_list_hidden',
@@ -184,6 +202,43 @@ class Options extends \WC_REST_Data_Controller {
 			'woocommerce_admin_created_default_shipping_zones',
 			'woocommerce_admin_reviewed_default_shipping_zones',
 			'woocommerce_admin_reviewed_store_location_settings',
+			'woocommerce_ces_product_feedback_shown',
+			'woocommerce_marketing_overview_multichannel_banner_dismissed',
+			'woocommerce_manage_stock',
+			'woocommerce_dimension_unit',
+			'woocommerce_weight_unit',
+			'woocommerce_product_editor_show_feedback_bar',
+			'woocommerce_single_variation_notice_dismissed',
+			'woocommerce_product_tour_modal_hidden',
+			'woocommerce_block_product_tour_shown',
+			'woocommerce_revenue_report_date_tour_shown',
+			'woocommerce_orders_report_date_tour_shown',
+			'woocommerce_show_prepublish_checks_enabled',
+			'woocommerce_date_type',
+			'date_format',
+			'time_format',
+			'woocommerce_onboarding_profile',
+			'woocommerce_default_country',
+			'blogname',
+			'wcpay_welcome_page_incentives_dismissed',
+			'wcpay_welcome_page_viewed_timestamp',
+			'wcpay_welcome_page_exit_survey_more_info_needed_timestamp',
+			'woocommerce_customize_store_onboarding_tour_hidden',
+			'woocommerce_customize_store_ai_suggestions',
+			'woocommerce_admin_customize_store_completed',
+			'woocommerce_admin_customize_store_completed_theme_id',
+			'woocommerce_admin_customize_store_survey_completed',
+			'woocommerce_coming_soon',
+			'woocommerce_store_pages_only',
+			'woocommerce_private_link',
+			'woocommerce_share_key',
+			'woocommerce_show_lys_tour',
+			'woocommerce_remote_variant_assignment',
+			'woocommerce_gateway_order',
+			'woocommerce_woopayments_nox_profile',
+			// WC Test helper options.
+			'wc-admin-test-helper-rest-api-filters',
+			'wc_admin_helper_feature_values',
 		);
 
 		$theme_permissions = array(
@@ -193,7 +248,7 @@ class Options extends \WC_REST_Data_Controller {
 
 		return array_merge(
 			array_fill_keys( $theme_permissions, current_user_can( 'edit_theme_options' ) ),
-			array_fill_keys( $woocommerce_permissions, $is_woocommerce_admin )
+			array_fill_keys( $legacy_whitelisted_options, $is_woocommerce_admin )
 		);
 	}
 
@@ -204,13 +259,13 @@ class Options extends \WC_REST_Data_Controller {
 	 * @return array Options object with option values.
 	 */
 	public function get_options( $request ) {
-		$params  = explode( ',', $request['options'] );
 		$options = array();
 
-		if ( ! is_array( $params ) ) {
-			return array();
+		if ( empty( $request['options'] ) || ! is_string( $request['options'] ) ) {
+			return $options;
 		}
 
+		$params = explode( ',', $request['options'] );
 		foreach ( $params as $option ) {
 			$options[ $option ] = get_option( $option );
 		}

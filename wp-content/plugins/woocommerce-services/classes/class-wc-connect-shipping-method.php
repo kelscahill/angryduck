@@ -98,49 +98,41 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 		public function get_service_schema() {
 
 			return $this->service_schema;
-
 		}
 
 		public function set_service_schema( $service_schema ) {
 
 			$this->service_schema = $service_schema;
-
 		}
 
 		public function get_service_settings_store() {
 
 			return $this->service_settings_store;
-
 		}
 
 		public function set_service_settings_store( $service_settings_store ) {
 
 			$this->service_settings_store = $service_settings_store;
-
 		}
 
 		public function get_logger() {
 
 			return $this->logger;
-
 		}
 
 		public function set_logger( WC_Connect_Logger $logger ) {
 
 			$this->logger = $logger;
-
 		}
 
 		public function get_api_client() {
 
 			return $this->api_client;
-
 		}
 
 		public function set_api_client( WC_Connect_API_Client $api_client ) {
 
 			$this->api_client = $api_client;
-
 		}
 
 		/**
@@ -162,7 +154,6 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 				$logger->log( $message, $context );
 
 			}
-
 		}
 
 		protected function log_error( $message, $context = '' ) {
@@ -185,7 +176,6 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 			if ( property_exists( $form_settings, 'title' ) ) {
 				$this->title = $form_settings->title;
 			}
-
 		}
 
 		/**
@@ -233,7 +223,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 				$this->package_validation_errors->add(
 					'country_required',
 					esc_html__( 'A country is required', 'woocommerce-services' ),
-					[ 'id' => 'country' ]
+					array( 'id' => 'country' )
 				);
 			}
 
@@ -252,7 +242,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 							'<strong>' . esc_html( $fields['postcode']['label'] ) . '</strong>',
 							'<strong>' . esc_html( $countries[ $country ] ) . '</strong>'
 						),
-						[ 'id' => 'postcode' ]
+						array( 'id' => 'postcode' )
 					);
 				} else {
 					$this->package_validation_errors->add(
@@ -267,7 +257,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 							'<strong>' . esc_html( $postcode ) . '</strong>',
 							'<strong>' . esc_html( $countries[ $country ] ) . '</strong>'
 						),
-						[ 'id' => 'postcode' ]
+						array( 'id' => 'postcode' )
 					);
 				}
 			}
@@ -289,7 +279,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 							'<strong>' . esc_html( $fields['state']['label'] ) . '</strong>',
 							'<strong>' . esc_html( $countries[ $country ] ) . '</strong>'
 						),
-						[ 'id' => 'state' ]
+						array( 'id' => 'state' )
 					);
 				} else {
 					$this->package_validation_errors->add(
@@ -303,7 +293,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 							'<strong>' . esc_html( $state ) . '</strong>',
 							'<strong>' . esc_html( $countries[ $country ] ) . '</strong>'
 						),
-						[ 'id' => 'state' ]
+						array( 'id' => 'state' )
 					);
 				}
 			}
@@ -393,7 +383,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 
 			$this->debug(
 				sprintf(
-					'WooCommerce Shipping & Tax debug mode is on - to hide these messages, turn debug mode off in the <a href="%s" style="text-decoration: underline;">settings</a>.',
+					'WooCommerce Tax debug mode is on - to hide these messages, turn debug mode off in the <a href="%s" style="text-decoration: underline;">settings</a>.',
 					admin_url( 'admin.php?page=wc-status&tab=connect' )
 				)
 			);
@@ -425,7 +415,7 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 				return;
 			}
 
-			// TODO: Request rates for all WooCommerce Shipping & Tax powered methods in
+			// TODO: Request rates for all WooCommerce Tax powered methods in
 			// the current shipping zone to avoid each method making an independent request.
 			$services = array(
 				array(
@@ -491,10 +481,14 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 						$product_summaries = array();
 						$product_counts    = array_count_values( $item_product_ids );
 						foreach ( $product_counts as $product_id => $count ) {
-							/** @var WC_Product $product */
+							/**
+							 * WC Product.
+							 *
+							 * @var WC_product $product
+							 */
 							$product = $this->lookup_product( $package, $product_id );
-							if ( $product ) {
-								$item_name           = WC_Connect_Compatibility::instance()->get_product_name( $product );
+							if ( is_a( $product, 'WC_Product' ) ) {
+								$item_name           = $product->get_name();
 								$item                = $item_by_product[ $product_id ];
 								$item_measurements   = sprintf( $measurements_format, $item->length, $item->width, $item->height, $item->weight );
 								$product_summaries[] =
@@ -638,9 +632,11 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 		 * @param string $type    Notice type.
 		 */
 		public function debug( $message, $type = 'notice' ) {
+      // phpcs:ignore WordPress.Security.NonceVerification.Missing --- No input from $_POST is used as input.
 			if ( WC_Connect_Functions::is_cart() || WC_Connect_Functions::is_checkout() || isset( $_POST['update_cart'] ) || WC_Connect_Functions::is_store_api_call() ) {
 				$debug_message = sprintf( '%s (%s:%d)', $message, esc_html( $this->title ), $this->instance_id );
 				$this->logger->debug( $debug_message, $type );
+				$this->logger->log( $debug_message, __CLASS__ );
 			}
 		}
 
@@ -733,6 +729,5 @@ if ( ! class_exists( 'WC_Connect_Shipping_Method' ) ) {
 
 			return true;
 		}
-
 	}
 }

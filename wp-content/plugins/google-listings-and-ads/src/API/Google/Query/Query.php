@@ -67,16 +67,16 @@ abstract class Query implements QueryInterface {
 	/**
 	 * Query constructor.
 	 *
-	 * @param string $resource
+	 * @param string $resource_name
 	 *
 	 * @throws InvalidQuery When the resource name is not valid.
 	 */
-	public function __construct( string $resource ) {
-		if ( ! preg_match( '/^[a-zA-Z_]+$/', $resource ) ) {
+	public function __construct( string $resource_name ) {
+		if ( ! preg_match( '/^[a-zA-Z_]+$/', $resource_name ) ) {
 			throw InvalidQuery::resource_name();
 		}
 
-		$this->resource = $resource;
+		$this->resource = $resource_name;
 	}
 
 	/**
@@ -238,6 +238,7 @@ abstract class Query implements QueryInterface {
 			case 'NOT IN':
 			case 'BETWEEN':
 			case 'IS NOT NULL':
+			case 'CONTAINS ANY':
 				// These are all valid.
 				return;
 
@@ -319,13 +320,13 @@ abstract class Query implements QueryInterface {
 			$column  = $where['column'];
 			$compare = $where['compare'];
 
-			if ( 'IN' === $compare || 'NOT_IN' === $compare ) {
+			if ( 'IN' === $compare || 'NOT_IN' === $compare || 'CONTAINS ANY' === $compare ) {
 				$value = sprintf(
 					"('%s')",
 					join(
 						"','",
 						array_map(
-							function( $value ) {
+							function ( $value ) {
 								return $this->escape( $value );
 							},
 							$where['value']

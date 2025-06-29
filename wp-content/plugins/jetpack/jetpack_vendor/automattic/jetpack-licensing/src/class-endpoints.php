@@ -13,6 +13,8 @@ use Automattic\Jetpack\Licensing;
 use Automattic\Jetpack\Status\Visitor;
 use Jetpack_Options;
 use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
 
 /**
  * Class Endpoints.
@@ -182,7 +184,6 @@ class Endpoints {
 		}
 
 		return new WP_Error( 'invalid_user_permission_set_jetpack_license_key', self::$user_permissions_error_msg, array( 'status' => rest_authorization_required_code() ) );
-
 	}
 
 	/**

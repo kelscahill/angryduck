@@ -15,12 +15,12 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\AccountTax as AccountTaxModel;
-use Google\Service\ShoppingContent\AccounttaxCustomBatchRequest;
-use Google\Service\ShoppingContent\AccounttaxCustomBatchResponse;
-use Google\Service\ShoppingContent\AccounttaxListResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountTax as AccountTaxModel;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccounttaxCustomBatchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccounttaxCustomBatchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccounttaxListResponse;
 
 /**
  * The "accounttax" collection of methods.
@@ -30,7 +30,7 @@ use Google\Service\ShoppingContent\AccounttaxListResponse;
  *   $accounttax = $contentService->accounttax;
  *  </code>
  */
-class Accounttax extends \Google\Service\Resource
+class Accounttax extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Retrieves and updates tax settings of multiple accounts in a single request.
@@ -39,6 +39,7 @@ class Accounttax extends \Google\Service\Resource
    * @param AccounttaxCustomBatchRequest $postBody
    * @param array $optParams Optional parameters.
    * @return AccounttaxCustomBatchResponse
+   * @throws \Google\Service\Exception
    */
   public function custombatch(AccounttaxCustomBatchRequest $postBody, $optParams = [])
   {
@@ -56,6 +57,7 @@ class Accounttax extends \Google\Service\Resource
    * account tax settings.
    * @param array $optParams Optional parameters.
    * @return AccountTaxModel
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $accountId, $optParams = [])
   {
@@ -75,6 +77,7 @@ class Accounttax extends \Google\Service\Resource
    * the response, used for paging.
    * @opt_param string pageToken The token returned by the previous request.
    * @return AccounttaxListResponse
+   * @throws \Google\Service\Exception
    */
   public function listAccounttax($merchantId, $optParams = [])
   {
@@ -94,6 +97,7 @@ class Accounttax extends \Google\Service\Resource
    * @param AccountTaxModel $postBody
    * @param array $optParams Optional parameters.
    * @return AccountTaxModel
+   * @throws \Google\Service\Exception
    */
   public function update($merchantId, $accountId, AccountTaxModel $postBody, $optParams = [])
   {

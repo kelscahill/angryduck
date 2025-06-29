@@ -34,6 +34,14 @@
 /* Include all of the sitemap subclasses. */
 require_once __DIR__ . '/sitemap-constants.php';
 require_once __DIR__ . '/sitemap-buffer.php';
+require_once __DIR__ . '/sitemap-buffer-fallback.php';
+require_once __DIR__ . '/sitemap-buffer-xmlwriter.php';
+require_once __DIR__ . '/sitemap-buffer-page-xmlwriter.php';
+require_once __DIR__ . '/sitemap-buffer-image-xmlwriter.php';
+require_once __DIR__ . '/sitemap-buffer-video-xmlwriter.php';
+require_once __DIR__ . '/sitemap-buffer-news-xmlwriter.php';
+require_once __DIR__ . '/sitemap-buffer-master-xmlwriter.php';
+require_once __DIR__ . '/sitemap-buffer-factory.php';
 require_once __DIR__ . '/sitemap-stylist.php';
 require_once __DIR__ . '/sitemap-librarian.php';
 require_once __DIR__ . '/sitemap-finder.php';
@@ -42,6 +50,8 @@ require_once __DIR__ . '/sitemap-builder.php';
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 	require_once __DIR__ . '/sitemap-logger.php';
 }
+
+// phpcs:disable Universal.Files.SeparateFunctionsFromOO.Mixed -- TODO: Move classes to appropriately-named class files.
 
 /**
  * Governs the generation, storage, and serving of sitemaps.
@@ -93,7 +103,7 @@ class Jetpack_Sitemap_Manager {
 
 		// Add callback for sitemap URL handler.
 		add_action(
-			'init',
+			'wp_loaded',
 			array( $this, 'callback_action_catch_sitemap_urls' ),
 			defined( 'IS_WPCOM' ) && IS_WPCOM ? 100 : 10
 		);
@@ -145,6 +155,7 @@ class Jetpack_Sitemap_Manager {
 	 *
 	 * @param string $the_content_type The content type to be served.
 	 * @param string $the_content The string to be echoed.
+	 * @return never
 	 */
 	private function serve_raw_and_die( $the_content_type, $the_content ) {
 		header( 'Content-Type: ' . $the_content_type . '; charset=UTF-8' );
@@ -172,7 +183,7 @@ class Jetpack_Sitemap_Manager {
 
 		echo $the_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All content created by Jetpack.
 
-		die();
+		die( 0 );
 	}
 
 	/**
@@ -556,7 +567,6 @@ class Jetpack_Sitemap_Manager {
 			)
 		);
 	}
-
 } // End Jetpack_Sitemap_Manager class.
 
 new Jetpack_Sitemap_Manager();

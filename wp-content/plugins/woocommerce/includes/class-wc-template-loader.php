@@ -46,7 +46,7 @@ class WC_Template_Loader {
 			add_filter( 'comments_template', array( __CLASS__, 'comments_template_loader' ) );
 
 			// Loads gallery scripts on Product page for FSE themes.
-			if ( wc_current_theme_is_fse_theme() ) {
+			if ( wp_is_block_theme() ) {
 				self::add_support_for_product_page_gallery();
 			}
 		} else {
@@ -101,6 +101,25 @@ class WC_Template_Loader {
 	}
 
 	/**
+	 * Checks whether a block template for a given taxonomy exists.
+	 *
+	 * **Note:** This checks both the `templates` and `block-templates` directories
+	 * as both conventions should be supported.
+	 *
+	 * @param object $taxonomy Object taxonomy to check.
+	 * @return boolean
+	 */
+	private static function taxonomy_has_block_template( $taxonomy ): bool {
+		if ( taxonomy_is_product_attribute( $taxonomy->taxonomy ) ) {
+			$template_name = 'taxonomy-product_attribute';
+		} else {
+			$template_name = 'taxonomy-' . $taxonomy->taxonomy;
+		}
+
+		return self::has_block_template( $template_name );
+	}
+
+	/**
 	 * Checks whether a block template with that name exists.
 	 *
 	 * **Note: ** This checks both the `templates` and `block-templates` directories
@@ -115,8 +134,8 @@ class WC_Template_Loader {
 			return false;
 		}
 
-		$has_template            = false;
-		$template_filename       = $template_name . '.html';
+		$has_template      = false;
+		$template_filename = $template_name . '.html';
 		// Since Gutenberg 12.1.0, the conventions for block templates directories have changed,
 		// we should check both these possible directories for backwards-compatibility.
 		$possible_templates_dirs = array( 'templates', 'block-templates' );
@@ -171,16 +190,16 @@ class WC_Template_Loader {
 		} elseif ( is_product_taxonomy() ) {
 			$object = get_queried_object();
 
-			if ( self::has_block_template( 'taxonomy-' . $object->taxonomy ) ) {
+			if ( self::taxonomy_has_block_template( $object ) ) {
 				$default_file = '';
+			} elseif ( taxonomy_is_product_attribute( $object->taxonomy ) ) {
+					$default_file = 'taxonomy-product-attribute.php';
+			} elseif ( is_tax( 'product_cat' ) || is_tax( 'product_tag' ) ) {
+				$default_file = 'taxonomy-' . $object->taxonomy . '.php';
+			} elseif ( ! self::has_block_template( 'archive-product' ) ) {
+				$default_file = 'archive-product.php';
 			} else {
-				if ( is_tax( 'product_cat' ) || is_tax( 'product_tag' ) ) {
-					$default_file = 'taxonomy-' . $object->taxonomy . '.php';
-				} elseif ( ! self::has_block_template( 'archive-product' ) ) {
-					$default_file = 'archive-product.php';
-				} else {
-					$default_file = '';
-				}
+				$default_file = '';
 			}
 		} elseif (
 			( is_post_type_archive( 'product' ) || is_page( wc_get_page_id( 'shop' ) ) ) &&
@@ -233,6 +252,12 @@ class WC_Template_Loader {
 			$templates[] = WC()->template_path() . 'taxonomy-' . $object->taxonomy . '-' . $object->slug . '.php';
 			$templates[] = 'taxonomy-' . $object->taxonomy . '.php';
 			$templates[] = WC()->template_path() . 'taxonomy-' . $object->taxonomy . '.php';
+
+			if ( taxonomy_is_product_attribute( $object->taxonomy ) ) {
+				$templates[] = 'taxonomy-product_attribute.php';
+				$templates[] = WC()->template_path() . 'taxonomy-product_attribute.php';
+				$templates[] = $default_file;
+			}
 
 			if ( is_tax( 'product_cat' ) || is_tax( 'product_tag' ) ) {
 				$cs_taxonomy = str_replace( '_', '-', $object->taxonomy );
@@ -502,12 +527,12 @@ class WC_Template_Loader {
 	 * For non-WC themes, this will setup the main shop page to be shortcode based to improve default appearance.
 	 *
 	 * @since 3.3.0
-	 * @param string $title Existing title.
-	 * @param int    $id ID of the post being filtered.
+	 * @param string   $title Existing title.
+	 * @param int|null $id ID of the post being filtered.
 	 * @return string
 	 */
-	public static function unsupported_theme_title_filter( $title, $id ) {
-		if ( self::$theme_support || ! $id !== self::$shop_page_id ) {
+	public static function unsupported_theme_title_filter( $title, $id = null ) {
+		if ( is_null( $id ) || self::$theme_support || ! $id !== self::$shop_page_id ) {
 			return $title;
 		}
 

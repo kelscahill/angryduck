@@ -15,9 +15,9 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
 
-class LiasettingsCustomBatchRequestEntry extends \Google\Model
+class LiasettingsCustomBatchRequestEntry extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Model
 {
   /**
    * @var string
@@ -53,6 +53,8 @@ class LiasettingsCustomBatchRequestEntry extends \Google\Model
    * @var string
    */
   public $method;
+  protected $omnichannelExperienceType = LiaOmnichannelExperience::class;
+  protected $omnichannelExperienceDataType = '';
   /**
    * @var string
    */
@@ -187,6 +189,20 @@ class LiasettingsCustomBatchRequestEntry extends \Google\Model
   public function getMethod()
   {
     return $this->method;
+  }
+  /**
+   * @param LiaOmnichannelExperience
+   */
+  public function setOmnichannelExperience(LiaOmnichannelExperience $omnichannelExperience)
+  {
+    $this->omnichannelExperience = $omnichannelExperience;
+  }
+  /**
+   * @return LiaOmnichannelExperience
+   */
+  public function getOmnichannelExperience()
+  {
+    return $this->omnichannelExperience;
   }
   /**
    * @param string

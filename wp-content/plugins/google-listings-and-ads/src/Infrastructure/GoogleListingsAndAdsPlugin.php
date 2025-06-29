@@ -3,11 +3,10 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\Infrastructure;
 
-use Automattic\WooCommerce\GoogleListingsAndAds\Assets\AssetsHandlerInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Jobs\JobInitializer;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Requirements\PluginValidator;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
-use Psr\Container\ContainerInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerInterface;
 
 /**
  * Class GoogleListingsAndAdsPlugin
@@ -63,9 +62,6 @@ final class GoogleListingsAndAdsPlugin implements Plugin {
 				$service->activate();
 			}
 		}
-
-		flush_rewrite_rules();
-
 	}
 
 	/**
@@ -81,8 +77,6 @@ final class GoogleListingsAndAdsPlugin implements Plugin {
 				$service->deactivate();
 			}
 		}
-
-		flush_rewrite_rules();
 	}
 
 	/**
@@ -93,7 +87,7 @@ final class GoogleListingsAndAdsPlugin implements Plugin {
 	public function register(): void {
 		add_action(
 			self::SERVICE_REGISTRATION_HOOK,
-			function() {
+			function () {
 				$this->maybe_register_services();
 			},
 			20
@@ -101,10 +95,9 @@ final class GoogleListingsAndAdsPlugin implements Plugin {
 
 		add_action(
 			'init',
-			function() {
-				$this->container->get( AssetsHandlerInterface::class )->register();
-
-				// register the job initializer only if it is available. see JobInitializer::is_needed.
+			function () {
+				// Register the job initializer only if it is available, see JobInitializer::is_needed.
+				// Note: ActionScheduler must be loaded after the init hook, so we can't load JobInitializer like a regular Service.
 				if ( $this->container->has( JobInitializer::class ) ) {
 					$this->container->get( JobInitializer::class )->register();
 				}
@@ -117,7 +110,6 @@ final class GoogleListingsAndAdsPlugin implements Plugin {
 				}
 			}
 		);
-
 	}
 
 	/**

@@ -15,9 +15,9 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\ProductDeliveryTime as ProductDeliveryTimeModel;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ProductDeliveryTime as ProductDeliveryTimeModel;
 
 /**
  * The "productdeliverytime" collection of methods.
@@ -27,7 +27,7 @@ use Google\Service\ShoppingContent\ProductDeliveryTime as ProductDeliveryTimeMod
  *   $productdeliverytime = $contentService->productdeliverytime;
  *  </code>
  */
-class Productdeliverytime extends \Google\Service\Resource
+class Productdeliverytime extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Creates or updates the delivery time of a product.
@@ -38,6 +38,7 @@ class Productdeliverytime extends \Google\Service\Resource
    * @param ProductDeliveryTimeModel $postBody
    * @param array $optParams Optional parameters.
    * @return ProductDeliveryTimeModel
+   * @throws \Google\Service\Exception
    */
   public function create($merchantId, ProductDeliveryTimeModel $postBody, $optParams = [])
   {
@@ -53,6 +54,7 @@ class Productdeliverytime extends \Google\Service\Resource
    * @param string $productId Required. The Content API ID of the product, in the
    * form `channel:contentLanguage:targetCountry:offerId`.
    * @param array $optParams Optional parameters.
+   * @throws \Google\Service\Exception
    */
   public function delete($merchantId, $productId, $optParams = [])
   {
@@ -69,6 +71,7 @@ class Productdeliverytime extends \Google\Service\Resource
    * form `channel:contentLanguage:targetCountry:offerId`.
    * @param array $optParams Optional parameters.
    * @return ProductDeliveryTimeModel
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $productId, $optParams = [])
   {

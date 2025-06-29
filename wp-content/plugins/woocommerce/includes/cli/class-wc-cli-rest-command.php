@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Main Command for WooCommere CLI.
+ * Main Command for WooCommerce CLI.
  *
  * Since a lot of WC operations can be handled via the REST API, we base our CLI
  * off of Restful to generate commands for each WooCommerce REST API endpoint
@@ -236,7 +236,11 @@ class WC_CLI_REST_Command {
 		}
 
 		if ( ! empty( $assoc_args['format'] ) && 'count' === $assoc_args['format'] ) {
-			echo (int) $headers['X-WP-Total'];
+			if ( isset( $headers['X-WP-Total'] ) ) {
+				echo (int) $headers['X-WP-Total'];
+			} else {
+				WP_CLI::error( 'Count format not implemented yet.' );
+			}
 		} elseif ( 'headers' === $assoc_args['format'] ) {
 			echo wp_json_encode( $headers );
 		} elseif ( 'body' === $assoc_args['format'] ) {

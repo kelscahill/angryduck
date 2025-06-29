@@ -10,6 +10,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use Automattic\WooCommerce\Utilities\StringUtil;
+
 /**
  * Get coupon types.
  *
@@ -70,6 +72,20 @@ function wc_coupons_enabled() {
 }
 
 /**
+ * Check if two coupon codes are the same.
+ * Lowercasing to ensure case-insensitive comparison.
+ *
+ * @since 9.9.0
+ *
+ * @param string $coupon_1 Coupon code 1.
+ * @param string $coupon_2 Coupon code 2.
+ * @return bool
+ */
+function wc_is_same_coupon( $coupon_1, $coupon_2 ) {
+	return wc_strtolower( $coupon_1 ) === wc_strtolower( $coupon_2 );
+}
+
+/**
  * Get coupon code by ID.
  *
  * @since 3.0.0
@@ -91,7 +107,7 @@ function wc_get_coupon_code_by_id( $id ) {
  */
 function wc_get_coupon_id_by_code( $code, $exclude = 0 ) {
 
-	if ( empty( $code ) ) {
+	if ( StringUtil::is_null_or_whitespace( $code ) ) {
 		return 0;
 	}
 

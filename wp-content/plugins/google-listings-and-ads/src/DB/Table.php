@@ -52,7 +52,7 @@ abstract class Table implements TableInterface {
 	 */
 	public function exists(): bool {
 		$result = $this->wpdb->get_var(
-			"SHOW TABLES LIKE '{$this->get_sql_safe_name()}'" // phpcs:ignore WordPress.DB.PreparedSQL
+			"SHOW TABLES LIKE '{$this->wpdb->esc_like( $this->get_name() )}'" // phpcs:ignore WordPress.DB.PreparedSQL
 		);
 
 		return $result === $this->get_name();
@@ -126,6 +126,28 @@ abstract class Table implements TableInterface {
 	protected function get_collation(): string {
 		return $this->wpdb->has_cap( 'collation' ) ? $this->wpdb->get_charset_collate() : '';
 	}
+
+	/**
+	 * Checks whether a column exists for the table.
+	 *
+	 * @param string $column_name The column name.
+	 *
+	 * @return bool True if the column exists on the table or False if not.
+	 *
+	 * @since 2.5.13
+	 */
+	public function has_column( string $column_name ): bool {
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$this->wpdb->get_results(
+			$this->wpdb->prepare( "SHOW COLUMNS FROM `{$this->get_sql_safe_name()}` WHERE Field = %s", [ $column_name ] )
+		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
+
+		return (bool) $this->wpdb->num_rows;
+	}
+
 
 	/**
 	 * Get the schema for the DB.

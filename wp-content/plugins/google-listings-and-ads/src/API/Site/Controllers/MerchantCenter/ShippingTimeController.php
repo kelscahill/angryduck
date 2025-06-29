@@ -8,25 +8,27 @@ use Automattic\WooCommerce\GoogleListingsAndAds\API\Site\Controllers\CountryCode
 use Automattic\WooCommerce\GoogleListingsAndAds\API\TransportMethods;
 use Automattic\WooCommerce\GoogleListingsAndAds\DB\Query\ShippingTimeQuery;
 use Automattic\WooCommerce\GoogleListingsAndAds\Exception\InvalidQuery;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\ContainerAwareTrait;
+use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ContainerAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Internal\Interfaces\ISO3166AwareInterface;
-use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\RESTServer;
-use Psr\Container\ContainerInterface;
 use WP_REST_Request as Request;
 use WP_REST_Response as Response;
+use WP_Error;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
  * Class ShippingTimeController
  *
+ * ContainerAware used for:
+ * - ShippingTimeQuery
+ *
  * @package Automattic\WooCommerce\GoogleListingsAndAds\API\Site\Controllers\MerchantCenter
  */
-class ShippingTimeController extends BaseController implements ISO3166AwareInterface {
+class ShippingTimeController extends BaseController implements ContainerAwareInterface, ISO3166AwareInterface {
 
+	use ContainerAwareTrait;
 	use CountryCodeTrait;
-
-	/** @var ContainerInterface */
-	protected $container;
 
 	/**
 	 * The base for routes in this controller.
@@ -34,16 +36,6 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 	 * @var string
 	 */
 	protected $route_base = 'mc/shipping/times';
-
-	/**
-	 * BaseController constructor.
-	 *
-	 * @param ContainerInterface $container
-	 */
-	public function __construct( ContainerInterface $container ) {
-		parent::__construct( $container->get( RESTServer::class ) );
-		$this->container = $container;
-	}
 
 	/**
 	 * Register rest routes with WordPress.
@@ -61,7 +53,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 					'methods'             => TransportMethods::CREATABLE,
 					'callback'            => $this->get_create_time_callback(),
 					'permission_callback' => $this->get_permission_callback(),
-					'args'                => $this->get_schema_properties(),
+					'args'                => $this->get_args_schema(),
 				],
 				'schema' => $this->get_api_response_schema_callback(),
 			]
@@ -92,7 +84,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 	 * @return callable
 	 */
 	protected function get_read_times_callback(): callable {
-		return function( Request $request ) {
+		return function ( Request $request ) {
 			$times = $this->get_all_shipping_times();
 			$items = [];
 			foreach ( $times as $time ) {
@@ -100,6 +92,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 					[
 						'country_code' => $time['country'],
 						'time'         => $time['time'],
+						'max_time'     => $time['max_time'],
 					],
 					$request
 				);
@@ -117,7 +110,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 	 * @return callable
 	 */
 	protected function get_read_time_callback(): callable {
-		return function( Request $request ) {
+		return function ( Request $request ) {
 			$country = $request->get_param( 'country_code' );
 			$time    = $this->get_shipping_time_for_country( $country );
 			if ( empty( $time ) ) {
@@ -134,6 +127,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 				[
 					'country_code' => $time[0]['country'],
 					'time'         => $time[0]['time'],
+					'max_time'     => $time[0]['max_time'],
 				],
 				$request
 			);
@@ -146,15 +140,16 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 	 * @return callable
 	 */
 	protected function get_create_time_callback(): callable {
-		return function( Request $request ) {
+		return function ( Request $request ) {
 			$query        = $this->get_query_object();
 			$country_code = $request->get_param( 'country_code' );
 			$existing     = ! empty( $query->where( 'country', $country_code )->get_results() );
 
 			try {
 				$data = [
-					'country' => $country_code,
-					'time'    => $request->get_param( 'time' ),
+					'country'  => $country_code,
+					'time'     => $request->get_param( 'time' ),
+					'max_time' => $request->get_param( 'max_time' ),
 				];
 				if ( $existing ) {
 					$query->update(
@@ -197,7 +192,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 	 * @return callable
 	 */
 	protected function get_delete_time_callback(): callable {
-		return function( Request $request ) {
+		return function ( Request $request ) {
 			try {
 				$country_code = $request->get_param( 'country_code' );
 				$this->get_query_object()->delete( 'country', $country_code );
@@ -265,12 +260,64 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 			],
 			'time'         => [
 				'type'              => 'integer',
-				'description'       => __( 'The shipping time in days.', 'google-listings-and-ads' ),
+				'description'       => __( 'The minimum shipping time in days.', 'google-listings-and-ads' ),
 				'context'           => [ 'view', 'edit' ],
-				'validate_callback' => 'rest_validate_request_arg',
+				'validate_callback' => [ $this, 'validate_shipping_times' ],
+			],
+			'max_time'     => [
+				'type'              => 'integer',
+				'description'       => __( 'The maximum shipping time in days.', 'google-listings-and-ads' ),
+				'context'           => [ 'view', 'edit' ],
+				'validate_callback' => [ $this, 'validate_shipping_times' ],
 			],
 		];
 	}
+
+	/**
+	 * Get the args schema for the controller.
+	 *
+	 * @return array
+	 */
+	protected function get_args_schema(): array {
+		$schema                         = $this->get_schema_properties();
+		$schema['time']['required']     = true;
+		$schema['max_time']['required'] = true;
+		return $schema;
+	}
+
+	/**
+	 * Validate the shipping times.
+	 *
+	 * @param mixed   $value
+	 * @param Request $request
+	 * @param string  $param
+	 *
+	 * @return WP_Error|true
+	 */
+	public function validate_shipping_times( $value, $request, $param ) {
+		$time     = $request->get_param( 'time' );
+		$max_time = $request->get_param( 'max_time' );
+
+		if ( rest_is_integer( $value ) === false ) {
+			return new WP_Error(
+				'rest_invalid_type',
+				/* translators: 1: Parameter, 2: Type name. */
+				sprintf( __( '%1$s is not of type %2$s.', 'google-listings-and-ads' ), $param, 'integer' ),
+				[ 'param' => $param ]
+			);
+		}
+
+		if ( $value < 0 ) {
+			return new WP_Error( 'invalid_shipping_times', __( 'Shipping times cannot be negative.', 'google-listings-and-ads' ), [ 'param' => $param ] );
+		}
+
+		if ( $time > $max_time ) {
+			return new WP_Error( 'invalid_shipping_times', __( 'The minimum shipping time cannot be greater than the maximum shipping time.', 'google-listings-and-ads' ), [ 'param' => $param ] );
+		}
+
+		return true;
+	}
+
 
 	/**
 	 * Get the item schema name for the controller.
@@ -300,7 +347,7 @@ class ShippingTimeController extends BaseController implements ISO3166AwareInter
 				'context'     => [ 'view' ],
 				'readonly'    => true,
 			],
-			'get_callback' => function( $fields ) {
+			'get_callback' => function ( $fields ) {
 				return $this->iso3166_data_provider->alpha2( $fields['country_code'] )['name'];
 			},
 		];

@@ -1,0 +1,251 @@
+.wws-license-notice {
+    padding-top: 10px;
+    padding-bottom: 20px;
+}
+
+.wws-license-notice.notice-info-2 {
+    border-left-color: #0085FF;
+}
+
+.wws-license-notice .text-color-red,
+#wws-license-interstitial .text-color-red {
+    color: #a00;
+}
+
+.wws-license-notice .text-color-green,
+#wws-license-interstitial .text-color-green {
+    color: #7ad03a;
+}
+
+.wws-license-notice .mt-0 {
+    margin-top: 0;
+}
+
+.wws-license-notice p {
+    font-size: 16px;
+}
+
+.wws-license-notice strong,
+.wws-license-notice b {
+    font-weight: 700;
+}
+
+.wws-license-notice .button-primary {
+    font-size: 14px;
+    font-weight: 700;
+    margin-right: 12px;
+    background: #1677ff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 24px;
+}
+
+.wws-license-notice ul > li {
+    font-size: 16px;
+    line-height: 16px;
+}
+
+.wws-license-notice ul > li:before {
+    content: "- ";
+}
+
+.wws-license-notice .learn-more-link {
+    color: #000
+}
+    
+.wws-license-notice .action-buttons {
+    margin-top: 20px;
+}
+
+.wws-license-notice form.wws-license-notice-form {
+    margin-top: 1em;
+}
+
+.wws-license-notice form.wws-license-notice-form .form-row {
+    display: flex;
+    margin-right: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.wws-license-notice form.wws-license-notice-form .form-row .form-group {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    margin-right: 8px;
+}
+
+.wws-license-notice form.wws-license-notice-form .form-row .form-group label {
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.wws-license-notice form.wws-license-notice-form input[type="text"],
+.wws-license-notice form.wws-license-notice-form input[type="password"] {
+    border-radius: 2px;
+    border-color: #D9D9D9;
+    padding: 0.5em 0.75em;
+    font-size: 1em;
+    min-width: 260px;
+    box-sizing: border-box;
+    margin: 0;
+    height: 40px;
+}
+
+.wws-license-notice form.wws-license-notice-form input[type="text"]:focus,
+.wws-license-notice form.wws-license-notice-form input[type="password"]:focus {
+    box-shadow: none;
+}
+
+.wws-license-notice .wws-license-notice-form button {
+    height: 40px;
+    border-radius: 2px;
+    background: #45BE93;
+    font-size: 1em;
+    line-height: inherit;
+    margin: 0;
+}
+
+.wws-license-notice .wws-license-notice-form button:hover {
+    background: #389272;
+}
+
+.wws-license-notice .wws-license-notice-form button:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.wws-license-notice form.wws-license-notice-form .form-row .form-group,
+.wws-license-notice form.wws-license-notice-form button {
+    margin-bottom: 0.5em;
+}
+
+.wws-license-notice .action-links {
+    font-size: 1em;
+}
+
+.wws-license-notice .action-links a {
+    color: #3c434a;
+    text-decoration: underline;
+}
+
+.wws-license-notice .action-links a:focus {
+    box-shadow: none;
+}
+
+.wws-license-interstitial-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f0f0f1;
+    z-index: -1;
+}
+
+#wws-license-interstitial hr.wp-header-end,
+#wws-license-interstitial .notice {
+    display: none;
+}
+
+#wws-license-interstitial a:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+#wws-license-interstitial p {
+    font-size: 16px;
+}
+
+#wws-license-interstitial .wws-license-interstitial-container {
+    width: 100%;
+    max-width: 780px;
+    margin: 4em auto;
+    background-color: #fff;
+    border: 1px solid #2c3338;
+    border-radius: 2px;
+    padding: 42px 72px;
+    box-sizing: border-box;
+    position: relative;
+    text-align: center;
+}
+
+#wws-license-interstitial a.wws-license-interstitial-close {
+    color: #3c434a;
+}
+
+#wws-license-interstitial .wws-license-interstitial-logo {
+    width: 100%;
+    max-width: 240px;
+    margin-bottom: 1em;
+}
+
+#wws-license-interstitial h1.wws-license-interstitial-title {
+    font-weight: 700;
+    font-size: 22px;
+}
+
+#wws-license-interstitial .wws-license-interstitial-locked-image {
+    width: 100%;
+    max-width: 240px;
+    margin: 24px;
+}
+
+#wws-license-interstitial ul.wws-license-interstitial-plugins-status {
+    margin-bottom: 24px;
+    font-size: 16px;
+}
+
+#wws-license-interstitial .wws-license-interstitial-action-button {
+    background-color: #2E8CFA;
+    border: none;
+    border-radius: 6px;
+    margin-bottom: 18px;
+    font-weight: 700;
+    font-size: 16px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+#wws-license-interstitial .wws-license-interstitial-action-button:hover {
+    background-color: #2271b1;
+}
+
+#wws-license-interstitial .wws-license-interstitial-action-links a {
+    color: #3c434a;
+    text-decoration: underline;
+}
+
+#wws-license-interstitial .wws-license-interstitial-action-links a:not(:last-child):after {
+    content: "|";margin: 0 8px;
+}
+
+#wws-license-interstitial .wws-license-interstitial-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 28px;
+    line-height: 28px;
+    margin: 12px 22px;
+    cursor: pointer;
+}
+
+#wws-license-interstitial #wws-refresh-license-status-link {
+    transition: color 0.2s ease-in-out;
+}
+
+#wws-license-interstitial #wws-refresh-license-status-link.disabled {
+    color: #bbb;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.wp-pointer-content .wws-reminder-buttons a:not(:first-of-type) {
+    margin-right: 8px;
+}
+
+@media screen and (max-width: 650px) {
+    .wws-license-notice form.wws-license-notice-form .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

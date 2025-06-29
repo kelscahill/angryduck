@@ -15,20 +15,20 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\AccountLabel;
-use Google\Service\ShoppingContent\ListAccountLabelsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountLabel;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ListAccountLabelsResponse;
 
 /**
  * The "labels" collection of methods.
  * Typical usage is:
  *  <code>
  *   $contentService = new Google\Service\ShoppingContent(...);
- *   $labels = $contentService->labels;
+ *   $labels = $contentService->accounts_labels;
  *  </code>
  */
-class AccountsLabels extends \Google\Service\Resource
+class AccountsLabels extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Creates a new label, not assigned to any account. (labels.create)
@@ -38,6 +38,7 @@ class AccountsLabels extends \Google\Service\Resource
    * @param AccountLabel $postBody
    * @param array $optParams Optional parameters.
    * @return AccountLabel
+   * @throws \Google\Service\Exception
    */
   public function create($accountId, AccountLabel $postBody, $optParams = [])
   {
@@ -52,6 +53,7 @@ class AccountsLabels extends \Google\Service\Resource
    * @param string $accountId Required. The id of the account that owns the label.
    * @param string $labelId Required. The id of the label to delete.
    * @param array $optParams Optional parameters.
+   * @throws \Google\Service\Exception
    */
   public function delete($accountId, $labelId, $optParams = [])
   {
@@ -75,6 +77,7 @@ class AccountsLabels extends \Google\Service\Resource
    * paginating, all other parameters provided to `ListAccountLabels` must match
    * the call that provided the page token.
    * @return ListAccountLabelsResponse
+   * @throws \Google\Service\Exception
    */
   public function listAccountsLabels($accountId, $optParams = [])
   {
@@ -91,6 +94,7 @@ class AccountsLabels extends \Google\Service\Resource
    * @param AccountLabel $postBody
    * @param array $optParams Optional parameters.
    * @return AccountLabel
+   * @throws \Google\Service\Exception
    */
   public function patch($accountId, $labelId, AccountLabel $postBody, $optParams = [])
   {

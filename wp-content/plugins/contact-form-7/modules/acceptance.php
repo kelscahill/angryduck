@@ -12,6 +12,7 @@ function wpcf7_add_form_tag_acceptance() {
 		'wpcf7_acceptance_form_tag_handler',
 		array(
 			'name-attr' => true,
+			'selectable-values' => true,
 		)
 	);
 }
@@ -41,12 +42,15 @@ function wpcf7_acceptance_form_tag_handler( $tag ) {
 		'class' => trim( $class ),
 	);
 
-	$item_atts = array();
-
-	$item_atts['type'] = 'checkbox';
-	$item_atts['name'] = $tag->name;
-	$item_atts['value'] = '1';
-	$item_atts['tabindex'] = $tag->get_option( 'tabindex', 'signed_int', true );
+	$item_atts = array(
+		'type' => 'checkbox',
+		'name' => $tag->name,
+		'value' => '1',
+		'tabindex' => $tag->get_option( 'tabindex', 'signed_int', true ),
+		'checked' => $tag->has_option( 'default:on' ),
+		'class' => $tag->get_class_option() ? $tag->get_class_option() : null,
+		'id' => $tag->get_id_option(),
+	);
 
 	if ( $validation_error ) {
 		$item_atts['aria-invalid'] = 'true';
@@ -56,13 +60,6 @@ function wpcf7_acceptance_form_tag_handler( $tag ) {
 	} else {
 		$item_atts['aria-invalid'] = 'false';
 	}
-
-	if ( $tag->has_option( 'default:on' ) ) {
-		$item_atts['checked'] = 'checked';
-	}
-
-	$item_atts['class'] = $tag->get_class_option();
-	$item_atts['id'] = $tag->get_id_option();
 
 	$item_atts = wpcf7_format_atts( $item_atts );
 
@@ -76,11 +73,15 @@ function wpcf7_acceptance_form_tag_handler( $tag ) {
 		if ( $tag->has_option( 'label_first' ) ) {
 			$html = sprintf(
 				'<span class="wpcf7-list-item-label">%2$s</span><input %1$s />',
-				$item_atts, $content );
+				$item_atts,
+				$content
+			);
 		} else {
 			$html = sprintf(
 				'<input %1$s /><span class="wpcf7-list-item-label">%2$s</span>',
-				$item_atts, $content );
+				$item_atts,
+				$content
+			);
 		}
 
 		$html = sprintf(
@@ -91,7 +92,8 @@ function wpcf7_acceptance_form_tag_handler( $tag ) {
 	} else {
 		$html = sprintf(
 			'<span class="wpcf7-list-item"><input %1$s /></span>',
-			$item_atts );
+			$item_atts
+		);
 	}
 
 	$html = sprintf(
@@ -108,8 +110,11 @@ function wpcf7_acceptance_form_tag_handler( $tag ) {
 
 /* Validation filter */
 
-add_filter( 'wpcf7_validate_acceptance',
-	'wpcf7_acceptance_validation_filter', 10, 2 );
+add_filter(
+	'wpcf7_validate_acceptance',
+	'wpcf7_acceptance_validation_filter',
+	10, 2
+);
 
 function wpcf7_acceptance_validation_filter( $result, $tag ) {
 	if ( ! wpcf7_acceptance_as_validation() ) {
@@ -120,13 +125,14 @@ function wpcf7_acceptance_validation_filter( $result, $tag ) {
 		return $result;
 	}
 
-	$name = $tag->name;
-	$value = ( ! empty( $_POST[$name] ) ? 1 : 0 );
+	$value = wpcf7_superglobal_post( $tag->name ) ? 1 : 0;
 
 	$invert = $tag->has_option( 'invert' );
 
-	if ( $invert and $value
-	or ! $invert and ! $value ) {
+	if (
+		$invert and $value or
+		! $invert and ! $value
+	) {
 		$result->invalidate( $tag, wpcf7_get_message( 'accept_terms' ) );
 	}
 
@@ -142,13 +148,11 @@ function wpcf7_acceptance_filter( $accepted, $submission ) {
 	$tags = wpcf7_scan_form_tags( array( 'type' => 'acceptance' ) );
 
 	foreach ( $tags as $tag ) {
-		$name = $tag->name;
-
-		if ( empty( $name ) ) {
+		if ( empty( $tag->name ) ) {
 			continue;
 		}
 
-		$value = ( ! empty( $_POST[$name] ) ? 1 : 0 );
+		$value = wpcf7_superglobal_post( $tag->name ) ? 1 : 0;
 
 		$content = empty( $tag->content )
 			? (string) reset( $tag->values )
@@ -157,7 +161,7 @@ function wpcf7_acceptance_filter( $accepted, $submission ) {
 		$content = trim( $content );
 
 		if ( $value and $content ) {
-			$submission->add_consent( $name, $content );
+			$submission->add_consent( $tag->name, $content );
 		}
 
 		if ( $tag->has_option( 'optional' ) ) {
@@ -166,8 +170,10 @@ function wpcf7_acceptance_filter( $accepted, $submission ) {
 
 		$invert = $tag->has_option( 'invert' );
 
-		if ( $invert and $value
-		or ! $invert and ! $value ) {
+		if (
+			$invert and $value or
+			! $invert and ! $value
+		) {
 			$accepted = false;
 		}
 	}
@@ -175,8 +181,12 @@ function wpcf7_acceptance_filter( $accepted, $submission ) {
 	return $accepted;
 }
 
-add_filter( 'wpcf7_form_class_attr',
-	'wpcf7_acceptance_form_class_attr', 10, 1 );
+
+add_filter(
+	'wpcf7_form_class_attr',
+	'wpcf7_acceptance_form_class_attr',
+	10, 1
+);
 
 function wpcf7_acceptance_form_class_attr( $class_attr ) {
 	if ( wpcf7_acceptance_as_validation() ) {
@@ -194,8 +204,12 @@ function wpcf7_acceptance_as_validation() {
 	return $contact_form->is_true( 'acceptance_as_validation' );
 }
 
-add_filter( 'wpcf7_mail_tag_replaced_acceptance',
-	'wpcf7_acceptance_mail_tag', 10, 4 );
+
+add_filter(
+	'wpcf7_mail_tag_replaced_acceptance',
+	'wpcf7_acceptance_mail_tag',
+	10, 4
+);
 
 function wpcf7_acceptance_mail_tag( $replaced, $submitted, $html, $mail_tag ) {
 	$form_tag = $mail_tag->corresponding_form_tag();
@@ -223,8 +237,7 @@ function wpcf7_acceptance_mail_tag( $replaced, $submitted, $html, $mail_tag ) {
 	if ( $content ) {
 		$replaced = sprintf(
 			/* translators: 1: 'Consented' or 'Not consented', 2: conditions */
-			_x( '%1$s: %2$s', 'mail output for acceptance checkboxes',
-				'contact-form-7' ),
+			_x( '%1$s: %2$s', 'mail output for acceptance checkboxes', 'contact-form-7' ),
 			$replaced,
 			$content
 		);
@@ -240,66 +253,94 @@ add_action( 'wpcf7_admin_init', 'wpcf7_add_tag_generator_acceptance', 35, 0 );
 
 function wpcf7_add_tag_generator_acceptance() {
 	$tag_generator = WPCF7_TagGenerator::get_instance();
+
 	$tag_generator->add( 'acceptance', __( 'acceptance', 'contact-form-7' ),
-		'wpcf7_tag_generator_acceptance' );
+		'wpcf7_tag_generator_acceptance',
+		array( 'version' => '2' )
+	);
 }
 
-function wpcf7_tag_generator_acceptance( $contact_form, $args = '' ) {
-	$args = wp_parse_args( $args, array() );
-	$type = 'acceptance';
+function wpcf7_tag_generator_acceptance( $contact_form, $options ) {
+	$field_types = array(
+		'acceptance' => array(
+			'display_name' => __( 'Acceptance checkbox', 'contact-form-7' ),
+			'heading' => __( 'Acceptance checkbox form-tag generator', 'contact-form-7' ),
+			'description' => __( 'Generates a form-tag for an <a href="https://contactform7.com/acceptance-checkbox/">acceptance checkbox</a>.', 'contact-form-7' ),
+		),
+	);
 
-	$description = __( "Generate a form-tag for an acceptance checkbox. For more details, see %s.", 'contact-form-7' );
+	$tgg = new WPCF7_TagGeneratorGenerator( $options['content'] );
 
-	$desc_link = wpcf7_link( __( 'https://contactform7.com/acceptance-checkbox/', 'contact-form-7' ), __( 'Acceptance checkbox', 'contact-form-7' ) );
+	$formatter = new WPCF7_HTMLFormatter();
 
-?>
-<div class="control-box">
-<fieldset>
-<legend><?php echo sprintf( esc_html( $description ), $desc_link ); ?></legend>
+	$formatter->append_start_tag( 'header', array(
+		'class' => 'description-box',
+	) );
 
-<table class="form-table">
-<tbody>
-	<tr>
-	<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-name' ); ?>"><?php echo esc_html( __( 'Name', 'contact-form-7' ) ); ?></label></th>
-	<td><input type="text" name="name" class="tg-name oneline" id="<?php echo esc_attr( $args['content'] . '-name' ); ?>" /></td>
-	</tr>
+	$formatter->append_start_tag( 'h3' );
 
-	<tr>
-	<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-content' ); ?>"><?php echo esc_html( __( 'Condition', 'contact-form-7' ) ); ?></label></th>
-	<td><input type="text" name="content" class="oneline large-text" id="<?php echo esc_attr( $args['content'] . '-content' ); ?>" /></td>
-	</tr>
+	$formatter->append_preformatted(
+		esc_html( $field_types['acceptance']['heading'] )
+	);
 
-	<tr>
-	<th scope="row"><?php echo esc_html( __( 'Options', 'contact-form-7' ) ); ?></th>
-	<td>
-		<fieldset>
-		<legend class="screen-reader-text"><?php echo esc_html( __( 'Options', 'contact-form-7' ) ); ?></legend>
-		<label><input type="checkbox" name="optional" class="option" checked="checked" /> <?php echo esc_html( __( 'Make this checkbox optional', 'contact-form-7' ) ); ?></label>
-		</fieldset>
-	</td>
-	</tr>
+	$formatter->end_tag( 'h3' );
 
-	<tr>
-	<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-id' ); ?>"><?php echo esc_html( __( 'Id attribute', 'contact-form-7' ) ); ?></label></th>
-	<td><input type="text" name="id" class="idvalue oneline option" id="<?php echo esc_attr( $args['content'] . '-id' ); ?>" /></td>
-	</tr>
+	$formatter->append_start_tag( 'p' );
 
-	<tr>
-	<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-class' ); ?>"><?php echo esc_html( __( 'Class attribute', 'contact-form-7' ) ); ?></label></th>
-	<td><input type="text" name="class" class="classvalue oneline option" id="<?php echo esc_attr( $args['content'] . '-class' ); ?>" /></td>
-	</tr>
+	$formatter->append_preformatted(
+		wp_kses_data( $field_types['acceptance']['description'] )
+	);
 
-</tbody>
-</table>
-</fieldset>
-</div>
+	$formatter->end_tag( 'header' );
 
-<div class="insert-box">
-	<input type="text" name="<?php echo $type; ?>" class="tag code" readonly="readonly" onfocus="this.select()" />
+	$formatter->append_start_tag( 'div', array(
+		'class' => 'control-box',
+	) );
 
-	<div class="submitbox">
-	<input type="button" class="button button-primary insert-tag" value="<?php echo esc_attr( __( 'Insert Tag', 'contact-form-7' ) ); ?>" />
-	</div>
-</div>
-<?php
+	$formatter->call_user_func( static function () use ( $tgg, $field_types ) {
+		$tgg->print( 'field_type', array(
+			'with_optional' => true,
+			'select_options' => array(
+				'acceptance' => $field_types['acceptance']['display_name'],
+			),
+		) );
+
+		$tgg->print( 'field_name' );
+
+		$tgg->print( 'class_attr' );
+	} );
+
+	$formatter->append_start_tag( 'fieldset' );
+
+	$formatter->append_start_tag( 'legend', array(
+		'id' => $tgg->ref( 'value-legend' ),
+	) );
+
+	$formatter->append_preformatted(
+		esc_html( __( 'Condition', 'contact-form-7' ) )
+	);
+
+	$formatter->end_tag( 'legend' );
+
+	$formatter->append_start_tag( 'input', array(
+		'type' => 'text',
+		'required' => true,
+		'value' => __( 'Put the condition for consent here.', 'contact-form-7' ),
+		'data-tag-part' => 'content',
+		'aria-labelledby' => $tgg->ref( 'value-legend' ),
+	) );
+
+	$formatter->end_tag( 'div' );
+
+	$formatter->append_start_tag( 'footer', array(
+		'class' => 'insert-box',
+	) );
+
+	$formatter->call_user_func( static function () use ( $tgg, $field_types ) {
+		$tgg->print( 'insert_box_content' );
+
+		$tgg->print( 'mail_tag_tip' );
+	} );
+
+	$formatter->print();
 }

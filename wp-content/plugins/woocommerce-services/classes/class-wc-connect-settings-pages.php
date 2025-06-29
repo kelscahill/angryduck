@@ -13,6 +13,15 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 		 */
 		protected $continents;
 
+		/**
+		 * @var string;
+		 */
+		protected $id;
+
+		/**
+		 * @var string;
+		 */
+		protected $label;
 
 		/**
 		 * @var WC_Connect_API_Client
@@ -21,7 +30,7 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 
 		public function __construct( WC_Connect_API_Client $api_client, WC_Connect_Service_Schemas_Store $service_schemas_store ) {
 			$this->id                    = 'connect';
-			$this->label                 = _x( 'WooCommerce Shipping', 'The WooCommerce Shipping & Tax brandname', 'woocommerce-services' );
+			$this->label                 = _x( 'WooCommerce Shipping', 'The WooCommerce Shipping brandname', 'woocommerce-services' );
 			$this->continents            = new WC_Connect_Continents();
 			$this->api_client            = $api_client;
 			$this->service_schemas_store = $service_schemas_store;
@@ -36,6 +45,11 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 		 * @return array
 		 */
 		public function get_sections( $shipping_tabs ) {
+			// If WC Shipping is active, it will register its page instead.
+			if ( WC_Connect_Loader::is_wc_shipping_activated() ) {
+				return $shipping_tabs;
+			}
+
 			if ( ! is_array( $shipping_tabs ) ) {
 				$shipping_tabs = array();
 			}
@@ -66,11 +80,11 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 			global $hide_save_button;
 			$hide_save_button = true;
 
-			if ( WC_Connect_Jetpack::is_development_mode() ) {
-				if ( WC_Connect_Jetpack::is_active() ) {
-					$message = __( 'Note: Jetpack is connected, but development mode is also enabled on this site. Please disable development mode.', 'woocommerce-services' );
+			if ( WC_Connect_Jetpack::is_offline_mode() ) {
+				if ( WC_Connect_Jetpack::is_connected() ) {
+					$message = __( 'Note: Your site is connected but WooCommerce Tax is configured to work in offline mode. Please disable offline mode.', 'woocommerce-services' );
 				} else {
-					$message = __( 'Note: Jetpack development mode is enabled on this site. This site will not be able to obtain payment methods from WooCommerce Shipping & Tax production servers.', 'woocommerce-services' );
+					$message = __( 'Note: WooCommerce Tax is configured to work in offline mode. This site will not be able to obtain payment methods from WooCommerce Tax production servers.', 'woocommerce-services' );
 				}
 				?>
 					<div class="wc-connect-admin-dev-notice">
@@ -101,12 +115,14 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 			}
 
 			if ( isset( $_GET['from_order'] ) ) {
-				$extra_args['order_id']   = $_GET['from_order'];
-				$extra_args['order_href'] = get_edit_post_link( $_GET['from_order'] );
+				$from_order               = sanitize_text_field( $_GET['from_order'] );
+				$extra_args['order_id']   = $from_order;
+				$extra_args['order_href'] = get_edit_post_link( $from_order );
 			}
 
 			if ( ! empty( $_GET['carrier'] ) ) {
-				$extra_args['carrier']    = $_GET['carrier'];
+				$carrier                  = sanitize_text_field( $_GET['carrier'] );
+				$extra_args['carrier']    = $carrier;
 				$extra_args['continents'] = $this->continents->get();
 
 				$carrier_information = array();
@@ -114,8 +130,8 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 					$carrier_information = current(
 						array_filter(
 							$extra_args['carrier_accounts'],
-							function( $carrier ) {
-								return $carrier->type === $_GET['carrier'];
+							function ( $carrier ) {
+								return $carrier->type === $carrier;
 							}
 						)
 					);
@@ -123,7 +139,7 @@ if ( ! class_exists( 'WC_Connect_Settings_Pages' ) ) {
 				if ( ! empty( $carrier_information ) ) {
 					?>
 					<h2>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=wc-settings&tab=shipping&section=woocommerce-services-settings' ) ); ?>"><?php esc_html_e( 'WooCommerce Shipping & Tax', 'woocommerce-services' ); ?></a> &gt;
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=wc-settings&tab=shipping&section=woocommerce-services-settings' ) ); ?>"><?php esc_html_e( 'WooCommerce Tax', 'woocommerce-services' ); ?></a> &gt;
 						<span><?php echo esc_html( $carrier_information->carrier ); ?></span>
 					</h2>
 					<?php

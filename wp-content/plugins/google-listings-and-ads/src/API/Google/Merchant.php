@@ -3,22 +3,25 @@ declare( strict_types=1 );
 
 namespace Automattic\WooCommerce\GoogleListingsAndAds\API\Google;
 
-use Automattic\WooCommerce\GoogleListingsAndAds\Exception\MerchantApiException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Exception\ExceptionWithResponseData;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
-use Google\Exception as GoogleException;
-use Google\Service\Exception as GoogleServiceException;
-use Google\Service\ShoppingContent;
-use Google\Service\ShoppingContent\Account;
-use Google\Service\ShoppingContent\AccountAdsLink;
-use Google\Service\ShoppingContent\AccountStatus;
-use Google\Service\ShoppingContent\ProductstatusesCustomBatchResponse;
-use Google\Service\ShoppingContent\ProductstatusesCustomBatchRequest;
-use Google\Service\ShoppingContent\Product;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Exception as GoogleException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Exception as GoogleServiceException;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Account;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountAdsLink;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\AccountStatus;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ProductstatusesCustomBatchResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ProductstatusesCustomBatchRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Product;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RequestPhoneVerificationRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RequestReviewFreeListingsRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\RequestReviewShoppingAdsRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\VerifyPhoneNumberRequest;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\ResponseInterface;
 use Exception;
-use Google\Service\ShoppingContent\RequestPhoneVerificationRequest;
-use Google\Service\ShoppingContent\VerifyPhoneNumberRequest;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -29,6 +32,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Merchant implements OptionsAwareInterface {
 
+	use ExceptionTrait;
 	use OptionsAwareTrait;
 
 	/**
@@ -179,7 +183,7 @@ class Merchant implements OptionsAwareInterface {
 	 * @param int $id Optional - the Merchant Center account to retrieve
 	 *
 	 * @return Account The user's Merchant Center account.
-	 * @throws MerchantApiException If the account can't be retrieved.
+	 * @throws ExceptionWithResponseData If the account can't be retrieved.
 	 */
 	public function get_account( int $id = 0 ): Account {
 		$id = $id ?: $this->options->get_merchant_id();
@@ -188,7 +192,16 @@ class Merchant implements OptionsAwareInterface {
 			$mc_account = $this->service->accounts->get( $id, $id );
 		} catch ( GoogleException $e ) {
 			do_action( 'woocommerce_gla_mc_client_exception', $e, __METHOD__ );
-			throw MerchantApiException::account_retrieve_failed( $e->getCode() );
+
+			$errors = $this->get_exception_errors( $e );
+
+			throw new ExceptionWithResponseData(
+				/* translators: %s Error message */
+				sprintf( __( 'Unable to retrieve Merchant Center account: %s', 'google-listings-and-ads' ), reset( $errors ) ),
+				$e->getCode(),
+				null,
+				[ 'errors' => $errors ]
+			);
 		}
 		return $mc_account;
 	}
@@ -273,14 +286,23 @@ class Merchant implements OptionsAwareInterface {
 	 * @param Account $account The Account data to update.
 	 *
 	 * @return Account The user's Merchant Center account.
-	 * @throws MerchantApiException If the account can't be retrieved.
+	 * @throws ExceptionWithResponseData If the account can't be updated.
 	 */
 	public function update_account( Account $account ): Account {
 		try {
 			$account = $this->service->accounts->update( $account->getId(), $account->getId(), $account );
 		} catch ( GoogleException $e ) {
 			do_action( 'woocommerce_gla_mc_client_exception', $e, __METHOD__ );
-			throw MerchantApiException::account_update_failed( $e->getCode() );
+
+			$errors = $this->get_exception_errors( $e );
+
+			throw new ExceptionWithResponseData(
+				/* translators: %s Error message */
+				sprintf( __( 'Unable to update Merchant Center account: %s', 'google-listings-and-ads' ), reset( $errors ) ),
+				$e->getCode(),
+				null,
+				[ 'errors' => $errors ]
+			);
 		}
 		return $account;
 	}
@@ -290,17 +312,17 @@ class Merchant implements OptionsAwareInterface {
 	 *
 	 * @param int $ads_id Google Ads ID to link.
 	 *
-	 * @return bool
-	 * @throws MerchantApiException When unable to retrieve or update account data.
+	 * @return bool True if the link invitation is waiting for acceptance. False if the link is already active.
+	 * @throws ExceptionWithResponseData When unable to retrieve or update account data.
 	 */
 	public function link_ads_id( int $ads_id ): bool {
 		$account   = $this->get_account();
-		$ads_links = $account->getAdsLinks();
+		$ads_links = $account->getAdsLinks() ?? [];
 
 		// Stop early if we already have a link setup.
 		foreach ( $ads_links as $link ) {
 			if ( $ads_id === absint( $link->getAdsId() ) ) {
-				return false;
+				return $link->getStatus() !== 'active';
 			}
 		}
 
@@ -347,5 +369,59 @@ class Merchant implements OptionsAwareInterface {
 	 */
 	public function update_merchant_id( int $id ): bool {
 		return $this->options->update( OptionsInterface::MERCHANT_ID, $id );
+	}
+
+	/**
+	 * Get the review status for an MC account
+	 *
+	 * @since 2.7.1
+	 *
+	 * @return array An array with the status for freeListingsProgram and shoppingAdsProgram
+	 * @throws Exception When an exception happens in the Google API.
+	 */
+	public function get_account_review_status() {
+		try {
+			$id = $this->options->get_merchant_id();
+			return [
+				'freeListingsProgram' => $this->service->freelistingsprogram->get( $id ),
+				'shoppingAdsProgram'  => $this->service->shoppingadsprogram->get( $id ),
+			];
+		} catch ( GoogleException $e ) {
+			do_action( 'woocommerce_gla_mc_client_exception', $e, __METHOD__ );
+			throw new Exception( $e->getMessage(), $e->getCode() );
+		}
+	}
+
+	/**
+	 * Request a review for an MC account
+	 *
+	 * @since 2.7.1
+	 *
+	 * @param string $region_code The region code to request the review
+	 * @param array  $types The types of programs to request the review
+	 *
+	 * @return ResponseInterface The Google API response
+	 * @throws Exception When the request review produces an exception in the Google side or when
+	 * the programs are not supported.
+	 */
+	public function account_request_review( $region_code, $types ) {
+		try {
+			$id = $this->options->get_merchant_id();
+
+			if ( in_array( 'freelistingsprogram', $types, true ) ) {
+				$request = new RequestReviewFreeListingsRequest();
+				$request->setRegionCode( $region_code );
+				return $this->service->freelistingsprogram->requestreview( $id, $request );
+			} elseif ( in_array( 'shoppingadsprogram', $types, true ) ) {
+				$request = new RequestReviewShoppingAdsRequest();
+				$request->setRegionCode( $region_code );
+				return $this->service->shoppingadsprogram->requestreview( $id, $request );
+			} else {
+				throw new Exception( 'Program type not supported', 400 );
+			}
+		} catch ( GoogleException $e ) {
+			do_action( 'woocommerce_gla_mc_client_exception', $e, __METHOD__ );
+			throw new Exception( $e->getMessage(), $e->getCode() );
+		}
 	}
 }

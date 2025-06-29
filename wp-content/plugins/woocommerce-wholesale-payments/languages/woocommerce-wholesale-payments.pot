@@ -1,0 +1,1756 @@
+# Copyright (C) 2025 Rymera Web Co
+# This file is distributed under the GPL          v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Wholesale Payments 1.0.4\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woocommerce-wholesale-payments\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2025-06-08T23:57:51+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.11.0\n"
+"X-Domain: woocommerce-wholesale-payments\n"
+
+#. Plugin Name of the plugin
+#: woocommerce-wholesale-payments.php
+msgid "WooCommerce Wholesale Payments"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: woocommerce-wholesale-payments.php
+msgid "https://wholesalesuiteplugin.com/woocommerce-wholesale-payments/"
+msgstr ""
+
+#. Description of the plugin
+#: woocommerce-wholesale-payments.php
+msgid "WooCommerce extension that lets store owners provide payment plans for orders right within their wholesale store."
+msgstr ""
+
+#. Author of the plugin
+#: woocommerce-wholesale-payments.php
+msgid "Rymera Web Co"
+msgstr ""
+
+#. Author URI of the plugin
+#: woocommerce-wholesale-payments.php
+msgid "https://rymera.com.au/"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:151
+msgid "%1$sClick here to activate %3$s plugin &rarr;%2$s"
+msgstr ""
+
+#: bootstrap/App.php:163
+msgid "Activate this plugin"
+msgstr ""
+
+#. translators: %1$s = opening <p> tag; %2$s = closing </p> tag; %3$s = WooCommerce Wholesale Payments
+#: bootstrap/App.php:173
+msgid "%1$sUnable to activate %3$s plugin. Please install and activate WooCoomerce plugin first.%2$s"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:184
+msgid "%1$sClick here to install %3$s plugin &rarr;%2$s"
+msgstr ""
+
+#: bootstrap/App.php:196
+msgid "Install this plugin"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = opening <p> tag; %4$s = closing </p> tag
+#: bootstrap/App.php:214
+msgid "%3$s%1$sWooCommerce Wholesale Payments%2$s Form plugin missing dependency:%4$s"
+msgstr ""
+
+#: bootstrap/App.php:251
+msgid "The class does not have a run method. Please make sure to extend the Abstract_Class class."
+msgstr ""
+
+#: includes/Abstracts/Abstract_Shortcode.php:119
+msgid "You do not have permission to view this content."
+msgstr ""
+
+#: includes/Classes/License_Manager.php:108
+msgid "License Email"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:109
+msgid "License Key"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:110
+#: includes/I18n/settings-page.php:131
+msgid "Save Changes"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:112
+#: includes/I18n/settings-page.php:211
+msgid "Error"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:113
+#: includes/I18n/settings-page.php:210
+msgid "Success"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:164
+msgid "Activate Key"
+msgstr ""
+
+#: includes/Classes/License_Manager.php:212
+msgid "Failed to activate license. Failed to connect to license server. Please contact plugin support."
+msgstr ""
+
+#: includes/Classes/Settings_Page.php:282
+#: includes/Classes/Settings_Page.php:283
+#: includes/I18n/settings-page.php:119
+#: includes/I18n/settings-page.php:305
+msgid "Payments"
+msgstr ""
+
+#: includes/Classes/WP_Admin.php:50
+#: includes/I18n/license-notice.php:65
+#: includes/I18n/settings-page.php:260
+msgid "Renew License"
+msgstr ""
+
+#: includes/Classes/WP_Admin.php:53
+msgid "License"
+msgstr ""
+
+#: includes/Classes/WP_Admin.php:61
+#: includes/I18n/settings-page.php:15
+#: includes/I18n/settings-page.php:49
+#: includes/Post_Types/Payment_Plan_Post_Type.php:31
+#: includes/Post_Types/Payment_Plan_Post_Type.php:33
+#: includes/Post_Types/Payment_Plan_Post_Type.php:35
+#: includes/Post_Types/Payment_Plan_Post_Type.php:47
+msgid "Payment Plans"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:16
+msgid "Net 30"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:17
+msgid "Nothing upfront and the full amount in 30 days"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:18
+msgid "You can checkout your order now, and we'll bill you in 30 days."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:59
+msgid "50% upfront"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:60
+msgid "50% upfront and the remainder due in 30 days"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:61
+msgid "Pay 50% upon checkout, and we'll bill you the remaining 50% in 30 days."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:102
+msgid "3 equal payments"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:103
+msgid "The total invoice divided into 3 equal payments over 60 days"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:104
+msgid "Pay 1/3 upon checkout, and we'll bill you the remaining 2/3 in 30 and 60 days."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:162
+msgid "25% upfront"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:163
+msgid "25% upfront and the remainder due in 30 days"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:164
+msgid "Pay 25% upon checkout, and we'll bill you the remaining in 30 days."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:205
+msgid "Net 60"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:206
+msgid "Nothing upfront and the full amount in 60 days"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:207
+msgid "You can checkout your order now, and we'll bill you in 60 days."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:248
+msgid "Net 90"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:249
+msgid "Nothing upfront and the full amount in 90 days"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:250
+msgid "You can checkout your order now, and we'll bill you in 90 days."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:291
+msgid "30 Day from EOM"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:292
+msgid "The full amount due 30 days from end of current month."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:293
+msgid "You can checkout your order now, and we'll bill you 30 days after the end of this month."
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:334
+msgid "Due 21st Next Month"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:335
+msgid "The full amount due on 21st of next month"
+msgstr ""
+
+#: includes/data/preconfigured-payment-plans.php:336
+msgid "You can checkout your order now, and we'll bill you on the 21st of next month."
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Due_Today.php:30
+msgid "Wholesale Payment Due Today"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Due_Today.php:31
+msgid "Email sent to customers when their payment is due today"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Due_Today.php:46
+#: includes/Emails/WPay_Payment_Due_Today.php:195
+msgid "Your payment is due today on {site_title}"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Due_Today.php:47
+#: includes/Emails/WPay_Payment_Due_Today.php:185
+msgid "Your payment is due today"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Due_Today.php:217
+#: templates/emails/payment-due-today.php:96
+#: templates/emails/payment-nearly-due.php:93
+#: templates/emails/payment-overdue.php:95
+msgid "Powered by"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Nearly_Due.php:31
+msgid "Wholesale Payment Nearly Due"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Nearly_Due.php:32
+msgid "Email sent to customers when their payment is nearly due"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Nearly_Due.php:49
+#: includes/Emails/WPay_Payment_Nearly_Due.php:208
+msgid "Your payment is nearly due on {site_title}"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Nearly_Due.php:50
+#: includes/Emails/WPay_Payment_Nearly_Due.php:198
+msgid "Your payment is nearly due"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Nearly_Due.php:141
+msgid "Error rendering email template:"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Nearly_Due.php:185
+msgid "Error rendering plain email template:"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Overdue.php:30
+msgid "Wholesale Payment Overdue"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Overdue.php:31
+msgid "Email sent to customers when their payment is overdue"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Overdue.php:49
+#: includes/Emails/WPay_Payment_Overdue.php:216
+msgid "Your payment is overdue on {site_title}"
+msgstr ""
+
+#: includes/Emails/WPay_Payment_Overdue.php:50
+#: includes/Emails/WPay_Payment_Overdue.php:206
+msgid "Your payment is overdue"
+msgstr ""
+
+#: includes/Factories/Payment_Plan.php:220
+msgid "Days must be unique."
+msgstr ""
+
+#: includes/Factories/Payment_Plan.php:226
+msgid "Days in breakdown must be in ascending order."
+msgstr ""
+
+#: includes/Factories/Payment_Plan.php:235
+msgid "Percentage value must be an integer."
+msgstr ""
+
+#: includes/Factories/Payment_Plan.php:242
+msgid "Percentage value must sum up to 100."
+msgstr ""
+
+#: includes/Factories/Vite_App.php:327
+msgid "Manifest file not found. Did you run the build script from package.json file?"
+msgstr ""
+
+#: includes/Factories/Vite_App.php:559
+msgid "Sample Blocks"
+msgstr ""
+
+#: includes/Helpers/Stripe.php:112
+msgid "Invalid response from Stripe."
+msgstr ""
+
+#: includes/Helpers/Stripe.php:173
+msgid "Stripe account ID not found."
+msgstr ""
+
+#: includes/Helpers/WPay.php:366
+#: includes/I18n/settings-page.php:68
+#: includes/I18n/settings-page.php:301
+#: includes/Integrations/WC.php:169
+#: includes/Integrations/WC.php:486
+msgid "Overdue"
+msgstr ""
+
+#: includes/Helpers/WPay.php:367
+#: includes/Integrations/WC.php:162
+msgid "Pending Payment"
+msgstr ""
+
+#: includes/Helpers/WPay.php:368
+#: includes/I18n/settings-page.php:69
+#: includes/I18n/settings-page.php:115
+#: includes/I18n/settings-page.php:285
+#: includes/I18n/settings-page.php:302
+#: includes/Integrations/WC.php:176
+#: includes/Integrations/WC.php:213
+#: includes/Integrations/WC.php:271
+#: includes/Integrations/WC.php:485
+msgid "Paid"
+msgstr ""
+
+#: includes/Helpers/WPay.php:405
+#: includes/Integrations/WC.php:242
+#: includes/Integrations/WWP.php:34
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:84
+#: templates/admin/parts/require-wp-version.php:15
+#: templates/front/parts/order-invoice-payments-progress.php:33
+msgid "Wholesale Payments"
+msgstr ""
+
+#: includes/I18n/license-notice.php:13
+msgid "Oops! Did you forget to enter your license for Wholesale Payments?"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag; %3$s = opening <strong> tag; %4$s = closing </strong> tag
+#: includes/I18n/license-notice.php:15
+msgid "Enter your license to fully activate Wholesale Payments and gain access to automatic updates, technical support, and premium features. If you don't have a license, you can %1$spurchase one%2$s or continue to use the plugin but %3$swe will be collecting a 3%% processing fee%4$s."
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: includes/I18n/license-notice.php:17
+msgid "Can't find your key? %1$sLogin to your account.%2$s"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: includes/I18n/license-notice.php:19
+msgid "Don't have a license yet? %1$sPurchase one here.%2$s"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag; %3$s = opening <strong> tag; %4$s = closing </strong> tag
+#: includes/I18n/license-notice.php:25
+msgid "Don't worry, your wholesale customers & orders are completely safe and payment plans are still working. But you will need to enter a license key to continue using Wholesale Payments. If you don't have a license, you can %1$spurchase one%2$s or continue to use the plugin but %3$swe will be collecting a 3%% processing fee%4$s."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/license-notice.php:29
+msgid "%1$sUrgent!%2$s Your Wholesale Payments license is missing!"
+msgstr ""
+
+#: includes/I18n/license-notice.php:30
+msgid "Without an active license, your website checkout process using Wholesale Payments will still continue to work but we will be adding a 3% payment fee to generated invoices."
+msgstr ""
+
+#: includes/I18n/license-notice.php:32
+msgid "Enter Your License Now"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: includes/I18n/license-notice.php:34
+#: includes/I18n/license-notice.php:50
+#: includes/I18n/license-notice.php:66
+msgid "Learn more"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$d = number of days until expiry
+#: includes/I18n/license-notice.php:40
+msgid "%1$sAction Required!%2$s Your Wholesale Payments license is about to expire in %3$d day(s)."
+msgstr ""
+
+#. translators: %1$d = number of days until expiry; %2$s = expiry date
+#: includes/I18n/license-notice.php:42
+msgid ""
+"Your Wholesale Payments license is about to expire in %1$d day(s) and automatic renewals are turned off.\n"
+"         The current license will expire on %2$s. Once expired, you won't be able to make changes to your payment plans, receive plugin updates or support, and we will be adding a 3%% payment fee to generated invoices.\n"
+"         To avoid interruptions, simply reactivate your subscription."
+msgstr ""
+
+#: includes/I18n/license-notice.php:49
+msgid "Login & Reactivate"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/license-notice.php:56
+msgid "%1$sOh no!%2$s Your Wholesale Payments license has expired!"
+msgstr ""
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag; %3$s = opening <strong> tag; %4$s = closing </strong> tag
+#: includes/I18n/license-notice.php:58
+msgid ""
+"Don't worry, your wholesale customers & orders are completely safe and payment plans are still working.\n"
+"             But you will need to enter a license key to continue using Wholesale Payments.\n"
+"              If you don't have a license, you can %1$spurchase one%2$s or continue to use the plugin but %3$swe will be collecting a 3%% processing fee%4$s."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/license-notice.php:71
+msgid "%1$sUrgent!%2$s Your Wholesale Payments license has expired!"
+msgstr ""
+
+#: includes/I18n/settings-page.php:19
+#: includes/I18n/settings-page.php:63
+msgid "Invoices"
+msgstr ""
+
+#: includes/I18n/settings-page.php:25
+msgid "Connecting..."
+msgstr ""
+
+#: includes/I18n/settings-page.php:26
+#: includes/Integrations/WWP.php:310
+msgid "Connect with Stripe"
+msgstr ""
+
+#: includes/I18n/settings-page.php:27
+msgid "Create a custom plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:28
+msgid "Creating..."
+msgstr ""
+
+#: includes/I18n/settings-page.php:29
+msgid "OK"
+msgstr ""
+
+#: includes/I18n/settings-page.php:30
+#: includes/I18n/settings-page.php:132
+msgid "Cancel"
+msgstr ""
+
+#: includes/I18n/settings-page.php:31
+#: includes/I18n/settings-page.php:310
+msgid "Edit"
+msgstr ""
+
+#: includes/I18n/settings-page.php:32
+#: includes/I18n/settings-page.php:54
+msgid "Create New Plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:33
+msgid "Create Plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:34
+#: includes/Integrations/WWP.php:294
+msgid "Test Connection"
+msgstr ""
+
+#: includes/I18n/settings-page.php:35
+msgid "Testing connection..."
+msgstr ""
+
+#: includes/I18n/settings-page.php:36
+#: includes/Integrations/WWP.php:301
+msgid "Reset Connection"
+msgstr ""
+
+#: includes/I18n/settings-page.php:37
+#: includes/Integrations/WWP.php:95
+msgid "API Mode"
+msgstr ""
+
+#: includes/I18n/settings-page.php:38
+#: includes/Integrations/WWP.php:100
+msgid "Test"
+msgstr ""
+
+#: includes/I18n/settings-page.php:39
+#: includes/Integrations/WWP.php:99
+msgid "Live"
+msgstr ""
+
+#: includes/I18n/settings-page.php:40
+msgid "View on Stripe"
+msgstr ""
+
+#: includes/I18n/settings-page.php:41
+msgid "View Order"
+msgstr ""
+
+#: includes/I18n/settings-page.php:42
+#: includes/I18n/settings-page.php:263
+msgid "Refreshing"
+msgstr ""
+
+#: includes/I18n/settings-page.php:45
+msgid "Wholesale Suite"
+msgstr ""
+
+#: includes/I18n/settings-page.php:46
+msgid "Stripe"
+msgstr ""
+
+#: includes/I18n/settings-page.php:47
+#: includes/Integrations/WWP.php:308
+msgid "Stripe API Settings"
+msgstr ""
+
+#: includes/I18n/settings-page.php:50
+msgid "Edit your existing wholesale payment plans or create a new one."
+msgstr ""
+
+#: includes/I18n/settings-page.php:51
+msgid "Create your wholesale payment plans."
+msgstr ""
+
+#: includes/I18n/settings-page.php:55
+msgid "Get started quickly with a commonly used payment template, or configure a custom payment plan. Payment plans will be available to your wholesale customers."
+msgstr ""
+
+#: includes/I18n/settings-page.php:58
+#: includes/Post_Types/Payment_Plan_Post_Type.php:39
+msgid "Edit Payment Plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:59
+msgid "Configure your payment plan."
+msgstr ""
+
+#: includes/I18n/settings-page.php:65
+msgid "Quick Actions"
+msgstr ""
+
+#: includes/I18n/settings-page.php:66
+msgid "All"
+msgstr ""
+
+#: includes/I18n/settings-page.php:67
+#: includes/I18n/settings-page.php:300
+#: includes/Integrations/WC.php:487
+msgid "Pending"
+msgstr ""
+
+#: includes/I18n/settings-page.php:70
+#: includes/I18n/settings-page.php:303
+msgid "Void"
+msgstr ""
+
+#: includes/I18n/settings-page.php:71
+msgid "Search Invoices"
+msgstr ""
+
+#: includes/I18n/settings-page.php:72
+msgid "All Dates"
+msgstr ""
+
+#: includes/I18n/settings-page.php:73
+msgid "Filter by registered customer"
+msgstr ""
+
+#: includes/I18n/settings-page.php:74
+msgid "Filter"
+msgstr ""
+
+#: includes/I18n/settings-page.php:76
+msgid "Today"
+msgstr ""
+
+#: includes/I18n/settings-page.php:77
+msgid "Yesterday"
+msgstr ""
+
+#: includes/I18n/settings-page.php:78
+msgid "Last 7 days"
+msgstr ""
+
+#: includes/I18n/settings-page.php:79
+msgid "Last 30 days"
+msgstr ""
+
+#: includes/I18n/settings-page.php:80
+msgid "This month"
+msgstr ""
+
+#: includes/I18n/settings-page.php:81
+msgid "Last month"
+msgstr ""
+
+#: includes/I18n/settings-page.php:86
+msgid "Summary"
+msgstr ""
+
+#: includes/I18n/settings-page.php:87
+msgid "Date of Order"
+msgstr ""
+
+#: includes/I18n/settings-page.php:88
+msgid "Billed to"
+msgstr ""
+
+#: includes/I18n/settings-page.php:89
+#: includes/I18n/settings-page.php:112
+#: includes/I18n/settings-page.php:122
+#: includes/I18n/settings-page.php:283
+msgid "Currency"
+msgstr ""
+
+#: includes/I18n/settings-page.php:92
+msgid "Details"
+msgstr ""
+
+#: includes/I18n/settings-page.php:93
+msgid "Created"
+msgstr ""
+
+#: includes/I18n/settings-page.php:94
+msgid "Finalized"
+msgstr ""
+
+#: includes/I18n/settings-page.php:95
+msgid "Payment Page"
+msgstr ""
+
+#: includes/I18n/settings-page.php:96
+msgid "Customer Payment Page"
+msgstr ""
+
+#: includes/I18n/settings-page.php:99
+msgid "Total Breakdown"
+msgstr ""
+
+#: includes/I18n/settings-page.php:100
+msgid "Subtotal"
+msgstr ""
+
+#: includes/I18n/settings-page.php:101
+msgid "Total excluding Tax"
+msgstr ""
+
+#: includes/I18n/settings-page.php:102
+msgid "Tax"
+msgstr ""
+
+#: includes/I18n/settings-page.php:103
+msgid "Total"
+msgstr ""
+
+#: includes/I18n/settings-page.php:104
+msgid "Amount Paid"
+msgstr ""
+
+#: includes/I18n/settings-page.php:105
+msgid "Amount Remaining"
+msgstr ""
+
+#: includes/I18n/settings-page.php:108
+#: includes/I18n/settings-page.php:291
+#: includes/Post_Types/Payment_Plan_Post_Type.php:32
+msgid "Payment Plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:110
+#: includes/I18n/settings-page.php:281
+msgid "Name"
+msgstr ""
+
+#: includes/I18n/settings-page.php:111
+#: includes/I18n/settings-page.php:121
+#: includes/I18n/settings-page.php:282
+msgid "Amount"
+msgstr ""
+
+#: includes/I18n/settings-page.php:113
+#: includes/I18n/settings-page.php:123
+#: includes/I18n/settings-page.php:275
+#: includes/I18n/settings-page.php:286
+#: templates/front/parts/order-invoice-payments-progress.php:42
+msgid "Status"
+msgstr ""
+
+#: includes/I18n/settings-page.php:114
+#: includes/I18n/settings-page.php:284
+msgid "Due"
+msgstr ""
+
+#: includes/I18n/settings-page.php:124
+#: includes/I18n/settings-page.php:287
+msgid "Date"
+msgstr ""
+
+#: includes/I18n/settings-page.php:130
+msgid "Add Payment"
+msgstr ""
+
+#: includes/I18n/settings-page.php:133
+msgid "Delete Payment Plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:136
+msgid "Yes"
+msgstr ""
+
+#: includes/I18n/settings-page.php:137
+msgid "No"
+msgstr ""
+
+#: includes/I18n/settings-page.php:138
+msgid "Back"
+msgstr ""
+
+#: includes/I18n/settings-page.php:139
+msgid "Plan Title"
+msgstr ""
+
+#: includes/I18n/settings-page.php:140
+msgid "Note: This title will be visible on the cart/checkout page. Enter a clear and concise title for your payment plan. This title will help you easily identify the plan in your list and should reflect the key details or purpose of the plan."
+msgstr ""
+
+#: includes/I18n/settings-page.php:141
+msgid "Plan Description"
+msgstr ""
+
+#: includes/I18n/settings-page.php:142
+msgid "Provide a detailed description of the payment plan. Include key information such as payment intervals (e.g., monthly, quarterly), total subscription duration, and any special terms or discounts."
+msgstr ""
+
+#: includes/I18n/settings-page.php:143
+msgid "Plan Breakdown:"
+msgstr ""
+
+#. translators: %d = number of days
+#. translators: %d = percentage number
+#: includes/I18n/settings-page.php:145
+#: includes/I18n/settings-page.php:186
+msgid "Day %d"
+msgstr ""
+
+#: includes/I18n/settings-page.php:146
+msgid "No payment required"
+msgstr ""
+
+#. translators: %d = percentage number
+#: includes/I18n/settings-page.php:148
+msgid "%d% payment"
+msgstr ""
+
+#. translators: %1$s = currency symbol; %2$d = fixed amount number
+#: includes/I18n/settings-page.php:150
+msgid "%1$s%2$d payment"
+msgstr ""
+
+#: includes/I18n/settings-page.php:152
+msgid "Days after order:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:153
+msgid "Amount Due:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:155
+msgid "Select format"
+msgstr ""
+
+#: includes/I18n/settings-page.php:156
+msgid "Payment Reminder:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:157
+msgid "Overdue Reminder:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:158
+msgid "Day before due date"
+msgstr ""
+
+#: includes/I18n/settings-page.php:159
+msgid "Days before due date"
+msgstr ""
+
+#: includes/I18n/settings-page.php:160
+msgid "Day after due date"
+msgstr ""
+
+#: includes/I18n/settings-page.php:161
+msgid "Days after due date"
+msgstr ""
+
+#: includes/I18n/settings-page.php:162
+msgid "Send a reminder email before the payment is due"
+msgstr ""
+
+#: includes/I18n/settings-page.php:163
+msgid "Send a reminder email if payment is not received"
+msgstr ""
+
+#: includes/I18n/settings-page.php:164
+msgid "Apply payment plan restrictions"
+msgstr ""
+
+#: includes/I18n/settings-page.php:165
+msgid "Apply auto charge invoices"
+msgstr ""
+
+#: includes/I18n/settings-page.php:166
+msgid "Allowed wholesale roles:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:167
+msgid "Select the wholesale roles that are permitted to use this payment plan during checkout. Only users with the selected roles will see and be able to apply this plan to their purchases."
+msgstr ""
+
+#: includes/I18n/settings-page.php:168
+msgid "Allowed wholesale users:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:169
+msgid "Only approved wholesale customers can access this payment plan during checkout. Ensure your account has the necessary permissions to apply wholesale pricing and complete the purchase with this plan."
+msgstr ""
+
+#: includes/I18n/settings-page.php:170
+msgid "Payment Plan Status:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:171
+msgid "Remove"
+msgstr ""
+
+#: includes/I18n/settings-page.php:174
+msgid "Day"
+msgstr ""
+
+#: includes/I18n/settings-page.php:175
+msgid "Custom"
+msgstr ""
+
+#: includes/I18n/settings-page.php:176
+msgid "Timestamp"
+msgstr ""
+
+#: includes/I18n/settings-page.php:177
+msgid "No Payment Required"
+msgstr ""
+
+#: includes/I18n/settings-page.php:178
+msgid "Fixed amount"
+msgstr ""
+
+#: includes/I18n/settings-page.php:179
+msgid "Percentage"
+msgstr ""
+
+#: includes/I18n/settings-page.php:180
+#: includes/Integrations/WWP.php:118
+#: includes/Integrations/WWP.php:194
+#: includes/Integrations/WWP.php:336
+msgid "Enabled"
+msgstr ""
+
+#: includes/I18n/settings-page.php:181
+#: includes/Integrations/WWP.php:119
+#: includes/Integrations/WWP.php:195
+#: includes/Integrations/WWP.php:337
+msgid "Disabled"
+msgstr ""
+
+#: includes/I18n/settings-page.php:182
+msgid "Any Role"
+msgstr ""
+
+#: includes/I18n/settings-page.php:187
+msgid "Enter a name for your payment plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:188
+msgid "Enter a description for your payment plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:189
+msgid "Select roles this payment plan should only be displayed and available to."
+msgstr ""
+
+#: includes/I18n/settings-page.php:190
+msgid "Search and select users this payment plan should only be displayed and available to."
+msgstr ""
+
+#: includes/I18n/settings-page.php:193
+msgid "This is shown to eligible users on the checkout screen."
+msgstr ""
+
+#. translators: %s = the entered text
+#: includes/I18n/settings-page.php:195
+msgid "Please make sure to provide filter hook handler for \"wpay_parse_%s\" which calculates and returns the number of days."
+msgstr ""
+
+#. translators: %s = the entered text
+#: includes/I18n/settings-page.php:197
+msgid "Please make sure to provide filter hook handler for \"wpay_parse_%s\" which calculates and returns an exact date in Unix epoch time format."
+msgstr ""
+
+#: includes/I18n/settings-page.php:198
+msgid "Your payment plan adds up to 100%, no additional payments are required."
+msgstr ""
+
+#: includes/I18n/settings-page.php:201
+msgid "Are you sure you sure you want to delete this payment breakdown?"
+msgstr ""
+
+#: includes/I18n/settings-page.php:202
+msgid "Are you sure you sure you want to delete this payment plan?"
+msgstr ""
+
+#: includes/I18n/settings-page.php:203
+msgid "Are you sure you sure you want to disable this payment plan?"
+msgstr ""
+
+#: includes/I18n/settings-page.php:204
+msgid "Unsaved changes"
+msgstr ""
+
+#: includes/I18n/settings-page.php:205
+msgid "You have unsaved changes. Are you sure you want to leave this page?"
+msgstr ""
+
+#: includes/I18n/settings-page.php:212
+msgid "Are you sure?"
+msgstr ""
+
+#: includes/I18n/settings-page.php:213
+msgid "Redirecting to Stripe onboarding page..."
+msgstr ""
+
+#: includes/I18n/settings-page.php:216
+msgid "Create from pre-configured payment plan"
+msgstr ""
+
+#. translators: %s = title of pre-configured payment plan
+#: includes/I18n/settings-page.php:218
+msgid "Creating new payment plan based on %s."
+msgstr ""
+
+#: includes/I18n/settings-page.php:220
+msgid "Enter a title for your new payment plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:221
+msgid "Enter a description for your new payment plan"
+msgstr ""
+
+#: includes/I18n/settings-page.php:224
+msgid "New Payment Plan Title"
+msgstr ""
+
+#: includes/I18n/settings-page.php:225
+msgid "New Payment Plan Description"
+msgstr ""
+
+#: includes/I18n/settings-page.php:228
+msgid "Payment plan created successfully!"
+msgstr ""
+
+#: includes/I18n/settings-page.php:230
+msgid "Your Stripe account seems to be not linked. Please reconnect your Stripe account."
+msgstr ""
+
+#: includes/I18n/settings-page.php:231
+msgid "This will disconnect the account currently connected with Stripe. Proceed?"
+msgstr ""
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/settings-page.php:233
+msgid "API mode is permanently set to %1$stest%2$s mode since %1$sWP_ENVIRONMENT_TYPE%2$s constant is defined and is set to %1$slocal%2$s."
+msgstr ""
+
+#: includes/I18n/settings-page.php:234
+#: includes/I18n/settings-page.php:312
+#: templates/front/parts/payment-fields.php:23
+msgid "No payment plans found."
+msgstr ""
+
+#: includes/I18n/settings-page.php:235
+msgid "Your Stripe account is not connected. Please connect your Stripe account."
+msgstr ""
+
+#: includes/I18n/settings-page.php:236
+msgid "No payments found."
+msgstr ""
+
+#: includes/I18n/settings-page.php:239
+msgid "Stripe Connect Account:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:240
+msgid "Live Access Token:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:241
+msgid "Live Publishable Key:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:242
+msgid "Test Access Token:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:243
+msgid "Test Publishable Key:"
+msgstr ""
+
+#: includes/I18n/settings-page.php:244
+msgid "Go to Settings"
+msgstr ""
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: includes/I18n/settings-page.php:250
+msgid "%1$sUrgent!%2$s Wholesale Payments license is disabled!"
+msgstr ""
+
+#: includes/I18n/settings-page.php:251
+#: includes/I18n/settings-page.php:259
+#: includes/I18n/settings-page.php:268
+msgid "Without an active license, your payment plans will still continue to work on your checkout page on the front end but the functionality to edit payment plans has been disabled until a valid license is entered."
+msgstr ""
+
+#: includes/I18n/settings-page.php:252
+msgid "Repurchase New License"
+msgstr ""
+
+#: includes/I18n/settings-page.php:253
+#: includes/I18n/settings-page.php:261
+msgid "Enter a new license"
+msgstr ""
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: includes/I18n/settings-page.php:258
+msgid "%1$sUrgent!%2$s Wholesale Payments license has expired!"
+msgstr ""
+
+#: includes/I18n/settings-page.php:262
+msgid "Refresh license status"
+msgstr ""
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: includes/I18n/settings-page.php:267
+msgid "%1$sUrgent!%2$s Wholesale Payments license is missing!"
+msgstr ""
+
+#: includes/I18n/settings-page.php:269
+msgid "Don't have a license yet? Purchase here."
+msgstr ""
+
+#: includes/I18n/settings-page.php:270
+msgid "Enter License Now"
+msgstr ""
+
+#: includes/I18n/settings-page.php:274
+msgid "Plans"
+msgstr ""
+
+#: includes/I18n/settings-page.php:276
+msgid "# of Payments"
+msgstr ""
+
+#: includes/I18n/settings-page.php:277
+msgid "Plan Duration"
+msgstr ""
+
+#: includes/I18n/settings-page.php:278
+#: includes/I18n/settings-page.php:307
+msgid "Active Orders"
+msgstr ""
+
+#: includes/I18n/settings-page.php:279
+msgid "Actions"
+msgstr ""
+
+#: includes/I18n/settings-page.php:280
+msgid "Order ID"
+msgstr ""
+
+#: includes/I18n/settings-page.php:288
+msgid "Invoice ID"
+msgstr ""
+
+#: includes/I18n/settings-page.php:289
+msgid "Order Date"
+msgstr ""
+
+#: includes/I18n/settings-page.php:290
+msgid "Customer Name"
+msgstr ""
+
+#: includes/I18n/settings-page.php:292
+msgid "Next Payment Due"
+msgstr ""
+
+#: includes/I18n/settings-page.php:293
+#: templates/front/parts/order-invoice-payments-progress.php:40
+msgid "Amount Due"
+msgstr ""
+
+#: includes/I18n/settings-page.php:296
+msgid "Order"
+msgstr ""
+
+#: includes/I18n/settings-page.php:298
+msgid "Active"
+msgstr ""
+
+#: includes/I18n/settings-page.php:299
+msgid "Inactive"
+msgstr ""
+
+#: includes/I18n/settings-page.php:306
+msgid "Days"
+msgstr ""
+
+#: includes/I18n/settings-page.php:308
+msgid "Pause"
+msgstr ""
+
+#: includes/I18n/settings-page.php:309
+msgid "Continue"
+msgstr ""
+
+#: includes/I18n/settings-page.php:311
+msgid "Delete"
+msgstr ""
+
+#: includes/I18n/settings-page.php:313
+msgid "Send Reminder"
+msgstr ""
+
+#: includes/I18n/settings-page.php:314
+msgid "Collect Payment"
+msgstr ""
+
+#: includes/I18n/settings-page.php:315
+msgid "View Details"
+msgstr ""
+
+#: includes/I18n/settings-page.php:316
+msgid "Refresh"
+msgstr ""
+
+#: includes/Integrations/Payment_Block.php:126
+#: templates/front/parts/payment-fields.php:40
+msgid "Payment plans available for this order."
+msgstr ""
+
+#: includes/Integrations/WC.php:163
+msgid "Wholesale Payments: Pending Payment"
+msgstr ""
+
+#: includes/Integrations/WC.php:170
+msgid "Wholesale Payments: Overdue"
+msgstr ""
+
+#: includes/Integrations/WC.php:177
+msgid "Wholesale Payments: Paid in Full"
+msgstr ""
+
+#: includes/Integrations/WC.php:208
+msgid "Checking..."
+msgstr ""
+
+#: includes/Integrations/WC.php:209
+msgid "Error: "
+msgstr ""
+
+#. translators: %s = date
+#. translators: %s = due date
+#: includes/Integrations/WC.php:212
+#: includes/Integrations/WC.php:268
+msgid "Overdue: %s"
+msgstr ""
+
+#. translators: %s = date
+#. translators: %s = due date
+#: includes/Integrations/WC.php:215
+#: includes/Integrations/WC.php:279
+#: includes/Integrations/WC.php:479
+msgid "Due: %s"
+msgstr ""
+
+#: includes/Integrations/WC.php:274
+msgid "Voided"
+msgstr ""
+
+#: includes/Integrations/WC.php:296
+msgid "No payment plan"
+msgstr ""
+
+#: includes/Integrations/WC.php:422
+msgid "View Payments"
+msgstr ""
+
+#. translators: %1$d = payment number; %2$s = status
+#: includes/Integrations/WC.php:477
+msgid "Payment #%1$d (%2$s)"
+msgstr ""
+
+#. translators: %s = formatted price amount due
+#: includes/Integrations/WC.php:481
+msgid "Amount %s"
+msgstr ""
+
+#. translators: %s = status
+#: includes/Integrations/WC.php:483
+msgid "Final Payment (%s)"
+msgstr ""
+
+#: includes/Integrations/WC.php:484
+#: templates/front/parts/order-invoice-payments-progress.php:55
+msgid "Pay Now"
+msgstr ""
+
+#: includes/Integrations/WC.php:488
+msgid "Payment Timeline"
+msgstr ""
+
+#: includes/Integrations/WP.php:77
+msgid "Wholesale Payments check-in is missing required data."
+msgstr ""
+
+#. translators: %s = error message text
+#: includes/Integrations/WP.php:86
+msgid "Wholesale Payments check-in failed: %s"
+msgstr ""
+
+#: includes/Integrations/WPay_Block.php:76
+msgid "Missing plan ID."
+msgstr ""
+
+#: includes/Integrations/WWP.php:39
+msgid "General"
+msgstr ""
+
+#: includes/Integrations/WWP.php:42
+msgid "API Settings"
+msgstr ""
+
+#: includes/Integrations/WWP.php:50
+msgid "Checkout"
+msgstr ""
+
+#: includes/Integrations/WWP.php:53
+msgid "Checkout Settings"
+msgstr ""
+
+#: includes/Integrations/WWP.php:61
+msgid "Email Reminders"
+msgstr ""
+
+#. translators: 1: Store name,
+#: includes/Integrations/WWP.php:67
+msgid "Send email reminders to customers when their payment is due. Your customers will receive emails from your %1$s Store and from Stripe. We recommend you disable email reminders in %2$s if you want to send emails from your Store only."
+msgstr ""
+
+#: includes/Integrations/WWP.php:69
+msgid "Stripe Dashboard"
+msgstr ""
+
+#: includes/Integrations/WWP.php:114
+#: includes/Integrations/WWP.php:190
+msgid "Enable Email Reminders"
+msgstr ""
+
+#: includes/Integrations/WWP.php:121
+#: includes/Integrations/WWP.php:197
+msgid "When enabled, your customers will receive emails from your Store when payment is due."
+msgstr ""
+
+#: includes/Integrations/WWP.php:125
+#: includes/Integrations/WWP.php:208
+msgid "Days Before Payment Due"
+msgstr ""
+
+#: includes/Integrations/WWP.php:130
+#: includes/Integrations/WWP.php:213
+msgid "Days before payment due to send the reminder email reminders."
+msgstr ""
+
+#: includes/Integrations/WWP.php:141
+#: includes/Integrations/WWP.php:224
+msgid "Days After Payment Due"
+msgstr ""
+
+#: includes/Integrations/WWP.php:146
+#: includes/Integrations/WWP.php:229
+msgid "Days after payment due to send the reminder email reminders."
+msgstr ""
+
+#: includes/Integrations/WWP.php:157
+#: includes/Integrations/WWP.php:240
+msgid "Enable Payment Due Today Reminder"
+msgstr ""
+
+#: includes/Integrations/WWP.php:160
+#: includes/Integrations/WWP.php:243
+msgid "Send email reminders to customers when their payment is due today."
+msgstr ""
+
+#: includes/Integrations/WWP.php:166
+msgid "Schedule Email Reminders Now"
+msgstr ""
+
+#: includes/Integrations/WWP.php:168
+msgid "Manually trigger the scheduling of email reminders for all pending payments."
+msgstr ""
+
+#: includes/Integrations/WWP.php:174
+msgid "View Scheduled Actions"
+msgstr ""
+
+#: includes/Integrations/WWP.php:176
+msgid "View all scheduled email reminders in WooCommerce Status."
+msgstr ""
+
+#: includes/Integrations/WWP.php:201
+msgid "Enable Stripe Invoice Reminders"
+msgstr ""
+
+#: includes/Integrations/WWP.php:204
+msgid "If enabled, we will create new invoice to allow you to send reminders from your Store or Stripe. If disabled, the default Stripe invoice behavior will be used. Disable this if you want to send reminders from your Store only."
+msgstr ""
+
+#: includes/Integrations/WWP.php:258
+msgid "Stripe Connect Account"
+msgstr ""
+
+#: includes/Integrations/WWP.php:265
+msgid "Live Access Token"
+msgstr ""
+
+#: includes/Integrations/WWP.php:272
+msgid "Live Publishable Key"
+msgstr ""
+
+#: includes/Integrations/WWP.php:279
+msgid "Test Access Token"
+msgstr ""
+
+#: includes/Integrations/WWP.php:286
+msgid "Test Publishable Key"
+msgstr ""
+
+#: includes/Integrations/WWP.php:296
+msgid "This will check your connection to stripe."
+msgstr ""
+
+#: includes/Integrations/WWP.php:303
+msgid "This will reset your connection to stripe."
+msgstr ""
+
+#: includes/Integrations/WWP.php:319
+msgid "Payment Method Name"
+msgstr ""
+
+#: includes/Integrations/WWP.php:332
+msgid "Auto Charge Invoices"
+msgstr ""
+
+#: includes/Integrations/WWP.php:334
+msgid "Automatically charge invoices for wholesale payments."
+msgstr ""
+
+#: includes/Integrations/WWP.php:363
+msgid "Redirecting to Stripe onboarding page. Please wait..."
+msgstr ""
+
+#: includes/Integrations/WWP.php:390
+msgid "Stripe account not connected!"
+msgstr ""
+
+#: includes/Integrations/WWP.php:393
+#: includes/REST/Rymera_Stripe.php:193
+msgid "Stripe account connected!"
+msgstr ""
+
+#: includes/Integrations/WWP.php:430
+#: includes/REST/Rymera_Stripe.php:432
+msgid "Connection reset! Please connect a Stripe account."
+msgstr ""
+
+#: includes/Integrations/WWP.php:445
+msgid "Action Scheduler is not available."
+msgstr ""
+
+#: includes/Integrations/WWP.php:454
+msgid "Email reminders have been scheduled successfully."
+msgstr ""
+
+#: includes/Integrations/WWP.php:467
+msgid "Redirecting to scheduled actions..."
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:80
+msgid "TEST MODE"
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:85
+msgid "Allow your customers to make payment installments for their wholesale purchases."
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:318
+msgid "Security error: Request seems to be invalid. Please reload the checkout page and try again."
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:342
+msgid "Payment error: Please select a payment plan."
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:360
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:498
+msgid "Payment error: Payment method is not configured properly. Please contact the store manager."
+msgstr ""
+
+#. translators: %s = filter name for 'custom' day format
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:492
+msgid "Payment error: \"%s\" filter needs to return non-null value."
+msgstr ""
+
+#. translators: %1$d = order id; %2$d = payment number
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:518
+msgid "Order #%1$d - Payment #%2$d"
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:546
+msgid "Payment error: Sum amount does not match total amount due. Please contact the store manager."
+msgstr ""
+
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:639
+msgid "Invoice already finalized."
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:34
+msgid "Parent Payment Plan"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:36
+msgid "View Payment Plan"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:37
+msgid "Add Payment Plan"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:38
+msgid "New Payment Plan"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:40
+msgid "Update Payment Plan"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:41
+msgid "Search Payment Plans"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:42
+msgid "No Payment Plan found"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:43
+msgid "No Payment Plans found in Trash"
+msgstr ""
+
+#: includes/Post_Types/Payment_Plan_Post_Type.php:48
+msgid "Payment Plans CPT"
+msgstr ""
+
+#: includes/REST/Invoice_Lists.php:117
+msgid "Invalid invoice ID."
+msgstr ""
+
+#: includes/REST/License_Manager.php:112
+msgid "It seems license key is masked. Unable to activate masked license key."
+msgstr ""
+
+#: includes/REST/License_Manager.php:141
+msgid "Please enter a valid license email."
+msgstr ""
+
+#: includes/REST/License_Manager.php:154
+msgid "Please enter a valid license key."
+msgstr ""
+
+#: includes/REST/License_Manager.php:213
+msgid "License notice dismissed."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:156
+msgid "Unknown method."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:174
+#: includes/REST/Payment_Plan.php:238
+#: includes/REST/Payment_Plan.php:269
+msgid "Invalid payment plan ID."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:203
+msgid "Invalid payment plan title."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:207
+msgid "Invalid payment plan breakdown."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:227
+msgid "Invalid payment plan."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:232
+#: includes/REST/Payment_Plan.php:249
+msgid "Payment plan updated successfully."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:233
+msgid "Payment plan created successfully."
+msgstr ""
+
+#: includes/REST/Payment_Plan.php:274
+msgid "Payment plan deleted successfully."
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:230
+msgid "Empty params."
+msgstr ""
+
+#. translators: %s = Params received
+#: includes/REST/Rymera_Stripe.php:237
+msgid "Invalid object. Params: %s"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:243
+msgid "Invalid object."
+msgstr ""
+
+#. translators: %s = Params received
+#: includes/REST/Rymera_Stripe.php:250
+msgid "Invalid signature (empty). Params: %s"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:256
+msgid "Invalid signature (empty)."
+msgstr ""
+
+#. translators: %s = Params received
+#: includes/REST/Rymera_Stripe.php:270
+msgid "Invalid signature. Params: %s"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:276
+msgid "Invalid signature."
+msgstr ""
+
+#. translators: %s = Params received
+#: includes/REST/Rymera_Stripe.php:318
+msgid "Invoice not found. Params: %s"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:324
+msgid "Invoice not found."
+msgstr ""
+
+#. translators: %s = Stripe event type
+#: includes/REST/Rymera_Stripe.php:335
+msgid "Stripe webhook event \"%s\" received"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:358
+#: includes/REST/Rymera_Stripe.php:475
+msgid "Stripe invoice ID not found."
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:392
+msgid "Order status refreshed"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:450
+msgid "Invalid mode."
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:456
+msgid "API mode updated successfully."
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:484
+msgid "Invoice is not open."
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:494
+msgid "Payment successful."
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:531
+msgid "Invoice created successfully."
+msgstr ""
+
+#: templates/admin/parts/getting-started.php:11
+msgid "Wholesale Suite logo"
+msgstr ""
+
+#: templates/admin/parts/getting-started.php:12
+msgid "Thank you for choosing Wholesale Payments - we're excited to help you bring payment plans & instalments to your wholesale customers."
+msgstr ""
+
+#: templates/admin/parts/getting-started.php:13
+msgid "Would you like to find out how to drive the plugin? Check out our getting started guide."
+msgstr ""
+
+#: templates/admin/parts/getting-started.php:16
+msgid "Read the Getting Started guide"
+msgstr ""
+
+#. translators: %s: current server PHP version
+#: templates/admin/parts/require-php-version.php:14
+msgid "WooCommerce Wholesale Payments plugin requires at least PHP 7.4 to work properly. Your server is currently using PHP %s."
+msgstr ""
+
+#. translators: %s = plugin name wrapped in <strong> tags
+#: templates/admin/parts/require-wp-version.php:14
+msgid "Plugin %s requires at least WordPress version 5.9.0 to work properly."
+msgstr ""
+
+#. translators: %1$s: Store name
+#. translators: %1$s: Store name, %2$s: Payment date
+#: templates/emails/payment-due-today.php:55
+#: templates/emails/plain/payment-due-today.php:41
+msgid "A payment to %1$s is due today"
+msgstr ""
+
+#: templates/emails/payment-due-today.php:63
+#: templates/emails/plain/payment-due-today.php:48
+#: templates/emails/plain/payment-overdue.php:49
+msgid "Please ensure your payment is processed today to maintain uninterrupted access to your account."
+msgstr ""
+
+#: templates/emails/payment-due-today.php:76
+#: templates/emails/payment-nearly-due.php:73
+#: templates/emails/payment-overdue.php:75
+msgid "Pay Invoice Now"
+msgstr ""
+
+#: templates/emails/payment-due-today.php:85
+#: templates/emails/payment-nearly-due.php:82
+#: templates/emails/payment-overdue.php:84
+#: templates/emails/plain/payment-due-today.php:62
+#: templates/emails/plain/payment-nearly-due.php:63
+#: templates/emails/plain/payment-overdue.php:63
+msgid "Manual payment is required, click to view invoice details & payment options."
+msgstr ""
+
+#: templates/emails/payment-due-today.php:91
+#: templates/emails/payment-nearly-due.php:88
+#: templates/emails/payment-overdue.php:90
+#: templates/emails/plain/payment-due-today.php:71
+#: templates/emails/plain/payment-nearly-due.php:72
+#: templates/emails/plain/payment-overdue.php:72
+msgid "This is an automated message, please do not reply directly to this email."
+msgstr ""
+
+#. translators: %1$s: Store name, %2$s: Payment date
+#: templates/emails/payment-nearly-due.php:52
+#: templates/emails/plain/payment-nearly-due.php:41
+msgid "A payment to %1$s is due on %2$s"
+msgstr ""
+
+#: templates/emails/payment-nearly-due.php:61
+#: templates/emails/plain/payment-nearly-due.php:49
+msgid "Please ensure your payment is processed before the due date to maintain uninterrupted access to your account."
+msgstr ""
+
+#. translators: %1$s: Store name, %2$s: Payment date
+#: templates/emails/payment-overdue.php:53
+#: templates/emails/plain/payment-overdue.php:41
+msgid "A payment to %1$s is overdue by %2$s days"
+msgstr ""
+
+#: templates/emails/payment-overdue.php:62
+msgid "Please ensure your payment is processed as soon as possible to maintain uninterrupted access to your account."
+msgstr ""
+
+#: templates/emails/plain/payment-due-today.php:78
+#: templates/emails/plain/payment-nearly-due.php:79
+#: templates/emails/plain/payment-overdue.php:79
+msgid "Powered by Wholesale Suite"
+msgstr ""
+
+#: templates/front/parts/order-invoice-payments-progress.php:41
+msgid "Due Date"
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: templates/front/parts/payment-fields.php:31
+msgid "Payment method is in %1$sTEST MODE%2$s. No payment will be processed or any shipment fulfilled."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: templates/front/parts/payment-fields.php:48
+msgid "%1$sAuto-charge%2$s means Stripe will automatically debit the customer's saved payment method(e.g. credit card, debit card, ACH) without requiring manual action from the customer for each payment."
+msgstr ""
+
+#: templates/front/parts/payment-fields.php:70
+msgid "Auto Charge"
+msgstr ""
+
+#: templates/front/parts/thank-you-payment-method.php:23
+msgid "Unknown payment plan."
+msgstr ""
+
+#: templates/front/parts/thank-you-payment-method.php:28
+msgid "Payment method:"
+msgstr ""
+
+#. translators: %s = payment plan title
+#: templates/front/parts/thank-you-payment-method.php:32
+msgid "Wholesale Payments: %1$s"
+msgstr ""

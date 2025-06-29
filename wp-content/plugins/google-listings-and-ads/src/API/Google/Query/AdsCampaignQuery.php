@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 class AdsCampaignQuery extends AdsQuery {
 
 	/**
-	 * Query constructor.
+	 * AdsCampaignQuery constructor.
 	 */
 	public function __construct() {
 		parent::__construct( 'campaign' );
@@ -23,7 +23,7 @@ class AdsCampaignQuery extends AdsQuery {
 				'campaign.name',
 				'campaign.status',
 				'campaign.advertising_channel_type',
-				'campaign.shopping_setting.sales_country',
+				'campaign.shopping_setting.feed_label',
 				'campaign_budget.amount_micros',
 			]
 		);

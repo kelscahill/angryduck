@@ -1,0 +1,225 @@
+/** Field Controls **/
+.discount-controls .field-container {
+    margin-bottom: 20px;
+}
+.discount-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+.discount-controls .field-container select {
+    display: block;
+    min-width: 300px;
+}
+.discount-controls .field-container.wwpp-wholesale-roles-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+.discount-controls .field-container input[ type="number" ] {
+    display: block;
+    min-width: 200px;
+}
+.discount-controls .field-container p.desc {
+    font-weight: normal;
+}
+
+
+/** Button Controls **/
+.button-controls {
+    display: block;
+    margin-bottom: 40px;
+}
+.button-controls .spinner {
+    float: left;
+    position: relative;
+    top: 3px;
+}
+.button-controls .button {
+    float: left;
+}
+.button-controls #cancel-edit-mapping {
+    margin-right: 10px;
+}
+.button-controls.add-mode #add-mapping {
+    display: inline-block;
+}
+.button-controls.add-mode #save-mapping,
+.button-controls.add-mode #cancel-edit-mapping,
+.button-controls.edit-mode #add-mapping {
+    display: none!important;
+}
+.button-controls.edit-mode #save-mapping {
+    display: inline-block;
+}
+.button-controls.edit-mode #cancel-edit-mapping {
+    display: inline-block;
+}
+.button-controls .spinner {
+    top: 0;
+}
+.button-controls.processing .spinner {
+    visibility: visible;
+    display: inline-block;
+}
+
+
+/** Mapping Table **/
+#wholesale-role-general-discount-mapping thead tr th,
+#wholesale-role-general-discount-mapping tfoot tr th {
+    padding: 15px 10px;
+}
+#wholesale-role-general-discount-mapping tbody tr.edited {
+    background-color: #fff2d8 !important;
+}
+#wholesale-role-general-discount-mapping tbody tr td.controls {
+    text-align: right;
+}
+#wholesale-role-general-discount-mapping tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+#wholesale-role-general-discount-mapping tbody tr td.controls .edit {
+    color: green;
+}
+#wholesale-role-general-discount-mapping tbody tr td.controls .delete {
+    color: red;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Wholesale Role Cart Quantity Based Wholesale Discount
+|--------------------------------------------------------------------------
+*/
+
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container {
+    margin-bottom: 20px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container.wrcqbwd-wholesale-roles-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container p.desc {
+    font-weight: normal;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .field-controls .field-container .tooltip {
+    font-size: 16px;
+    color: #666666;
+    margin-top: 4px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls .button {
+    display: inline-block;
+    margin-right: 10px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls.add-mode #wrcqbwd-add-mapping {
+    display: inline-block;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls.add-mode #wrcqbwd-save-mapping,
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls.add-mode #wrcqbwd-cancel-edit-mapping {
+    display: none;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls.edit-mode #wrcqbwd-add-mapping {
+    display: none;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls.edit-mode #wrcqbwd-save-mapping,
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls.edit-mode #wrcqbwd-cancel-edit-mapping {
+    display: inline-block;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-container .button-controls .spinner {
+    float: none;
+    display: inline-block;
+    visibility: hidden;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-mapping thead tr th,
+#wholesale-role-cart-qty-based-wholesale-discount-mapping tfoot tr th {
+    padding: 15px 10px;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-mapping tbody tr td.controls {
+    text-align: right;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-mapping tbody tr td.controls .edit {
+    cursor: pointer;
+    color: green;
+    display: inline-block;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-mapping tbody tr td.controls .delete {
+    cursor: pointer;
+    color: red;
+    display: inline-block;
+}
+#wholesale-role-cart-qty-based-wholesale-discount-mapping tbody tr.editing {
+    background-color: rgb(255, 232, 199) !important;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Wholesale Role Cart Total Based Discount
+|--------------------------------------------------------------------------
+*/
+
+#wholesale-role-cart-total-based-discount-container .field-controls .field-container {
+    margin-bottom: 20px;
+}
+#wholesale-role-cart-total-based-discount-container .field-controls .field-container label {
+    display: block;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+#wholesale-role-cart-total-based-discount-container .field-controls .field-container.wrcqbwd-wholesale-roles-field-container .chosen-container .chosen-search-input {
+    width: 390px !important;
+}
+#wholesale-role-cart-total-based-discount-container .field-controls .field-container p.desc {
+    font-weight: normal;
+}
+#wholesale-role-cart-total-based-discount-container .field-controls .field-container .tooltip {
+    font-size: 16px;
+    color: #666666;
+    margin-top: 4px;
+}
+#wholesale-role-cart-total-based-discount-container .button-controls .button {
+    display: inline-block;
+    margin-right: 10px;
+}
+#wholesale-role-cart-total-based-discount-container .button-controls.add-mode #wrcqbwd-add-mapping {
+    display: inline-block;
+}
+#wholesale-role-cart-total-based-discount-container .button-controls.add-mode #wrcqbwd-save-mapping,
+#wholesale-role-cart-total-based-discount-container .button-controls.add-mode #wrcqbwd-cancel-edit-mapping {
+    display: none;
+}
+#wholesale-role-cart-total-based-discount-container .button-controls.edit-mode #wrcqbwd-add-mapping {
+    display: none;
+}
+#wholesale-role-cart-total-based-discount-container .button-controls.edit-mode #wrcqbwd-save-mapping,
+#wholesale-role-cart-total-based-discount-container .button-controls.edit-mode #wrcqbwd-cancel-edit-mapping {
+    display: inline-block;
+}
+#wholesale-role-cart-total-based-discount-container .button-controls .spinner {
+    float: none;
+    display: inline-block;
+    visibility: hidden;
+}
+#wholesale-role-cart-total-discount-mapping thead tr th,
+#wholesale-role-cart-total-discount-mapping tfoot tr th {
+    padding: 15px 10px;
+}
+#wholesale-role-cart-total-discount-mapping tbody tr td.controls {
+    text-align: right;
+}
+#wholesale-role-cart-total-discount-mapping tbody tr td.controls .edit {
+    cursor: pointer;
+    color: green;
+    display: inline-block;
+}
+#wholesale-role-cart-total-discount-mapping tbody tr td.controls .delete {
+    cursor: pointer;
+    color: red;
+    display: inline-block;
+}
+#wholesale-role-cart-total-discount-mapping tbody tr.editing {
+    background-color: rgb(255, 232, 199) !important;
+}

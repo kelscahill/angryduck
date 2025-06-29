@@ -3,7 +3,7 @@
 Plugin Name: Perfmatters
 Plugin URI: https://perfmatters.io/
 Description: Perfmatters is a lightweight performance plugin developed to speed up your WordPress site.
-Version: 1.6.8
+Version: 2.3.2
 Author: forgemedia
 Author URI: https://forgemedia.io/
 License: GPLv2 or later
@@ -18,17 +18,55 @@ Domain Path: /languages
 define('PERFMATTERS_STORE_URL', 'https://perfmatters.io/');
 define('PERFMATTERS_ITEM_ID', 696);
 define('PERFMATTERS_ITEM_NAME', 'perfmatters');
-define('PERFMATTERS_VERSION', '1.6.8');
+define('PERFMATTERS_VERSION', '2.3.2');
+define('PERFMATTERS_PATH', plugin_dir_path(__FILE__ ));
 
-//load translations
-function perfmatters_load_textdomain() {
+function perfmatters_plugins_loaded() {
+
+	//setup cache constants
+	$perfmatters_cache_path = apply_filters('perfmatters_cache_path', 'cache');
+	$parsed_url = parse_url(get_site_url());
+	$host = ($parsed_url['host'] ?? '') . ($parsed_url['path'] ?? '');
+	if(!defined('PERFMATTERS_CACHE_DIR')) {
+		define('PERFMATTERS_CACHE_DIR', WP_CONTENT_DIR . '/' . $perfmatters_cache_path . "/perfmatters/$host/");
+	}
+	if(!defined('PERFMATTERS_CACHE_URL')) {
+		define('PERFMATTERS_CACHE_URL', str_replace('http:', 'https:', content_url('/')) . $perfmatters_cache_path . "/perfmatters/$host/");
+	}
+
+	//load translations
 	load_plugin_textdomain('perfmatters', false, dirname(plugin_basename( __FILE__)) . '/languages/');
-}
-add_action('plugins_loaded', 'perfmatters_load_textdomain');
 
-//load EDD custom updater class
-if(!class_exists('Perfmatters_Plugin_Updater')) {
-	include(dirname( __FILE__ ) . '/inc/Perfmatters_Plugin_Updater.php');
+	//initialize plugin classes
+	Perfmatters\Config::init();
+	Perfmatters\Meta::init();
+
+	//initialize classes that filter the buffer
+    Perfmatters\Fonts::init();
+    Perfmatters\Images::init();
+    Perfmatters\CSS::init();
+	Perfmatters\LazyLoad::init_iframes();
+    Perfmatters\Preload::init();
+    Perfmatters\LazyLoad::init_images();
+    Perfmatters\JS::init();
+    Perfmatters\CDN::init();
+	Perfmatters\Buffer::init();
+
+	//initialize db optimizer
+	new Perfmatters\DatabaseOptimizer();
+
+	//initialize ajax
+	new Perfmatters\Ajax();
+}
+add_action('plugins_loaded', 'perfmatters_plugins_loaded');
+
+//setup cli commands
+if(defined('WP_CLI' ) && WP_CLI) {
+	require_once plugin_dir_path(__FILE__) . 'inc/CLI.php';
+	function perfmatters_cli_register_commands() {
+		WP_CLI::add_command('perfmatters', 'Perfmatters\CLI');
+	}
+	add_action('cli_init', 'perfmatters_cli_register_commands');
 }
 
 //initialize the updater
@@ -36,17 +74,12 @@ function perfmatters_edd_plugin_updater() {
 
 	//to support auto-updates, this needs to run during the wp_version_check cron job for privileged users
 	$doing_cron = defined('DOING_CRON') && DOING_CRON;
-	if(!current_user_can('manage_options') && !$doing_cron) {
+	if(!current_user_can('manage_options') && !$doing_cron && !defined('WP_CLI')) {
 		return;
 	}
 
 	//retrieve our license key from the DB
-	if(is_network_admin()) {
-		$license_key = trim(get_site_option('perfmatters_edd_license_key'));
-	}
-	else {
-		$license_key = trim(get_option('perfmatters_edd_license_key'));
-	}
+	$license_key = is_multisite() ? trim(get_site_option('perfmatters_edd_license_key')) : trim(get_option('perfmatters_edd_license_key'));
 	
 	//setup the updater
 	$edd_updater = new Perfmatters_Plugin_Updater(PERFMATTERS_STORE_URL, __FILE__, array(
@@ -70,7 +103,6 @@ global $perfmatters_settings_page;
 //admin menu
 function perfmatters_menu() {
 	if(perfmatters_network_access()) {
-		
 		global $perfmatters_settings_page;
 		$perfmatters_settings_page = add_options_page('perfmatters', 'Perfmatters', 'manage_options', 'perfmatters', 'perfmatters_admin');
 		add_action('load-' . $perfmatters_settings_page, 'perfmatters_settings_load');
@@ -95,6 +127,20 @@ function perfmatters_admin_scripts() {
 
 		wp_register_script('perfmatters-js', plugins_url('/js/perfmatters.js', __FILE__), array(), PERFMATTERS_VERSION);
 		wp_enqueue_script('perfmatters-js');
+		wp_localize_script('perfmatters-js', 'PERFMATTERS', array(
+			'ajaxurl' => admin_url('admin-ajax.php'),
+			'nonce' => wp_create_nonce('perfmatters-nonce'),
+			'strings' => array(
+				'failed' => __('Action failed.', 'perfmatters')
+			)
+		));
+
+		if(empty($_GET['tab']) || $_GET['tab'] == 'options') {
+			$cm_settings['codeEditor'] = wp_enqueue_code_editor(array('type' => 'text/html'));
+			wp_localize_script('jquery', 'cm_settings', $cm_settings);
+			wp_enqueue_script('wp-theme-plugin-editor');
+			wp_enqueue_style('wp-codemirror');
+		}
 	}
 }
 
@@ -111,31 +157,10 @@ function perfmatters_network_access() {
 
 //license messages in plugins table
 function perfmatters_meta_links($links, $file) {
-	if(strpos($file, 'perfmatters.php' ) !== false) {
-
-		$license_info = perfmatters_check_license();
-
-		$settings_url = is_network_admin() ? network_admin_url('settings.php?page=perfmatters') : admin_url('options-general.php?page=perfmatters');
-
-		$perfmatters_links = array();
+	if(strpos($file, 'perfmatters.php') !== false) {
 
 		//support link
-		$perfmatters_links[] = '<a href="https://perfmatters.io/docs/" target="_blank">' . __('Support', 'perfmatters') . '</a>';
-
-		//activation link
-		if(!is_plugin_active_for_network('perfmatters/perfmatters.php') || is_network_admin()) {
-
-			if(!empty($license_info->license) && $license_info->license == "valid") {
-				$perfmatters_links[] = '<a href="' . $settings_url . '&tab=license" style="color: green;">' . __('License is Activated', 'perfmatters') . '</a>';
-			}
-			elseif(!empty($license_info->license) && $license_info->license == "expired") {
-				$perfmatters_links[] = '<a href="' . $settings_url . '&tab=license" style="color: orange;">' . __('Renew License', 'perfmatters') . '</a>';
-			}
-			else {
-				$perfmatters_links[] = '<a href="' . $settings_url . '&tab=license" style="color: red;">' . __('Activate License', 'perfmatters') . '</a>';
-			}
-
-		}
+		$perfmatters_links = array('<a href="https://perfmatters.io/docs/" target="_blank">' . __('Support', 'perfmatters') . '</a>');
 
 		$links = array_merge($links, $perfmatters_links);
 	}
@@ -143,47 +168,11 @@ function perfmatters_meta_links($links, $file) {
 }
 add_filter('plugin_row_meta', 'perfmatters_meta_links', 10, 2);
 
-//plugin settings page header
-function perfmatters_admin_header() {
-
-	if(empty($_GET['page']) || $_GET['page'] !== 'perfmatters') {
-		return;
-	}
-
-	//header container
-	echo "<div id='perfmatters-admin-header'>";
-
-		//logo + version
-		echo "<div id='perfmatters-admin-header-logo'><img src='" .  plugins_url('/img/logo.svg', __FILE__) . "' alt='Perfmatters Logo' />" . " <span>v" . PERFMATTERS_VERSION . "</span></div>";
-
-		//callout buttons
-		echo "<div id='perfmatters-admin-header-buttons'>";
-			echo "<a href='https://perfmatters.io/contact/?utm_source=perfmatters&utm_medium=banner&utm_campaign=header-cta' target='_blank'><i class='dashicons dashicons-email'></i>" . __('Support', 'perfmatters') . "</a>";
-			echo "<a href='https://perfmatters.io/docs/?utm_source=perfmatters&utm_medium=banner&utm_campaign=header-cta' target='_blank'><i class='dashicons dashicons-text-page'></i>" . __('Documentation', 'perfmatters') . "</a>";
-		echo "</div>";
-
-		//woorkup notice
-        echo "<div id='perfmatters-admin-header-notice'>";
-        	echo __("Looking to speed up WordPress? Check out our <a href='https://woorkup.com/speed-up-wordpress/?utm_source=perfmatters&utm_medium=banner&utm_campaign=header-cta' title='WordPress Optimization Guide' target='_blank'>complete optimization guide</a>.", 'perfmatters');
-        echo "</div>";
-
-	echo "</div>";
-}
-add_action('admin_notices', 'perfmatters_admin_header', 1);
-add_action('network_admin_notices', 'perfmatters_admin_header', 1);
-
 //settings link in plugins table
 function perfmatters_action_links($actions, $plugin_file) 
 {
 	if(plugin_basename(__FILE__) == $plugin_file) {
-
-		if(is_network_admin()) {
-			$settings_url = network_admin_url('settings.php?page=perfmatters');
-		}
-		else {
-			$settings_url = admin_url('options-general.php?page=perfmatters');
-		}
-
+		$settings_url = is_network_admin() ? network_admin_url('settings.php?page=perfmatters') : admin_url('options-general.php?page=perfmatters');
 		$settings_link = array('settings' => '<a href="' . $settings_url . '">' . __('Settings', 'perfmatters') . '</a>');
 		$actions = array_merge($settings_link, $actions);
 	}
@@ -191,11 +180,22 @@ function perfmatters_action_links($actions, $plugin_file)
 }
 add_filter('plugin_action_links', 'perfmatters_action_links', 10, 5);
 
+//display message with plugin update if theres no valid license
+function perfmatters_plugin_update_message() {
+
+	$license_status = is_multisite() ? get_site_option('perfmatters_edd_license_status') : get_option('perfmatters_edd_license_status');
+
+	if(empty($license_status) || $license_status !== 'valid') {
+		echo ' <strong><a href="' . esc_url(admin_url('options-general.php?page=perfmatters&tab=license')) . '">' . __('Enter valid license key for automatic updates.', 'perfmatters') . '</a></strong>';
+	}
+}
+add_action('in_plugin_update_message-perfmatters/perfmatters.php', 'perfmatters_plugin_update_message', 10, 2);
+
 function perfmatters_activate() {
 	
 	//enable local analytics scheduled event
-	$perfmatters_ga = get_option('perfmatters_ga');
-	if(!empty($perfmatters_ga['enable_local_ga']) && $perfmatters_ga['enable_local_ga'] == "1") {
+	$perfmatters_options = get_option('perfmatters_options');
+	if(!empty($perfmatters_options['analytics']['enable_local_ga'])) {
 		if(!wp_next_scheduled('perfmatters_update_ga')) {
 			wp_schedule_event(time(), 'daily', 'perfmatters_update_ga');
 		}
@@ -214,14 +214,11 @@ register_activation_hook(__FILE__, 'perfmatters_activate');
 //register a license deactivation
 function perfmatters_deactivate() {
 
-	//remove local analytics scheduled event
-	if(wp_next_scheduled('perfmatters_update_ga')) {
-		wp_clear_scheduled_hook('perfmatters_update_ga');
-	}
-
-	//remove database optimization scheduled event
-	if(wp_next_scheduled('perfmatters_database_optimization')) {
-		wp_clear_scheduled_hook('perfmatters_database_optimization');
+	//remove scheduled events
+	foreach(array('perfmatters_update_ga', 'perfmatters_database_optimization') as $hook) {
+		if(wp_next_scheduled($hook)) {
+			wp_clear_scheduled_hook($hook);
+		}
 	}
 }
 register_deactivation_hook(__FILE__, 'perfmatters_deactivate');
@@ -247,33 +244,193 @@ function perfmatters_install() {
 		}
 	}
 
-	if(is_network_admin() && is_plugin_active_for_network('perfmatters/perfmatters.php')) {
+	$perfmatters_version = get_option('perfmatters_version');
 
-		//update network version
+	//migrate data to new locations
+	if($perfmatters_version < '1.7.5') {
+
+		//migration fields array
+		$migration_fields = array(
+			'perfmatters_options' => array(
+				'perfmatters_options' => array(
+					'lazy_loading'                => 'lazyload',
+					'lazy_loading_iframes'        => 'lazyload',
+					'youtube_preview_thumbnails'  => 'lazyload',
+					'lazy_loading_exclusions'     => 'lazyload',
+					'lazy_loading_dom_monitoring' => 'lazyload',
+					'disable_google_fonts'        => 'fonts'
+				)
+			),
+			'perfmatters_cdn' => array(
+				'perfmatters_options' => array(
+					'enable_cdn'      => 'cdn',
+					'cdn_url'         => 'cdn',
+					'cdn_directories' => 'cdn',
+					'cdn_exclusions'  => 'cdn'
+				)
+			),
+			'perfmatters_ga' => array(
+				'perfmatters_options' => array(
+					'enable_local_ga'          => 'analytics',
+					'tracking_id'              => 'analytics',
+					'tracking_code_position'   => 'analytics',
+					'script_type'              => 'analytics',
+					'disable_display_features' => 'analytics',
+					'anonymize_ip'             => 'analytics',
+					'track_admins'             => 'analytics',
+					'adjusted_bounce_rate'     => 'analytics',
+					'cdn_url'                  => 'analytics',
+					'use_monster_insights'     => 'analytics',
+					'enable_amp'               => 'analytics'
+				)
+			),
+			'perfmatters_extras' => array(
+				'perfmatters_options' => array(
+					'blank_favicon'  => '',
+					'script_manager' => 'assets',
+					'defer_js'       => 'assets',
+					'defer_jquery'   => 'assets',
+					'js_exclusions'  => 'assets',
+					'delay_js'       => 'assets',
+					'delay_timeout'  => 'assets',
+					'header_code'    => 'assets',
+					'body_code'      => 'assets',
+					'footer_code'    => 'assets',
+					'instant_page'   => 'preload',
+					'preload'        => 'preload',
+					'preconnect'     => 'preload',
+					'dns_prefetch'   => 'preload'
+				),
+				'perfmatters_tools' => array(
+					'clean_uninstall'    => '',
+					'accessibility_mode' => '',
+					'post_revisions'     => 'database',
+					'post_auto_drafts'   => 'database',
+					'trashed_posts'      => 'database',
+					'spam_comments'      => 'database',
+					'trashed_comments'   => 'database',
+					'expired_transients' => 'database',
+					'all_transients'     => 'database',
+					'tables'             => 'database',
+					'optimize_schedule'  => 'database'
+				)
+			)
+		);
+
+		//loop through and migrate old data to new options
+		foreach($migration_fields as $old_option_id => $new_options) {
+
+			//old option
+			$old_option_array = get_option($old_option_id, array());
+
+			foreach($new_options as $new_option_id => $fields) {
+
+				//new option
+				$new_option_array = get_option($new_option_id, array());
+
+				foreach($fields as $id => $section) {
+					if(!empty($old_option_array[$id])) {
+						if(empty($section)) {
+							$new_option_array[$id] = $old_option_array[$id];
+						}
+						else {
+							$new_option_array[$section][$id] = $old_option_array[$id];
+						}
+					}
+				}
+
+				//save new option
+				update_option($new_option_id, $new_option_array);
+			}
+		}
+	}
+
+	if($perfmatters_version < '1.7.6') {
+
+		$update_flag = false;
+
+		$perfmatters_options = get_option('perfmatters_options');
+
+		if(!empty($perfmatters_options['assets']['delay_js'])) {
+			$perfmatters_options['assets']['delay_js_inclusions'] = $perfmatters_options['assets']['delay_js'];
+			$perfmatters_options['assets']['delay_js'] = '1';
+			$update_flag = true;
+		}
+
+		if($update_flag) {
+			update_option('perfmatters_options', $perfmatters_options);
+		}
+	}
+
+	if($perfmatters_version < '2.1.1') {
+
+		$perfmatters_options = get_option('perfmatters_options');
+		$perfmatters_tools = get_option('perfmatters_tools');
+
+		if(!empty($perfmatters_options['assets']['defer_jquery']) && empty($perfmatters_tools['show_advanced'])) {
+			$perfmatters_tools['show_advanced'] = '1';
+			update_option('perfmatters_tools', $perfmatters_tools);
+		}
+	}
+
+	if($perfmatters_version < '2.2.1') {
+
+		$update_flag = false;
+
+		$perfmatters_options = get_option('perfmatters_options');
+
+		if(!empty($perfmatters_options['analytics']['script_type']) && $perfmatters_options['analytics']['script_type'] == 'gtag' && !empty($perfmatters_options['analytics']['dual_tracking']) && !empty($perfmatters_options['analytics']['measurement_id'])) {
+			$perfmatters_options['analytics']['tracking_id'] = $perfmatters_options['analytics']['measurement_id'];
+			$update_flag = true;
+		}
+
+		if(!empty($perfmatters_options['analytics']['script_type']) && $perfmatters_options['analytics']['script_type'] != 'minimalv4') {
+			unset($perfmatters_options['analytics']['script_type']);
+			$update_flag = true;
+		}
+
+		if($update_flag) {
+			update_option('perfmatters_options', $perfmatters_options);
+		}
+	}
+
+	if($perfmatters_version < '2.3.1') {
+
+		$perfmatters_options = get_option('perfmatters_options');
+		$perfmatters_tools = get_option('perfmatters_tools');
+
+		if(!empty($perfmatters_options['assets']['script_manager'])) {
+			$perfmatters_tools['script_manager'] = '1';
+			update_option('perfmatters_tools', $perfmatters_tools);
+		}
+	}
+
+	//update version
+	if($perfmatters_version != PERFMATTERS_VERSION) {
+		update_option('perfmatters_version', PERFMATTERS_VERSION, false);
+	}
+
+	//update network version if needed
+	if(is_multisite()) {
 		if(get_site_option('perfmatters_version') != PERFMATTERS_VERSION) {
 			update_site_option('perfmatters_version', PERFMATTERS_VERSION, false);
-		}
-	} 
-	else {
-
-		//update version
-		if(get_option('perfmatters_version') != PERFMATTERS_VERSION) {
-			update_option('perfmatters_version', PERFMATTERS_VERSION, false);
 		}
 	}
 }
 
 //check version for update
 function perfmatters_version_check() {
+	$install_flag = false;
 	if(is_multisite()) {
 		if(get_site_option('perfmatters_version') != PERFMATTERS_VERSION) {
-	    	perfmatters_install();
+	    	$install_flag = true;
 	    }
 	}
-	else {
-		if(get_option('perfmatters_version') != PERFMATTERS_VERSION) {
-	    	perfmatters_install();
-	    }
+	if(get_option('perfmatters_version') != PERFMATTERS_VERSION) {
+    	$install_flag = true;
+    }
+	if($install_flag) {
+		perfmatters_install();
 	}
 }
 add_action('plugins_loaded', 'perfmatters_version_check');
@@ -287,13 +444,17 @@ function perfmatters_uninstall() {
 	//plugin options
 	$perfmatters_options = array(
 		'perfmatters_options',
-		'perfmatters_cdn',
-		'perfmatters_ga',
-		'perfmatters_extras',
+		'perfmatters_cdn', //deprecated
+		'perfmatters_ga', //deprecated
+		'perfmatters_extras', //deprecated
+		'perfmatters_tools',
+		'perfmatters_used_css_time',
 		'perfmatters_script_manager',
 		'perfmatters_script_manager_settings',
 		'perfmatters_edd_license_key',
-		'perfmatters_edd_license_status'
+		'perfmatters_edd_license_status',
+		'perfmatters_version',
+		'perfmatters_close_cta'
 	);
 
 	//meta options
@@ -333,8 +494,8 @@ function perfmatters_uninstall() {
 		}
 	}
 	else {
-		$perfmatters_extras = get_option('perfmatters_extras');
-		if(!empty($perfmatters_extras['clean_uninstall']) && $perfmatters_extras['clean_uninstall'] == 1) {
+		$perfmatters_tools = get_option('perfmatters_tools');
+		if(!empty($perfmatters_tools['clean_uninstall']) && $perfmatters_tools['clean_uninstall'] == 1) {
 
 			global $wpdb;
 
@@ -353,6 +514,17 @@ function perfmatters_uninstall() {
 		}
 	}
 
+	//remove cache directory if needed
+	require_once(ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php');
+	require_once(ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php');
+	if(class_exists('WP_Filesystem_Direct')) {
+		$fileSystemDirect = new WP_Filesystem_Direct(false);
+		$cache_dir = ABSPATH . 'wp-content/cache/perfmatters';
+		if($fileSystemDirect->is_dir($cache_dir)) {
+			$fileSystemDirect->rmdir($cache_dir, true);
+		}
+	}
+
 	//remove mu plugin file if needed
 	if(file_exists(WPMU_PLUGIN_DIR . "/perfmatters_mu.php")) {
    		@unlink(WPMU_PLUGIN_DIR . "/perfmatters_mu.php");
@@ -361,16 +533,11 @@ function perfmatters_uninstall() {
 register_uninstall_hook(__FILE__, 'perfmatters_uninstall');
 
 //main file includes
-require_once plugin_dir_path(__FILE__) . '/inc/settings.php';
-require_once plugin_dir_path(__FILE__) . '/inc/functions.php';
-require_once plugin_dir_path(__FILE__) . '/inc/functions_lazy_load.php';
-require_once plugin_dir_path(__FILE__) . '/inc/functions_script_manager.php';
-require_once plugin_dir_path(__FILE__) . '/inc/functions_assets_js.php';
-require_once plugin_dir_path(__FILE__) . '/inc/meta.php';
-require_once plugin_dir_path(__FILE__) . '/inc/network.php';
+require_once plugin_dir_path(__FILE__) . 'EDD_SL_Plugin_Updater.php';
+require_once plugin_dir_path(__FILE__) . 'inc/settings.php';
+require_once plugin_dir_path(__FILE__) . 'inc/functions.php';
+require_once plugin_dir_path(__FILE__) . 'inc/functions_script_manager.php';
+require_once plugin_dir_path(__FILE__) . 'inc/functions_network.php';
 
-//database optimizer
-require_once plugin_dir_path(__FILE__) . 'vendor/wp-background-processing/wp-async-request.php';
-require_once plugin_dir_path(__FILE__) . 'vendor/wp-background-processing/wp-background-process.php';
-require_once plugin_dir_path(__FILE__) . 'inc/classes/database-optimization-process.php';
-require_once plugin_dir_path(__FILE__) . 'inc/classes/database-optimizer.php';
+//composer autoloader
+require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';

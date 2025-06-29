@@ -1,0 +1,31 @@
+.selectize-control {
+    width: 600px;
+}
+
+.selectize-input {
+    padding: 6px;
+}
+
+a.wwlc_custom_field,
+a.wwlc_custom_field:focus{
+	-webkit-box-shadow: none;
+	box-shadow: none;
+	color: #00a0d2;
+}
+
+.wwlc-email-wysiwyg-desc {
+	width: 600px; 
+}
+.wwlc-email-wysiwyg-desc > p code {
+	display: inline-block;
+	margin-right: 4px;
+    margin-bottom: 4px;
+}
+
+.wwlc_custom_field_tags_wrapper {
+	margin-top: 8px;	;
+}
+
+.wwlc_custom_field_tags_wrapper, .wwlc_custom_field_tags_wrapper span {
+	display: block;
+}

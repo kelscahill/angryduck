@@ -4,12 +4,44 @@ namespace Automattic\WooCommerce\Admin\Features\OnboardingTasks\Tasks;
 
 use Automattic\WooCommerce\Admin\Features\Features;
 use Automattic\WooCommerce\Admin\Features\OnboardingTasks\Task;
-use Automattic\WooCommerce\Internal\Admin\RemoteFreeExtensions\Init as RemoteFreeExtensions;
 
 /**
  * Marketing Task
  */
 class Marketing extends Task {
+	/**
+	 * Constructor
+	 *
+	 * @param TaskList $task_list Parent task list.
+	 */
+	public function __construct( $task_list ) {
+		parent::__construct( $task_list );
+
+		add_action( 'activated_plugin', array( $this, 'on_activated_plugin' ), 10, 1 );
+	}
+
+	/**
+	 * Mark the task as complete when related plugins are activated.
+	 */
+	public function on_activated_plugin( $plugin ) {
+		$plugin_basename = basename( plugin_basename( $plugin ), '.php' );
+
+		if ( $plugin_basename === 'multichannel-by-cedcommerce' &&
+			$this->task_list->visible &&
+			! $this->task_list->is_hidden() &&
+			! $this->is_complete()
+		) {
+			$this->mark_actioned();
+		}
+	}
+
+	/**
+	 * Used to cache is_complete() method result.
+	 *
+	 * @var null
+	 */
+	private $is_complete_result = null;
+
 	/**
 	 * ID.
 	 *
@@ -25,16 +57,7 @@ class Marketing extends Task {
 	 * @return string
 	 */
 	public function get_title() {
-		if ( count( $this->task_list->get_sections() ) > 0 && ! $this->is_complete() ) {
-			return __( 'Grow your business with marketing tools', 'woocommerce' );
-		}
-		if ( true === $this->get_parent_option( 'use_completed_title' ) ) {
-			if ( $this->is_complete() ) {
-				return __( 'You added sales channels', 'woocommerce' );
-			}
-			return __( 'Get more sales', 'woocommerce' );
-		}
-		return __( 'Set up marketing tools', 'woocommerce' );
+		return __( 'Grow your business', 'woocommerce' );
 	}
 
 	/**
@@ -43,9 +66,6 @@ class Marketing extends Task {
 	 * @return string
 	 */
 	public function get_content() {
-		if ( count( $this->task_list->get_sections() ) > 0 ) {
-			return __( 'Promote your store in other sales channels, like email, Google, and Facebook.', 'woocommerce' );
-		}
 		return __(
 			'Add recommended marketing tools to reach new customers and grow your business',
 			'woocommerce'
@@ -62,74 +82,39 @@ class Marketing extends Task {
 	}
 
 	/**
-	 * Task completion.
-	 *
-	 * @return bool
-	 */
-	public function is_complete() {
-		return self::has_installed_extensions();
-	}
-
-	/**
 	 * Task visibility.
 	 *
 	 * @return bool
 	 */
 	public function can_view() {
-		return Features::is_enabled( 'remote-free-extensions' ) && count( self::get_plugins() ) > 0;
+		return Features::is_enabled( 'remote-free-extensions' );
 	}
 
 	/**
 	 * Get the marketing plugins.
 	 *
+	 * @deprecated 9.3.0 Removed to improve performance.
 	 * @return array
 	 */
 	public static function get_plugins() {
-		$bundles = RemoteFreeExtensions::get_extensions(
-			array(
-				'task-list/reach',
-				'task-list/grow',
-			)
+		wc_deprecated_function(
+			__METHOD__,
+			'9.3.0'
 		);
-
-		return array_reduce(
-			$bundles,
-			function( $plugins, $bundle ) {
-				$visible = array();
-				foreach ( $bundle['plugins'] as $plugin ) {
-					if ( $plugin->is_visible ) {
-						$visible[] = $plugin;
-					}
-				}
-				return array_merge( $plugins, $visible );
-			},
-			array()
-		);
+		return array();
 	}
 
 	/**
 	 * Check if the store has installed marketing extensions.
 	 *
+	 * @deprecated 9.3.0 Removed to improve performance.
 	 * @return bool
 	 */
 	public static function has_installed_extensions() {
-		$plugins   = self::get_plugins();
-		$remaining = array();
-		$installed = array();
-
-		foreach ( $plugins as $plugin ) {
-			if ( ! $plugin->is_installed ) {
-				$remaining[] = $plugin;
-			} else {
-				$installed[] = $plugin;
-			}
-		}
-
-		// Make sure the task has been actioned and a marketing extension has been installed.
-		if ( count( $installed ) > 0 && Task::is_task_actioned( 'marketing' ) ) {
-			return true;
-		}
-
+		wc_deprecated_function(
+			__METHOD__,
+			'9.3.0'
+		);
 		return false;
 	}
 }

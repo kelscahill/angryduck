@@ -10,6 +10,8 @@
  * @since    3.0.0
  */
 
+use Automattic\WooCommerce\Utilities\StringUtil;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -131,8 +133,9 @@ class WC_REST_Coupons_V1_Controller extends WC_REST_Posts_Controller {
 	 * @return array
 	 */
 	public function query_args( $args, $request ) {
-		if ( ! empty( $request['code'] ) ) {
-			$id = wc_get_coupon_id_by_code( $request['code'] );
+		$coupon_code = $request['code'] ?? null;
+		if ( ! StringUtil::is_null_or_whitespace( $coupon_code ) ) {
+			$id               = wc_get_coupon_id_by_code( $coupon_code );
 			$args['post__in'] = array( $id );
 		}
 
@@ -249,7 +252,7 @@ class WC_REST_Coupons_V1_Controller extends WC_REST_Posts_Controller {
 
 		// Validate required POST fields.
 		if ( 'POST' === $request->get_method() && 0 === $coupon->get_id() ) {
-			if ( empty( $request['code'] ) ) {
+			if ( StringUtil::is_null_or_whitespace( $request['code'] ?? null ) ) {
 				return new WP_Error( 'woocommerce_rest_empty_coupon_code', sprintf( __( 'The coupon code cannot be empty.', 'woocommerce' ), 'code' ), array( 'status' => 400 ) );
 			}
 		}
@@ -261,8 +264,8 @@ class WC_REST_Coupons_V1_Controller extends WC_REST_Posts_Controller {
 			if ( ! is_null( $value ) ) {
 				switch ( $key ) {
 					case 'code' :
-						$coupon_code = wc_format_coupon_code( $value );
-						$id          = $coupon->get_id() ? $coupon->get_id() : 0;
+						$coupon_code  = wc_format_coupon_code( $value );
+						$id           = $coupon->get_id() ? $coupon->get_id() : 0;
 						$id_from_code = wc_get_coupon_id_by_code( $coupon_code, $id );
 
 						if ( $id_from_code ) {

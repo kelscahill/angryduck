@@ -1,0 +1,60 @@
+#adminmenu li.wp-has-current-submenu a .awaiting-mod {
+    background-color: #2EA2CC;
+    color: #FFF;
+}
+
+#your-profile table.form-table .select2-container{	
+    width: 25em;
+}
+
+div.manage-user-controls{
+    position: relative;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+div.manage-user-controls a.wwlc_user_row_action:focus{
+    box-shadow: none;
+}
+
+div.manage-user-controls h4,
+div.manage-user-controls a.wwlc_user_row_action{
+    padding: 10px;
+    display: inline-block;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+div.manage-user-controls a.wwlc_user_row_action{
+    color: red;
+}
+
+.loading-screen{
+    display:    none;
+    position:   fixed;
+    z-index:    9999;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 ) 
+                url('../images/spinner-2x.gif') 
+                50% 50% 
+                no-repeat;
+}
+
+.wwlc-admin-user-field-file {
+    margin-bottom: 20px;
+}
+
+.wwlc-admin-user-field .inline-error {
+    margin-left: 5px;
+    color: #ff6060;
+}
+.wwlc-admin-user-field .wwlc-loader {
+    display: none;
+    padding: 0px 12px;
+    margin-left: 10px;
+    background: url("../images/spinner.gif") no-repeat;
+}

@@ -1,0 +1,97 @@
+<?php
+/**
+ * License interstitial template.
+ *
+ * @since   3.0.4
+ * @package RymeraWebCo\WWOF
+ */
+
+// Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+use RymeraWebCo\WWOF\Classes\License_Manager;
+
+$wws_license_page_url = is_multisite() ? network_admin_url( 'admin.php?page=wws-ms-license-settings&tab=' . strtolower( $this->_software_key ) ) : admin_url( 'admin.php?page=wws-license-settings&tab=' . strtolower( $this->_software_key ) );
+?>
+<div id="wws-license-interstitial" class='wrap nosubsub wws-license-interstitial--<?php echo esc_attr( $interstitial_type ); ?>' data-software_key="<?php echo esc_attr( $software_key ); ?>">
+    <hr class="wp-header-end">
+    <div class="wws-license-interstitial-container">
+        <a href="<?php echo esc_url( $wws_license_page_url ); ?>" class="wws-license-interstitial-close dashicons dashicons-no-alt"></a>
+        <img src="<?php echo esc_url( WWOF_PLUGIN_DIR_URL . 'static/images/logo.svg' ); ?>" alt="Wholesale Suite Logo" class="wws-license-interstitial-logo">
+        <h1 class="wws-license-interstitial-title">
+            <?php
+            switch ( $interstitial_type ) {
+                case 'expired':
+                    echo wp_kses_post(
+                        sprintf(
+                            /* translators: %1$s and %2$s opening and closing strong tags respectively. */
+                            __( '%1$sUrgent!%2$s Your Wholesale Suite license has expired!', 'woocommerce-wholesale-order-form' ),
+                            '<span class="text-color-red">',
+                            '</span>'
+                        )
+                    );
+                    break;
+                case 'nolicense':
+                    echo wp_kses_post(
+                        sprintf(
+                            /* translators: %1$s and %2$s opening and closing strong tags respectively. */
+                            __( '%1$sUrgent!%2$s Your Wholesale Suite license is missing!', 'woocommerce-wholesale-order-form' ),
+                            '<span class="text-color-red">',
+                            '</span>'
+                        )
+                    );
+                    break;
+                case 'disabled':
+                    echo wp_kses_post(
+                        sprintf(
+                            /* translators: %1$s and %2$s opening and closing strong tags respectively. */
+                            __( '%1$sUrgent!%2$s Your Wholesale Suite license is disabled!', 'woocommerce-wholesale-order-form' ),
+                            '<span class="text-color-red">',
+                            '</span>'
+                        )
+                    );
+                    break;
+            }
+            ?>
+        </h1>
+        <p><?php esc_html_e( 'Without an active license, your website front end will still continue to receive wholesale orders, leads and show wholesale pricing but premium functionality has been disabled until a valid license is entered.', 'woocommerce-wholesale-order-form' ); ?></p>
+        <img src="<?php echo esc_url( WWOF_PLUGIN_DIR_URL . 'static/images/wws-locked.png' ); ?>" alt="License Expired" class="wws-license-interstitial-locked-image">
+        <ul class="wws-license-interstitial-plugins-status">
+            <?php if ( ! empty( $wws_license_data ) ) : ?>
+                <?php foreach ( $wws_license_data as $plugin_key => $license_data ) : ?>
+                    <li class="plugin-key plugin-key--<?php echo esc_attr( strtolower( esc_attr( $plugin_key ) ) ); ?>">
+                        <span class="plugin-name"><?php echo esc_html( License_Manager::get_plugin_name( $plugin_key ) ); ?>:</span>
+                        <?php if ( array_key_exists( 'license_status', $license_data ) ) : ?>
+                        <span class="plugin-status text-color-<?php echo 'active' === $license_data['license_status'] ? 'green' : 'red'; ?>">
+                            <?php echo esc_html( License_Manager::get_license_status_i18n( $license_data['license_status'] ) ); ?>
+                        </span>
+                        <?php else : ?>
+                        <span class="plugin-status text-color-red">
+                            <?php esc_html_e( 'No license found', 'woocommerce-wholesale-order-form' ); ?>
+                        </span>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </ul>
+        <?php if ( 'expired' === $interstitial_type ) : ?>
+            <a href="<?php echo esc_url( $license_management_url ); ?>" target="_blank" class="button button-primary button-hero wws-license-interstitial-action-button"><?php esc_html_e( 'Renew License', 'woocommerce-wholesale-order-form' ); ?></a>
+        <?php elseif ( 'nolicense' === $interstitial_type ) : ?>
+            <a href="<?php echo esc_url( $wws_license_page_url ); ?>" class="button button-primary button-hero wws-license-interstitial-action-button"><?php esc_html_e( 'Enter License Now', 'woocommerce-wholesale-order-form' ); ?></a>
+        <?php elseif ( 'disabled' === $interstitial_type ) : ?>
+            <a href="<?php echo esc_url( 'https://wholesalesuiteplugin.com/bundle/?utm_source=wwof&utm_medium=drm&utm_campaign=wwofdrminterstitialrepurchaselink' ); ?>" target="_blank" class="button button-primary button-hero wws-license-interstitial-action-button"><?php esc_html_e( 'Repurchase New License', 'woocommerce-wholesale-order-form' ); ?></a>
+        <?php endif; ?>
+        <div class="wws-license-interstitial-action-links">
+            <?php if ( 'expired' === $interstitial_type || 'disabled' === $interstitial_type ) : ?>
+                <a href="<?php echo esc_url( $wws_license_page_url ); ?>"><?php esc_html_e( 'Enter a new license', 'woocommerce-wholesale-order-form' ); ?></a>
+                <a href="#" id="wws-refresh-license-status-link"><?php esc_html_e( 'Refresh license status', 'woocommerce-wholesale-order-form' ); ?><span class="license-status-timeout"></span></a>
+            <?php elseif ( 'nolicense' === $interstitial_type ) : ?>
+                <a href="<?php echo esc_url( 'https://wholesalesuiteplugin.com/bundle/?utm_source=wwof&utm_medium=drm&utm_campaign=wwofdrminterstitialpurchaselink' ); ?>" target="_blank"><?php esc_html_e( 'Don’t have a license yet? Purchase here.', 'woocommerce-wholesale-order-form' ); ?></a>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<!-- Fix white backround in embeded page -->
+<div class="wws-license-interstitial-overlay"></div>

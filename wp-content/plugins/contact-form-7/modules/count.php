@@ -29,7 +29,7 @@ function wpcf7_count_form_tag_handler( $tag ) {
 	while ( $targets ) {
 		$target = array_shift( $targets );
 
-		if ( 'count' != $target->type ) {
+		if ( 'count' !== $target->type ) {
 			$maxlength = $target->get_maxlength_option();
 			$minlength = $target->get_minlength_option();
 			break;
@@ -50,6 +50,7 @@ function wpcf7_count_form_tag_handler( $tag ) {
 	}
 
 	$atts = array();
+
 	$atts['id'] = $tag->get_id_option();
 	$atts['class'] = $tag->get_class_option( $class );
 	$atts['data-target-name'] = $tag->name;
@@ -57,9 +58,12 @@ function wpcf7_count_form_tag_handler( $tag ) {
 	$atts['data-current-value'] = $value;
 	$atts['data-maximum-value'] = $maxlength;
 	$atts['data-minimum-value'] = $minlength;
-	$atts = wpcf7_format_atts( $atts );
 
-	$html = sprintf( '<span %1$s>%2$s</span>', $atts, $value );
+	$html = sprintf(
+		'<span %1$s>%2$s</span>',
+		wpcf7_format_atts( $atts ),
+		$value
+	);
 
 	return $html;
 }

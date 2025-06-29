@@ -31,6 +31,7 @@
  */
 namespace Google\ApiCore\Transport;
 
+use BadMethodCallException;
 use Google\ApiCore\ApiException;
 use Google\ApiCore\Call;
 use Google\ApiCore\RequestBuilder;
@@ -41,8 +42,8 @@ use Google\ApiCore\ValidationException;
 use Google\ApiCore\ValidationTrait;
 use Google\Protobuf\Internal\Message;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Exception\RequestException;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\RequestInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Message\ResponseInterface;
 
 /**
  * A REST based transport implementation.
@@ -55,10 +56,7 @@ class RestTransport implements TransportInterface
         startServerStreamingCall as protected unsupportedServerStreamingCall;
     }
 
-    /**
-     * @var RequestBuilder
-     */
-    private $requestBuilder;
+    private RequestBuilder $requestBuilder;
 
     /**
      * @param RequestBuilder $requestBuilder A builder responsible for creating
@@ -90,7 +88,7 @@ class RestTransport implements TransportInterface
      * @return RestTransport
      * @throws ValidationException
      */
-    public static function build($apiEndpoint, $restConfigPath, array $config = [])
+    public static function build(string $apiEndpoint, string $restConfigPath, array $config = [])
     {
         $config += [
             'httpHandler'  => null,
@@ -127,10 +125,33 @@ class RestTransport implements TransportInterface
                 $decodeType = $call->getDecodeType();
                 /** @var Message $return */
                 $return = new $decodeType;
-                $return->mergeFromJsonString(
-                    (string) $response->getBody(),
-                    true
-                );
+                $body = (string) $response->getBody();
+
+                // In some rare cases LRO response metadata may not be loaded
+                // in the descriptor pool, triggering an exception. The catch
+                // statement handles this case and attempts to add the LRO
+                // metadata type to the pool by directly instantiating the
+                // metadata class.
+                try {
+                    $return->mergeFromJsonString(
+                        $body,
+                        true
+                    );
+                } catch (\Exception $ex) {
+                    if (!isset($options['metadataReturnType'])) {
+                        throw $ex;
+                    }
+
+                    if (strpos($ex->getMessage(), 'Error occurred during parsing:') !== 0) {
+                        throw $ex;
+                    }
+
+                    new $options['metadataReturnType']();
+                    $return->mergeFromJsonString(
+                        $body,
+                        true
+                    );
+                }
 
                 if (isset($options['metadataCallback'])) {
                     $metadataCallback = $options['metadataCallback'];
@@ -139,7 +160,7 @@ class RestTransport implements TransportInterface
 
                 return $return;
             },
-            function (\Exception $ex) {
+            function (\Throwable $ex) {
                 if ($ex instanceof RequestException && $ex->hasResponse()) {
                     throw ApiException::createFromRequestException($ex);
                 }
@@ -229,9 +250,7 @@ class RestTransport implements TransportInterface
      */
     private function getCallOptions(array $options)
     {
-        $callOptions = isset($options['transportOptions']['restOptions'])
-            ? $options['transportOptions']['restOptions']
-            : [];
+        $callOptions = $options['transportOptions']['restOptions'] ?? [];
 
         if (isset($options['timeoutMillis'])) {
             $callOptions['timeout'] = $options['timeoutMillis'] / 1000;

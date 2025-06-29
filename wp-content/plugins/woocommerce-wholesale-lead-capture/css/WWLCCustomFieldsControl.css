@@ -1,0 +1,246 @@
+/***** Custom Field Controls *****/
+.custom-field-controls {
+    display: block;
+    margin-bottom: 40px;
+}
+
+.custom-field-controls .field-container {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.custom-field-controls .field-container .desc {
+    margin: 0;
+    font-weight: normal;
+}
+
+.custom-field-controls .field-container label {
+    margin-bottom: 6px;
+    line-height: 1;
+}
+
+.custom-field-controls .field-container label[ for = 'wwlc_cf_enabled_field' ],
+.custom-field-controls .field-container label[ for = 'wwlc_cf_required_field' ],
+    .custom-field-controls .field-container label[ for = 'wwlc_cf_checkout_display_field' ] {
+    display: inline-block;
+    margin-right: 1.5em;
+    min-width: 180px;
+}
+
+.custom-field-controls .field-container #wwlc_cf_field_type {
+    display: inline-block;
+    width: 180px;
+}
+
+.custom-field-controls .field-container.text-field-container label {
+    display: block;
+}
+
+.custom-field-controls .field-container.text-field-container > div,
+.custom-field-controls .field-container.file-field-options-container > div{
+    display: table;
+}
+
+.custom-field-controls .field-container.text-field-container > div span,
+.custom-field-controls .field-container.file-field-options-container > div strong{
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.custom-field-controls .field-container.select-field-container label {
+    display: block;
+}
+
+.custom-field-controls .field-container.number-field-container input[ type = 'number' ] {
+    width: 180px;
+    display: inline-block;
+}
+
+.custom-field-controls .attributes-container {
+
+}
+
+.custom-field-controls .attributes-container.numeric-field-attributes-container {
+    display: none;
+}
+
+.custom-field-controls .attributes-container.numeric-field-attributes-container div {
+    margin-bottom: 10px;
+}
+
+.custom-field-controls .attributes-container.numeric-field-attributes-container label {
+    display: inline-block;
+    width: 75px;
+}
+
+.custom-field-controls .attributes-container.numeric-field-attributes-container input[ type = "number" ] {
+    display: inline-block;
+    width: 100px;
+}
+
+.custom-field-controls .options-container {
+
+}
+
+.custom-field-controls .options-container.select-field-options-container,
+.custom-field-controls .options-container.radio-field-options-container,
+.custom-field-controls .options-container.checkbox-field-options-container {
+    display: none;
+}
+
+.custom-field-controls .options-container.radio-field-options-container strong,
+.custom-field-controls .options-container.checkbox-field-options-container strong,
+.custom-field-controls .options-container.select-field-options-container strong {
+    font-size: 1.2em;
+    margin-bottom: 6px;
+    display: inline-block;
+}
+
+.custom-field-controls .options-container.radio-field-options-container .options-list,
+.custom-field-controls .options-container.checkbox-field-options-container .options-list,
+.custom-field-controls .options-container.select-field-options-container .options-list {
+    max-height: 200px;
+    overflow-y: scroll;
+    width: 400px;
+    background-color: #dfdfdf;
+    padding: 10px;
+    margin-top: 0;
+}
+
+.custom-field-controls .options-container.radio-field-options-container .options-list label,
+.custom-field-controls .options-container.checkbox-field-options-container .options-list label,
+.custom-field-controls .options-container.select-field-options-container .options-list label {
+    display: inline-block;
+    width: 130px;
+    margin-right: 10px;
+}
+
+.custom-field-controls .options-container.radio-field-options-container .options-list input[ type = 'text' ],
+.custom-field-controls .options-container.checkbox-field-options-container .options-list input[ type = 'text' ],
+.custom-field-controls .options-container.select-field-options-container .options-list input[ type = 'text' ] {
+    display: inline-block;
+    width: 140px;
+    margin-top: 0;
+}
+
+.custom-field-controls .options-container.radio-field-options-container .options-list .dashicons,
+.custom-field-controls .options-container.checkbox-field-options-container .options-list .dashicons,
+.custom-field-controls .options-container.select-field-options-container .options-list .dashicons {
+    margin-top: 6px;
+    cursor: pointer;
+}
+
+.custom-field-controls .options-container.radio-field-options-container .options-list .dashicons.add,
+.custom-field-controls .options-container.checkbox-field-options-container .options-list .dashicons.add,
+.custom-field-controls .options-container.select-field-options-container .options-list .dashicons.add {
+    color: green;
+    margin-right: 5px;
+}
+
+.custom-field-controls .options-container.radio-field-options-container .options-list .dashicons.remove,
+.custom-field-controls .options-container.checkbox-field-options-container .options-list .dashicons.remove,
+.custom-field-controls .options-container.select-field-options-container .options-list .dashicons.remove {
+    color: red;
+}
+.custom-field-controls .content-wp-editor-field-container .content-notice,
+.custom-field-controls .terms_conditions-wp-editor-field-container .content-notice {
+    background: #ffba01;
+    color: #3c3c3c;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: normal;
+    font-style: italic;
+}
+
+.custom-field-controls .content-wp-editor-field-container {
+    max-width: 600px;
+}
+.custom-field-controls .content-wp-editor-field-container label {
+    margin-bottom: 5px;
+}
+
+.custom-field-controls .field-container.text-field-container > div.wwlc-cf-field-id-container {
+    width: 400px;
+    display: flex;
+    align-items: center;
+}
+
+.custom-field-controls .field-container #wwlc_cf_field_id {
+    width: 100%;
+}
+
+/***** Button Controls *****/
+.button-controls {
+    display: block;
+    display: block;
+    margin-bottom: 40px;
+}
+
+.button-controls .button {
+    float: left;
+    margin-right: 8px;
+}
+
+.button-controls.add-mode #cancel-edit-custom-field {
+    display: none;
+}
+
+.button-controls.add-mode #save-custom-field {
+    display: none;
+}
+
+.button-controls.add-mode #add-custom-field {
+    display: inline-block;
+}
+
+.button-controls.edit-mode #cancel-edit-custom-field {
+    display: inline-block;
+}
+
+.button-controls.edit-mode #save-custom-field {
+    display: inline-block;
+}
+
+.button-controls.edit-mode #add-custom-field {
+    display: none;
+}
+
+.button-controls .spinner {
+    display: none;
+    float: left;
+    visibility: visible;
+    margin-left: 0;
+}
+
+.button-controls.processing .spinner {
+    display: inline-block;
+}
+
+/***** Custom Fields Table *****/
+#wholesale-lead-capture-custom-fields {
+
+}
+
+#wholesale-lead-capture-custom-fields thead tr th,
+#wholesale-lead-capture-custom-fields tfoot tr th {
+    padding: 15px 10px;
+}
+
+#wholesale-lead-capture-custom-fields tbody tr.edited {
+    background-color: #fff2d8 !important;
+}
+
+#wholesale-lead-capture-custom-fields tbody tr td.controls .dashicons {
+    font-size: 24px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+#wholesale-lead-capture-custom-fields tbody tr td.controls .edit {
+    color: green;
+    margin-right: 15px;
+}
+
+#wholesale-lead-capture-custom-fields tbody tr td.controls .delete {
+    color: red;
+}

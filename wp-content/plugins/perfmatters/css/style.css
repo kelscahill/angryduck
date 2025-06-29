@@ -1,247 +1,288 @@
-.notice {
-  margin: 5px 20px 15px 2px;
-}
-
-.update-nag {
+/* wp ui */
+.settings_page_perfmatters #wpbody-content {
   margin-top: 5px;
 }
-
-#setting-error-perfmatters-hidden-notice {
+.settings_page_perfmatters #wpbody-content>.notice {
+  margin: 15px auto 15px 2px;
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+.settings_page_perfmatters #wpbody-content>.update-nag {
+  margin-bottom: 0px;
+}
+#perfmatters-admin-container .notice, #setting-error-perfmatters-hidden-notice {
   display: none;
 }
-
-/* Header */
-#perfmatters-admin-header {
-  background: #282E34;
-  margin: 0px 0px 10px -20px;
-  padding: 0px 20px 0px 22px;
-  overflow: hidden;
-}
-#perfmatters-admin-header #perfmatters-admin-header-logo {
-  color: #ffffff;
-  margin: 0px;
-  display: inline-block;
-  height: 60px;
-  float: left;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-#perfmatters-admin-header #perfmatters-admin-header-logo img {
-  display: inline-block;
-  height: 32px;
-  margin: 14px 0px 14px 0px;
-}
-#perfmatters-admin-header #perfmatters-admin-header-logo span {
-  font-size: 12px;
-  margin: 0px 0px 5px 5px;
-}
-#perfmatters-admin-header #perfmatters-admin-header-buttons {
-  line-height: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  float: right;
-  margin: 0px 0px 0px 20px;
-}
-#perfmatters-admin-header #perfmatters-admin-header-buttons a {
-  display: inline-block;
-  background: rgba(0,0,0,0.15);
-  padding: 8px 10px;
-  color: white;
-  text-decoration: none;
-  margin: 0px 0px 0px 20px;
-  line-height: normal;
-  font-size: 13px;
+#perfmatters-admin-container a {
+  color: #4A89DD;
 }
 
-#perfmatters-admin-header #perfmatters-admin-header-buttons a:hover {
-  background: rgba(0,0,0,0.25);
-}
-
-#perfmatters-admin-header #perfmatters-admin-header-buttons a i {
-  width: auto;
-  height: auto;
-  font-size: 14px;
-  margin: 2px 4px 0px 0px;
-}
-
-#perfmatters-admin-header #perfmatters-admin-header-notice {
-  float: right;
-  color: #ffffff;
-  line-height: 60px;
-}
-#perfmatters-admin-header #perfmatters-admin-header-notice a {
-  color: #ffffff;
-  font-weight: bold;
-}
-
-@media all and (max-width: 1240px) {
-  #perfmatters-admin-header #perfmatters-admin-header-notice {
-    display: none;
-  }
-}
-
-@media all and (max-width: 600px) {
-  #perfmatters-admin-header #perfmatters-admin-header-logo, #perfmatters-admin-header #perfmatters-admin-header-buttons {
-    width: 100%;
-  }  
-  #perfmatters-admin-header #perfmatters-admin-header-buttons {
-    align-items: start;
-    justify-content: center;
-    height: 50px;
-    line-height: 50px;
-  }
-  #perfmatters-admin-header #perfmatters-admin-header-buttons a:first-child {
-    margin-left: 0px;
-  }
-}
-
+/* admin wrappers */
 #perfmatters-admin {
-  margin-top: 0px;
-}
-
-/* Navigation */
-#perfmatters-admin .nav-tab-wrapper {
-  padding-top: 0px;
+  max-width: 1200px;
   margin-top: 15px;
 }
-#perfmatters-admin .perfmatters-subnav {
-  padding: 10px 0px 0px 0px;
+#perfmatters-admin-container {
+  display: flex; 
+  gap: 20px;
 }
-#perfmatters-admin .perfmatters-subnav a {
-  display: inline-block;
-  font-size: 15px; 
-  margin: 0px 0px 5px 0px;
+#perfmatters-admin .perfmatters-admin-block {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e2e4e7;
+  border-radius: 3px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* header */
+#perfmatters-admin-header {
+  margin-bottom: 10px;
+  width: 220px;
+  min-width: 220px;
+}
+#perfmatters-logo-bar {
+  display: flex;
+  align-items: center;
+}
+#perfmatters-logo {
+  display: flex;
+  max-height: 30px;
+  margin: 10px auto;
+  overflow: visible;
+  width: 100%;
+}
+#perfmatters-menu-toggle {
+  display: none;
+  text-decoration: none;
+}
+#perfmatters-menu-toggle .dashicons {
+  width: 30px;
+  height: 30px;
+  font-size: 30px;
+}
+#perfmatters-menu {
+  margin: 15px 0px;
+}
+#perfmatters-menu a {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
   padding: 10px;
   text-decoration: none;
   box-shadow: none;
-  -webkit-box-shadow: none;
-  -moz-box-shadow: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: none;
+  margin-top: 2px;
 }
-#perfmatters-admin .perfmatters-subnav a.active {
-  color: #333333;
-  border-bottom: 2px solid #333333;
+#perfmatters-menu a:hover {
+  color: #4A89DD;
 }
-#perfmatters-admin .perfmatters-subnav a span.dashicons {
-  margin-right: 3px;
-  font-size: 19px;
+#perfmatters-menu a.active {
+  color: #4A89DD;
+  border-color: #4A89DD;
+  background: #e8f1ff;
+}
+#perfmatters-menu a .dashicons {
+  margin-right: 8px;
+  font-size: 23px;
+  width: 23px;
+  height: 23px;
+}
+#perfmatters-menu a {
+  font-size: 14px;
+  padding: 8px 10px;
+  margin: 1px 0px;
+  font-weight: 500;
+}
+#perfmatters-menu a .dashicons {
+  font-size: 16px;
+  height: 16px;
 }
 
-/* General UI */
+/* general ui */
+.perfmatters-settings-section {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #f2f2f2;
+  padding-bottom: 20px;
+}
+.perfmatters-settings-section h2 {
+  padding-top: 10px;
+}
+#perfmatters-admin .section-content {
+  display: none;
+}
 #perfmatters-admin .section-content.active {
   display: block;
 }
-#perfmatters-admin .section-content.hide {
-  display: none;
-}
-
 #perfmatters-admin h2 {
-	font-size: 24px;
-	line-height: normal;
-	margin: 25px 0px 0px 0px;
+	font-size: 18px;
+  font-weight: 500;
+  line-height: normal;
+  margin: 0px auto 10px auto;
 }
-
-#perfmatters-admin p.perfmatters-subheading {
-	font-size: 12px;
-	line-height: normal;
-	font-style: italic;
-	margin: 5px 0px 0px 0px;
-	padding-bottom: 10px;
-	border-bottom: 1px solid #dddddd;
+#perfmatters-admin .perfmatters-settings-header {
+  display: flex;
+  align-items: center;
+  font-size: 22px;
+  margin: -20px -20px 20px -20px;
+  padding: 20px;
+  font-weight: 500;
+  background: #282E34;
+  border-radius: 3px 3px 0px 0px;
+  color: #fff;
 }
-
-#perfmatters-admin p.perfmatters-warning {
-  background: #ffffff;
-  color: #dc3232;
-  padding: 10px;
-  font-weight: bold;
+#perfmatters-admin .perfmatters-settings-header .dashicons {
+  font-size:23px;
+  width: 23px;
+  height: 23px;
+  margin-right: 8px;
+  color: #fff;
 }
-
+#perfmatters-admin .perfmatters-settings-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0px;
+  margin-bottom: 0px;
+}
+#perfmatters-admin .form-table {
+  margin: 0px;
+}
+#perfmatters-admin .form-table th {
+  padding: 15px 10px 15px 0px;
+  font-size: 13px;
+  font-weight: normal;
+  min-width: 200px;
+}
 #perfmatters-admin .form-table td {
   position: relative;
-  vertical-align: top;
+  padding: 10px;
 }
-#perfmatters-admin .switch {
+#perfmatters-admin .perfmatters-title-wrapper {
+  display: flex;
+  justify-content: space-between;
+}
+#perfmatters-admin .form-table th label {
+  vertical-align: top;
+  padding-right: 5px;
+}
+.perfmatters-beta {
+  background: #ED5464;
+  color: #ffffff;
+  padding: 5px;
+  vertical-align: middle;
+  font-size: 10px;
+  margin-left: 3px;
+}
+#pm-version {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  line-height: 24px;
+  color: #fff;
+}
+#perfmatters-admin #perfmatters-cta {
+  display: flex; 
+  align-items: center; 
+  background: #e8f1ff; 
+  padding: 10px; 
+  border-color: #4A89DD; 
+  color: #4A89DD; 
+  margin-top: 15px; 
+  text-decoration: none;
+  box-shadow: none;
+}
+#perfmatters-cta-close {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  padding: 2px;
+  font-size: 15px;
+  line-height: 20px;
+}
+#perfmatters-cta-close:hover {
+  color: #282E34;
+}
+
+/* inputs */
+#perfmatters-admin .perfmatters-switch {
   position: relative;
   display: inline-block;
   width: 48px;
   height: 28px;
   font-size: 1px;
 }
-
-#perfmatters-admin .switch input {
+#perfmatters-admin .perfmatters-switch input {
   display: block;
   margin: 0px;
   border: none;
   outline: none;
   box-shadow: none;
 }
-
-#perfmatters-admin .slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: .4s;
-  transition: .4s;
+#perfmatters-admin .perfmatters-switch input[type=checkbox]:checked::before {
+  height: 0;
+  width: 0;
 }
-
-#perfmatters-admin .slider:before {
+#perfmatters-admin .perfmatters-slider {
+  position: absolute;
+  inset: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 50px;
+  cursor: pointer;
+}
+#perfmatters-admin .perfmatters-slider:before {
   position: absolute;
   content: "";
   height: 20px;
   width: 20px;
   left: 4px;
   bottom: 4px;
-  background-color: white;
-  -webkit-transition: .4s;
+  background-color: #fff;
   transition: .4s;
+  border-radius: 50%;
 }
-
-#perfmatters-admin input:checked + .slider {
-  background-color: #007cba;
+#perfmatters-admin input:checked + .perfmatters-slider {
+  background-color: #4A89DD;
 }
-
-#perfmatters-admin input:focus + .slider {
-  box-shadow: 0 0 1px #007cba;
+#perfmatters-admin input:focus + .perfmatters-slider {
+  box-shadow: 0 0 1px #4A89DD;
 }
-
-#perfmatters-admin input:checked + .slider:before {
-  -webkit-transform: translateX(20px);
-  -ms-transform: translateX(20px);
+#perfmatters-admin input:checked + .perfmatters-slider:before {
   transform: translateX(20px);
 }
-
 #perfmatters-admin input[type="text"], #perfmatters-admin select, #perfmatters-admin input[type="file"] {
   min-width: 300px;
   margin: 0px;
+  border: .5px solid #ccc;
 }
-
+#perfmatters-admin input[type="checkbox"] {
+  border-color: #ccc;
+}
 #perfmatters-admin input[type="file"] {
   margin-bottom: 5px;
+  border: 0px;
 }
-
 #perfmatters-admin textarea {
-  min-width: 600px;
-  resize: both;
+  width: 100%;
+  resize: vertical;
   min-height: 150px;
+  border: .5px solid #ccc;
+}
+#perfmatters-admin .CodeMirror {
+  max-width: 700px;
+  height: 200px;
+  border: .5px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+#perfmatters-admin ::placeholder {
+  color: #ccc;
 }
 
-#perfmatters-admin .perfmatters-title-wrapper {
-  display: flex;
-  justify-content: space-between;
-}
-
-#perfmatters-admin .form-table th label {
-  vertical-align: top;
-  padding-right: 5px;
-}
-
+/* tooltips */
 #perfmatters-admin .perfmatters-tooltip-wrapper {
   position: relative;
   display: inline-block;
@@ -252,24 +293,21 @@
   flex-shrink: 0;
   float: right;
   margin-right: -10px;
-  margin-top: 1px;
-  height: 15px;
-  width: 15px;
+  height: 16px;
+  width: 16px;
   vertical-align: top;
   text-align: center;
-  line-height: 15px;
+  line-height: 16px;
   font-size: 12px;
-  background: #ffffff;
-  color: #bbbbbb;
+  background: #F0F0F1;
+  color: #777;
   border-radius: 50%;
-  -webkit-border-radius: 50%;
-  -moz-border-radius: 50%;
   text-decoration: none;
 }
 #perfmatters-admin .perfmatters-tooltip-text {
   display: none;
   position: absolute;
-  z-index: 1;
+  z-index: 10;
   top: 46px;
   left: -32px;
   width: 300px;
@@ -317,89 +355,324 @@
   background: rgba(255,255,255,0.2);
   color: #bbbbbb;
   border-radius: 50%;
-  -webkit-border-radius: 50%;
-  -moz-border-radius: 50%;
 }
-
-.perfmatters-beta {
-  background: #ED5464;
+#perfmatters-admin .perfmatters-tooltip-table {
+  table-layout: fixed;
+  width: 100%;
+  margin-top: 3px;
+}
+#perfmatters-admin .perfmatters-tooltip-table th, #perfmatters-admin .perfmatters-tooltip-table td {
+  display: table-cell;
+  padding: 2px 5px;
+  padding-bottom: 0px;
   color: #ffffff;
-  padding: 5px;
-  vertical-align: middle;
-  font-size: 10px;
-  margin-left: 3px;
-}
-
-#perfmatters-admin p.submit, #perfmatter-admin #perfmatters-restore {
-  margin: 0px;
-  padding: 0px;
-  float: left;
-}
-
-#perfmatters-admin p.submit .button, #perfmatters-admin #perfmatters-restore .button {
-  margin: 10px 10px 0px 0px;
-}
-
-#perfmatters-admin #perfmatters-legend {
-  float: right;
-  padding-top: 20px;
+  width: auto;
   font-size: 12px;
-  line-height: 15px;
-  font-style: italic;
-  color: #aaaaaa;
 }
-
-#perfmatters-admin #perfmatters-tooltip-legend span {
-  display: inline-block;
-  margin-right: 5px;
-  height: 15px;
-  width: 15px;
-  vertical-align: top;
+#perfmatters-admin .perfmatters-tooltip-table td {
   text-align: center;
-  line-height: 15px;
-  font-size: 12px;
-  background: #e7e7e7;
-  color: #bbbbbb;
-  border-radius: 50%;
-  -webkit-border-radius: 50%;
-  -moz-border-radius: 50%;
-  text-decoration: none;
-  font-style: normal;
-  font-weight: bold;
 }
 
+/* buttons */
+#perfmatters-admin-container .button-primary {
+  padding: 3px 10px;
+  background: #4A89DD;
+  border-color: #4A89DD;
+}
+#perfmatters-admin-container .button-primary:hover {
+  background: #3F74BC;
+}
+#perfmatters-admin-container .button-primary:disabled {
+  background: #4A89DD !important;
+  border-color: #4A89DD !important;
+  color: #fff !important;
+}
+#perfmatters-admin-container .button-secondary {
+  border-color: #4A89DD;
+  color: #4A89DD;
+}
+#perfmatters-admin-container .button-secondary:disabled {
+  border-color: #4A89DD !important;
+  color: #4A89DD !important;
+}
+#perfmatters-admin-container p.submit {
+  margin: 20px 0px 0px 0px;
+  padding: 0px;
+}
+#perfmatters-admin-container .perfmatters-button-warning {
+  background: #ED5464;
+  border-color: #ED5464;
+  color: #fff;
+}
+#perfmatters-admin-container .perfmatters-button-warning:hover {
+  background: #c14552;
+  border-color: #c14552;
+}
+#perfmatters-options-form[data-pm-option="license"] #perfmatters-save, #perfmatters-options-form[data-pm-option="support"] #perfmatters-save {
+  display: none;
+}
+
+/* custom input row ui */
 .perfmatters-input-row {
-  margin-bottom: 5px;
+  position: relative;
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
-
-.perfmatters-input-row label{
+.perfmatters-input-row input[type="text"] {
+  flex-grow: 1;
+}
+.perfmatters-input-row label {
   margin: 0px 0px 0px 5px;
   font-size: 12px;
-  vertical-align: baseline;
+  white-space: nowrap;
 }
-
 .perfmatters-input-row input[type="checkbox"] {
   margin-right: 0px;
 }
-
 #perfmatters-admin .perfmatters-input-row select {
-  vertical-align: top;
-  margin-left: 5px;
   min-width: auto;
 }
-
 a.perfmatters-delete-input-row {
-  margin-left: 3px;
-  display: inline-block;
-  vertical-align: baseline;
+  margin-left: 8px;
 }
-
-a.perfmatters-delete-input-row span.dashicons-no {
-  color: red;
+a.perfmatters-delete-input-row span {
+  color: #ED5464;
   text-decoration: none;
 }
-
 a.perfmatters-add-input-row {
+  display: inline-flex;
+  align-items: center;
   white-space: nowrap;
   text-decoration: none;
+  margin-top: 10px;
+}
+a.perfmatters-add-input-row span.dashicons {
+  line-height: 30px;
+  margin-right: 2px;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+.perfmatters-inline-label-input {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.perfmatters-inline-label-input span {
+  position: absolute;
+  left: 1px;
+  background: #F0F0F1;
+  border-right: .5px solid #ccc;
+  color: #8c8f94;
+  height: 28px;
+  padding: 0px 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 3px 0px 0px 3px;
+}
+.perfmatters-input-row-hero {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+.perfmatters-input-row-extra {
+  display: none;
+  margin-top: 5px;
+}
+.perfmatters-input-row.perfmatters-opened .perfmatters-input-row-extra {
+  display: block;
+}
+.perfmatters-expand-input-row .dashicons {
+  color: #aaa;
+}
+.perfmatters-input-row.perfmatters-opened .perfmatters-expand-input-row .dashicons {
+  color: #4A89DD;
+}
+.perfmatters-input-row .perfmatters-expand-input-row:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* quick exclusions ui */
+.perfmatters-quick-exclusion {
+  padding: 4px 8px;
+  margin-bottom: 10px;
+  border: .5px solid #ccc;
+  border-radius: 3px; 
+}
+.perfmatters-quick-exclusion:last-of-type {
+  margin-bottom: 0px;
+}
+.perfmatters-quick-exclusion .dashicons {
+  font-size: 16px;
+  line-height: 20px;
+  color: #555;
+}
+.perfmatters-quick-exclusion-toggle {
+  cursor: pointer;
+}
+.perfmatters-quick-exclusion-items {
+  display: none;
+  margin-top: 4px;
+  border-top: .5px solid #f2f2f2;
+  padding-top: 4px;
+}
+.perfmatters-quick-exclusion:not(.perfmatters-opened) .dashicons-minus {
+  display: none;
+}
+.perfmatters-quick-exclusion.perfmatters-opened .dashicons-plus {
+  display: none;
+}
+.perfmatters-quick-exclusion.perfmatters-opened .perfmatters-quick-exclusion-items {
+  display: block;
+}
+
+/* action buttons */
+.perfmatters-button-container {
+  display: flex;
+  align-items: center;
+}
+.perfmatters-button-message {
+  margin-left: 10px;
+  color: green;
+}
+.perfmatters-button-message.perfmatters-error {
+  color: red;
+}
+
+/* advanced options */
+.pm-hide-advanced .pm-advanced-option {
+  display: none;
+}
+
+/* misc */
+.perfmatters-option-data {
+  margin-left: 5px;
+  font-size: 12px;
+}
+
+/* media queries */
+@media all and (max-width: 1024px) {
+  #perfmatters-admin {
+    margin-top: 10px;
+  }
+  #perfmatters-admin-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  #perfmatters-admin-header {
+    width: 100%;
+    margin: 0px;
+  }
+  #perfmatters-logo {
+    margin: 0px auto;
+  }
+  #perfmatters-menu-toggle {
+    display: flex;
+  }
+  #perfmatters-menu {
+    display: none;
+  }
+  #perfmatters-menu.perfmatters-menu-expanded {
+    display: block;
+  }
+}
+
+@media all and (max-width: 960px) {
+  .perfmatters-input-row-extra {
+    width: 100%;
+  }
+  .perfmatters-input-row-extra>* {
+    width: 100%;
+    max-width: none !important;
+    margin: 0px 0px 5px 0px !important;
+  }
+}
+
+@media all and (max-width: 782px) {
+  .perfmatters-mobile-hide {
+    display: none !important;
+  }
+  #perfmatters-admin .form-table td {
+    padding: 0px;
+  }
+  #perfmatters-admin .perfmatters-tooltip-text {
+    display: none !important;
+  }
+  #perfmatters-admin textarea {
+    min-width:  0px;
+  }
+}
+
+@keyframes perfmatters-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+        transform: rotate(360deg);
+  }
+}
+
+/* rtl */
+.rtl #pm-version{
+  left: 20px;
+  right: auto;
+}
+.rtl #perfmatters-menu a .dashicons {
+  margin-left: 8px;
+  margin-right: 0;
+}
+.rtl #perfmatters-admin .form-table th label {
+  padding-left: 5px;
+  padding-right: 0;
+}
+.rtl .perfmatters-beta {
+  margin-right: 3px;
+  margin-left: 0;
+}
+.rtl #perfmatters-admin .perfmatters-slider:before {
+  right: 4px;
+  left: auto;
+}
+.rtl #perfmatters-admin input:checked + .perfmatters-slider:before {
+  transform: translateX(-20px);
+}
+.rtl #perfmatters-admin .perfmatters-tooltip-wrapper {
+  float: left;
+}
+.rtl #perfmatters-admin .perfmatters-tooltip-text {
+  right: -32px;
+  left: auto;
+  text-align: right;
+}
+.rtl #perfmatters-admin .perfmatters-tooltip-text::after {
+  right: 19px;
+  left: auto;
+}
+.rtl #perfmatters-admin .perfmatters-tooltip-subtext {
+  text-align: right;
+}
+.rtl .perfmatters-input-row label {
+  margin: 0px 5px 0px 0;
+}
+.rtl .perfmatters-input-row input[type="checkbox"] {
+  margin-left: 0px;
+  margin-right: 0;
+}
+.rtl a.perfmatters-delete-input-row {
+  margin-right: 8px;
+  margin-left: 0;
+}
+.rtl a.perfmatters-add-input-row span.dashicons {
+  margin-left: 2px;
+  margin-right: 0;
+}
+.rtl .perfmatters-inline-label-input span {
+  right: 1px;
+  left: auto;
+  border-left: .5px solid #ccc;
+  border-right: none;
+  border-radius: 4px 0px 0px 4px;
 }

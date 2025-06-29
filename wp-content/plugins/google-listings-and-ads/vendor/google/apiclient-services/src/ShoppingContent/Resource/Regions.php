@@ -15,10 +15,10 @@
  * the License.
  */
 
-namespace Google\Service\ShoppingContent\Resource;
+namespace Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Resource;
 
-use Google\Service\ShoppingContent\ListRegionsResponse;
-use Google\Service\ShoppingContent\Region;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\ListRegionsResponse;
+use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\ShoppingContent\Region;
 
 /**
  * The "regions" collection of methods.
@@ -28,7 +28,7 @@ use Google\Service\ShoppingContent\Region;
  *   $regions = $contentService->regions;
  *  </code>
  */
-class Regions extends \Google\Service\Resource
+class Regions extends \Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Google\Service\Resource
 {
   /**
    * Creates a region definition in your Merchant Center account. (regions.create)
@@ -40,6 +40,7 @@ class Regions extends \Google\Service\Resource
    *
    * @opt_param string regionId Required. The id of the region to create.
    * @return Region
+   * @throws \Google\Service\Exception
    */
   public function create($merchantId, Region $postBody, $optParams = [])
   {
@@ -55,6 +56,7 @@ class Regions extends \Google\Service\Resource
    * delete region definition.
    * @param string $regionId Required. The id of the region to delete.
    * @param array $optParams Optional parameters.
+   * @throws \Google\Service\Exception
    */
   public function delete($merchantId, $regionId, $optParams = [])
   {
@@ -70,6 +72,7 @@ class Regions extends \Google\Service\Resource
    * @param string $regionId Required. The id of the region to retrieve.
    * @param array $optParams Optional parameters.
    * @return Region
+   * @throws \Google\Service\Exception
    */
   public function get($merchantId, $regionId, $optParams = [])
   {
@@ -93,6 +96,7 @@ class Regions extends \Google\Service\Resource
    * paginating, all other parameters provided to `ListRegions` must match the
    * call that provided the page token.
    * @return ListRegionsResponse
+   * @throws \Google\Service\Exception
    */
   public function listRegions($merchantId, $optParams = [])
   {
@@ -113,6 +117,7 @@ class Regions extends \Google\Service\Resource
    * indicating the fields to update. Example:
    * `"displayName,postalCodeArea.regionCode"`.
    * @return Region
+   * @throws \Google\Service\Exception
    */
   public function patch($merchantId, $regionId, Region $postBody, $optParams = [])
   {
