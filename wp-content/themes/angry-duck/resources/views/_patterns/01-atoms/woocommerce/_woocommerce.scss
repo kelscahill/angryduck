@@ -2,6 +2,16 @@
     $WOOCOMMERCE
 \* ------------------------------------ */
 
+#payment ul {
+  margin-top: $space;
+  margin-bottom: $space;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $space-half;
+}
+
 .cart,
 .checkout {
   .l-container--l {
