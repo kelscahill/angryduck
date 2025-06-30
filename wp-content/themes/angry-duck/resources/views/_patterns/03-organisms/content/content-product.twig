@@ -17,14 +17,14 @@
               <div class="js-product-gallery">
                 {% for image in product.get_gallery_image_ids %}
                   <div class="o-gallery-item">
-                    <img src="{{ Image(image).src|resize(900,900) }}" alt="{{ Image(image).alt }}" />
+                    <img src="{{ Image(image).src|resize(600,800) }}" alt="{{ Image(image).alt }}" />
                   </div>
                 {% endfor %}
               </div>
             </div>
           </div>
         {% elseif post.thumbnail %}
-          <img src="{{ post.thumbnail.src|resize(900,900) }}" alt="{{ post.thumbnail.alt }}" />
+          <img src="{{ post.thumbnail.src|resize(600,800) }}" alt="{{ post.thumbnail.alt }}" />
         {% endif %}
       </div>
       <div class="c-product__content u-spacing">

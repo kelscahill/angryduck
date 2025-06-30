@@ -4,7 +4,7 @@
 <a href="{{ post.link }}" class="c-block-product{{ classes }} js-inview" data-animation="animate__animated animate__fadeInUp">
   {% if post.get_thumbnail %}
     <picture class="c-block-product__image">
-      <img src="{{ Image(post.get_thumbnail).src|resize(900,900) }}" />
+      <img src="{{ Image(post.get_thumbnail).src|resize(600,800) }}" />
     </picture>
   {% endif %}
   <div class="c-block-product__content u-spacing--half">
