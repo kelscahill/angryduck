@@ -3,16 +3,14 @@
 {% block content %}
   {% include "03-organisms/content/content-page.twig" %}
 
-  <div class="u-spacing--quad">
-    {% if wholesale|length > 0 %}
-      <div class="c-section-posts u-spacing--double">
-        <h3 class="o-heading--l u-align--center">WHOLESALE</h3>
-        <div class="c-section-posts__grid l-container u-animation__delay" bp="grid 6@sm 4@md 3@lg">
-          {% for post in wholesale %}
-            {% include ['02-molecules/blocks/block-'~post.post_type~'.twig', '02-molecules/blocks/block.twig'] %}
-          {% endfor %}
-        </div>
+  {# {% if wholesale|length > 0 %}
+    <div class="c-section-posts u-spacing--double">
+      <h3 class="o-heading--l u-align--center">WHOLESALE</h3>
+      <div class="c-section-posts__grid l-container u-animation__delay" bp="grid 6@sm 4@md 3@lg">
+        {% for post in wholesale %}
+          {% include ['02-molecules/blocks/block-'~post.post_type~'.twig', '02-molecules/blocks/block.twig'] %}
+        {% endfor %}
       </div>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %} #}
 {% endblock %}
