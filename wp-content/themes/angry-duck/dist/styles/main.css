@@ -3862,6 +3862,17 @@ figcaption a {
   gap: 10px;
 }
 
+#payment .form-row {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 10px;
+}
+
 .cart .l-container--l,
 .checkout .l-container--l {
   max-width: 1200px;
