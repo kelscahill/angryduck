@@ -3860,6 +3860,9 @@ figcaption a {
       -ms-flex-direction: column;
           flex-direction: column;
   gap: 10px;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
 }
 
 #payment .form-row {
@@ -3871,6 +3874,9 @@ figcaption a {
       -ms-flex-direction: column;
           flex-direction: column;
   gap: 10px;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
 }
 
 .cart .l-container--l,
