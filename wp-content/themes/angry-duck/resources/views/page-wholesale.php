@@ -25,34 +25,6 @@ $context = Timber::get_context();
 $post = new TimberPost();
 $context['post'] = $post;
 
-$sauce_args = array(
-  'post_type' => 'product',
-  'posts_per_page' => -1,
-  'post_status' => 'publish',
-  'tax_query' => array(
-    array(
-      'taxonomy' => 'product_cat',
-      'field' => 'slug',
-      'terms' => 'sauce',
-    )
-  )
-);
-$context['sauce'] = Timber::query_posts($sauce_args);
-
-$swag_args = array(
-  'post_type' => 'product',
-  'posts_per_page' => -1,
-  'post_status' => 'publish',
-  'tax_query' => array(
-    array(
-      'taxonomy' => 'product_cat',
-      'field' => 'slug',
-      'terms' => 'swag',
-    )
-  )
-);
-$context['swag'] = Timber::query_posts($swag_args);
-
 $wholesale_args = array(
   'post_type' => 'product',
   'posts_per_page' => -1,

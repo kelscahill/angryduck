@@ -10,19 +10,19 @@
  * happen. When this occurs the version of the template file will be bumped and
  * the readme will list any important changes.
  *
- * @see     https://docs.woocommerce.com/document/template-structure/
+ * @see     https://woocommerce.com/document/template-structure/
  * @package WooCommerce\Templates
- * @version 3.5.3
+ * @version 9.8.0
  */
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! is_ajax() ) {
-  do_action( 'woocommerce_review_order_before_payment' );
+if ( ! wp_doing_ajax() ) {
+	do_action( 'woocommerce_review_order_before_payment' );
 }
 ?>
 <div id="payment" class="c-checkout-payment u-spacing woocommerce-checkout-payment">
-  <?php if ( WC()->cart->needs_payment() ) : ?>
+  <?php if ( WC()->cart && WC()->cart->needs_payment() ) : ?>
     <div class="u-spacing wc_payment_methods payment_methods methods">
       <?php
       if ( ! empty( $available_gateways ) ) {
@@ -51,6 +51,6 @@ if ( ! is_ajax() ) {
   </div>
 </div>
 <?php
-if ( ! is_ajax() ) {
-  do_action( 'woocommerce_review_order_after_payment' );
+if ( ! wp_doing_ajax() ) {
+	do_action( 'woocommerce_review_order_after_payment' );
 }
