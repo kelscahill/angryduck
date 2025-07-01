@@ -11,13 +11,14 @@
   justify-content: stretch;
   align-items: stretch;
   width: 100%;
+  flex: 1;
 
   @include media(">medium") {
-    width: 50%;
+    min-width: 50%;
   }
 
   @include media(">xxlarge") {
-    width: 33.33%;
+    min-width: 33.33%;
   }
 
 

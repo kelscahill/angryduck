@@ -25,18 +25,4 @@ $context = Timber::get_context();
 $post = new TimberPost();
 $context['post'] = $post;
 
-$wholesale_args = array(
-  'post_type' => 'product',
-  'posts_per_page' => -1,
-  'post_status' => 'publish',
-  'tax_query' => array(
-    array(
-      'taxonomy' => 'product_cat',
-      'field' => 'slug',
-      'terms' => 'wholesale',
-    )
-  )
-);
-$context['wholesale'] = Timber::query_posts($wholesale_args);
-
 Timber::render(array('05-pages/page-' . $post->post_name . '.twig', '05-pages/page.twig'), $context);

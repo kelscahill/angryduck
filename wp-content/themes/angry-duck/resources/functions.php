@@ -181,5 +181,4 @@ function register_custom_post_types() {
 
   register_post_type("testimonial", $args);
 }
-
 add_action('init', 'register_custom_post_types');

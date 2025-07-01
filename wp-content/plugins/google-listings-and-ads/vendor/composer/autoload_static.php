@@ -362,6 +362,7 @@ class ComposerStaticInit6161b4743ae62a4d4deb7213c0848fd8
         'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\BaseOptionsController' => __DIR__ . '/../..' . '/src/API/Site/Controllers/BaseOptionsController.php',
         'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\BaseReportsController' => __DIR__ . '/../..' . '/src/API/Site/Controllers/BaseReportsController.php',
         'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\BatchSchemaTrait' => __DIR__ . '/../..' . '/src/API/Site/Controllers/BatchSchemaTrait.php',
+        'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\ConnectController' => __DIR__ . '/../..' . '/src/API/Site/Controllers/ConnectController.php',
         'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\CountryCodeTrait' => __DIR__ . '/../..' . '/src/API/Site/Controllers/CountryCodeTrait.php',
         'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\DisconnectController' => __DIR__ . '/../..' . '/src/API/Site/Controllers/DisconnectController.php',
         'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\EmptySchemaPropertiesTrait' => __DIR__ . '/../..' . '/src/API/Site/Controllers/EmptySchemaPropertiesTrait.php',

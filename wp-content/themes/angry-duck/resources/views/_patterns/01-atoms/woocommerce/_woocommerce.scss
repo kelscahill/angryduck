@@ -20,6 +20,47 @@
   }
 }
 
+.woocommerce-form {
+  display: flex;
+  flex-direction: column;
+  gap: $space;
+  align-items: flex-start;
+
+  .form-row {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: $space-half;
+    align-items: flex-start;
+  }
+
+  .woocommerce-input-wrapper {
+    width: 100%;
+  }
+
+  .lost_password,
+  .form-controls-section {
+    display: flex;
+    gap: $space;
+    align-items: center;
+  }
+
+  .form-control::after {
+    display: none;
+  }
+
+  .password-input {
+    width: 100%;
+
+    button {
+      display: none;
+    }
+  }
+
+  input[type="submit"] {
+    width: auto;
+  }
+}
 
 .cart,
 .checkout {

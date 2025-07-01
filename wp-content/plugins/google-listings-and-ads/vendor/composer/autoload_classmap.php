@@ -76,6 +76,7 @@ return array(
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\BaseOptionsController' => $baseDir . '/src/API/Site/Controllers/BaseOptionsController.php',
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\BaseReportsController' => $baseDir . '/src/API/Site/Controllers/BaseReportsController.php',
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\BatchSchemaTrait' => $baseDir . '/src/API/Site/Controllers/BatchSchemaTrait.php',
+    'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\ConnectController' => $baseDir . '/src/API/Site/Controllers/ConnectController.php',
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\CountryCodeTrait' => $baseDir . '/src/API/Site/Controllers/CountryCodeTrait.php',
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\DisconnectController' => $baseDir . '/src/API/Site/Controllers/DisconnectController.php',
     'Automattic\\WooCommerce\\GoogleListingsAndAds\\API\\Site\\Controllers\\EmptySchemaPropertiesTrait' => $baseDir . '/src/API/Site/Controllers/EmptySchemaPropertiesTrait.php',
