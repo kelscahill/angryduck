@@ -82,6 +82,37 @@
       text-align: center;
       font-weight: bold;
     }
+
+    .c-account {
+      position: relative;
+    }
+
+    .c-account-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: $c-white;
+      border: $border--standard-light;
+      min-width: 150px;
+      padding: $space-half 0;
+      z-index: 3;
+
+      a {
+        display: block;
+        padding: $space-half $space;
+        color: $c-black;
+
+        &:hover,
+        &:focus {
+          background: $c-gray--lighter;
+        }
+      }
+    }
+
+    .c-account-menu.account-is-active {
+      display: block;
+    }
   }
 }
 

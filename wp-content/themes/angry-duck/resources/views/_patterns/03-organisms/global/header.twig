@@ -7,6 +7,19 @@
     {% include "01-atoms/images/logo-text.twig" %}
   </div>
   <div class="c-header__menu-icons">
+    <div class="c-account">
+      <button class="o-icon o-icon--s js-toggle" data-toggled="account-menu" data-prefix="account" aria-label="Account">
+        {% include "01-atoms/icons/user.twig" %}
+      </button>
+      <div class="c-account-menu account-menu">
+        <a href="/my-account/">My Account</a>
+        {% if function('is_user_logged_in') %}
+          <a href="{{ function('wp_logout_url', '/') }}">Logout</a>
+        {% else %}
+          <a href="/login/">Login</a>
+        {% endif %}
+      </div>
+    </div>
     <a href="/cart" class="o-icon o-icon--s">
       {% if cart_count > 0 %}
         <span class="o-add-to-cart-count" data-animation="animate__animated animate__swing">{{ cart_count }}</span>
