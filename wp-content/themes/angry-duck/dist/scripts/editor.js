@@ -60,41 +60,25 @@
 /******/ 	__webpack_require__.p = "/wp-content/themes/angry-duck/dist/";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 13);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ 0:
-/***/ (function(module, exports) {
-
-module.exports = jQuery;
-
-/***/ }),
-
-/***/ 13:
+/***/ 11:
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(14);
+module.exports = __webpack_require__(12);
 
 
 /***/ }),
 
-/***/ 14:
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ 12:
+/***/ (function(module, exports) {
 
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_jquery__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_jquery___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_jquery__);
-
-
-wp.customize('blogname', function (value) {
-  value.bind(function (to) { return __WEBPACK_IMPORTED_MODULE_0_jquery___default()('.brand').text(to); });
-});
-
+// removed by extract-text-webpack-plugin
 
 /***/ })
 
 /******/ });
-//# sourceMappingURL=customizer.js.map
+//# sourceMappingURL=editor.js.map

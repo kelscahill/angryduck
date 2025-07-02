@@ -1,106 +1,20 @@
-/* ------------------------------------ *\
-    $TEXT
-\* ------------------------------------ */
+@import "01-variables";
+@import "02-mixins";
 
-p {
-  @include p;
+.edit-post-visual-editor__post-title-wrapper,
+.block-editor-block-list__layout {
+  display: block;
+  max-width: 900px;
+  margin: auto;
+  padding: 0 20px;
 }
 
-small {
-  font-size: 90%;
-}
-
-/**
- * Bold
- */
-strong,
-b {
-  font-weight: bold;
-}
-
-/**
- * Blockquote
- */
-blockquote {
-  display: flex;
-  flex-wrap: wrap;
-
-  &::before {
-    content: "\201C";
-    font-family: $ff-font;
-    font-size: 40px;
-    line-height: 1;
-    color: $c-secondary;
-    min-width: 40px;
-    border-right: 6px solid $c-border;
-    display: block;
-    margin-right: $space;
-  }
-
-  p {
-    line-height: 1.7;
-    flex: 1;
-  }
-}
-
-/**
- * Horizontal Rule
- */
-hr {
-  height: 1px;
-  border: none;
-  background-color: rgba($c-gray--light, 0.5);
-  margin: 0 auto;
-}
-
-.o-hr--small {
-  border: 0;
-  width: 100px;
-  height: 2px;
-  background-color: $c-black;
-  margin-left: 0;
-}
-
-/**
- * Abbreviation
- */
-abbr {
-  border-bottom: 1px dotted $c-gray;
-  cursor: help;
-}
-
-/**
- * Eyebrow
- */
-.o-eyebrow {
-  padding: 0 $space-quarter;
-  background-color: $c-black;
-  color: $c-white;
-  border-radius: $border-radius;
-  display: inline-flex;
-  line-height: 1;
-
-  @include o-heading--xs;
-}
-
-.o-kicker {
-  @include o-heading--l;
+.edit-post-visual-editor__post-title-wrapper {
   text-align: center;
-  color: $c-primary;
+  margin-bottom: $space-double;
 }
 
-/**
- * Page title
- */
-.o-page-title {
-  text-align: center;
-  padding: 0 $space;
-}
-
-/**
- * Rich text editor text
- */
-.o-rte-text {
+.block-editor-block-list__layout {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
