@@ -24,6 +24,7 @@
 $context = Timber::get_context();
 $post = new TimberPost();
 $context['post'] = $post;
+$context['current_user'] = is_user_logged_in() ? new \Timber\User() : null;
 
 $sauce_args = array(
   'post_type' => 'product',

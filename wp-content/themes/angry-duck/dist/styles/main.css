@@ -2337,6 +2337,11 @@ select,
 label {
   font-weight: bold;
   font-size: var(--font-size-xs, 14px);
+  display: block;
+}
+
+label + br {
+  display: none;
 }
 
 /**
@@ -3930,6 +3935,62 @@ abbr {
     $WOOCOMMERCE
 \* ------------------------------------ */
 
+.u-columns {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 20px;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+  margin-top: 40px;
+}
+
+@media (min-width: 701px) {
+  .u-columns {
+    -webkit-box-orient: horizontal;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: row;
+            flex-direction: row;
+  }
+}
+
+.u-columns > * {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 20px;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+  -webkit-box-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
+  min-width: 50%;
+}
+
+.u-columns > * > * {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 10px;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+}
+
 #payment ul {
   margin-top: 20px;
   margin-bottom: 20px;
@@ -3960,6 +4021,7 @@ abbr {
           align-items: flex-start;
 }
 
+.woocommerce form,
 .woocommerce-form {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -3974,6 +4036,7 @@ abbr {
           align-items: flex-start;
 }
 
+.woocommerce form .form-row,
 .woocommerce-form .form-row {
   width: 100%;
   display: -webkit-box;
@@ -3989,10 +4052,13 @@ abbr {
           align-items: flex-start;
 }
 
+.woocommerce form .woocommerce-input-wrapper,
 .woocommerce-form .woocommerce-input-wrapper {
   width: 100%;
 }
 
+.woocommerce form .lost_password,
+.woocommerce form .form-controls-section,
 .woocommerce-form .lost_password,
 .woocommerce-form .form-controls-section {
   display: -webkit-box;
@@ -4004,20 +4070,43 @@ abbr {
           align-items: center;
 }
 
+.woocommerce form .form-control::after,
 .woocommerce-form .form-control::after {
   display: none;
 }
 
+.woocommerce form .password-input,
 .woocommerce-form .password-input {
   width: 100%;
 }
 
+.woocommerce form .password-input button,
 .woocommerce-form .password-input button {
   display: none;
 }
 
+.woocommerce form input[type="submit"],
 .woocommerce-form input[type="submit"] {
   width: auto;
+}
+
+.woocommerce form fieldset,
+.woocommerce-form fieldset {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 10px;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
 }
 
 .cart .l-container--l,

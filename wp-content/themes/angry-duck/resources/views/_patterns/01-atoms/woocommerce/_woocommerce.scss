@@ -2,6 +2,34 @@
     $WOOCOMMERCE
 \* ------------------------------------ */
 
+.u-columns {
+  display: flex;
+  flex-direction: column;
+  gap: $space;
+  align-items: flex-start;
+  margin-top: $space-double;
+
+  @include media(">medium") {
+    flex-direction: row;
+  }
+
+  > * {
+    display: flex;
+    flex-direction: column;
+    gap: $space;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 50%;
+
+    > * {
+      display: flex;
+      flex-direction: column;
+      gap: $space-half;
+      align-items: flex-start;
+    }
+  }
+}
+
 #payment {
   ul {
     margin-top: $space;
@@ -20,6 +48,7 @@
   }
 }
 
+.woocommerce form,
 .woocommerce-form {
   display: flex;
   flex-direction: column;
@@ -59,6 +88,17 @@
 
   input[type="submit"] {
     width: auto;
+  }
+
+  fieldset {
+    width: 100%;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-half;
+    align-items: flex-start;
   }
 }
 
