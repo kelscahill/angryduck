@@ -300,6 +300,11 @@ if (rellax) {
       if (!$(event.target).closest(".c-nav-drawer").length) {
         $("html").find(".menu-is-active").removeClass("menu-is-active");
       }
+
+      // Remove active class from user menu when clicking outside
+      if (!$(event.target).closest(".c-user-menu").length) {
+        $(".c-user-menu").removeClass("this-is-active");
+      }
     });
 
     // Expires after one day

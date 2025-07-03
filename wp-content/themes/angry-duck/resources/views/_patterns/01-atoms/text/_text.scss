@@ -130,7 +130,7 @@ abbr {
     text-decoration: none;
   }
 
-  a:not(.o-button--secondary):not(.wp-block-button__link) {
+  p a {
     @include o-link;
   }
 

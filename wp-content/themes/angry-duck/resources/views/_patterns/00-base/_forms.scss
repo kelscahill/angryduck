@@ -97,7 +97,7 @@ input[type=checkbox] {
   background-repeat: no-repeat;
   background-position: 0 0;
   cursor: pointer;
-  display: block;
+  display: inline-flex;
   float: left;
   border: $border--standard;
   padding: 0;

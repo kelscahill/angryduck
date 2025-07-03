@@ -129,13 +129,13 @@ add_filter('acf/settings/save_json', 'my_acf_json_save_point');
 // }
 // add_action('after_setup_theme', 'theme_add_woocommerce_support');
 
-// function timber_set_product($post) {
-//   global $product;
+function timber_set_product($post) {
+  global $product;
 
-//   if (is_woocommerce()) {
-//     $product = wc_get_product( $post->ID );
-//   }
-// }
+  if (is_woocommerce()) {
+    $product = wc_get_product( $post->ID );
+  }
+}
 
 // Disable Woocommerce default css.
 add_filter('woocommerce_enqueue_styles', '__return_empty_array');
@@ -182,3 +182,12 @@ function register_custom_post_types() {
   register_post_type("testimonial", $args);
 }
 add_action('init', 'register_custom_post_types');
+
+/**
+ * Add current user to global Timber context
+ */
+function add_current_user_to_context($context) {
+  $context['current_user'] = is_user_logged_in() ? new \Timber\User() : null;
+  return $context;
+}
+add_filter('timber/context', 'add_current_user_to_context');
