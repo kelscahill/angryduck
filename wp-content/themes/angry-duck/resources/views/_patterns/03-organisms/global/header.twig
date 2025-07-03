@@ -7,11 +7,11 @@
     {% include "01-atoms/images/logo-text.twig" %}
   </div>
   <div class="c-header__menu-icons">
-    <div class="c-account">
-      <button class="o-icon o-icon--s js-toggle" data-toggled="account-menu" data-prefix="account" aria-label="Account">
+    <div class="c-user-menu">
+      <button class="c-user-menu__button js-toggle-parent" data-prefix="this" aria-label="Account">
         {% include "01-atoms/icons/user.twig" %}
       </button>
-      <div class="c-account-menu account-menu">
+      <div class="c-user-menu__dropdown">
         <a href="/my-account/">My Account</a>
         {% if function('is_user_logged_in') %}
           <a href="{{ function('wp_logout_url', '/') }}">Logout</a>

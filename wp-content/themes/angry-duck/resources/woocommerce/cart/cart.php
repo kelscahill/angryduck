@@ -125,9 +125,8 @@ do_action( 'woocommerce_before_cart' ); ?>
 					<button type="submit" class="o-button" name="apply_coupon" value="<?php esc_attr_e( 'Apply coupon', 'woocommerce' ); ?>"><?php esc_attr_e( 'Apply coupon', 'woocommerce' ); ?></button>
 					<?php do_action( 'woocommerce_cart_coupon' ); ?>
 				</div>
-				<button type="submit" class="o-link" name="update_cart" value="<?php esc_attr_e( 'Update cart', 'woocommerce' ); ?>"><?php esc_html_e( 'Update cart', 'woocommerce' ); ?></button>
 			<?php endif; ?>
-
+      <button type="submit" class="o-button" name="update_cart" value="<?php esc_attr_e( 'Update cart', 'woocommerce' ); ?>"><?php esc_html_e( 'Update cart', 'woocommerce' ); ?></button>
 			<?php do_action( 'woocommerce_cart_actions' ); ?>
 			<?php wp_nonce_field( 'woocommerce-cart', 'woocommerce-cart-nonce' ); ?>
 		</div>

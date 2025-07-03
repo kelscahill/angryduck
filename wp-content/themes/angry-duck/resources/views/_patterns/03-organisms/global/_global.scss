@@ -47,7 +47,7 @@
 
   &__menu-icons {
     display: flex;
-    align-items: stretch;
+    align-items: center;
     justify-content: center;
     height: 100%;
 
@@ -82,12 +82,34 @@
       text-align: center;
       font-weight: bold;
     }
+  }
 
-    .c-account {
-      position: relative;
+  .c-user-menu {
+    position: relative;
+
+    &.this-is-active {
+      .c-user-menu__dropdown {
+        display: block;
+      }
     }
 
-    .c-account-menu {
+    &__button {
+      margin: 0;
+      padding: 0 $space-half;
+      border: 0;
+      background: none;
+      outline: 0;
+      border-radius: 0;
+      height: 40px;
+
+      svg {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+      }
+    }
+
+    &__dropdown {
       display: none;
       position: absolute;
       right: 0;
@@ -95,23 +117,22 @@
       background: $c-white;
       border: $border--standard-light;
       min-width: 150px;
-      padding: $space-half 0;
+      padding: 0;
       z-index: 3;
+      box-shadow: $box-shadow--standard;
+      border-radius: $border-radius;
 
       a {
         display: block;
         padding: $space-half $space;
         color: $c-black;
+        border-top: $border--standard-light;
 
         &:hover,
         &:focus {
           background: $c-gray--lighter;
         }
       }
-    }
-
-    .c-account-menu.account-is-active {
-      display: block;
     }
   }
 }

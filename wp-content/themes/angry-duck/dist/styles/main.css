@@ -2204,7 +2204,9 @@ input[type=checkbox] {
   background-repeat: no-repeat;
   background-position: 0 0;
   cursor: pointer;
-  display: block;
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
   float: left;
   border: 2px solid #000;
   padding: 0;
@@ -3428,7 +3430,8 @@ tfoot th {
 
 button,
 input[type="submit"],
-.o-button {
+.o-button,
+.button {
   font-family: "Oswald", sans-serif;
   font-size: var(--font-size-xs, 14px);
   font-style: normal;
@@ -3476,7 +3479,9 @@ button:focus,
 input[type="submit"]:hover,
 input[type="submit"]:focus,
 .o-button:hover,
-.o-button:focus {
+.o-button:focus,
+.button:hover,
+.button:focus {
   color: #fff;
   border-color: #ef4438;
   background-position: left bottom;
@@ -3753,7 +3758,7 @@ abbr {
   text-decoration: none;
 }
 
-.o-rte-text a:not(.o-button--secondary):not(.wp-block-button__link) {
+.o-rte-text p a {
   display: -webkit-inline-box;
   display: -ms-inline-flexbox;
   display: inline-flex;
@@ -3786,8 +3791,8 @@ abbr {
   border-bottom: 1px solid #ef4438;
 }
 
-.o-rte-text a:not(.o-button--secondary):not(.wp-block-button__link):hover,
-.o-rte-text a:not(.o-button--secondary):not(.wp-block-button__link):focus {
+.o-rte-text p a:hover,
+.o-rte-text p a:focus {
   background: transparent;
   color: #b3190e;
   border-bottom-color: #b3190e;
@@ -3991,6 +3996,10 @@ abbr {
           align-items: flex-start;
 }
 
+#payment {
+  width: 100%;
+}
+
 #payment ul {
   margin-top: 20px;
   margin-bottom: 20px;
@@ -4005,6 +4014,29 @@ abbr {
   -webkit-box-align: start;
       -ms-flex-align: start;
           align-items: flex-start;
+  list-style: none;
+}
+
+#payment ul li {
+  padding-left: 0;
+  width: 100%;
+}
+
+#payment ul li::before {
+  display: none;
+}
+
+#payment ul li label {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  gap: 10px;
+}
+
+#payment ul li label + * {
+  clear: both;
+  margin-left: calc(30px + 10px);
+  margin-bottom: 10px;
 }
 
 #payment .form-row {
@@ -4019,6 +4051,96 @@ abbr {
   -webkit-box-align: start;
       -ms-flex-align: start;
           align-items: flex-start;
+}
+
+.wc-stripe-upe-element {
+  min-width: 100%;
+}
+
+.woocommerce-MyAccount-navigation ul {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+  gap: 5px;
+  padding: 0;
+  margin: 0 0 10px 0;
+  list-style: none;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+@media (max-width: 700px) {
+  .woocommerce-MyAccount-navigation ul {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+            flex-direction: column;
+    border-bottom: none;
+  }
+}
+
+.woocommerce-MyAccount-navigation ul li {
+  margin: 0;
+  padding: 0;
+}
+
+.woocommerce-MyAccount-navigation ul li::before {
+  display: none;
+}
+
+.woocommerce-MyAccount-navigation ul li a {
+  display: block;
+  padding: 5px 10px;
+  border: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  background-color: #f3f3f3;
+  color: #000;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 3px 3px 0 0;
+  -webkit-transition: all 0.23s cubic-bezier(0.86, 0, 0.07, 1);
+  -o-transition: all 0.23s cubic-bezier(0.86, 0, 0.07, 1);
+  transition: all 0.23s cubic-bezier(0.86, 0, 0.07, 1);
+}
+
+.woocommerce-MyAccount-navigation ul li a:hover {
+  background-color: #e6e6e6;
+  color: #000;
+}
+
+@media (max-width: 700px) {
+  .woocommerce-MyAccount-navigation ul li a {
+    border-radius: 3px;
+    border: 1px solid #f3f3f3;
+  }
+}
+
+.woocommerce-MyAccount-navigation ul li.is-active a,
+.woocommerce-MyAccount-navigation ul li a[aria-current="page"] {
+  background-color: #fff;
+  border-color: #f3f3f3 #f3f3f3 #fff;
+  color: #000;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .woocommerce-MyAccount-navigation ul li.is-active a,
+  .woocommerce-MyAccount-navigation ul li a[aria-current="page"] {
+    border-color: #f3f3f3;
+  }
+}
+
+.woocommerce-MyAccount-content > * + * {
+  margin-top: 20px;
+}
+
+.woocommerce-MyAccount-content a:not(.button) {
+  text-decoration: underline;
 }
 
 .woocommerce form,
@@ -4263,6 +4385,17 @@ abbr {
   display: -ms-flexbox;
   display: flex;
   position: relative;
+}
+
+.o-price {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  gap: 5px;
 }
 
 .c-cart__table td:first-child a {
@@ -5324,9 +5457,9 @@ abbr {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
-  -webkit-box-align: stretch;
-      -ms-flex-align: stretch;
-          align-items: stretch;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
@@ -5369,6 +5502,57 @@ abbr {
   font-size: 10px;
   text-align: center;
   font-weight: bold;
+}
+
+.c-header .c-user-menu {
+  position: relative;
+}
+
+.c-header .c-user-menu.this-is-active .c-user-menu__dropdown {
+  display: block;
+}
+
+.c-header .c-user-menu__button {
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  outline: 0;
+  border-radius: 0;
+  height: 40px;
+}
+
+.c-header .c-user-menu__button svg {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+}
+
+.c-header .c-user-menu__dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #f3f3f3;
+  min-width: 150px;
+  padding: 0;
+  z-index: 3;
+  -webkit-box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+          box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.c-header .c-user-menu__dropdown a {
+  display: block;
+  padding: 10px 20px;
+  color: #000;
+  border-top: 1px solid #f3f3f3;
+}
+
+.c-header .c-user-menu__dropdown a:hover,
+.c-header .c-user-menu__dropdown a:focus {
+  background: #f3f3f3;
 }
 
 /* ------------------------------------ *\

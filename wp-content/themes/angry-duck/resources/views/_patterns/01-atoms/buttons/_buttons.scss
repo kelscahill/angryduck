@@ -29,7 +29,8 @@
 
 button,
 input[type="submit"],
-.o-button {
+.o-button,
+.button {
   @include o-button;
   @include o-button--primary;
 }

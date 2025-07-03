@@ -31,6 +31,8 @@
 }
 
 #payment {
+  width: 100%;
+
   ul {
     margin-top: $space;
     margin-bottom: $space;
@@ -38,6 +40,27 @@
     flex-direction: column;
     gap: $space-half;
     align-items: flex-start;
+    list-style: none;
+
+    li {
+      padding-left: 0;
+      width: 100%;
+
+      &::before {
+        display: none;
+      }
+
+      label {
+        display: inline-flex;
+        gap: $space-half;
+      }
+
+      label + * {
+        clear: both;
+        margin-left: calc(30px + #{$space-half});
+        margin-bottom: $space-half;
+      }
+    }
   }
 
   .form-row {
@@ -45,6 +68,82 @@
     flex-direction: column;
     gap: $space-half;
     align-items: flex-start;
+  }
+}
+
+.wc-stripe-upe-element {
+  min-width: 100%;
+}
+
+.woocommerce-MyAccount-navigation {
+  ul {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: $space-quarter;
+    padding: 0;
+    margin: 0 0 $space-half 0;
+    list-style: none;
+    border-bottom: $border--standard-light;
+
+    @include media("<=medium") {
+      flex-direction: column;
+      border-bottom: none;
+    }
+  }
+
+  ul li {
+    margin: 0;
+    padding: 0;
+
+    &::before {
+      display: none;
+    }
+
+    a {
+      display: block;
+      padding: $space-quarter $space-half;
+      border: 2px solid transparent;
+      border-bottom: 2px solid transparent;
+      background-color: $c-gray--lighter;
+      color: $c-black;
+      text-decoration: none;
+      font-weight: 500;
+      border-radius: $border-radius $border-radius 0 0;
+      transition: $transition-all;
+
+      &:hover {
+        background-color: darken($c-gray--lighter, 5%);
+        color: $c-black;
+      }
+
+      @include media("<=medium") {
+        border-radius: $border-radius;
+        border: $border--standard-light;
+      }
+    }
+
+    &.is-active a,
+    a[aria-current="page"] {
+      background-color: $c-white;
+      border-color: $c-gray--lighter $c-gray--lighter $c-white;
+      color: $c-black;
+      font-weight: 600;
+
+      @include media("<=medium") {
+        border-color: $c-gray--lighter;
+      }
+    }
+  }
+}
+
+.woocommerce-MyAccount-content {
+  & > * + * {
+    margin-top: $space;
+  }
+
+  a:not(.button) {
+    text-decoration: underline;
   }
 }
 
@@ -211,6 +310,12 @@
 .o-add-to-cart {
   display: flex;
   position: relative;
+}
+
+.o-price {
+  display: flex;
+  flex-direction: column;
+  gap: $space-quarter;
 }
 
 .c-cart {
