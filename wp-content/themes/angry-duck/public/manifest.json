@@ -1,0 +1,23 @@
+{
+  "slick.js": "js/slick.3a5832.js",
+  "app.css": "css/app.8cf192.css",
+  "app.js": "js/app.51d941.js",
+  "editor.css": "css/editor.02c5cb.css",
+  "editor.js": "js/editor.81f2eb.js",
+  "runtime.js": "js/runtime.fed7b2.js",
+  "images/footer-bkg.svg": "images/footer-bkg.860f24.svg",
+  "images/logo.png": "images/logo.faa60d.png",
+  "images/shadow.png": "images/shadow.38ed712e86c580e2.png",
+  "images/logo-badge.png": "images/logo-badge.15d631.png",
+  "images/header-bkg.png": "images/header-bkg.162a4a.png",
+  "fonts/gobold_regular_italic-webfont.woff": "fonts/gobold_regular_italic-webfont.c14cf5.woff",
+  "fonts/gobold_regular_italic-webfont.woff2": "fonts/gobold_regular_italic-webfont.71ba2c.woff2",
+  "images/favicon.png": "images/favicon.8579e1.png",
+  "images/icon-pineapple.svg": "images/icon-pineapple.c56f72.svg",
+  "images/ajax-loader.gif": "images/ajax-loader.0b80f665935ef7de.gif",
+  "images/icon-jalapeno.svg": "images/icon-jalapeno.f858c4.svg",
+  "fonts/slick.svg": "fonts/slick.f895cf.svg",
+  "images/icon-habanero.svg": "images/icon-habanero.11b49d.svg",
+  "entrypoints.json": "entrypoints.json",
+  "images/hero-overlay.svg": "images/hero-overlay.5fd671.svg"
+}

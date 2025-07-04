@@ -21,8 +21,8 @@
  * @since    Timber 0.1
  */
 
-$context = Timber::get_context();
-$post = new TimberPost();
+$context = Timber\Timber::context();
+$post = Timber\Timber::get_post();
 $context['post'] = $post;
 
 $sauce_args = array(
@@ -37,7 +37,7 @@ $sauce_args = array(
     )
   )
 );
-$context['sauce'] = Timber::query_posts($sauce_args);
+$context['sauce'] = Timber\Timber::query_posts($sauce_args);
 
 $swag_args = array(
   'post_type' => 'product',
@@ -51,7 +51,7 @@ $swag_args = array(
     )
   )
 );
-$context['swag'] = Timber::query_posts($swag_args);
+$context['swag'] = Timber\Timber::query_posts($swag_args);
 
 $wholesale_args = array(
   'post_type' => 'product',
@@ -65,6 +65,6 @@ $wholesale_args = array(
     )
   )
 );
-$context['wholesale'] = Timber::query_posts($wholesale_args);
+$context['wholesale'] = Timber\Timber::query_posts($wholesale_args);
 
-Timber::render(array('05-pages/page-' . $post->post_name . '.twig', '05-pages/page.twig'), $context);
+Timber\Timber::render(array('05-pages/page-' . $post->post_name . '.twig', '05-pages/page.twig'), $context);

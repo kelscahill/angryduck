@@ -10,8 +10,8 @@
  */
 
 $id = get_queried_object_id();
-$context = Timber::context();
-$post = new TimberPost();
+$context = Timber\Timber::context();
+$post = Timber\Timber::get_post();
 $context['post'] = $post;
 $context['product'] = wc_get_product($id);
 
@@ -28,6 +28,6 @@ $related_products_args = array(
     )
   )
 );
-$context['related_products'] = Timber::query_posts($related_products_args);
+$context['related_products'] = Timber\Timber::query_posts($related_products_args);
 
-Timber::render(array('05-pages/single-product.twig'), $context);
+Timber\Timber::render(array('05-pages/single-product.twig'), $context);

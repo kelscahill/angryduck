@@ -1,0 +1,19 @@
+<a href="{{ post.link }}" class="c-block js-inview" data-animation="animate__animated animate__fadeInUp">
+  {% if post.thumbnail %}
+    <picture class="c-block__image">
+      <img src="{{ get_image(post.thumbnail).src|resize(600,800) }}" alt="{{ post.title }}" />
+    </picture>
+  {% endif %}
+  <div class="c-block__content u-spacing--half">
+    <div class="c-block__heading u-spacing--quarter">
+      <h3 class="o-heading--l">{{ post.title }}</h3>
+      {% if post.preview %}
+        <p>{{ post.preview(999, false, NULL, false, '')|striptags }}</p>
+      {% endif %}
+    </div>
+    <hr class="o-hr--small" />
+    <div class="c-block__body u-spacing">
+      <p><em>Read more</em></p>
+    </div>
+  </div>
+</a>

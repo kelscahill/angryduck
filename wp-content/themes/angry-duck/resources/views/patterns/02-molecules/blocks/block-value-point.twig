@@ -1,0 +1,92 @@
+<div class="c-block-value-point{{ block.classes ? ' ' ~ block.classes }} c-block-value-point--{{ block_variant }} c-block-value-point--{{ block_type }}{{ block_variant != "split-media" ? " u-spacing--lg" }}{{ block_align ? " c-block-value-point--" ~ block_align }}{{ block.button.link.url and block_variant == "cards" ? " js-custom-hover-cursor" }} js-gsap-scale-in">
+  {% if block.image_icon %}
+    {% if block_type == 'image' and (block.image or block.icon) %}
+      <div class="c-block-value-point__media">
+        {% if block.image %}
+          {% include "@atoms/images/image/responsive-image.twig" with {
+            "image": {
+              "src": get_image(block.image).src|towebp|resize(72, 72, 'center'),
+              "alt": get_image(block.image).alt
+            },
+            "picture": {
+              "classes": "c-block-value-point__image"
+            }
+          } %}
+        {% elseif block.icon %}
+          <div class="c-block-value-point__icon">
+            {% if block.icon.mime_type == 'image/svg+xml' %}
+              {{ function('file_get_contents', get_image(block.icon).src) }}
+            {% else %}
+              <i class="{{ block.icon }}"></i>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% elseif block_type == 'numeric' %}
+    {% if loop.index < 10 %}
+      {% set number = "0" ~ loop.index ~ "." %}
+    {% else %}
+      {% set number = loop.index ~ "." %}
+    {% endif %}
+    {% include "@atoms/text/heading/heading.twig" with {
+      "heading": {
+        "level": "3",
+        "size": "lg",
+        "text": number,
+        "classes": "c-block-value-point__number"
+      }
+    } %}
+    {% if block_variant != "alt" %}
+      <hr />
+    {% endif %}
+  {% endif %}
+  <div class="c-block-value-point__content {{ block_variant == "alt" ? "u-spacing--xs" : "u-spacing" }}">
+    <div class="c-block-value-point__title">
+      {% include "@atoms/text/heading/heading.twig" with {
+        "heading": {
+          "level": "4",
+          "size": block_variant == "alt" ? "xs" : "sm",
+          "text": block.title,
+          "link": {
+            "url": block.button.link.url
+          },
+          "classes": "c-block-value-point__heading"
+        }
+      } %}
+      {% include "@atoms/badges/badge.twig" with {
+        "badge": {
+          "text": block.badge,
+          "classes": "c-block-value-point__badge o-badge--" ~ block.badge_variant
+        }
+      } %}
+    </div>
+    {% include "@atoms/text/dek/dek.twig" with {
+      "dek": {
+        "text": block.description,
+        "classes": "c-block-value-point__dek"
+      }
+    } %}
+    {% if block_variant == 'cards' %}
+      {% include "@atoms/links/link.twig" with {
+        "link": {
+          "url": block.button.link.url,
+          "text": block.button.link.title,
+          "icon": block.button.icon ? block.button.icon : {
+            "name": "arrow",
+            "classes": "o-icon--sm",
+            "placement": "after"
+          },
+          "icon_placement": block.button.icon ? block.button.icon_placement,
+          "classes": "c-block-value-point__link o-link--tertiary"
+        }
+      } %}
+    {% else %}
+      {% include "@atoms/buttons/button.twig" with {
+        "button": block.button,
+        "button_classes": "c-block-value-point__button o-button--outlined"
+      } %}
+    {% endif %}
+  </div>
+  {% if block_variant == "cards" and block.button.link.url %}<a class="c-block-value-point__link-block" href="{{ block.button.link.url }}" aria-label="{{ block.button.link.title }}"{{ block.button.link.target == '_blank' ? ' target="_blank" rel="noreferrer"' : ' target="_self"' }}></a>{% endif %}
+</div>

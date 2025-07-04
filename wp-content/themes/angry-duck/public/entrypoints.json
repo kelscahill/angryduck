@@ -1,0 +1,35 @@
+{
+  "slick": {
+    "js": [
+      "js/runtime.fed7b2.js",
+      "js/slick.3a5832.js"
+    ],
+    "dependencies": [
+      "jquery"
+    ]
+  },
+  "app": {
+    "js": [
+      "js/runtime.fed7b2.js",
+      "js/app.51d941.js"
+    ],
+    "css": [
+      "css/app.8cf192.css"
+    ],
+    "dependencies": [
+      "jquery"
+    ]
+  },
+  "editor": {
+    "js": [
+      "js/runtime.fed7b2.js",
+      "js/editor.81f2eb.js"
+    ],
+    "css": [
+      "css/editor.02c5cb.css"
+    ],
+    "dependencies": [
+      "wp-blocks"
+    ]
+  }
+}

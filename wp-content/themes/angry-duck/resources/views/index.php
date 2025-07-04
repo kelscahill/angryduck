@@ -13,9 +13,9 @@
  * @since   Timber 0.1
  */
 
-$context = Timber::get_context();
-$context['posts'] = Timber::get_posts();
-$post = Timber::query_post();
-$context['post'] = new TimberPost();
+$context = Timber\Timber::context();
+$context['posts'] = Timber\Timber::get_posts();
+$post = Timber\Timber::query_post();
+$context['post'] = Timber\Timber::get_post();
 
-Timber::render(array('05-pages/index.twig'), $context);
+Timber\Timber::render(array('05-pages/index.twig'), $context);
