@@ -279,3 +279,9 @@ label {
 .c-form--inline {
   @include c-form--inline;
 }
+
+.wpcf7-form {
+  label {
+    margin-bottom: $space-half;
+  }
+}

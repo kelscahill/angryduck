@@ -2,6 +2,10 @@
     $WOOCOMMERCE
 \* ------------------------------------ */
 
+.shipping-calculator-button {
+  text-decoration: underline;
+}
+
 .u-columns {
   display: flex;
   flex-direction: column;
@@ -68,6 +72,11 @@
     flex-direction: column;
     gap: $space-half;
     align-items: flex-start;
+
+    &.woocommerce-SavedPaymentMethods-saveNew {
+      flex-direction: row;
+      gap: 0;
+    }
   }
 }
 
@@ -326,12 +335,6 @@
 
 .c-cart {
   &__table {
-    td:first-child {
-      a {
-        border: 0;
-      }
-    }
-
     img {
       max-width: 50px;
     }
@@ -340,6 +343,7 @@
   &__info {
     display: flex;
     flex-direction: column;
+    width: 100%;
 
     @include media(">medium") {
       flex-direction: row;

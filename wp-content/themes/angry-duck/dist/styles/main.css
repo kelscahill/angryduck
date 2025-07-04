@@ -2412,6 +2412,10 @@ label + br {
   }
 }
 
+.wpcf7-form label {
+  margin-bottom: 10px;
+}
+
 /* ------------------------------------ *\
     $HEADINGS
 \* ------------------------------------ */
@@ -3940,6 +3944,10 @@ abbr {
     $WOOCOMMERCE
 \* ------------------------------------ */
 
+.shipping-calculator-button {
+  text-decoration: underline;
+}
+
 .u-columns {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -4051,6 +4059,14 @@ abbr {
   -webkit-box-align: start;
       -ms-flex-align: start;
           align-items: flex-start;
+}
+
+#payment .form-row.woocommerce-SavedPaymentMethods-saveNew {
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  gap: 0;
 }
 
 .wc-stripe-upe-element {
@@ -4402,10 +4418,6 @@ abbr {
   text-decoration: line-through;
 }
 
-.c-cart__table td:first-child a {
-  border: 0;
-}
-
 .c-cart__table img {
   max-width: 50px;
 }
@@ -4418,6 +4430,7 @@ abbr {
   -webkit-box-direction: normal;
       -ms-flex-direction: column;
           flex-direction: column;
+  width: 100%;
 }
 
 @media (min-width: 701px) {
