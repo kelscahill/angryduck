@@ -316,6 +316,12 @@
   display: flex;
   flex-direction: column;
   gap: $space-quarter;
+
+  &--wholesale {
+    .o-price__regular {
+      text-decoration: line-through;
+    }
+  }
 }
 
 .c-cart {

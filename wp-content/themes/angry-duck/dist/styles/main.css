@@ -4398,6 +4398,10 @@ abbr {
   gap: 5px;
 }
 
+.o-price--wholesale .o-price__regular {
+  text-decoration: line-through;
+}
+
 .c-cart__table td:first-child a {
   border: 0;
 }
