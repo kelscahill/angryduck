@@ -130,11 +130,11 @@ class Rymera_Stripe extends Abstract_REST {
          */
         register_rest_route(
             $this->namespace,
-            "/$this->rest_base/pay",
+            "/$this->rest_base/(?P<order_id>\d+)/pay",
             array(
-                'methods'             => WP_REST_Server::CREATABLE,
+                'methods'             => WP_REST_Server::READABLE,
                 'callback'            => array( $this, 'pay' ),
-                'permission_callback' => array( $this, 'create_item_permissions_check' ),
+                'permission_callback' => array( $this, 'update_item_permissions_check' ), // only authenticated users.
             )
         );
         register_rest_route(
@@ -358,25 +358,83 @@ class Rymera_Stripe extends Abstract_REST {
             return new WP_Error( 'wpay_stripe_invoice_id_not_found', __( 'Stripe invoice ID not found.', 'woocommerce-wholesale-payments' ) );
         }
 
-        $updated_invoice = Stripe::instance()->get_invoice( $invoice_id );
-        if ( is_wp_error( $updated_invoice ) ) {
-            return $updated_invoice;
-        }
-        $order->update_meta_data( '_wpay_stripe_invoice', $updated_invoice );
-        $progress = WPay::get_invoice_payment_progress_status( $updated_invoice );
-        $order->update_meta_data( '_wpay_stripe_invoice_status', $progress['status'] );
+        $updated_invoice_data = array();
+        $status               = $order->get_meta( '_wpay_stripe_invoice_status' );
+        $stripe_invoices      = array();
 
-        // Update invoice in WPAY.
-        WPAY_Invoices::update_invoice_status( $order_id, $invoice_id, $progress['status'] );
+        // Check if invoice is auto charge.
+        $auto_charge = $order->get_meta( '_wpay_auto_charge' );
+        if ( 'yes' === $auto_charge ) {
+            foreach ( $invoice_id as $invoice_item ) {
+                $item_invoice_id = $invoice_item;
+
+                $updated_invoice = Stripe::instance()->get_invoice( $item_invoice_id );
+                if ( is_wp_error( $updated_invoice ) ) {
+                    return $updated_invoice;
+                } else {
+                    $updated_invoice_data[] = $updated_invoice;
+
+                    // Update invoice in WPAY.
+                    WPAY_Invoices::update_invoice_status( $order_id, $item_invoice_id, $updated_invoice['status'] );
+                }
+            }
+
+            // Get all invoices from WPAY.
+            $statusses       = array();
+            $stripe_invoices = WPAY_Invoices::get_invoices( $order_id );
+            if ( ! empty( $stripe_invoices ) ) {
+                foreach ( $stripe_invoices as $invoice ) {
+                    $statusses[] = ! empty( $invoice->stripe_invoice_status ) ? $invoice->stripe_invoice_status : 'pending';
+                }
+            }
+
+            $status = ! empty( $statusses ) && is_array( $statusses ) ? end( $statusses ) : $status;
+        } else {
+            $updated_invoice = Stripe::instance()->get_invoice( $invoice_id );
+            if ( is_wp_error( $updated_invoice ) ) {
+                return $updated_invoice;
+            } else {
+                $updated_invoice_data = $updated_invoice;
+
+                $progress = WPay::get_invoice_payment_progress_status( $updated_invoice );
+                $status   = $progress['status'];
+            }
+        }
+
+        if ( empty( $updated_invoice_data ) ) {
+            return new WP_Error( 'wpay_stripe_invoice_not_found', __( 'Stripe invoice not found.', 'woocommerce-wholesale-payments' ) );
+        }
+
+        $order->update_meta_data( '_wpay_stripe_invoice', $updated_invoice_data );
+        $order->update_meta_data( '_wpay_stripe_invoice_status', $status );
 
         $order->save_meta_data();
 
-        $extras = array();
+        $extras           = array();
+        $amount_paid      = 0;
+        $amount_remaining = 0;
+        $order_invoices   = array();
 
-        // Get updated amounts due.
-        if ( ! empty( $updated_invoice['amounts_due'] ) ) {
-            $extras['amounts_due'] = array_map( array( new Payment_Order( $order ), 'map_amount_due' ), $updated_invoice['amounts_due'] );
+        // If not auto charge.
+        if ( 'yes' !== $auto_charge ) {
+            // Get updated amounts due.
+            if ( ! empty( $updated_invoice_data['amounts_due'] ) ) {
+                $extras['amounts_due'] = array_map( array( new Payment_Order( $order ), 'map_amount_due' ), $updated_invoice_data['amounts_due'] );
+            }
+
+            $amount_paid      = $updated_invoice_data['amount_paid'];
+            $amount_remaining = $updated_invoice_data['amount_remaining'];
+        } else {
+            $order_invoices = $updated_invoice_data;
         }
+
+        $updated_invoice['order_invoices'] = array_map( array( WPAY_Invoices::class, 'map_invoice' ), $stripe_invoices );
+        $updated_invoice['auto_charge']    = $auto_charge;
+        $updated_invoice['order_link']     = get_edit_post_link( $order->get_id() );
+        $updated_invoice['order_currency'] = array(
+            'code'   => $order->get_currency(),
+            'symbol' => get_woocommerce_currency_symbol( $order->get_currency() ),
+        );
 
         // Get updated line items.
         $extras['line_items'] = array(
@@ -384,14 +442,14 @@ class Rymera_Stripe extends Abstract_REST {
             'total'            => wc_price( $order->get_total() ),
             'excluding_tax'    => wc_price( $order->get_total() - $order->get_total_tax() ),
             'tax'              => wc_price( $order->get_total_tax() ),
-            'amount_paid'      => wc_price( $updated_invoice['amount_paid'] / 100 ),
-            'amount_remaining' => wc_price( $updated_invoice['amount_remaining'] / 100 ),
+            'amount_paid'      => wc_price( $amount_paid / 100 ),
+            'amount_remaining' => wc_price( $amount_remaining / 100 ),
         );
 
         $response = array(
             'message'  => __( 'Order status refreshed', 'woocommerce-wholesale-payments' ),
             'invoice'  => $updated_invoice,
-            'progress' => $progress,
+            'progress' => $status,
             'extras'   => $extras,
         );
 
@@ -469,29 +527,113 @@ class Rymera_Stripe extends Abstract_REST {
      */
     public function pay( $request ) {
 
-        $invoice_id = $request->get_param( 'invoice_id' );
+        $order_id = (int) $request->get_param( 'order_id' );
+
+        if ( empty( $order_id ) ) {
+            return new WP_Error( 'wpay_order_id_not_found', __( 'Order ID not found.', 'woocommerce-wholesale-payments' ) );
+        }
+
+        $order      = wc_get_order( $order_id );
+        $invoice_id = $order->get_meta( '_wpay_stripe_invoice_id' );
 
         if ( empty( $invoice_id ) ) {
-            return new WP_Error( 'wpay_invoice_id_not_found', __( 'Stripe invoice ID not found.', 'woocommerce-wholesale-payments' ) );
+            return new WP_Error( 'wpay_stripe_invoice_id_not_found', __( 'Stripe invoice ID not found.', 'woocommerce-wholesale-payments' ) );
         }
 
-        $invoice = Stripe::instance()->get_invoice( $invoice_id );
-        if ( is_wp_error( $invoice ) ) {
-            return $invoice;
+        $updated_invoice_data = array();
+        $status               = $order->get_meta( '_wpay_stripe_invoice_status' );
+        $stripe_invoices      = array();
+
+        // Check if invoice is auto charge.
+        $auto_charge = $order->get_meta( '_wpay_auto_charge' );
+        if ( 'yes' === $auto_charge ) {
+            // Get all invoices from WPAY.
+            $statusses       = array();
+            $stripe_invoices = WPAY_Invoices::get_invoices( $order_id );
+            if ( ! empty( $stripe_invoices ) ) {
+                foreach ( $stripe_invoices as $invoice ) {
+                    $item_invoice_id = $invoice->invoice_id;
+
+                    if ( ! empty( $item_invoice_id ) && 'paid' !== $invoice->stripe_invoice_status ) {
+                        $updated_invoice = Stripe::instance()->pay_invoice( $item_invoice_id, 'true' );
+                        if ( is_wp_error( $updated_invoice ) ) {
+                            return $updated_invoice;
+                        } else {
+                            $updated_invoice_data[] = $updated_invoice;
+                            $statusses[]            = $updated_invoice['status'];
+
+                            // Update invoice in WPAY.
+                            WPAY_Invoices::update_invoice_status( $order_id, $item_invoice_id, $updated_invoice['status'] );
+                        }
+                    } else {
+                        $statusses[] = ! empty( $invoice->stripe_invoice_status ) ? $invoice->stripe_invoice_status : 'pending';
+                    }
+                }
+            }
+
+            $status = ! empty( $statusses ) && is_array( $statusses ) ? end( $statusses ) : $status;
+        } else {
+            $updated_invoice = Stripe::instance()->pay_invoice( $invoice_id, 'true' );
+            if ( is_wp_error( $updated_invoice ) ) {
+                return $updated_invoice;
+            } else {
+                $updated_invoice_data = $updated_invoice;
+
+                $progress = WPay::get_invoice_payment_progress_status( $updated_invoice );
+                $status   = $progress['status'];
+            }
         }
 
-        if ( 'open' !== $invoice['status'] ) {
-            return new WP_Error( 'wpay_invoice_not_open', __( 'Invoice is not open.', 'woocommerce-wholesale-payments' ) );
+        if ( empty( $updated_invoice_data ) ) {
+            return new WP_Error( 'wpay_stripe_invoice_not_found', __( 'Stripe invoice not found.', 'woocommerce-wholesale-payments' ) );
         }
 
-        // Pay invoice.
-        $response = Stripe::instance()->pay_invoice( $invoice_id, 'true' );
-        if ( is_wp_error( $response ) ) {
-            return $response;
+        $order->update_meta_data( '_wpay_stripe_invoice', $updated_invoice_data );
+        $order->update_meta_data( '_wpay_stripe_invoice_status', $status );
+
+        $order->save_meta_data();
+
+        $extras           = array();
+        $amount_paid      = 0;
+        $amount_remaining = 0;
+        $order_invoices   = array();
+
+        // If not auto charge.
+        if ( 'yes' !== $auto_charge ) {
+            // Get updated amounts due.
+            if ( ! empty( $updated_invoice_data['amounts_due'] ) ) {
+                $extras['amounts_due'] = array_map( array( new Payment_Order( $order ), 'map_amount_due' ), $updated_invoice_data['amounts_due'] );
+            }
+
+            $amount_paid      = $updated_invoice_data['amount_paid'];
+            $amount_remaining = $updated_invoice_data['amount_remaining'];
+        } else {
+            $order_invoices = $updated_invoice_data;
         }
+
+        $updated_invoice['order_invoices'] = array_map( array( WPAY_Invoices::class, 'map_invoice' ), $stripe_invoices );
+        $updated_invoice['auto_charge']    = $auto_charge;
+        $updated_invoice['order_link']     = get_edit_post_link( $order->get_id() );
+        $updated_invoice['order_currency'] = array(
+            'code'   => $order->get_currency(),
+            'symbol' => get_woocommerce_currency_symbol( $order->get_currency() ),
+        );
+
+        // Get updated line items.
+        $extras['line_items'] = array(
+            'subtotal'         => wc_price( $order->get_subtotal() ),
+            'total'            => wc_price( $order->get_total() ),
+            'excluding_tax'    => wc_price( $order->get_total() - $order->get_total_tax() ),
+            'tax'              => wc_price( $order->get_total_tax() ),
+            'amount_paid'      => wc_price( $amount_paid / 100 ),
+            'amount_remaining' => wc_price( $amount_remaining / 100 ),
+        );
 
         $response = array(
-            'message' => __( 'Payment successful.', 'woocommerce-wholesale-payments' ),
+            'message'  => __( 'Order paid successfully', 'woocommerce-wholesale-payments' ),
+            'invoice'  => $updated_invoice,
+            'progress' => $status,
+            'extras'   => $extras,
         );
 
         return $this->rest_response( $response, $request );

@@ -126,21 +126,37 @@ class Payment_Order {
     public $order_amount_due;
 
     /**
+     * Holds the Order invoices.
+     *
+     * @since 1.0.5
+     * @var array Order invoices.
+     */
+    public $order_invoices;
+
+    /**
+     * Holds the auto charge.
+     *
+     * @since 1.0.5
+     * @var string Auto charge.
+     */
+    public $auto_charge;
+
+    /**
      * Payment_Order constructor.
      *
      * @param array|WC_Order $order Order Object.
+     * @param array          $invoices Invoices.
      *
      * @since 1.0.2
      * @since 1.0.2 Changes: Added 'active_orders'.
      */
-    public function __construct( &$order ) {
+    public function __construct( &$order, &$invoices = array() ) {
 
         $this->order = &$order;
 
         $this->order_id       = $this->order->get_id();
         $this->order_date     = $this->order->get_date_created()->date( 'Y-m-d H:i:s' );
         $this->invoice_id     = $this->order->get_meta( '_wpay_stripe_invoice_id' );
-        $this->status         = $this->order->get_meta( '_wpay_stripe_invoice_status' );
         $this->invoice_data   = (array) $this->order->get_meta( '_wpay_stripe_invoice' );
         $this->invoice_plan   = (array) json_decode( $this->order->get_meta( '_wpay_plan' ), true );
         $this->order_status   = $this->order->get_status();
@@ -152,22 +168,43 @@ class Payment_Order {
         $this->set_customer();
         $this->set_line_items();
         $this->set_amount_due();
+        $this->set_order_invoices( $invoices );
+        $this->set_payment_status();
     }
 
     /**
      * Get an instance of a Payment Plan.
      *
      * @param array $order Order Object.
+     * @param array $invoices Invoices.
      *
      * @return Payment_Order|bool
      */
-    public static function get_instance( $order ) {
+    public static function get_instance( $order, $invoices = array() ) {
 
         if ( ! is_a( $order, 'WC_Order' ) ) {
             return false;
         }
 
-        return new Payment_Order( $order );
+        return new Payment_Order( $order, $invoices );
+    }
+
+    /**
+     * Get the payment status.
+     *
+     * @since 1.0.5
+     * @return void
+     */
+    public function set_payment_status() {
+        // Get the last row from order_invoices array.
+        $status = $this->order->get_meta( '_wpay_stripe_invoice_status' );
+
+        if ( 'yes' === $this->auto_charge && is_array( $status ) ) {
+            $last_invoice = ! empty( $this->order_invoices ) ? end( $this->order_invoices ) : array();
+            $this->status = ! empty( $last_invoice['stripe_invoice_status'] ) ? $last_invoice['stripe_invoice_status'] : 'pending';
+        } else {
+            $this->status = $status;
+        }
     }
 
     /**
@@ -198,8 +235,8 @@ class Payment_Order {
             'total'            => wc_price( $this->order->get_total() ),
             'excluding_tax'    => wc_price( $this->order->get_total() - $this->order->get_total_tax() ),
             'tax'              => wc_price( $this->order->get_total_tax() ),
-            'amount_paid'      => wc_price( $stripe_line_items['amount_paid'] / 100 ),
-            'amount_remaining' => wc_price( $stripe_line_items['amount_remaining'] / 100 ),
+            'amount_paid'      => ! empty( $stripe_line_items['amount_paid'] ) ? wc_price( $stripe_line_items['amount_paid'] / 100 ) : wc_price( 0 ),
+            'amount_remaining' => ! empty( $stripe_line_items['amount_remaining'] ) ? wc_price( $stripe_line_items['amount_remaining'] / 100 ) : wc_price( 0 ),
         );
     }
 
@@ -249,6 +286,57 @@ class Payment_Order {
             'date'        => ! empty( $order_amount_due['paid_at'] ) ? $order_amount_due['paid_at'] : strtotime( $this->order_date ),
             'order_link'  => get_edit_post_link( $this->order->get_id() ),
         );
+    }
+
+    /**
+     * Set the order invoices.
+     *
+     * @param array $invoices Invoices.
+     *
+     * @since 1.0.2
+     * @return void
+     */
+    private function set_order_invoices( $invoices ) {
+        $wpay_auto_charge     = $this->order->get_meta( '_wpay_auto_charge' );
+        $this->auto_charge    = ! empty( $wpay_auto_charge ) && 'yes' === $wpay_auto_charge ? 'yes' : 'no';
+        $this->order_invoices = 'yes' === $this->auto_charge ? $this->map_order_invoices( $invoices ) : array();
+    }
+
+    /**
+     * Map order invoices.
+     *
+     * @param array $invoices Invoices.
+     *
+     * @since 1.0.2
+     * @return array
+     */
+    public function map_order_invoices( $invoices ) {
+        $order_invoices = array();
+
+        if ( ! empty( $invoices ) ) {
+            foreach ( $invoices as $invoice ) {
+                $breakdown_due_date = (int) $invoice->breakdown_due_date;
+                $created_date       = strtotime( $invoice->created_at );
+                $updated_date       = strtotime( $invoice->updated_at );
+                $created_at         = gmdate( 'Y-m-d H:i:s', $created_date );
+                $due_date           = strtotime( $created_at . ' + ' . $breakdown_due_date . ' days' );
+
+                $order_invoices[] = array(
+                    'invoice_id'            => $invoice->invoice_id,
+                    'invoice_item_id'       => $invoice->invoice_item_id,
+                    'breakdown_amount'      => $invoice->breakdown_amount,
+                    'breakdown_description' => $invoice->breakdown_description,
+                    'breakdown_due_days'    => $breakdown_due_date,
+                    'breakdown_due_date'    => $due_date,
+                    'stripe_invoice'        => ! empty( $invoice->stripe_invoice ) ? json_decode( $invoice->stripe_invoice, true ) : '',
+                    'stripe_invoice_status' => $invoice->stripe_invoice_status,
+                    'createdDate'           => $created_date,
+                    'updatedDate'           => $updated_date > $created_date ? $updated_date : null,
+                );
+            }
+        }
+
+        return $order_invoices;
     }
 
     /**

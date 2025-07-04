@@ -5,7 +5,7 @@
  * Plugin URI:           https://wholesalesuiteplugin.com/woocommerce-wholesale-payments/
  * Update URI:           wholesalesuiteplugin.com
  * Description:          WooCommerce extension that lets store owners provide payment plans for orders right within their wholesale store.
- * Version:              1.0.4
+ * Version:              1.0.5.2
  * Author:               Rymera Web Co
  * Author URI:           https://rymera.com.au/
  * License: GPL          v2 or later

@@ -14,6 +14,7 @@ use RymeraWebCo\WPay\Classes\Settings_Page;
 use RymeraWebCo\WPay\Factories\Vite_App;
 use RymeraWebCo\WPay\Helpers\Helper;
 use RymeraWebCo\WPay\Helpers\WPay;
+use RymeraWebCo\WPay\Helpers\WPAY_Invoices;
 use RymeraWebCo\WPay\Payment_Gateway\WC_Wholesale_Payments;
 use WC_Order;
 use WP_Query;
@@ -259,9 +260,15 @@ class WC extends Abstract_Class {
             $payment_plan = WPay::get_order_plan( $order_id );
             if ( ! empty( $payment_plan ) ) {
                 $order   = wc_get_order( $order_id );
+                $status  = array();
                 $invoice = (array) $order->get_meta( '_wpay_stripe_invoice' );
                 if ( ! empty( $invoice['amounts_due'] ) ) {
                     $status = WPay::get_invoice_payment_progress_status( $invoice );
+                } else {
+                    $status = WPAY_Invoices::get_invoice_status( $order->get_id() );
+                }
+
+                if ( ! empty( $status ) && ! empty( $status['ts'] ) ) {
                     switch ( $status['status'] ) {
                         case 'overdue':
                             /* translators: %s = due date */
@@ -397,7 +404,29 @@ class WC extends Abstract_Class {
         if ( empty( $payment_plan ) ) {
             return;
         }
-        $invoice = $order->get_meta( '_wpay_stripe_invoice' );
+        $invoice     = $order->get_meta( '_wpay_stripe_invoice' );
+        $auto_charge = $order->get_meta( '_wpay_auto_charge' );
+
+        if ( 'yes' === $auto_charge ) {
+            $invoices               = WPAY_Invoices::get_invoices( $order->get_id() );
+            $invoice['amounts_due'] = array_map(
+                function ( $invoice ) {
+                    $breakdown_due_date = (int) $invoice->breakdown_due_date;
+                    $created_date       = strtotime( $invoice->created_at );
+                    $created_at         = gmdate( 'Y-m-d H:i:s', $created_date );
+                    $due_date           = strtotime( $created_at . ' + ' . $breakdown_due_date . ' days' );
+
+                    return array(
+                        'amount'   => $invoice->breakdown_amount,
+                        'due_date' => $due_date,
+                        'status'   => $invoice->stripe_invoice_status ?? 'pending',
+                    );
+                },
+                $invoices
+            );
+
+            $invoice['hosted_invoice_url'] = ! empty( $invoice[0]['hosted_invoice_url'] ) ? $invoice[0]['hosted_invoice_url'] : '';
+        }
 
         include_once Helper::locate_front_template_part( 'order-invoice-payments-progress' );
     }

@@ -1,0 +1,86 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: You are a WordPress plugin developer maintaining woocommerce-wholesale-payments plugin codebase that is dependent on WooCommerce
+globs: 
+alwaysApply: true
+---
+
+Key Principles
+- Write concise, technical code with accurate PHP examples.
+- Follow WordPress and WooCommerce coding standards and best practices.
+- Use object-oriented programming when appropriate, focusing on modularity.
+- Prefer iteration and modularization over duplication.
+- Use descriptive function, variable, and file names.
+- Use lowercase with hyphens for directories (e.g., woocommerce-wholesale-payments/my-directory).
+- Favor hooks (actions and filters) for extending functionality.
+
+PHP/WordPress/WooCommerce
+- Use PHP 7.4+ features when appropriate (e.g., typed properties, arrow functions).
+- Follow WordPress PHP Coding Standards using a custom @phpcs.xml rules
+- Use strict typing when possible: `declare(strict_types=1);`
+- Utilize WordPress core functions and APIs when available.
+- File structure: Follow plugin directory structures and naming conventions.
+- Implement proper error handling and logging:
+- Use WordPress debug logging features.
+- Create custom error handlers when necessary.
+- Use try-catch blocks for expected exceptions.
+- Use WordPress's built-in functions for data validation and sanitization.
+- Implement proper nonce verification for form submissions.
+- Utilize WordPress's database abstraction layer (wpdb) for database interactions.
+- Use `prepare()` statements for secure database queries.
+- Implement proper database schema changes using `dbDelta()` function.
+
+Dependencies
+- WordPress (latest stable version)
+- WooCommerce (latest stable version)
+
+WordPress and WooCommerce Best Practices
+- Use WordPress hooks (actions and filters) instead of modifying core files.
+- Use WordPress' built-in user roles and capabilities system.
+- Utilize WordPress's transients API for caching.
+- Implement background processing for long-running tasks using WooCommerce's action scheduler.
+- Implement proper internationalization and localization using WordPress i18n functions.
+- Implement proper security measures (nonces, data escaping, input sanitization).
+- Use `Vite_App` class for proper asset management.
+- Implement custom post types and taxonomies when appropriate.
+- Use WordPress's built-in options API for storing configuration data.
+- Leverage action and filter hooks provided by WooCommerce for extensibility.
+- Example: `add_action('woocommerce_before_add_to_cart_form', 'your_function');`
+- Adhere to WooCommerce's coding standards in addition to WordPress standards.
+- Use WooCommerce's naming conventions for functions and variables.
+- Use built-in WooCommerce functions instead of reinventing the wheel.
+- Example: `wc_get_product()` instead of `get_post()` for retrieving products.
+- Use WooCommerce's CRUD classes and data stores for managing custom data.
+- Extend existing data stores for custom functionality.
+- Use WooCommerce session handling for storing temporary data.
+- Example: `WC()->session->set('your_key', 'your_value');`
+- If extending the REST API, follow WooCommerce's API structure and conventions.
+- Use proper authentication and permission checks.
+- Use WooCommerce's notice system for user-facing messages.
+- Example: `wc_add_notice('Your message', 'error');`
+- Extend WooCommerce's email system for custom notifications.
+- Use `WC_Email` class for creating new email types.
+- Check for WooCommerce activation and version compatibility.
+- Gracefully disable functionality if requirements aren't met.
+- Use WooCommerce's translation functions for text strings.
+- Support RTL languages in your plugin's CSS.
+- Utilize WooCommerce's logging system for debugging.
+- Example: `wc_get_logger()->debug('Your debug message', array('source' => 'woocommerce-wholesale-payments'));`
+
+Key Conventions
+1. Follow WordPress's plugin API for extending functionality.
+2. Implement proper data sanitization and validation using WordPress functions.
+3. Use WordPress's template tags and conditional tags in frontend when necessary.
+4. Implement proper database queries using $wpdb or WP_Query.
+5. Use WordPress's authentication and authorization functions.
+6. Implement proper AJAX handling using admin-ajax.php or REST API (preferred).
+7. Use WordPress's hook system for modular and extensible code.
+8. Implement proper database operations using WordPress transactional functions.
+9. Use WooCommerce's Action Scheduler API for scheduling tasks.
+10. Use JavaScript Standard Style formatting for all JavaScript and TypeScript code and files.
+
+  

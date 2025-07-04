@@ -88,15 +88,17 @@ class Invoice_Lists extends Abstract_REST {
 
         $invoices = Payment_Orders::get_orders( $request->get_params() );
 
-        $total = count( $invoices );
-        $data  = $invoices;
+        $total       = $invoices['total'];
+        $total_pages = $invoices['totalPages'];
+        $data        = $invoices['data'];
 
         $response = array(
             'total'       => absint( $total ),
+            'totalPages'  => absint( $total_pages ),
             'currentPage' => absint( $page ),
             'data'        => $data,
             'statuses'    => Payment_Orders::get_statuses(),
-            'customers'   => Payment_Orders::get_customers(),
+            'customers'   => Payment_Orders::get_customers( $request->get_params() ),
         );
 
         return $this->rest_response( $response, $request );

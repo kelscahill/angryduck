@@ -12,6 +12,7 @@ use RymeraWebCo\WPay\Helpers\License;
 use RymeraWebCo\WPay\Post_Types\Payment_Plan_Post_Type;
 use RymeraWebCo\WPay\Updates\Version_1_0_0_Beta_2;
 use RymeraWebCo\WPay\Helpers\WPAY_Invoices;
+use RymeraWebCo\WPay\Classes\Cron;
 
 /**
  * Activation class.
@@ -81,5 +82,13 @@ class Activation extends Abstract_Class {
          * Create invoice table on plugin activation.
          */
         WPAY_Invoices::create_invoice_table();
+
+        /***************************************************************************
+         * Schedule cron job
+         ***************************************************************************
+         *
+         * Schedule cron job on plugin activation.
+         */
+        Cron::schedule_cron_job();
     }
 }

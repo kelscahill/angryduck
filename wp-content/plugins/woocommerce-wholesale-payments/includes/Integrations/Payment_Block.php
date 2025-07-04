@@ -72,6 +72,8 @@ final class Payment_Block extends AbstractPaymentMethodType {
                     'wp-element',
                     'wp-html-entities',
                     'wp-i18n',
+                    'wc-blocks-checkout',
+                    'wp-hooks',
                 ),
                 Helper::get_plugin_data( 'Version' ),
                 true
@@ -119,12 +121,25 @@ final class Payment_Block extends AbstractPaymentMethodType {
             )
         );
 
+        $payment_plan_charge_status_style = apply_filters(
+            'wpay_payment_plan_charge_status_style',
+            array(
+                'backgroundColor' => '#E6D96A',
+                'borderRadius'    => '1rem',
+                'color'           => '#000',
+                'fontSize'        => '14px',
+                'padding'         => '0.2rem 0.5rem',
+                'marginLeft'      => '10px',
+            )
+        );
+
         return array(
-            'restUrl'               => esc_url_raw( rest_url( 'wpay/v1/checkout/choose-plan' ) ),
-            'nonce'                 => wp_create_nonce( 'wp_rest' ),
-            'title'                 => __( 'Wholesale Payments', 'wc-woocommerce-wholesale-payments' ),
-            'description'           => __( 'Payment plans available for this order.', 'woocommerce-wholesale-payments' ),
-            'supports'              => array(
+            'restUrl'                      => esc_url_raw( rest_url( 'wpay/v1/checkout/choose-plan' ) ),
+            'nonce'                        => wp_create_nonce( 'wp_rest' ),
+            'title'                        => __( 'Wholesale Payments', 'wc-woocommerce-wholesale-payments' ),
+            'description'                  => __( 'Payment plans available for this order.', 'woocommerce-wholesale-payments' ),
+            'autoChargeLabel'              => __( 'Auto Charge', 'wc-woocommerce-wholesale-payments' ),
+            'supports'                     => array(
                 'default'            => true,
                 'products'           => true,
                 'subscriptions'      => true,
@@ -135,11 +150,12 @@ final class Payment_Block extends AbstractPaymentMethodType {
                 'add_to_cart'        => true,
                 'ajax_checkout'      => true,
             ),
-            'paymentPlans'          => $payment_plans,
-            'testModeText'          => $test_mode_text,
-            'paymentPlansStyle'     => $payment_plans_style,
-            'paymentPlanItemsStyle' => $payment_plan_items_style,
-            'selectedPlan'          => $this->gateway->wpay_get_selected_plan(),
+            'paymentPlans'                 => $payment_plans,
+            'testModeText'                 => $test_mode_text,
+            'paymentPlansStyle'            => $payment_plans_style,
+            'paymentPlanItemsStyle'        => $payment_plan_items_style,
+            'paymentPlanChargeStatusStyle' => $payment_plan_charge_status_style,
+            'selectedPlan'                 => $this->gateway->wpay_get_selected_plan(),
         );
     }
 }

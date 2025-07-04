@@ -1,5 +1,8 @@
 const settings = window.wc.wcSettings.getSetting('wc_wholesale_payments_data');
 const label = window.wp.htmlEntities.decodeEntities(settings.title) || window.wp.i18n.__('Wholesale Payments', 'wc-woocommerce-wholesale-payments');
+const autoChargeLabel = window.wp.htmlEntities.decodeEntities(settings.autoChargeLabel) || window.wp.i18n.__('Auto Charge', 'wc-woocommerce-wholesale-payments');
+
+const paymentPlans = Array.isArray(settings.paymentPlans) ? settings.paymentPlans : Object.values(settings.paymentPlans);
 
 const setPaymentPlan = (planId) => {
   const requestData = {
@@ -47,7 +50,7 @@ const Content = (type) => {
   const descContent = wp.element.createElement('p', null, window.wp.htmlEntities.decodeEntities(settings.description || ''));
 
   // List of payment plans.
-  const listOfPlans = settings.paymentPlans.map((plan, i) => {
+  const listOfPlans = paymentPlans.map((plan, i) => {
     const input = wp.element.createElement('input', {
       id: 'wpay_plan-' + plan.post.ID,
       type: 'radio',
@@ -56,7 +59,16 @@ const Content = (type) => {
       checked: i === 0 ? 'checked' : '',
       onChange: handleOnChange,
     });
-    const label = wp.element.createElement('label', { htmlFor: 'wpay_plan-' + plan.post.ID }, plan.post.post_title);
+
+    const isAutoCharge = plan.apply_auto_charge;
+    const chargeLabel = wp.element.createElement('em', { className: 'wpay-auto-charge-status', style: settings.paymentPlanChargeStatusStyle }, autoChargeLabel);
+
+    let liContent = plan.post.post_title;
+    if (isAutoCharge) {
+      liContent = [liContent, chargeLabel];
+    }
+
+    const label = wp.element.createElement('label', { htmlFor: 'wpay_plan-' + plan.post.ID }, liContent);
 
     return wp.element.createElement('li', { style: settings.paymentPlanItemsStyle }, [input, label]);
   });
@@ -68,8 +80,8 @@ const Content = (type) => {
   mainDiv.props.children = [textModeContent, descContent, paymentPlanLists];
 
   // Set first plan as default.
-  if (settings.paymentPlans.length > 0 && type === 'edit') {
-    const defaultPlan = settings.paymentPlans[0].post.ID;
+  if (paymentPlans.length > 0 && type === 'edit') {
+    const defaultPlan = paymentPlans[0].post.ID;
     setPaymentPlan(defaultPlan);
   }
 
@@ -77,7 +89,7 @@ const Content = (type) => {
 };
 
 // Check if there is a payment plans available.
-if (settings.paymentPlans.length > 0) {
+if (paymentPlans.length > 0) {
   const Block_Gateway = {
     name: 'wc_wholesale_payments',
     label: label,

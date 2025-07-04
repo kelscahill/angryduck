@@ -11,6 +11,8 @@ use RymeraWebCo\WPay\Abstracts\Abstract_Update;
 use RymeraWebCo\WPay\Helpers\Helper;
 use RymeraWebCo\WPay\Helpers\License;
 use RymeraWebCo\WPay\Traits\Singleton_Trait;
+use RymeraWebCo\WPay\Helpers\WPAY_Invoices;
+use RymeraWebCo\WPay\Classes\Cron;
 
 /**
  * Update_Manager class.
@@ -327,13 +329,53 @@ class Update_Manager extends Abstract_Update {
     }
 
     /**
+     * Plugin updated hook.
+     *
+     * @since 1.0.5.1
+     * @return void
+     */
+    public function plugin_updated_hook() {
+        $installed_version = Helper::get_installed_plugin_version();
+
+        // Get option to check if update has been run.
+        $update_run = get_option( 'wpay_update_run', false );
+
+        // If update has been run, return.
+        if ( $update_run ) {
+            return;
+        }
+
+        // Check if plugin version is different from the installed version.
+        if ( version_compare( $installed_version, '1.0.5', '>=' ) ) {
+            /***************************************************************************
+            * Create invoice table
+            ***************************************************************************
+            *
+            * Create invoice table on plugin update.
+            */
+            WPAY_Invoices::create_invoice_table();
+
+            /***************************************************************************
+            * Schedule cron job
+            ***************************************************************************
+            *
+            * Schedule cron job on plugin update.
+            */
+            Cron::schedule_cron_job();
+
+            // Update option to check if update has been run.
+            update_option( 'wpay_update_run', true );
+        }
+    }
+
+    /**
      * Run plugin update actions.
      *
      * @since 3.0.0.1
      * @return void
      */
     public function actions() {
-
+        add_action( 'init', array( $this, 'plugin_updated_hook' ), 1 );
         add_filter( 'update_plugins_wholesalesuiteplugin.com', array( $this, 'maybe_update_plugin' ), 10, 3 );
         add_filter( 'plugins_api', array( $this, 'inject_plugin_update_info' ), 10, 3 );
     }

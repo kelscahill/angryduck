@@ -51,6 +51,3 @@ if ( ! function_exists( 'wpay_trigger_payment_overdue_email' ) ) {
         do_action( 'wpay_payment_overdue_notification', $order_id, $payment_data );
     }
 }
-
-// Temporary disable auto-charge invoices.
-add_filter( 'wpay_auto_charge_invoices', '__return_false' );

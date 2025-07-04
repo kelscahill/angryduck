@@ -2,14 +2,14 @@
 # This file is distributed under the GPL          v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: WooCommerce Wholesale Payments 1.0.4\n"
+"Project-Id-Version: WooCommerce Wholesale Payments 1.0.5.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woocommerce-wholesale-payments\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-06-08T23:57:51+00:00\n"
+"POT-Creation-Date: 2025-07-01T03:44:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.11.0\n"
 "X-Domain: woocommerce-wholesale-payments\n"
@@ -75,6 +75,17 @@ msgstr ""
 msgid "You do not have permission to view this content."
 msgstr ""
 
+#: includes/Classes/Cron.php:164
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:652
+msgid "Invoice already finalized."
+msgstr ""
+
+#. translators: %1$s = invoice number; %2$s = order link
+#: includes/Classes/Cron.php:215
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:716
+msgid "Invoice #%1$s has been created. <a href=\"%2$s\" target=\"_blank\">View Invoice</a>."
+msgstr ""
+
 #: includes/Classes/License_Manager.php:108
 msgid "License Email"
 msgstr ""
@@ -84,17 +95,17 @@ msgid "License Key"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:110
-#: includes/I18n/settings-page.php:131
+#: includes/I18n/settings-page.php:134
 msgid "Save Changes"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:112
-#: includes/I18n/settings-page.php:211
+#: includes/I18n/settings-page.php:214
 msgid "Error"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:113
-#: includes/I18n/settings-page.php:210
+#: includes/I18n/settings-page.php:213
 msgid "Success"
 msgstr ""
 
@@ -108,14 +119,14 @@ msgstr ""
 
 #: includes/Classes/Settings_Page.php:282
 #: includes/Classes/Settings_Page.php:283
-#: includes/I18n/settings-page.php:119
-#: includes/I18n/settings-page.php:305
+#: includes/I18n/settings-page.php:122
+#: includes/I18n/settings-page.php:314
 msgid "Payments"
 msgstr ""
 
 #: includes/Classes/WP_Admin.php:50
 #: includes/I18n/license-notice.php:65
-#: includes/I18n/settings-page.php:260
+#: includes/I18n/settings-page.php:263
 msgid "Renew License"
 msgstr ""
 
@@ -125,7 +136,7 @@ msgstr ""
 
 #: includes/Classes/WP_Admin.php:61
 #: includes/I18n/settings-page.php:15
-#: includes/I18n/settings-page.php:49
+#: includes/I18n/settings-page.php:50
 #: includes/Post_Types/Payment_Plan_Post_Type.php:31
 #: includes/Post_Types/Payment_Plan_Post_Type.php:33
 #: includes/Post_Types/Payment_Plan_Post_Type.php:35
@@ -298,19 +309,19 @@ msgstr ""
 msgid "Your payment is overdue"
 msgstr ""
 
-#: includes/Factories/Payment_Plan.php:220
+#: includes/Factories/Payment_Plan.php:239
 msgid "Days must be unique."
 msgstr ""
 
-#: includes/Factories/Payment_Plan.php:226
+#: includes/Factories/Payment_Plan.php:245
 msgid "Days in breakdown must be in ascending order."
 msgstr ""
 
-#: includes/Factories/Payment_Plan.php:235
+#: includes/Factories/Payment_Plan.php:254
 msgid "Percentage value must be an integer."
 msgstr ""
 
-#: includes/Factories/Payment_Plan.php:242
+#: includes/Factories/Payment_Plan.php:261
 msgid "Percentage value must sum up to 100."
 msgstr ""
 
@@ -331,32 +342,33 @@ msgid "Stripe account ID not found."
 msgstr ""
 
 #: includes/Helpers/WPay.php:366
-#: includes/I18n/settings-page.php:68
-#: includes/I18n/settings-page.php:301
-#: includes/Integrations/WC.php:169
-#: includes/Integrations/WC.php:486
+#: includes/I18n/settings-page.php:69
+#: includes/I18n/settings-page.php:306
+#: includes/Integrations/WC.php:170
+#: includes/Integrations/WC.php:515
 msgid "Overdue"
 msgstr ""
 
 #: includes/Helpers/WPay.php:367
-#: includes/Integrations/WC.php:162
+#: includes/Integrations/WC.php:163
 msgid "Pending Payment"
 msgstr ""
 
 #: includes/Helpers/WPay.php:368
-#: includes/I18n/settings-page.php:69
-#: includes/I18n/settings-page.php:115
-#: includes/I18n/settings-page.php:285
-#: includes/I18n/settings-page.php:302
-#: includes/Integrations/WC.php:176
-#: includes/Integrations/WC.php:213
-#: includes/Integrations/WC.php:271
-#: includes/Integrations/WC.php:485
+#: includes/I18n/settings-page.php:43
+#: includes/I18n/settings-page.php:70
+#: includes/I18n/settings-page.php:118
+#: includes/I18n/settings-page.php:288
+#: includes/I18n/settings-page.php:307
+#: includes/Integrations/WC.php:177
+#: includes/Integrations/WC.php:214
+#: includes/Integrations/WC.php:278
+#: includes/Integrations/WC.php:514
 msgid "Paid"
 msgstr ""
 
 #: includes/Helpers/WPay.php:405
-#: includes/Integrations/WC.php:242
+#: includes/Integrations/WC.php:243
 #: includes/Integrations/WWP.php:34
 #: includes/Payment_Gateway/WC_Wholesale_Payments.php:84
 #: templates/admin/parts/require-wp-version.php:15
@@ -444,7 +456,7 @@ msgid "%1$sUrgent!%2$s Your Wholesale Payments license has expired!"
 msgstr ""
 
 #: includes/I18n/settings-page.php:19
-#: includes/I18n/settings-page.php:63
+#: includes/I18n/settings-page.php:64
 msgid "Invoices"
 msgstr ""
 
@@ -470,17 +482,17 @@ msgid "OK"
 msgstr ""
 
 #: includes/I18n/settings-page.php:30
-#: includes/I18n/settings-page.php:132
+#: includes/I18n/settings-page.php:135
 msgid "Cancel"
 msgstr ""
 
 #: includes/I18n/settings-page.php:31
-#: includes/I18n/settings-page.php:310
+#: includes/I18n/settings-page.php:319
 msgid "Edit"
 msgstr ""
 
 #: includes/I18n/settings-page.php:32
-#: includes/I18n/settings-page.php:54
+#: includes/I18n/settings-page.php:55
 msgid "Create New Plan"
 msgstr ""
 
@@ -526,731 +538,746 @@ msgid "View Order"
 msgstr ""
 
 #: includes/I18n/settings-page.php:42
-#: includes/I18n/settings-page.php:263
+#: includes/I18n/settings-page.php:266
 msgid "Refreshing"
 msgstr ""
 
-#: includes/I18n/settings-page.php:45
+#: includes/I18n/settings-page.php:46
 msgid "Wholesale Suite"
 msgstr ""
 
-#: includes/I18n/settings-page.php:46
+#: includes/I18n/settings-page.php:47
 msgid "Stripe"
 msgstr ""
 
-#: includes/I18n/settings-page.php:47
+#: includes/I18n/settings-page.php:48
 #: includes/Integrations/WWP.php:308
 msgid "Stripe API Settings"
 msgstr ""
 
-#: includes/I18n/settings-page.php:50
+#: includes/I18n/settings-page.php:51
 msgid "Edit your existing wholesale payment plans or create a new one."
 msgstr ""
 
-#: includes/I18n/settings-page.php:51
+#: includes/I18n/settings-page.php:52
 msgid "Create your wholesale payment plans."
 msgstr ""
 
-#: includes/I18n/settings-page.php:55
+#: includes/I18n/settings-page.php:56
 msgid "Get started quickly with a commonly used payment template, or configure a custom payment plan. Payment plans will be available to your wholesale customers."
 msgstr ""
 
-#: includes/I18n/settings-page.php:58
+#: includes/I18n/settings-page.php:59
 #: includes/Post_Types/Payment_Plan_Post_Type.php:39
 msgid "Edit Payment Plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:59
+#: includes/I18n/settings-page.php:60
 msgid "Configure your payment plan."
 msgstr ""
 
-#: includes/I18n/settings-page.php:65
+#: includes/I18n/settings-page.php:66
 msgid "Quick Actions"
 msgstr ""
 
-#: includes/I18n/settings-page.php:66
+#: includes/I18n/settings-page.php:67
 msgid "All"
 msgstr ""
 
-#: includes/I18n/settings-page.php:67
-#: includes/I18n/settings-page.php:300
-#: includes/Integrations/WC.php:487
+#: includes/I18n/settings-page.php:68
+#: includes/I18n/settings-page.php:304
+#: includes/Integrations/WC.php:516
 msgid "Pending"
 msgstr ""
 
-#: includes/I18n/settings-page.php:70
-#: includes/I18n/settings-page.php:303
+#: includes/I18n/settings-page.php:71
+#: includes/I18n/settings-page.php:308
 msgid "Void"
 msgstr ""
 
-#: includes/I18n/settings-page.php:71
-msgid "Search Invoices"
-msgstr ""
-
 #: includes/I18n/settings-page.php:72
-msgid "All Dates"
+#: includes/I18n/settings-page.php:305
+msgid "Open"
 msgstr ""
 
 #: includes/I18n/settings-page.php:73
-msgid "Filter by registered customer"
+msgid "Search Invoices"
 msgstr ""
 
 #: includes/I18n/settings-page.php:74
-msgid "Filter"
+msgid "All Dates"
+msgstr ""
+
+#: includes/I18n/settings-page.php:75
+msgid "Filter by registered customer"
 msgstr ""
 
 #: includes/I18n/settings-page.php:76
-msgid "Today"
-msgstr ""
-
-#: includes/I18n/settings-page.php:77
-msgid "Yesterday"
+msgid "Filter"
 msgstr ""
 
 #: includes/I18n/settings-page.php:78
-msgid "Last 7 days"
+msgid "Today"
 msgstr ""
 
 #: includes/I18n/settings-page.php:79
-msgid "Last 30 days"
+msgid "Yesterday"
 msgstr ""
 
 #: includes/I18n/settings-page.php:80
-msgid "This month"
+msgid "Last 7 days"
 msgstr ""
 
 #: includes/I18n/settings-page.php:81
+msgid "Last 30 days"
+msgstr ""
+
+#: includes/I18n/settings-page.php:82
+msgid "This month"
+msgstr ""
+
+#: includes/I18n/settings-page.php:83
 msgid "Last month"
 msgstr ""
 
-#: includes/I18n/settings-page.php:86
+#: includes/I18n/settings-page.php:88
 msgid "Summary"
 msgstr ""
 
-#: includes/I18n/settings-page.php:87
+#: includes/I18n/settings-page.php:89
 msgid "Date of Order"
 msgstr ""
 
-#: includes/I18n/settings-page.php:88
+#: includes/I18n/settings-page.php:90
 msgid "Billed to"
 msgstr ""
 
-#: includes/I18n/settings-page.php:89
-#: includes/I18n/settings-page.php:112
-#: includes/I18n/settings-page.php:122
-#: includes/I18n/settings-page.php:283
+#: includes/I18n/settings-page.php:91
+#: includes/I18n/settings-page.php:115
+#: includes/I18n/settings-page.php:125
+#: includes/I18n/settings-page.php:286
 msgid "Currency"
 msgstr ""
 
 #: includes/I18n/settings-page.php:92
-msgid "Details"
-msgstr ""
-
-#: includes/I18n/settings-page.php:93
-msgid "Created"
-msgstr ""
-
-#: includes/I18n/settings-page.php:94
-msgid "Finalized"
+#: includes/I18n/settings-page.php:297
+#: templates/front/parts/payment-fields.php:72
+msgid "Auto Charge"
 msgstr ""
 
 #: includes/I18n/settings-page.php:95
-msgid "Payment Page"
+msgid "Details"
 msgstr ""
 
 #: includes/I18n/settings-page.php:96
-msgid "Customer Payment Page"
+msgid "Created"
+msgstr ""
+
+#: includes/I18n/settings-page.php:97
+msgid "Finalized"
+msgstr ""
+
+#: includes/I18n/settings-page.php:98
+msgid "Payment Page"
 msgstr ""
 
 #: includes/I18n/settings-page.php:99
-msgid "Total Breakdown"
-msgstr ""
-
-#: includes/I18n/settings-page.php:100
-msgid "Subtotal"
-msgstr ""
-
-#: includes/I18n/settings-page.php:101
-msgid "Total excluding Tax"
+msgid "Customer Payment Page"
 msgstr ""
 
 #: includes/I18n/settings-page.php:102
-msgid "Tax"
+msgid "Total Breakdown"
 msgstr ""
 
 #: includes/I18n/settings-page.php:103
-msgid "Total"
+msgid "Subtotal"
 msgstr ""
 
 #: includes/I18n/settings-page.php:104
-msgid "Amount Paid"
+msgid "Total excluding Tax"
 msgstr ""
 
 #: includes/I18n/settings-page.php:105
-msgid "Amount Remaining"
+msgid "Tax"
+msgstr ""
+
+#: includes/I18n/settings-page.php:106
+msgid "Total"
+msgstr ""
+
+#: includes/I18n/settings-page.php:107
+msgid "Amount Paid"
 msgstr ""
 
 #: includes/I18n/settings-page.php:108
-#: includes/I18n/settings-page.php:291
+msgid "Amount Remaining"
+msgstr ""
+
+#: includes/I18n/settings-page.php:111
+#: includes/I18n/settings-page.php:294
 #: includes/Post_Types/Payment_Plan_Post_Type.php:32
 msgid "Payment Plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:110
-#: includes/I18n/settings-page.php:281
+#: includes/I18n/settings-page.php:113
+#: includes/I18n/settings-page.php:284
 msgid "Name"
 msgstr ""
 
-#: includes/I18n/settings-page.php:111
-#: includes/I18n/settings-page.php:121
-#: includes/I18n/settings-page.php:282
+#: includes/I18n/settings-page.php:114
+#: includes/I18n/settings-page.php:124
+#: includes/I18n/settings-page.php:285
 msgid "Amount"
 msgstr ""
 
-#: includes/I18n/settings-page.php:113
-#: includes/I18n/settings-page.php:123
-#: includes/I18n/settings-page.php:275
-#: includes/I18n/settings-page.php:286
+#: includes/I18n/settings-page.php:116
+#: includes/I18n/settings-page.php:126
+#: includes/I18n/settings-page.php:278
+#: includes/I18n/settings-page.php:289
 #: templates/front/parts/order-invoice-payments-progress.php:42
 msgid "Status"
 msgstr ""
 
-#: includes/I18n/settings-page.php:114
-#: includes/I18n/settings-page.php:284
+#: includes/I18n/settings-page.php:117
+#: includes/I18n/settings-page.php:287
 msgid "Due"
 msgstr ""
 
-#: includes/I18n/settings-page.php:124
-#: includes/I18n/settings-page.php:287
+#: includes/I18n/settings-page.php:127
+#: includes/I18n/settings-page.php:290
 msgid "Date"
 msgstr ""
 
-#: includes/I18n/settings-page.php:130
+#: includes/I18n/settings-page.php:133
 msgid "Add Payment"
 msgstr ""
 
-#: includes/I18n/settings-page.php:133
+#: includes/I18n/settings-page.php:136
 msgid "Delete Payment Plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:136
+#: includes/I18n/settings-page.php:139
+#: includes/I18n/settings-page.php:311
 msgid "Yes"
 msgstr ""
 
-#: includes/I18n/settings-page.php:137
+#: includes/I18n/settings-page.php:140
+#: includes/I18n/settings-page.php:312
 msgid "No"
 msgstr ""
 
-#: includes/I18n/settings-page.php:138
+#: includes/I18n/settings-page.php:141
 msgid "Back"
 msgstr ""
 
-#: includes/I18n/settings-page.php:139
+#: includes/I18n/settings-page.php:142
 msgid "Plan Title"
 msgstr ""
 
-#: includes/I18n/settings-page.php:140
+#: includes/I18n/settings-page.php:143
 msgid "Note: This title will be visible on the cart/checkout page. Enter a clear and concise title for your payment plan. This title will help you easily identify the plan in your list and should reflect the key details or purpose of the plan."
 msgstr ""
 
-#: includes/I18n/settings-page.php:141
+#: includes/I18n/settings-page.php:144
 msgid "Plan Description"
 msgstr ""
 
-#: includes/I18n/settings-page.php:142
+#: includes/I18n/settings-page.php:145
 msgid "Provide a detailed description of the payment plan. Include key information such as payment intervals (e.g., monthly, quarterly), total subscription duration, and any special terms or discounts."
 msgstr ""
 
-#: includes/I18n/settings-page.php:143
+#: includes/I18n/settings-page.php:146
 msgid "Plan Breakdown:"
 msgstr ""
 
 #. translators: %d = number of days
 #. translators: %d = percentage number
-#: includes/I18n/settings-page.php:145
-#: includes/I18n/settings-page.php:186
+#: includes/I18n/settings-page.php:148
+#: includes/I18n/settings-page.php:189
 msgid "Day %d"
 msgstr ""
 
-#: includes/I18n/settings-page.php:146
+#: includes/I18n/settings-page.php:149
 msgid "No payment required"
 msgstr ""
 
 #. translators: %d = percentage number
-#: includes/I18n/settings-page.php:148
+#: includes/I18n/settings-page.php:151
 msgid "%d% payment"
 msgstr ""
 
 #. translators: %1$s = currency symbol; %2$d = fixed amount number
-#: includes/I18n/settings-page.php:150
+#: includes/I18n/settings-page.php:153
 msgid "%1$s%2$d payment"
 msgstr ""
 
-#: includes/I18n/settings-page.php:152
+#: includes/I18n/settings-page.php:155
 msgid "Days after order:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:153
+#: includes/I18n/settings-page.php:156
 msgid "Amount Due:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:155
+#: includes/I18n/settings-page.php:158
 msgid "Select format"
 msgstr ""
 
-#: includes/I18n/settings-page.php:156
+#: includes/I18n/settings-page.php:159
 msgid "Payment Reminder:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:157
+#: includes/I18n/settings-page.php:160
 msgid "Overdue Reminder:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:158
+#: includes/I18n/settings-page.php:161
 msgid "Day before due date"
 msgstr ""
 
-#: includes/I18n/settings-page.php:159
+#: includes/I18n/settings-page.php:162
 msgid "Days before due date"
 msgstr ""
 
-#: includes/I18n/settings-page.php:160
+#: includes/I18n/settings-page.php:163
 msgid "Day after due date"
 msgstr ""
 
-#: includes/I18n/settings-page.php:161
+#: includes/I18n/settings-page.php:164
 msgid "Days after due date"
 msgstr ""
 
-#: includes/I18n/settings-page.php:162
+#: includes/I18n/settings-page.php:165
 msgid "Send a reminder email before the payment is due"
 msgstr ""
 
-#: includes/I18n/settings-page.php:163
+#: includes/I18n/settings-page.php:166
 msgid "Send a reminder email if payment is not received"
 msgstr ""
 
-#: includes/I18n/settings-page.php:164
+#: includes/I18n/settings-page.php:167
 msgid "Apply payment plan restrictions"
 msgstr ""
 
-#: includes/I18n/settings-page.php:165
+#: includes/I18n/settings-page.php:168
 msgid "Apply auto charge invoices"
 msgstr ""
 
-#: includes/I18n/settings-page.php:166
+#: includes/I18n/settings-page.php:169
 msgid "Allowed wholesale roles:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:167
+#: includes/I18n/settings-page.php:170
 msgid "Select the wholesale roles that are permitted to use this payment plan during checkout. Only users with the selected roles will see and be able to apply this plan to their purchases."
 msgstr ""
 
-#: includes/I18n/settings-page.php:168
+#: includes/I18n/settings-page.php:171
 msgid "Allowed wholesale users:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:169
+#: includes/I18n/settings-page.php:172
 msgid "Only approved wholesale customers can access this payment plan during checkout. Ensure your account has the necessary permissions to apply wholesale pricing and complete the purchase with this plan."
 msgstr ""
 
-#: includes/I18n/settings-page.php:170
+#: includes/I18n/settings-page.php:173
 msgid "Payment Plan Status:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:171
+#: includes/I18n/settings-page.php:174
 msgid "Remove"
 msgstr ""
 
-#: includes/I18n/settings-page.php:174
+#: includes/I18n/settings-page.php:177
 msgid "Day"
 msgstr ""
 
-#: includes/I18n/settings-page.php:175
+#: includes/I18n/settings-page.php:178
 msgid "Custom"
 msgstr ""
 
-#: includes/I18n/settings-page.php:176
+#: includes/I18n/settings-page.php:179
 msgid "Timestamp"
 msgstr ""
 
-#: includes/I18n/settings-page.php:177
+#: includes/I18n/settings-page.php:180
 msgid "No Payment Required"
 msgstr ""
 
-#: includes/I18n/settings-page.php:178
+#: includes/I18n/settings-page.php:181
 msgid "Fixed amount"
 msgstr ""
 
-#: includes/I18n/settings-page.php:179
+#: includes/I18n/settings-page.php:182
 msgid "Percentage"
 msgstr ""
 
-#: includes/I18n/settings-page.php:180
+#: includes/I18n/settings-page.php:183
 #: includes/Integrations/WWP.php:118
 #: includes/Integrations/WWP.php:194
-#: includes/Integrations/WWP.php:336
+#: includes/Integrations/WWP.php:333
+#: includes/Integrations/WWP.php:344
 msgid "Enabled"
 msgstr ""
 
-#: includes/I18n/settings-page.php:181
+#: includes/I18n/settings-page.php:184
 #: includes/Integrations/WWP.php:119
 #: includes/Integrations/WWP.php:195
-#: includes/Integrations/WWP.php:337
+#: includes/Integrations/WWP.php:334
+#: includes/Integrations/WWP.php:345
 msgid "Disabled"
 msgstr ""
 
-#: includes/I18n/settings-page.php:182
+#: includes/I18n/settings-page.php:185
 msgid "Any Role"
 msgstr ""
 
-#: includes/I18n/settings-page.php:187
+#: includes/I18n/settings-page.php:190
 msgid "Enter a name for your payment plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:188
+#: includes/I18n/settings-page.php:191
 msgid "Enter a description for your payment plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:189
+#: includes/I18n/settings-page.php:192
 msgid "Select roles this payment plan should only be displayed and available to."
 msgstr ""
 
-#: includes/I18n/settings-page.php:190
+#: includes/I18n/settings-page.php:193
 msgid "Search and select users this payment plan should only be displayed and available to."
 msgstr ""
 
-#: includes/I18n/settings-page.php:193
+#: includes/I18n/settings-page.php:196
 msgid "This is shown to eligible users on the checkout screen."
 msgstr ""
 
 #. translators: %s = the entered text
-#: includes/I18n/settings-page.php:195
+#: includes/I18n/settings-page.php:198
 msgid "Please make sure to provide filter hook handler for \"wpay_parse_%s\" which calculates and returns the number of days."
 msgstr ""
 
 #. translators: %s = the entered text
-#: includes/I18n/settings-page.php:197
+#: includes/I18n/settings-page.php:200
 msgid "Please make sure to provide filter hook handler for \"wpay_parse_%s\" which calculates and returns an exact date in Unix epoch time format."
 msgstr ""
 
-#: includes/I18n/settings-page.php:198
+#: includes/I18n/settings-page.php:201
 msgid "Your payment plan adds up to 100%, no additional payments are required."
 msgstr ""
 
-#: includes/I18n/settings-page.php:201
+#: includes/I18n/settings-page.php:204
 msgid "Are you sure you sure you want to delete this payment breakdown?"
 msgstr ""
 
-#: includes/I18n/settings-page.php:202
+#: includes/I18n/settings-page.php:205
 msgid "Are you sure you sure you want to delete this payment plan?"
 msgstr ""
 
-#: includes/I18n/settings-page.php:203
+#: includes/I18n/settings-page.php:206
 msgid "Are you sure you sure you want to disable this payment plan?"
 msgstr ""
 
-#: includes/I18n/settings-page.php:204
+#: includes/I18n/settings-page.php:207
 msgid "Unsaved changes"
 msgstr ""
 
-#: includes/I18n/settings-page.php:205
+#: includes/I18n/settings-page.php:208
 msgid "You have unsaved changes. Are you sure you want to leave this page?"
 msgstr ""
 
-#: includes/I18n/settings-page.php:212
+#: includes/I18n/settings-page.php:215
 msgid "Are you sure?"
 msgstr ""
 
-#: includes/I18n/settings-page.php:213
+#: includes/I18n/settings-page.php:216
 msgid "Redirecting to Stripe onboarding page..."
 msgstr ""
 
-#: includes/I18n/settings-page.php:216
+#: includes/I18n/settings-page.php:219
 msgid "Create from pre-configured payment plan"
 msgstr ""
 
 #. translators: %s = title of pre-configured payment plan
-#: includes/I18n/settings-page.php:218
+#: includes/I18n/settings-page.php:221
 msgid "Creating new payment plan based on %s."
 msgstr ""
 
-#: includes/I18n/settings-page.php:220
+#: includes/I18n/settings-page.php:223
 msgid "Enter a title for your new payment plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:221
+#: includes/I18n/settings-page.php:224
 msgid "Enter a description for your new payment plan"
 msgstr ""
 
-#: includes/I18n/settings-page.php:224
+#: includes/I18n/settings-page.php:227
 msgid "New Payment Plan Title"
 msgstr ""
 
-#: includes/I18n/settings-page.php:225
+#: includes/I18n/settings-page.php:228
 msgid "New Payment Plan Description"
 msgstr ""
 
-#: includes/I18n/settings-page.php:228
+#: includes/I18n/settings-page.php:231
 msgid "Payment plan created successfully!"
 msgstr ""
 
-#: includes/I18n/settings-page.php:230
+#: includes/I18n/settings-page.php:233
 msgid "Your Stripe account seems to be not linked. Please reconnect your Stripe account."
 msgstr ""
 
-#: includes/I18n/settings-page.php:231
+#: includes/I18n/settings-page.php:234
 msgid "This will disconnect the account currently connected with Stripe. Proceed?"
 msgstr ""
 
 #. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
-#: includes/I18n/settings-page.php:233
+#: includes/I18n/settings-page.php:236
 msgid "API mode is permanently set to %1$stest%2$s mode since %1$sWP_ENVIRONMENT_TYPE%2$s constant is defined and is set to %1$slocal%2$s."
 msgstr ""
 
-#: includes/I18n/settings-page.php:234
-#: includes/I18n/settings-page.php:312
+#: includes/I18n/settings-page.php:237
+#: includes/I18n/settings-page.php:321
 #: templates/front/parts/payment-fields.php:23
 msgid "No payment plans found."
 msgstr ""
 
-#: includes/I18n/settings-page.php:235
+#: includes/I18n/settings-page.php:238
 msgid "Your Stripe account is not connected. Please connect your Stripe account."
 msgstr ""
 
-#: includes/I18n/settings-page.php:236
+#: includes/I18n/settings-page.php:239
 msgid "No payments found."
 msgstr ""
 
-#: includes/I18n/settings-page.php:239
+#: includes/I18n/settings-page.php:242
 msgid "Stripe Connect Account:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:240
+#: includes/I18n/settings-page.php:243
 msgid "Live Access Token:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:241
+#: includes/I18n/settings-page.php:244
 msgid "Live Publishable Key:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:242
+#: includes/I18n/settings-page.php:245
 msgid "Test Access Token:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:243
+#: includes/I18n/settings-page.php:246
 msgid "Test Publishable Key:"
 msgstr ""
 
-#: includes/I18n/settings-page.php:244
+#: includes/I18n/settings-page.php:247
 msgid "Go to Settings"
 msgstr ""
 
 #. translators: %1$s and %2$s opening and closing strong tags respectively.
-#: includes/I18n/settings-page.php:250
+#: includes/I18n/settings-page.php:253
 msgid "%1$sUrgent!%2$s Wholesale Payments license is disabled!"
 msgstr ""
 
-#: includes/I18n/settings-page.php:251
-#: includes/I18n/settings-page.php:259
-#: includes/I18n/settings-page.php:268
+#: includes/I18n/settings-page.php:254
+#: includes/I18n/settings-page.php:262
+#: includes/I18n/settings-page.php:271
 msgid "Without an active license, your payment plans will still continue to work on your checkout page on the front end but the functionality to edit payment plans has been disabled until a valid license is entered."
 msgstr ""
 
-#: includes/I18n/settings-page.php:252
+#: includes/I18n/settings-page.php:255
 msgid "Repurchase New License"
 msgstr ""
 
-#: includes/I18n/settings-page.php:253
-#: includes/I18n/settings-page.php:261
+#: includes/I18n/settings-page.php:256
+#: includes/I18n/settings-page.php:264
 msgid "Enter a new license"
 msgstr ""
 
 #. translators: %1$s and %2$s opening and closing strong tags respectively.
-#: includes/I18n/settings-page.php:258
+#: includes/I18n/settings-page.php:261
 msgid "%1$sUrgent!%2$s Wholesale Payments license has expired!"
 msgstr ""
 
-#: includes/I18n/settings-page.php:262
+#: includes/I18n/settings-page.php:265
 msgid "Refresh license status"
 msgstr ""
 
 #. translators: %1$s and %2$s opening and closing strong tags respectively.
-#: includes/I18n/settings-page.php:267
+#: includes/I18n/settings-page.php:270
 msgid "%1$sUrgent!%2$s Wholesale Payments license is missing!"
 msgstr ""
 
-#: includes/I18n/settings-page.php:269
+#: includes/I18n/settings-page.php:272
 msgid "Don't have a license yet? Purchase here."
 msgstr ""
 
-#: includes/I18n/settings-page.php:270
+#: includes/I18n/settings-page.php:273
 msgid "Enter License Now"
 msgstr ""
 
-#: includes/I18n/settings-page.php:274
+#: includes/I18n/settings-page.php:277
 msgid "Plans"
 msgstr ""
 
-#: includes/I18n/settings-page.php:276
+#: includes/I18n/settings-page.php:279
 msgid "# of Payments"
 msgstr ""
 
-#: includes/I18n/settings-page.php:277
+#: includes/I18n/settings-page.php:280
 msgid "Plan Duration"
 msgstr ""
 
-#: includes/I18n/settings-page.php:278
-#: includes/I18n/settings-page.php:307
+#: includes/I18n/settings-page.php:281
+#: includes/I18n/settings-page.php:316
 msgid "Active Orders"
 msgstr ""
 
-#: includes/I18n/settings-page.php:279
+#: includes/I18n/settings-page.php:282
 msgid "Actions"
 msgstr ""
 
-#: includes/I18n/settings-page.php:280
+#: includes/I18n/settings-page.php:283
 msgid "Order ID"
 msgstr ""
 
-#: includes/I18n/settings-page.php:288
+#: includes/I18n/settings-page.php:291
 msgid "Invoice ID"
 msgstr ""
 
-#: includes/I18n/settings-page.php:289
+#: includes/I18n/settings-page.php:292
 msgid "Order Date"
 msgstr ""
 
-#: includes/I18n/settings-page.php:290
+#: includes/I18n/settings-page.php:293
 msgid "Customer Name"
 msgstr ""
 
-#: includes/I18n/settings-page.php:292
+#: includes/I18n/settings-page.php:295
 msgid "Next Payment Due"
 msgstr ""
 
-#: includes/I18n/settings-page.php:293
+#: includes/I18n/settings-page.php:296
 #: templates/front/parts/order-invoice-payments-progress.php:40
 msgid "Amount Due"
 msgstr ""
 
-#: includes/I18n/settings-page.php:296
+#: includes/I18n/settings-page.php:300
 msgid "Order"
 msgstr ""
 
-#: includes/I18n/settings-page.php:298
+#: includes/I18n/settings-page.php:302
 msgid "Active"
 msgstr ""
 
-#: includes/I18n/settings-page.php:299
+#: includes/I18n/settings-page.php:303
 msgid "Inactive"
 msgstr ""
 
-#: includes/I18n/settings-page.php:306
+#: includes/I18n/settings-page.php:315
 msgid "Days"
 msgstr ""
 
-#: includes/I18n/settings-page.php:308
+#: includes/I18n/settings-page.php:317
 msgid "Pause"
 msgstr ""
 
-#: includes/I18n/settings-page.php:309
+#: includes/I18n/settings-page.php:318
 msgid "Continue"
 msgstr ""
 
-#: includes/I18n/settings-page.php:311
+#: includes/I18n/settings-page.php:320
 msgid "Delete"
 msgstr ""
 
-#: includes/I18n/settings-page.php:313
+#: includes/I18n/settings-page.php:322
 msgid "Send Reminder"
 msgstr ""
 
-#: includes/I18n/settings-page.php:314
+#: includes/I18n/settings-page.php:323
 msgid "Collect Payment"
 msgstr ""
 
-#: includes/I18n/settings-page.php:315
+#: includes/I18n/settings-page.php:324
 msgid "View Details"
 msgstr ""
 
-#: includes/I18n/settings-page.php:316
+#: includes/I18n/settings-page.php:325
 msgid "Refresh"
 msgstr ""
 
-#: includes/Integrations/Payment_Block.php:126
+#: includes/Integrations/Payment_Block.php:140
 #: templates/front/parts/payment-fields.php:40
 msgid "Payment plans available for this order."
 msgstr ""
 
-#: includes/Integrations/WC.php:163
+#: includes/Integrations/WC.php:164
 msgid "Wholesale Payments: Pending Payment"
 msgstr ""
 
-#: includes/Integrations/WC.php:170
+#: includes/Integrations/WC.php:171
 msgid "Wholesale Payments: Overdue"
 msgstr ""
 
-#: includes/Integrations/WC.php:177
+#: includes/Integrations/WC.php:178
 msgid "Wholesale Payments: Paid in Full"
 msgstr ""
 
-#: includes/Integrations/WC.php:208
+#: includes/Integrations/WC.php:209
 msgid "Checking..."
 msgstr ""
 
-#: includes/Integrations/WC.php:209
+#: includes/Integrations/WC.php:210
 msgid "Error: "
 msgstr ""
 
 #. translators: %s = date
 #. translators: %s = due date
-#: includes/Integrations/WC.php:212
-#: includes/Integrations/WC.php:268
+#: includes/Integrations/WC.php:213
+#: includes/Integrations/WC.php:275
 msgid "Overdue: %s"
 msgstr ""
 
 #. translators: %s = date
 #. translators: %s = due date
-#: includes/Integrations/WC.php:215
-#: includes/Integrations/WC.php:279
-#: includes/Integrations/WC.php:479
+#: includes/Integrations/WC.php:216
+#: includes/Integrations/WC.php:286
+#: includes/Integrations/WC.php:508
 msgid "Due: %s"
 msgstr ""
 
-#: includes/Integrations/WC.php:274
+#: includes/Integrations/WC.php:281
 msgid "Voided"
 msgstr ""
 
-#: includes/Integrations/WC.php:296
+#: includes/Integrations/WC.php:303
 msgid "No payment plan"
 msgstr ""
 
-#: includes/Integrations/WC.php:422
+#: includes/Integrations/WC.php:451
 msgid "View Payments"
 msgstr ""
 
 #. translators: %1$d = payment number; %2$s = status
-#: includes/Integrations/WC.php:477
+#: includes/Integrations/WC.php:506
 msgid "Payment #%1$d (%2$s)"
 msgstr ""
 
 #. translators: %s = formatted price amount due
-#: includes/Integrations/WC.php:481
+#: includes/Integrations/WC.php:510
 msgid "Amount %s"
 msgstr ""
 
 #. translators: %s = status
-#: includes/Integrations/WC.php:483
+#: includes/Integrations/WC.php:512
 msgid "Final Payment (%s)"
 msgstr ""
 
-#: includes/Integrations/WC.php:484
+#: includes/Integrations/WC.php:513
 #: templates/front/parts/order-invoice-payments-progress.php:55
 msgid "Pay Now"
 msgstr ""
 
-#: includes/Integrations/WC.php:488
+#: includes/Integrations/WC.php:517
 msgid "Payment Timeline"
 msgstr ""
 
@@ -1388,45 +1415,73 @@ msgstr ""
 msgid "This will reset your connection to stripe."
 msgstr ""
 
-#: includes/Integrations/WWP.php:319
+#: includes/Integrations/WWP.php:323
 msgid "Payment Method Name"
 msgstr ""
 
-#: includes/Integrations/WWP.php:332
+#: includes/Integrations/WWP.php:329
 msgid "Auto Charge Invoices"
 msgstr ""
 
-#: includes/Integrations/WWP.php:334
-msgid "Automatically charge invoices for wholesale payments."
+#: includes/Integrations/WWP.php:331
+msgid "Enable this option to automatically charge customer payment methods for customer invoices without requiring manual payment."
 msgstr ""
 
-#: includes/Integrations/WWP.php:363
+#: includes/Integrations/WWP.php:340
+msgid "Show Auto Charge Label"
+msgstr ""
+
+#: includes/Integrations/WWP.php:342
+msgid "Enable this option to show the auto charge label on the checkout page."
+msgstr ""
+
+#: includes/Integrations/WWP.php:351
+msgid "CRON Schedule"
+msgstr ""
+
+#: includes/Integrations/WWP.php:354
+msgid "Specifies how often the cron job runs to automatically process and charge pending invoices."
+msgstr ""
+
+#: includes/Integrations/WWP.php:357
+msgid "Daily"
+msgstr ""
+
+#: includes/Integrations/WWP.php:358
+msgid "Hourly"
+msgstr ""
+
+#: includes/Integrations/WWP.php:359
+msgid "15 Minutes"
+msgstr ""
+
+#: includes/Integrations/WWP.php:385
 msgid "Redirecting to Stripe onboarding page. Please wait..."
 msgstr ""
 
-#: includes/Integrations/WWP.php:390
+#: includes/Integrations/WWP.php:412
 msgid "Stripe account not connected!"
 msgstr ""
 
-#: includes/Integrations/WWP.php:393
+#: includes/Integrations/WWP.php:415
 #: includes/REST/Rymera_Stripe.php:193
 msgid "Stripe account connected!"
 msgstr ""
 
-#: includes/Integrations/WWP.php:430
-#: includes/REST/Rymera_Stripe.php:432
+#: includes/Integrations/WWP.php:452
+#: includes/REST/Rymera_Stripe.php:490
 msgid "Connection reset! Please connect a Stripe account."
 msgstr ""
 
-#: includes/Integrations/WWP.php:445
+#: includes/Integrations/WWP.php:467
 msgid "Action Scheduler is not available."
 msgstr ""
 
-#: includes/Integrations/WWP.php:454
+#: includes/Integrations/WWP.php:476
 msgid "Email reminders have been scheduled successfully."
 msgstr ""
 
-#: includes/Integrations/WWP.php:467
+#: includes/Integrations/WWP.php:489
 msgid "Redirecting to scheduled actions..."
 msgstr ""
 
@@ -1447,26 +1502,22 @@ msgid "Payment error: Please select a payment plan."
 msgstr ""
 
 #: includes/Payment_Gateway/WC_Wholesale_Payments.php:360
-#: includes/Payment_Gateway/WC_Wholesale_Payments.php:498
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:499
 msgid "Payment error: Payment method is not configured properly. Please contact the store manager."
 msgstr ""
 
 #. translators: %s = filter name for 'custom' day format
-#: includes/Payment_Gateway/WC_Wholesale_Payments.php:492
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:493
 msgid "Payment error: \"%s\" filter needs to return non-null value."
 msgstr ""
 
 #. translators: %1$d = order id; %2$d = payment number
-#: includes/Payment_Gateway/WC_Wholesale_Payments.php:518
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:519
 msgid "Order #%1$d - Payment #%2$d"
 msgstr ""
 
-#: includes/Payment_Gateway/WC_Wholesale_Payments.php:546
+#: includes/Payment_Gateway/WC_Wholesale_Payments.php:547
 msgid "Payment error: Sum amount does not match total amount due. Please contact the store manager."
-msgstr ""
-
-#: includes/Payment_Gateway/WC_Wholesale_Payments.php:639
-msgid "Invoice already finalized."
 msgstr ""
 
 #: includes/Post_Types/Payment_Plan_Post_Type.php:34
@@ -1505,7 +1556,7 @@ msgstr ""
 msgid "Payment Plans CPT"
 msgstr ""
 
-#: includes/REST/Invoice_Lists.php:117
+#: includes/REST/Invoice_Lists.php:119
 msgid "Invalid invoice ID."
 msgstr ""
 
@@ -1606,31 +1657,36 @@ msgid "Stripe webhook event \"%s\" received"
 msgstr ""
 
 #: includes/REST/Rymera_Stripe.php:358
-#: includes/REST/Rymera_Stripe.php:475
+#: includes/REST/Rymera_Stripe.php:540
 msgid "Stripe invoice ID not found."
 msgstr ""
 
-#: includes/REST/Rymera_Stripe.php:392
-msgid "Order status refreshed"
+#: includes/REST/Rymera_Stripe.php:405
+#: includes/REST/Rymera_Stripe.php:588
+msgid "Stripe invoice not found."
 msgstr ""
 
 #: includes/REST/Rymera_Stripe.php:450
+msgid "Order status refreshed"
+msgstr ""
+
+#: includes/REST/Rymera_Stripe.php:508
 msgid "Invalid mode."
 msgstr ""
 
-#: includes/REST/Rymera_Stripe.php:456
+#: includes/REST/Rymera_Stripe.php:514
 msgid "API mode updated successfully."
 msgstr ""
 
-#: includes/REST/Rymera_Stripe.php:484
-msgid "Invoice is not open."
+#: includes/REST/Rymera_Stripe.php:533
+msgid "Order ID not found."
 msgstr ""
 
-#: includes/REST/Rymera_Stripe.php:494
-msgid "Payment successful."
+#: includes/REST/Rymera_Stripe.php:633
+msgid "Order paid successfully"
 msgstr ""
 
-#: includes/REST/Rymera_Stripe.php:531
+#: includes/REST/Rymera_Stripe.php:673
 msgid "Invoice created successfully."
 msgstr ""
 
@@ -1734,12 +1790,8 @@ msgid "Payment method is in %1$sTEST MODE%2$s. No payment will be processed or a
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
-#: templates/front/parts/payment-fields.php:48
-msgid "%1$sAuto-charge%2$s means Stripe will automatically debit the customer's saved payment method(e.g. credit card, debit card, ACH) without requiring manual action from the customer for each payment."
-msgstr ""
-
-#: templates/front/parts/payment-fields.php:70
-msgid "Auto Charge"
+#: templates/front/parts/payment-fields.php:49
+msgid "%1$sAuto-charge%2$s means Stripe will charge your saved payment method (e.g. credit card, debit card, ACH) without requiring manual action from you for each payment."
 msgstr ""
 
 #: templates/front/parts/thank-you-payment-method.php:23

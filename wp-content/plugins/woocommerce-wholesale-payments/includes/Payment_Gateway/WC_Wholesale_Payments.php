@@ -383,6 +383,7 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
          * We record the payment plan selected for this order at the time of
          * checkout.
          */
+        $order->update_meta_data( '_wpay_auto_charge', $auto_charge ? 'yes' : 'no' );
         $order->update_meta_data( '_wpay_plan', $payment_plan->to_json() );
         $order->save_meta_data();
 
@@ -573,18 +574,22 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
 
             $invoice_id = $invoice_response['id'];
 
-            if ( $auto_charge ) {
-                $order_total_in_cents = isset( $amounts_due[0]['amount'] ) ? $amounts_due[0]['amount'] : $order_total_in_cents; // get the first amounts due.
-                $order_description    = isset( $amounts_due[0]['description'] ) ? $amounts_due[0]['description'] : '';
-            }
-
             /***************************************************************************
              * Record Stripe invoice ID to order meta
              ***************************************************************************
              *
              * We record the Stripe invoice ID to the order meta.
              */
-            $order->update_meta_data( $invoice_id_meta_key, $invoice_id );
+            if ( $auto_charge ) {
+                $order_total_in_cents = isset( $amounts_due[0]['amount'] ) ? $amounts_due[0]['amount'] : $order_total_in_cents; // get the first amounts due.
+                $order_description    = isset( $amounts_due[0]['description'] ) ? $amounts_due[0]['description'] : '';
+                $invoice_ids          = array( $invoice_id );
+
+                $order->update_meta_data( $invoice_id_meta_key, $invoice_ids );
+            } else {
+                $order->update_meta_data( $invoice_id_meta_key, $invoice_id );
+            }
+
             $order->save_meta_data();
         }
 
@@ -623,7 +628,15 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
             }
 
             $invoice_item_id = $invoice_item['id'];
-            $order->update_meta_data( $invoice_item_id_meta_key, $invoice_item_id );
+
+            if ( $auto_charge ) {
+                $invoice_item_ids = array( $invoice_item_id );
+
+                $order->update_meta_data( $invoice_item_id_meta_key, $invoice_item_ids );
+            } else {
+                $order->update_meta_data( $invoice_item_id_meta_key, $invoice_item_id );
+            }
+
             $order->save_meta_data();
         }
 
@@ -652,32 +665,59 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
             }
         }
 
-        if ( $auto_charge ) {
-            $invoice_data = array(
-                'invoice_id'      => $invoice_id,
-                'invoice_item_id' => $invoice_item_id,
-                'status'          => 'created',
-            );
-            WPAY_Invoices::update_invoice_data( 'id', $breakdown_ids[0], $invoice_data );
-        }
-
         /***************************************************************************
          * Record finalized invoice to order meta
          ***************************************************************************
-        *
-        * We record the finalized invoice to the order meta.
-        */
-
+         *
+         * We record the finalized invoice to the order meta.
+         */
         $status = '';
         if ( $auto_charge ) {
-            $status = ! empty( $finalized['status'] ) ? $finalized['status'] : '';
+            $status          = ! empty( $finalized['status'] ) ? $finalized['status'] : '';
+            $finalized_items = array( $finalized );
+
+            $order->update_meta_data( '_wpay_stripe_invoice', $finalized_items );
+
+            $invoice_data = array(
+                'invoice_id'            => $invoice_id,
+                'invoice_item_id'       => $invoice_item_id,
+                'stripe_invoice'        => wp_json_encode( $finalized ),
+                'stripe_invoice_status' => $status,
+                'status'                => 'created',
+            );
+            WPAY_Invoices::update_invoice_data( 'id', $breakdown_ids[0], $invoice_data );
+
+            // Update the last index of the breakdown.
+            WPAY_Invoices::update_invoice_data( 'id', end( $breakdown_ids ), array( 'breakdown_last_index' => 1 ) );
+
+            $stripe_invoices = WPAY_Invoices::get_invoices( $order_id );
+            $statusses       = array();
+            if ( ! empty( $stripe_invoices ) ) {
+                foreach ( $stripe_invoices as $stripe_invoice ) {
+                    $statusses[] = ! empty( $stripe_invoice->stripe_invoice_status ) ? $stripe_invoice->stripe_invoice_status : 'pending';
+                }
+            }
+
+            $status = ! empty( $statusses ) && is_array( $statusses ) ? end( $statusses ) : $status;
         } else {
             $status = WPay::get_invoice_payment_progress_status( $finalized, 'status' );
+
+            $order->update_meta_data( '_wpay_stripe_invoice', $finalized );
         }
 
-        $order->update_meta_data( '_wpay_stripe_invoice', $finalized );
         $order->update_meta_data( '_wpay_stripe_invoice_status', $status );
         $order->save_meta_data();
+
+        // Add order note with invoice number.
+        $invoice_number = $finalized['number'];
+        $order_link     = $finalized['hosted_invoice_url'];
+        $order_note     = sprintf(
+            /* translators: %1$s = invoice number; %2$s = order link */
+            __( 'Invoice #%1$s has been created. <a href="%2$s" target="_blank">View Invoice</a>.', 'woocommerce-wholesale-payments' ),
+            $invoice_number,
+            $order_link
+        );
+        $order->add_order_note( $order_note );
 
         $order->update_status( 'processing' );
 

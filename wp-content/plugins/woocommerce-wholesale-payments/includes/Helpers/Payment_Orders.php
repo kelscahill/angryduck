@@ -8,6 +8,7 @@
 namespace RymeraWebCo\WPay\Helpers;
 
 use RymeraWebCo\WPay\Factories\Payment_Order;
+use RymeraWebCo\WPay\Helpers\WPAY_Invoices;
 use WP_Post;
 use WP_Query;
 
@@ -27,28 +28,105 @@ class Payment_Orders {
      */
     public static function get_orders( $query_args = array() ) {
 
+        // Get filterable args.
+        $filterable_args = array(
+            'dates'     => $query_args['dates'],
+            'status'    => $query_args['status'],
+            'from_date' => $query_args['from_date'],
+            'to_date'   => $query_args['to_date'],
+            'search'    => $query_args['search'],
+            'customer'  => $query_args['customer'],
+        );
+
+        // Remove filterable args from query args.
+        $query_args = array_filter(
+            $query_args,
+            function ( $value, $key ) use ( $filterable_args ) {
+                return ! isset( $filterable_args[ $key ] );
+            },
+            ARRAY_FILTER_USE_BOTH
+        );
+
         $defaults = array(
-            'status'  => array( 'wc-completed', 'wc-pending', 'wc-on-hold', 'wc-processing', 'wc-cancelled', 'wc-refunded' ),
-            'orderby' => 'date',
-            'order'   => 'DESC',
+            'status'   => array( 'wc-completed', 'wc-pending', 'wc-on-hold', 'wc-processing', 'wc-cancelled', 'wc-refunded' ),
+            'orderby'  => 'date',
+            'order'    => 'DESC',
+            'return'   => 'objects',
+            'paginate' => true,
         );
 
         $args = apply_filters( 'wpay_get_payment_orders', wp_parse_args( $query_args, $defaults ) );
 
-        $args['meta_query'] = array(
+        $meta_query = array(
+            'relation' => 'AND',
             array(
                 'key'     => '_wpay_stripe_invoice',
                 'compare' => 'EXISTS',
             ),
         );
 
-        $orders = wc_get_orders( $args );
-
-        if ( ! empty( $orders ) && ( empty( $args['fields'] ) || 'ids' !== $args['fields'] ) ) {
-            $orders = array_map( array( Payment_Order::class, 'get_instance' ), $orders );
+        // Filter by status.
+        if ( ! empty( $filterable_args['status'] ) && 'all' !== $filterable_args['status'] ) {
+            $meta_query[] = array(
+                'key'     => '_wpay_stripe_invoice_status',
+                'value'   => $filterable_args['status'],
+                'compare' => '=',
+            );
         }
 
-        return $orders;
+        // Filter by order date.
+        if ( ! empty( $filterable_args['from_date'] ) && ! empty( $filterable_args['to_date'] ) ) {
+            $start_date = strtotime( $filterable_args['from_date'] );
+            $end_date   = strtotime( $filterable_args['to_date'] );
+            if ( 'today' === $filterable_args['dates'] ) {
+                $start_date = strtotime( gmdate( 'Y-m-d 00:00:00', strtotime( 'today' ) ) );
+                $end_date   = strtotime( gmdate( 'Y-m-d 23:59:59', strtotime( 'today' ) ) );
+            }
+
+            $args['date_created'] = $start_date . '...' . $end_date;
+        }
+
+        // Filter by search.
+        if ( ! empty( $filterable_args['search'] ) ) {
+            $meta_query[] = array(
+                'key'     => '_wpay_stripe_invoice',
+                'value'   => $filterable_args['search'],
+                'compare' => 'LIKE',
+            );
+        }
+
+        $args['meta_query'] = $meta_query;
+
+        // Filter by customer.
+        if ( ! empty( $filterable_args['customer'] ) ) {
+            $args['customer_id'] = $filterable_args['customer'];
+        }
+
+        $orders = wc_get_orders( $args );
+
+        $all_orders = array();
+        if ( ! empty( $orders->orders ) && ( empty( $args['fields'] ) || 'ids' !== $args['fields'] ) ) {
+            $invoices   = WPAY_Invoices::get_invoices();
+            $all_orders = array_map(
+                function ( $order ) use ( $invoices ) {
+                    $order_invoices = array_filter(
+                        $invoices,
+                        function ( $invoice ) use ( $order ) {
+                            $order_id = (int) $invoice->order_id;
+                            return $order_id === $order->get_id();
+                        }
+                    );
+                    return Payment_Order::get_instance( $order, $order_invoices );
+                },
+                $orders->orders
+            );
+        }
+
+        return array(
+            'total'      => $orders->total,
+            'totalPages' => $orders->max_num_pages,
+            'data'       => $all_orders,
+        );
     }
 
     /**
@@ -59,10 +137,12 @@ class Payment_Orders {
      */
     public static function get_statuses() {
         return array(
+            'all'     => self::count_orders_by_status( 'all' ),
             'overdue' => self::count_orders_by_status( 'overdue' ),
             'paid'    => self::count_orders_by_status( 'paid' ),
             'pending' => self::count_orders_by_status( 'pending' ),
             'void'    => self::count_orders_by_status( 'void' ),
+            'open'    => self::count_orders_by_status( 'open' ),
         );
     }
 
@@ -88,6 +168,10 @@ class Payment_Orders {
             ),
         );
 
+        if ( 'all' === $status ) {
+            unset( $args['meta_query'] );
+        }
+
         $orders = wc_get_orders( $args );
 
         return ! empty( $orders ) ? count( $orders ) : 0;
@@ -96,20 +180,47 @@ class Payment_Orders {
     /**
      * Get all customers.
      *
+     * @param array $filterable_args Filterable args.
+     *
      * @since 1.0.2
      * @return array
      */
-    public static function get_customers() {
+    public static function get_customers( $filterable_args ) {
         $args = array(
-            'status'     => array( 'wc-completed', 'wc-pending', 'wc-on-hold', 'wc-processing', 'wc-cancelled', 'wc-refunded' ),
-            'limit'      => -1,
-            'meta_query' => array(
-                array(
-                    'key'     => '_wpay_stripe_invoice',
-                    'compare' => 'EXISTS',
-                ),
+            'status' => array( 'wc-completed', 'wc-pending', 'wc-on-hold', 'wc-processing', 'wc-cancelled', 'wc-refunded' ),
+            'limit'  => -1,
+        );
+
+        $meta_query = array(
+            'relation' => 'AND',
+            array(
+                'key'     => '_wpay_stripe_invoice',
+                'compare' => 'EXISTS',
             ),
         );
+
+        // Filter by status.
+        if ( ! empty( $filterable_args['status'] ) && 'all' !== $filterable_args['status'] ) {
+            $meta_query[] = array(
+                'key'     => '_wpay_stripe_invoice_status',
+                'value'   => $filterable_args['status'],
+                'compare' => '=',
+            );
+        }
+
+        $args['meta_query'] = $meta_query;
+
+        // Filter by order date.
+        if ( ! empty( $filterable_args['from_date'] ) && ! empty( $filterable_args['to_date'] ) ) {
+            $start_date = strtotime( $filterable_args['from_date'] );
+            $end_date   = strtotime( $filterable_args['to_date'] );
+            if ( 'today' === $filterable_args['dates'] ) {
+                $start_date = strtotime( gmdate( 'Y-m-d 00:00:00', strtotime( 'today' ) ) );
+                $end_date   = strtotime( gmdate( 'Y-m-d 23:59:59', strtotime( 'today' ) ) );
+            }
+
+            $args['date_created'] = $start_date . '...' . $end_date;
+        }
 
         $orders = wc_get_orders( $args );
 

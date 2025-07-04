@@ -111,6 +111,7 @@ class Payment_Plan {
         $this->apply_auto_charge  = get_post_meta( $this->post->ID, 'apply_auto_charge', true );
         $this->active_orders      = $this->get_active_orders( $this->post->ID );
         $this->set_breakdown();
+        $this->set_apply_auto_charge();
     }
 
     /**
@@ -129,6 +130,24 @@ class Payment_Plan {
         }
 
         return new Payment_Plan( $post );
+    }
+
+    /**
+     * Get the apply auto charge status.
+     *
+     * @since 1.0.5
+     * @return void
+     */
+    public function set_apply_auto_charge() {
+        $stripe_auto_charge = get_option( 'wpay_stripe_auto_charge_invoices', 'no' );
+        $auto_charge        = ! empty( $stripe_auto_charge ) && 'yes' === $stripe_auto_charge ? true : false;
+        $apply_auto_charge  = get_post_meta( $this->post->ID, 'apply_auto_charge', true );
+
+        if ( ! empty( $apply_auto_charge ) && 'yes' === $apply_auto_charge ) {
+            $auto_charge = $apply_auto_charge;
+        }
+
+        $this->apply_auto_charge = $auto_charge;
     }
 
     /**

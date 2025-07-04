@@ -13,6 +13,7 @@ use RymeraWebCo\WPay\Factories\Frontend_Script;
 use RymeraWebCo\WPay\Classes\License_Manager;
 use RymeraWebCo\WPay\Classes\Settings_Page;
 use RymeraWebCo\WPay\Classes\Update_Manager;
+use RymeraWebCo\WPay\Classes\Cron;
 use RymeraWebCo\WPay\Post_Types\Payment_Plan_Post_Type;
 use RymeraWebCo\WPay\Schedulers\WPay_Email_Scheduler;
 
@@ -27,5 +28,6 @@ return array(
     Update_Manager::instance(),
     new Payment_Plan_Post_Type(),
     Settings_Page::instance(),
+    Cron::instance(),
     new WPay_Email_Scheduler(),
 );

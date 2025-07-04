@@ -312,6 +312,10 @@ class WWP extends Abstract_Class {
             );
         }
 
+        $auto_charge_invoices   = get_option( 'wpay_stripe_auto_charge_invoices', 'no' );
+        $show_auto_charge_label = get_option( 'wpay_stripe_show_auto_charge_label', 'yes' );
+        $cron_schedule          = get_option( 'wpay_cron_schedule', 'daily' );
+
         $controls['wpay']['checkout'] = array(
             'checkout_settings' => array(
                 array(
@@ -320,25 +324,43 @@ class WWP extends Abstract_Class {
                     'id'      => WPay::get_payment_method_name( 'key' ),
                     'default' => WPay::get_payment_method_name(),
                 ),
+                array(
+                    'type'        => 'switch',
+                    'label'       => __( 'Auto Charge Invoices', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_stripe_auto_charge_invoices',
+                    'description' => __( 'Enable this option to automatically charge customer payment methods for customer invoices without requiring manual payment.', 'woocommerce-wholesale-payments' ),
+                    'options'     => array(
+                        'yes' => __( 'Enabled', 'woocommerce-wholesale-payments' ),
+                        'no'  => __( 'Disabled', 'woocommerce-wholesale-payments' ),
+                    ),
+                    'default'     => $auto_charge_invoices,
+                ),
+                array(
+                    'type'        => 'switch',
+                    'label'       => __( 'Show Auto Charge Label', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_stripe_show_auto_charge_label',
+                    'description' => __( 'Enable this option to show the auto charge label on the checkout page.', 'woocommerce-wholesale-payments' ),
+                    'options'     => array(
+                        'yes' => __( 'Enabled', 'woocommerce-wholesale-payments' ),
+                        'no'  => __( 'Disabled', 'woocommerce-wholesale-payments' ),
+                    ),
+                    'default'     => $show_auto_charge_label,
+                ),
+                array(
+                    'type'        => 'select',
+                    'label'       => __( 'CRON Schedule', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_cron_schedule',
+                    'label_id'    => 'wpay_cron_schedule_text',
+                    'description' => __( 'Specifies how often the cron job runs to automatically process and charge pending invoices.', 'woocommerce-wholesale-payments' ),
+                    'default'     => $cron_schedule,
+                    'options'     => array(
+                        'daily'  => __( 'Daily', 'woocommerce-wholesale-payments' ),
+                        'hourly' => __( 'Hourly', 'woocommerce-wholesale-payments' ),
+                        '15min'  => __( '15 Minutes', 'woocommerce-wholesale-payments' ),
+                    ),
+                ),
             ),
         );
-
-        // Allow to enable/disable auto-charge invoices.
-        $auto_charge_invoices = apply_filters( 'wpay_auto_charge_invoices', true );
-        if ( $auto_charge_invoices ) {
-            $auto_charge_invoices                                = get_option( 'wpay_stripe_auto_charge_invoices', 'no' );
-            $controls['wpay']['checkout']['checkout_settings'][] = array(
-                'type'        => 'switch',
-                'label'       => __( 'Auto Charge Invoices', 'woocommerce-wholesale-payments' ),
-                'id'          => 'wpay_stripe_auto_charge_invoices',
-                'description' => __( 'Automatically charge invoices for wholesale payments.', 'woocommerce-wholesale-payments' ),
-                'options'     => array(
-                    'yes' => __( 'Enabled', 'woocommerce-wholesale-payments' ),
-                    'no'  => __( 'Disabled', 'woocommerce-wholesale-payments' ),
-                ),
-                'default'     => $auto_charge_invoices,
-            );
-        }
 
         return $controls;
     }
