@@ -15,6 +15,7 @@ import { useLabelPurchaseContext } from 'context/label-purchase';
 import { recordEvent } from 'utils/tracks';
 import { mainModalContentSelector } from '../constants';
 import { PACKAGE_SECTION } from '../essential-details/constants';
+import { PromoRemainingCount } from '../promo';
 
 const tabViews = {
 	[ TAB_NAMES.CUSTOM_PACKAGE ]: CustomPackage,
@@ -117,6 +118,7 @@ export const Packages = () => {
 				<Heading level={ 3 }>
 					{ __( 'Package', 'woocommerce-shipping' ) }
 				</Heading>
+				<PromoRemainingCount />
 			</Flex>
 			{ ! isPackageSpecified() && (
 				<Notice

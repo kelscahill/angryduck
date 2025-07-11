@@ -9,6 +9,7 @@ import { trash } from '@wordpress/icons';
 import { getDimensionsUnit, getWeightUnit } from 'utils';
 import { CustomPackage, Package } from 'types';
 import { DELETION_EVENTS, trackPackageDeletion } from '../../utils';
+import { PromoBadge } from 'components/label-purchase/promo';
 
 interface TemplateRowProps {
 	pkg: Package | CustomPackage;
@@ -45,11 +46,11 @@ export const TemplateRow = ( {
 				{ pkg.name }
 			</Text>
 			<span>{ preparedDimensions }</span>
-			{ ', ' }&nbsp;
 			<span>
 				{ pkg.boxWeight }
 				{ weightUnit }
 			</span>
+			{ 'carrierId' in pkg && <PromoBadge carrier={ pkg.carrierId } /> }
 			{ isBusy && <Spinner /> }
 			{ deletePackage && (
 				<Icon

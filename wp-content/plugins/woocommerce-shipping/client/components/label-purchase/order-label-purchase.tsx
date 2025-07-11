@@ -8,6 +8,7 @@ import { SplitShipmentModal } from './split-shipment';
 import { LabelPurchaseTabs } from './label-purchase-tabs';
 import { LabelPurchaseMetaBox } from './label-purchase-meta-box';
 import { LabelPurchaseEffects } from 'effects/label-purchase';
+import { PromoBanner, PromoNotice } from './promo/';
 
 interface OrderLabelPurchaseProps {
 	orderId: number;
@@ -56,6 +57,7 @@ export const OrderLabelPurchase = ( {
 						__experimentalHideHeader={ true }
 						isDismissible={ false }
 					>
+						<PromoBanner />
 						<ModalHeader
 							closeModal={ closeLabelsModal }
 							orderId={ orderId }
@@ -73,6 +75,7 @@ export const OrderLabelPurchase = ( {
 					</Modal>
 				) }
 			</Flex>
+			<PromoNotice setIsOpen={ setIsOpen } />
 		</LabelPurchaseContextProvider>
 	);
 };

@@ -109,8 +109,8 @@ class MigrationController {
 				'name'     => __( 'Start migrating WooCommerce Shipping labels', 'woocommerce-shipping' ),
 				'button'   => __( 'Start migration', 'woocommerce-shipping' ),
 				'desc'     =>
-					/* translators: %d=count of labels pending migration */
 					$start_label_migration_desc . ' ' . sprintf(
+						// translators: %d is the number of labels. The word "label(s)" is wrapped in <strong> tags.
 						_n(
 							'There are currently <strong>%d label</strong> that can be migrated.',
 							'There are currently <strong>%d labels</strong> that can be migrated.',

@@ -486,6 +486,14 @@ return array(
 		'version' => 'dev-trunk',
 		'path'    => $baseDir . '/src/Packages/PackagesRESTController.php'
 	),
+	'Automattic\\WCShipping\\Promo\\PromoRESTController' => array(
+		'version' => 'dev-trunk',
+		'path'    => $baseDir . '/src/Promo/PromoRESTController.php'
+	),
+	'Automattic\\WCShipping\\Promo\\PromoService' => array(
+		'version' => 'dev-trunk',
+		'path'    => $baseDir . '/src/Promo/PromoService.php'
+	),
 	'Automattic\\WCShipping\\Shipment\\Address' => array(
 		'version' => 'dev-trunk',
 		'path'    => $baseDir . '/src/Shipment/Address.php'
@@ -541,6 +549,10 @@ return array(
 	'Automattic\\WCShipping\\Tests\\Packages\\PackagesAsArraysSanitizerTest' => array(
 		'version' => 'dev-trunk',
 		'path'    => $baseDir . '/tests/php/Packages/PackagesAsArraysSanitizerTest.php'
+	),
+	'Automattic\\WCShipping\\Tests\\Promo\\PromoServiceTest' => array(
+		'version' => 'dev-trunk',
+		'path'    => $baseDir . '/tests/php/Promo/PromoServiceTest.php'
 	),
 	'Automattic\\WCShipping\\Tests\\TosRESTControllerTest' => array(
 		'version' => 'dev-trunk',
@@ -617,6 +629,10 @@ return array(
 	'Automattic\\WCShipping\\Tests\\php\\Packages\\PackagesRESTControllerTest' => array(
 		'version' => 'dev-trunk',
 		'path'    => $baseDir . '/tests/php/Packages/PackagesRESTControllerTest.php'
+	),
+	'Automattic\\WCShipping\\Tests\\php\\Promo\\PromoRESTControllerTest' => array(
+		'version' => 'dev-trunk',
+		'path'    => $baseDir . '/tests/php/Promo/PromoRESTControllerTest.php'
 	),
 	'Automattic\\WCShipping\\Tests\\php\\Shipment\\AddressTest' => array(
 		'version' => 'dev-trunk',

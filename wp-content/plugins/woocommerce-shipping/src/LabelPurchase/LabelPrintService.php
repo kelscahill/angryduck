@@ -199,17 +199,35 @@ class LabelPrintService {
 				<div class="header">
 					<h1><?php echo esc_html( __( 'Packing Slip', 'woocommerce-shipping' ) ); ?></h1>
 					<p>
-						<?php echo esc_html( sprintf( __( 'Order #%s', 'woocommerce-shipping' ), $order->get_order_number() ) ); ?><br/>
-						<?php echo esc_html( sprintf( __( 'Shipment #%1$s of %2$s', 'woocommerce-shipping' ), $shipment_number, $total_shipments ) ); ?>
+						<?php
+							// translators: %s is the order number.
+							echo esc_html( sprintf( __( 'Order #%s', 'woocommerce-shipping' ), $order->get_order_number() ) );
+						?>
+						<br/>
+						<?php
+							// translators: %1$s is the shipment number, %2$s is the total shipments.
+							echo esc_html( sprintf( __( 'Shipment #%1$s of %2$s', 'woocommerce-shipping' ), $shipment_number, $total_shipments ) );
+						?>
 					</p>
 				</div>
 
 				<div class="label-info">
 					<h3><?php echo esc_html( __( 'Shipping Label Details', 'woocommerce-shipping' ) ); ?></h3>
 					<p>
-						<?php echo esc_html( sprintf( __( 'Service: %s', 'woocommerce-shipping' ), $label['service_name'] ) ); ?><br/>
-						<?php echo esc_html( sprintf( __( 'Tracking #: %s', 'woocommerce-shipping' ), $label['tracking'] ) ); ?><br/>
-						<?php echo esc_html( sprintf( __( 'Package: %s', 'woocommerce-shipping' ), $label['package_name'] ) ); ?>
+						<?php
+							// translators: %s is the service name.
+							echo esc_html( sprintf( __( 'Service: %s', 'woocommerce-shipping' ), $label['service_name'] ) );
+						?>
+						<br/>
+						<?php
+							// translators: %s is the tracking number.
+							echo esc_html( sprintf( __( 'Tracking #: %s', 'woocommerce-shipping' ), $label['tracking'] ) );
+						?>
+						<br/>
+						<?php
+							// translators: %s is the package name.
+							echo esc_html( sprintf( __( 'Package: %s', 'woocommerce-shipping' ), $label['package_name'] ) );
+						?>
 					</p>
 				</div>
 

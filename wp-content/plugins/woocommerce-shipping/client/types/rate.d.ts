@@ -20,6 +20,7 @@ export interface Rate {
 	type?: SnakeToCamelCase< LabelRateType >;
 	extraOptions?: RateExtraOptions; // extra options are the options that are added to the rate, added when saved to the order
 	baseRate?: number; // base rate is the rate without any extra options, added when saved to the order
+	promoId?: string;
 }
 
 export type RateExtraOptionNames = RecordValues< typeof LABEL_RATE_OPTION >;

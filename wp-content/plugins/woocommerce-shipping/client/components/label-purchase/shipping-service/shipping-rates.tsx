@@ -18,7 +18,7 @@ import { intersection } from 'lodash';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { CarrierRates } from './carrier-rates';
 import { RatesSorter } from './rates-sorter';
-import { DEFAULT_SORT_BY, DELIVERY_PROPERTIES } from './constants';
+import { DELIVERY_PROPERTIES, SORT_BY } from './constants';
 import { mainModalContentSelector } from '../constants';
 import { SHIPPING_SERVICE_SECTION } from '../essential-details/constants';
 import { Carrier, Rate } from 'types';
@@ -40,7 +40,7 @@ export const ShippingRates = ( {
 	const previousFetchingState = usePrevious( isFetching );
 
 	const wrapperRef = useRef< HTMLDivElement >();
-	const [ sortingBy, setSortBy ] = useState( DEFAULT_SORT_BY );
+	const [ sortingBy, setSortBy ] = useState( SORT_BY.CHEAPEST );
 
 	const {
 		shipment: { shipments },

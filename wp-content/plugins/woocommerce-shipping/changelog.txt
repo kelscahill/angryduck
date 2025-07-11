@@ -1,5 +1,12 @@
 *** WooCommerce Shipping Changelog ***
 
+= 1.8.0 - 2025-07-09 =
+* Add   - Implement promotions service.
+
+= 1.7.5 - 2025-07-07 =
+* Tweak - WooCommerce 10.0 Compatibility.
+* Fix   - PHP error warning in the plugin settings page.
+
 = 1.7.4 - 2025-06-23 =
 * Fix   - Resolved the issue of duplicate shipments by ensuring refunded labels are ignored during shipment generation.
 

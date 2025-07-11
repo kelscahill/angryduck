@@ -122,6 +122,8 @@ return array(
     'Automattic\\WCShipping\\Packages\\PackageValidationException' => $baseDir . '/src/Packages/PackageValidationException.php',
     'Automattic\\WCShipping\\Packages\\PackagesAsArraysSanitizer' => $baseDir . '/src/Packages/PackagesAsArraysSanitizer.php',
     'Automattic\\WCShipping\\Packages\\PackagesRESTController' => $baseDir . '/src/Packages/PackagesRESTController.php',
+    'Automattic\\WCShipping\\Promo\\PromoRESTController' => $baseDir . '/src/Promo/PromoRESTController.php',
+    'Automattic\\WCShipping\\Promo\\PromoService' => $baseDir . '/src/Promo/PromoService.php',
     'Automattic\\WCShipping\\Shipment\\Address' => $baseDir . '/src/Shipment/Address.php',
     'Automattic\\WCShipping\\Shipment\\ShipmentFromLabelGenerator' => $baseDir . '/src/Shipment/ShipmentFromLabelGenerator.php',
     'Automattic\\WCShipping\\Shipments\\ShipmentsRESTController' => $baseDir . '/src/Shipments/ShipmentsRESTController.php',

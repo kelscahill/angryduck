@@ -111,6 +111,9 @@ class WC_Connect_Logger {
 	public function log( $message, $context = '', $force = false ) {
 		$log_message = $this->format_message( $message, $context );
 
+		// This will show a warning for Plugin compatibility tests. The error can be ignored since we
+		// have already added a check for debug mode.
+		// Description of warning: error_log() found. Debug code should not normally be used in production.
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 			error_log( $log_message );
 		}

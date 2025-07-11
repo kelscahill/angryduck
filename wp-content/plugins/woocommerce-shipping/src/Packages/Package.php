@@ -58,7 +58,7 @@ class Package {
 		if ( property_exists( $this, $property ) ) {
 			return $this->$property;
 		}
-		throw new \InvalidArgumentException( "Property $property does not exist." );
+		throw new \InvalidArgumentException( sprintf( 'Property %s does not exist.', esc_html( $property ) ) );
 	}
 
 	/**
@@ -211,19 +211,19 @@ class Package {
 
 		foreach ( $required_keys as $required_key ) {
 			if ( ! isset( $data[ $required_key ] ) ) {
-				throw new PackageValidationException( "Missing required key: $required_key" );
+				throw new PackageValidationException( sprintf( 'Missing required key: %s', esc_html( $required_key ) ) );
 			}
 		}
 
 		foreach ( $stringable_keys as $stringable_key ) {
 			if ( isset( $data[ $stringable_key ] ) && ! is_scalar( $data[ $stringable_key ] ) && ! is_null( $data[ $stringable_key ] ) ) {
-				throw new PackageValidationException( "Key $stringable_key must be a string" );
+				throw new PackageValidationException( sprintf( 'Key %s must be a string', esc_html( $stringable_key ) ) );
 			}
 		}
 
 		foreach ( $numeric_keys as $numeric_key ) {
 			if ( isset( $data[ $numeric_key ] ) && ! is_numeric( $data[ $numeric_key ] ) ) {
-				throw new PackageValidationException( "Key $numeric_key must be a number" );
+				throw new PackageValidationException( sprintf( 'Key %s must be a number', esc_html( $numeric_key ) ) );
 			}
 		}
 	}

@@ -8,9 +8,12 @@ import { dateI18n } from '@wordpress/date';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { withBoundary } from 'components/HOC';
 import { CarrierIcon } from 'components/carrier-icon';
+import { Badge } from 'components/wp';
+import { PromoTooltip } from 'components/label-purchase/promo';
 import { createInterpolateElement } from '@wordpress/element';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { RowExtras } from './row-extras';
+import { applyPromo } from 'utils';
 import clsx from 'clsx';
 
 export const RateRow = withBoundary(
@@ -68,6 +71,8 @@ export const RateRow = withBoundary(
 		const isSelected =
 			selected?.rate?.rateId === rateId ||
 			selected?.parent?.rateId === rateId;
+
+		const promoRate = applyPromo( rate.rate, rate.promoId );
 
 		let deliveryDateMessage;
 		if ( deliveryDateGuaranteed && deliveryDate ) {
@@ -188,10 +193,33 @@ export const RateRow = withBoundary(
 							align="flex-end"
 							gap={ 1 }
 						>
-							<data value={ rate.rate } aria-label="rate-price">
-								{ formatAmount( rate.rate ) }
-							</data>
-
+							{ promoRate !== rate.rate ? (
+								<>
+									<data
+										value={ promoRate }
+										aria-label="rate-price"
+									>
+										<s>{ formatAmount( rate.rate ) }</s>{ ' ' }
+										{ formatAmount( promoRate ) }
+									</data>
+									<Flex gap={ 1 }>
+										<Badge intent="success">
+											{ __(
+												'Promo applied',
+												'woocommerce-shipping'
+											) }
+										</Badge>
+										<PromoTooltip rate={ rate.rate } />
+									</Flex>
+								</>
+							) : (
+								<data
+									value={ rate.rate }
+									aria-label="rate-price"
+								>
+									{ formatAmount( rate.rate ) }
+								</data>
+							) }
 							{ deliveryDateMessage && (
 								<time>{ deliveryDateMessage }</time>
 							) }

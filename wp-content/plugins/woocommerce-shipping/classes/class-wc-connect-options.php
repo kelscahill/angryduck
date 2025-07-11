@@ -94,14 +94,18 @@ class WC_Connect_Options {
 		if ( self::is_valid( $name, 'non_compact' ) ) {
 			return get_option( "wcshipping_$name", $default );
 		}
-
 		foreach ( array_keys( self::$grouped_options ) as $group ) {
 			if ( self::is_valid( $name, $group ) ) {
 				return self::get_grouped_option( $group, $name, $default );
 			}
 		}
 
-		trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping option name: %s', $name ), E_USER_WARNING ) );
+		// Show error message for invalid option name.
+		wp_trigger_error(
+			'wcshipping_invalid_option',
+			esc_html( sprintf( 'Invalid WooCommerce Shipping option name: %s', $name ) ),
+			E_USER_WARNING
+		);
 		return $default;
 	}
 
@@ -122,7 +126,12 @@ class WC_Connect_Options {
 				return self::update_grouped_option( $group, $name, $value );
 			}
 		}
-		trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping option name: %s', $name ), E_USER_WARNING ) );
+		// Show error message for invalid option name.
+		wp_trigger_error(
+			'wcshipping_invalid_option',
+			esc_html( sprintf( 'Invalid WooCommerce Shipping option name: %s', $name ) ),
+			E_USER_WARNING
+		);
 		return false;
 	}
 
@@ -138,7 +147,12 @@ class WC_Connect_Options {
 		$result = true;
 		$names  = (array) $names;
 		if ( ! self::is_valid( $names ) ) {
-			trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping option names: %s', print_r( $names, 1 ) ), E_USER_WARNING ) );
+			// Show error message for invalid option names.
+			wp_trigger_error(
+				'wcshipping_invalid_option',
+				esc_html( sprintf( 'Invalid WooCommerce Shipping option names: %s', implode( ', ', $names ) ) ),
+				E_USER_WARNING
+			);
 			return false;
 		}
 		foreach ( array_intersect( $names, self::get_option_names( 'non_compact' ) ) as $name ) {
@@ -168,7 +182,12 @@ class WC_Connect_Options {
 		$option_name = self::get_shipping_method_option_name( $name, $service_id, $service_instance );
 
 		if ( ! $option_name ) {
-			trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping shipping method option name: %s', $name ), E_USER_WARNING ) );
+			// Show error message for invalid option name.
+			wp_trigger_error(
+				'wcshipping_invalid_option',
+				esc_html( sprintf( 'Invalid WooCommerce Shipping shipping method option name: %s', $name ) ),
+				E_USER_WARNING
+			);
 			return $default;
 		}
 
@@ -189,7 +208,12 @@ class WC_Connect_Options {
 		$option_name = self::get_shipping_method_option_name( $name, $service_id, $service_instance );
 
 		if ( ! $option_name ) {
-			trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping shipping method option name: %s', $name ), E_USER_WARNING ) );
+			// Show error message for invalid option name.
+			wp_trigger_error(
+				'wcshipping_invalid_option',
+				esc_html( sprintf( 'Invalid WooCommerce Shipping shipping method option name: %s', $name ) ),
+				E_USER_WARNING
+			);
 			return false;
 		}
 
@@ -209,7 +233,12 @@ class WC_Connect_Options {
 		$option_name = self::get_shipping_method_option_name( $name, $service_id, $service_instance );
 
 		if ( ! $option_name ) {
-			trigger_error( esc_html( sprintf( 'Invalid WooCommerce Shipping shipping method option name: %s', $name ), E_USER_WARNING ) );
+			// Show error message for invalid option name.
+			wp_trigger_error(
+				'wcshipping_invalid_option',
+				esc_html( sprintf( 'Invalid WooCommerce Shipping shipping method option name: %s', $name ) ),
+				E_USER_WARNING
+			);
 			return false;
 		}
 

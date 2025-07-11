@@ -27,6 +27,8 @@ import {
 	RATES_FETCH_FAILED,
 } from 'data/label-purchase/action-types';
 import { LABEL_RATE_TYPE } from 'data/constants';
+import { DELIVERY_PROPERTIES, SORT_BY } from '../shipping-service/constants';
+import { applyPromo } from 'utils';
 
 interface UseRatesStateProps {
 	currentShipmentId: string;
@@ -485,7 +487,18 @@ export function useRatesState( {
 	 */
 	const sortRates = useCallback(
 		( rates: Rate[], sortingBy: string ) => {
-			let sortedRates = sortBy( rates, sortingBy );
+			let sortedRates;
+			if ( sortingBy === SORT_BY.CHEAPEST ) {
+				sortedRates = sortBy( rates, ( rate ) =>
+					rate.promoId
+						? applyPromo( rate.rate, rate.promoId )
+						: rate.rate
+				);
+			} else if ( sortingBy === SORT_BY.FASTEST ) {
+				sortedRates = sortBy( rates, DELIVERY_PROPERTIES );
+			} else {
+				sortedRates = rates;
+			}
 
 			// Always put MediaMail at the bottom of the list.
 			const mediaMailRate = sortedRates.find(

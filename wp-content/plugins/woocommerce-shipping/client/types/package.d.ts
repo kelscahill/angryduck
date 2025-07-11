@@ -13,4 +13,5 @@ export interface Package {
 	name: string;
 	boxWeight: number;
 	isUserDefined: false | undefined;
+	carrierId?: string;
 }

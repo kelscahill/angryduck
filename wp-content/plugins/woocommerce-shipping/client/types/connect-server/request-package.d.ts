@@ -28,6 +28,7 @@ interface LabelRequestPackages {
 	rate_id: string;
 	is_letter: boolean;
 	products: number[];
+	selected_promo_id?: string;
 }
 
 export type RequestPackageWithCustoms<

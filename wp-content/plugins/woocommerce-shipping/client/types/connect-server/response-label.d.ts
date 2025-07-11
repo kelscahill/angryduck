@@ -33,4 +33,6 @@ export interface ResponseLabel {
 	error?: string;
 	// Is the label migrated from the legacy plugin?
 	is_legacy?: boolean;
+	promo_id?: string;
+	promo_discount?: number;
 }

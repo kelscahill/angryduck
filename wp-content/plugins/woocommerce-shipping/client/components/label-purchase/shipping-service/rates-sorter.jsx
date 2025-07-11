@@ -1,8 +1,7 @@
 import { Button, Dropdown, MenuItem } from '@wordpress/components';
 import { chevronDown, chevronUp } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
-import { isEqual } from 'lodash';
-import { DEFAULT_SORT_BY, DELIVERY_PROPERTIES } from './constants';
+import { SORT_BY } from './constants';
 
 export const RatesSorter = ( { setSortBy, sortingBy, canSortByDelivery } ) => (
 	<Dropdown
@@ -29,11 +28,11 @@ export const RatesSorter = ( { setSortBy, sortingBy, canSortByDelivery } ) => (
 			<>
 				<MenuItem
 					onClick={ () => {
-						setSortBy( DEFAULT_SORT_BY );
+						setSortBy( SORT_BY.CHEAPEST );
 						onClose();
 					} }
 					role="menuitemradio"
-					isSelected={ sortingBy === DEFAULT_SORT_BY }
+					isSelected={ sortingBy === SORT_BY.CHEAPEST }
 				>
 					{ __( 'Cheapest', 'woocommerce-shipping' ) }
 				</MenuItem>
@@ -41,11 +40,11 @@ export const RatesSorter = ( { setSortBy, sortingBy, canSortByDelivery } ) => (
 				{ canSortByDelivery && (
 					<MenuItem
 						onClick={ () => {
-							setSortBy( DELIVERY_PROPERTIES );
+							setSortBy( SORT_BY.FASTEST );
 							onClose();
 						} }
 						role="menuitemradio"
-						isSelected={ isEqual( sortingBy, DELIVERY_PROPERTIES ) }
+						isSelected={ sortingBy === SORT_BY.FASTEST }
 					>
 						{ __( 'Fastest', 'woocommerce-shipping' ) }
 					</MenuItem>

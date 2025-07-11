@@ -147,6 +147,8 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Automattic\\WCShipping\\Packages\\PackageValidationException' => __DIR__ . '/../..' . '/src/Packages/PackageValidationException.php',
         'Automattic\\WCShipping\\Packages\\PackagesAsArraysSanitizer' => __DIR__ . '/../..' . '/src/Packages/PackagesAsArraysSanitizer.php',
         'Automattic\\WCShipping\\Packages\\PackagesRESTController' => __DIR__ . '/../..' . '/src/Packages/PackagesRESTController.php',
+        'Automattic\\WCShipping\\Promo\\PromoRESTController' => __DIR__ . '/../..' . '/src/Promo/PromoRESTController.php',
+        'Automattic\\WCShipping\\Promo\\PromoService' => __DIR__ . '/../..' . '/src/Promo/PromoService.php',
         'Automattic\\WCShipping\\Shipment\\Address' => __DIR__ . '/../..' . '/src/Shipment/Address.php',
         'Automattic\\WCShipping\\Shipment\\ShipmentFromLabelGenerator' => __DIR__ . '/../..' . '/src/Shipment/ShipmentFromLabelGenerator.php',
         'Automattic\\WCShipping\\Shipments\\ShipmentsRESTController' => __DIR__ . '/../..' . '/src/Shipments/ShipmentsRESTController.php',

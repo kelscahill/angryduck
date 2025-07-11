@@ -16,6 +16,8 @@ import {
 } from 'types';
 import { extraRateTypeToTitle, filterToNonSignatureExtraOptions } from 'utils';
 import { useLabelPurchaseContext } from 'context/label-purchase';
+import { Badge } from 'components/wp';
+import { getPromoDiscount } from 'utils';
 
 interface ExtraOptionLabelProps {
 	option: CamelCaseType< RateExtraOptionNames >;
@@ -89,6 +91,15 @@ export const ShipmentCosts = ( {
 		);
 	}
 
+	const promoDiscount = label
+		? label.promoDiscount
+		: getPromoDiscount( totalLabelCost, selectedRate?.rate.promoId );
+
+	// If a promo discount is applied and label is not purchased, subtract it from the total cost
+	if ( promoDiscount && ! label ) {
+		totalLabelCost -= promoDiscount;
+	}
+
 	return (
 		<>
 			<BaseControl
@@ -146,6 +157,17 @@ export const ShipmentCosts = ( {
 							)
 						) }
 					</Flex>
+				</BaseControl>
+			) }
+			{ promoDiscount && (
+				<BaseControl
+					id="promo-discount"
+					label={ __( 'Discount', 'woocommerce-shipping' ) }
+					__nextHasNoMarginBottom={ true }
+				>
+					<Badge intent="success">
+						-{ storeCurrency.formatAmount( promoDiscount ) }
+					</Badge>
 				</BaseControl>
 			) }
 			<BaseControl

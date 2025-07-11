@@ -411,4 +411,36 @@ class Tracks extends WC_Tracks {
 			)
 		);
 	}
+
+	/**
+	 * Record a promo dismissed event.
+	 *
+	 * @param string $type The type of promo, e.g. notice, banner, etc.
+	 * @param string $promo_id The ID of the promo that was dismissed.
+	 *
+	 * @return void
+	 */
+	public static function promo_dismissed( string $type, string $promo_id ) {
+		self::record_event(
+			"promo_{$type}_dismissed",
+			array(
+				'promo_id' => $promo_id,
+			)
+		);
+	}
+
+	/**
+	 * Record a promo notice viewed event.
+	 *
+	 * @param string $promo_id The ID of the promo that was viewed.
+	 * @return void
+	 */
+	public static function promo_notice_viewed( string $promo_id ) {
+		self::record_event(
+			'promo_notice_viewed',
+			array(
+				'promo_id' => $promo_id,
+			)
+		);
+	}
 }

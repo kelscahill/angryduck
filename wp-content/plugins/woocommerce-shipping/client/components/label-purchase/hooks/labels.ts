@@ -24,6 +24,7 @@ import {
 	getLastOrderCompleted,
 	shouldAutomaticallyOpenPrintDialog,
 	printPackingSlipDocument,
+	maybeDecrementPromoRemaining,
 } from 'utils';
 import { labelPurchaseStore } from 'data/label-purchase';
 import { usePackageState } from './packages';
@@ -358,6 +359,8 @@ export function useLabelsState( {
 				} ) );
 				setIsUpdatingStatus( false );
 				maybePrintLabel();
+				maybeDecrementPromoRemaining( label );
+
 				return ( resolve ?? Promise.resolve )();
 			}
 		},
@@ -392,6 +395,7 @@ export function useLabelsState( {
 				carrierId,
 				shipmentId,
 				title: serviceName,
+				promoId,
 			} = selectedRate.rate;
 			const dimensions = mapValues<
 				{
@@ -425,6 +429,7 @@ export function useLabelsState( {
 						products: productsIds,
 						weight: totalWeight,
 						rate_id: selectedRate.rate.rateId,
+						selected_promo_id: promoId,
 						...mapValues( selectedRateOptions, 'value' ),
 					} )
 				),

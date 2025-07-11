@@ -18,6 +18,7 @@ import { UserMeta } from './user-meta';
 import { PurchaseSettings } from './purchase-settings';
 import { PurchaseMeta } from './purchase-meta';
 import { ShipmentDate } from './shipment-date';
+import { Promotion } from './promotion';
 
 export interface WCShippingConfigAccountSettings {
 	purchaseSettings: PurchaseSettings;
@@ -71,4 +72,5 @@ export interface WCShippingConfig {
 		};
 	};
 	custom_fulfillment_summary: string;
+	promotion?: Promotion;
 }

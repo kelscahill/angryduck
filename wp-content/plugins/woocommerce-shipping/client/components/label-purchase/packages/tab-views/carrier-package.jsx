@@ -18,6 +18,7 @@ import { TotalWeight } from '../../total-weight';
 import { GetRatesButton } from '../../get-rates-button';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { recordEvent } from 'utils/tracks';
+import { PromoBadge } from 'components/label-purchase/promo';
 
 export const CarrierPackage = withBoundary(
 	Conditional(
@@ -44,6 +45,7 @@ export const CarrierPackage = withBoundary(
 				weight: { getShipmentTotalWeight },
 				labels: { hasMissingPurchase },
 				shipment: { isExtraLabelPurchaseValid },
+				packages: { initialCarrierTab },
 			} = useLabelPurchaseContext();
 
 			const tabs = Object.keys( availablePackages ).map(
@@ -53,6 +55,7 @@ export const CarrierPackage = withBoundary(
 						<>
 							<CarrierIcon carrier={ carrierId } />
 							{ CARRIER_ID_TO_NAME[ carrierId ] }
+							{ <PromoBadge carrier={ carrierId } /> }
 						</>
 					),
 				} )
@@ -113,7 +116,9 @@ export const CarrierPackage = withBoundary(
 				<TabPanel
 					className="carrier-package-tabs"
 					tabs={ tabs }
-					initialTabName={ selectedCarrierId ?? tabs[ 0 ].name }
+					initialTabName={
+						selectedCarrierId ?? initialCarrierTab ?? tabs[ 0 ].name
+					}
 					children={ ( { name: carrierId } ) => {
 						return (
 							<>

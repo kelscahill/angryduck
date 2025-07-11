@@ -11,6 +11,7 @@ use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
 use Automattic\WCShipping\Connect\WC_Connect_API_Client;
 use Automattic\WCShipping\Connect\WC_Connect_Logger;
 use Automattic\WCShipping\Connect\WC_Connect_Utils;
+use Automattic\WCShipping\Promo\PromoService;
 use Automattic\WCShipping\Utils;
 use WP_Error;
 
@@ -46,6 +47,13 @@ class LabelPurchaseService {
 	 * @var WC_Connect_Logger
 	 */
 	private $logger;
+
+	/**
+	 * Promo service.
+	 *
+	 * @var PromoService
+	 */
+	private $promo_service;
 
 	/**
 	 * Selected rates key used to store selected rates in order meta.
@@ -103,17 +111,20 @@ class LabelPurchaseService {
 	 * @param WC_Connect_API_Client             $api_client            Server API client instance.
 	 * @param View                              $connect_label_service Connect Label Service instance.
 	 * @param WC_Connect_Logger                 $logger                Server API client instance.
+	 * @param PromoService                      $promo_service         Promo service instance.
 	 */
 	public function __construct(
 		WC_Connect_Service_Settings_Store $settings_store,
 		WC_Connect_API_Client $api_client,
 		View $connect_label_service,
-		WC_Connect_Logger $logger
+		WC_Connect_Logger $logger,
+		PromoService $promo_service
 	) {
 		$this->settings_store        = $settings_store;
 		$this->api_client            = $api_client;
 		$this->connect_label_service = $connect_label_service;
 		$this->logger                = $logger;
+		$this->promo_service         = $promo_service;
 	}
 
 	/**
@@ -460,6 +471,12 @@ class LabelPurchaseService {
 	}
 
 	public function update_order_label( int $order_id, $label_data ) {
+		// Due to the async nature of the purchase process, we need to do the promotion decrement here, to only do it after the status changes to PURCHASED.
+
+		if ( isset( $label_data->promo_id ) ) {
+			$this->promo_service->maybe_decrement_promotion_remaining( $order_id, $label_data );
+		}
+
 		return $this->settings_store->update_label_order_meta_data( $order_id, $label_data );
 	}
 

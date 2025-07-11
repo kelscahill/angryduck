@@ -17,6 +17,7 @@ use Automattic\WCShipping\Connect\WC_Connect_Jetpack;
 use Automattic\WCShipping\OriginAddresses\OriginAddressService;
 use Automattic\WCShipping\Shipments\ShipmentsService;
 use Automattic\WCShipping\DOM\Manipulation as DOM_Manipilation;
+use Automattic\WCShipping\Promo\PromoService;
 use Automattic\WCShipping\Utils;
 use WC_Order;
 use WC_Order_Item;
@@ -76,6 +77,11 @@ class View {
 	 */
 	private $carrier_service;
 
+	/**
+	 * @var PromoService
+	 */
+	private $promo_service;
+
 	public function __construct(
 		WC_Connect_API_Client $api_client,
 		WC_Connect_Service_Settings_Store $settings_store,
@@ -85,7 +91,8 @@ class View {
 		OriginAddressService $origin_address_service,
 		ViewService $view_service,
 		CarrierStrategyService $carrier_service,
-		WC_Connect_Account_Settings $account_settings
+		WC_Connect_Account_Settings $account_settings,
+		PromoService $promo_service
 	) {
 		$this->api_client             = $api_client;
 		$this->settings_store         = $settings_store;
@@ -100,6 +107,7 @@ class View {
 		$this->origin_address_service = $origin_address_service;
 		$this->view_service           = $view_service;
 		$this->carrier_service        = $carrier_service;
+		$this->promo_service          = $promo_service;
 	}
 
 	public function is_order_dhl_express_eligible(): bool {
@@ -247,6 +255,7 @@ class View {
 			array(
 				'order'                               => $this->view_service->get_order_data( $order ),
 				'accountSettings'                     => $this->account_settings->get( true ),
+				'promotion'                           => $this->promo_service->get_promotion(),
 				'packagesSettings'                    => array(
 					'schema'   => array(
 						'custom'     => $package_settings['formSchema']['custom'],

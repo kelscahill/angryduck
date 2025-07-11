@@ -187,11 +187,11 @@ class WC_Connect_Nux {
 			)
 			|| ( // WooCommerce featured extension page.
 				'woocommerce_page_wc-addons' === $screen->base
-				&& isset( $_GET['section'] ) && 'featured' === $_GET['section'] // phpcs:ignore WordPress.Security.NonceVerification.Recommended --- Ignoring this as no DB operation
+				&& isset( $_GET['section'] ) && 'featured' === sanitize_text_field( wp_unslash( $_GET['section'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended --- Ignoring this as no DB operation
 			)
 			|| ( // WooCommerce shipping extension page.
 				'woocommerce_page_wc-addons' === $screen->base
-				&& isset( $_GET['section'] ) && 'shipping_methods' === $_GET['section'] // phpcs:ignore WordPress.Security.NonceVerification.Recommended --- Ignoring this as no DB operation
+				&& isset( $_GET['section'] ) && 'shipping_methods' === sanitize_text_field( wp_unslash( $_GET['section'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended --- Ignoring this as no DB operation
 			)
 			|| 'plugins' === $screen->base
 		) {
@@ -346,10 +346,10 @@ class WC_Connect_Nux {
 	private function register_callback_listeners() {
 		if (
 			isset( $_GET[ self::AUTH_SUCCESS_NONCE_RETURN_PARAM ] )
-			&& wp_verify_nonce( wc_clean( wp_unslash( $_GET[ self::AUTH_SUCCESS_NONCE_RETURN_PARAM ] ) ), self::AUTH_SUCCESS_NONCE_ACTION )
+			&& wp_verify_nonce( sanitize_key( wp_unslash( $_GET[ self::AUTH_SUCCESS_NONCE_RETURN_PARAM ] ) ), self::AUTH_SUCCESS_NONCE_ACTION )
 			&& isset( $_GET[ self::AUTH_SUCCESS_SOURCE_RETURN_PARAM ] )
 		) {
-			$source = wc_clean( wp_unslash( $_GET[ self::AUTH_SUCCESS_SOURCE_RETURN_PARAM ] ) );
+			$source = sanitize_text_field( wp_unslash( $_GET[ self::AUTH_SUCCESS_SOURCE_RETURN_PARAM ] ) );
 
 			$allowed_sources = array(
 				'connection_banner',
@@ -428,7 +428,7 @@ class WC_Connect_Nux {
 			isset( $_GET['wcshipping-nux-notice'] )
 			&& isset( $_GET['_wpnonce'] )
 			&& check_admin_referer( 'wcshipping_dismiss_notice' )
-			&& 'dismiss' === $_GET['wcshipping-nux-notice'] ) {
+			&& 'dismiss' === sanitize_text_field( wp_unslash( $_GET['wcshipping-nux-notice'] ) ) ) {
 			// No longer need to keep track of whether the before connection banner was displayed.
 			WC_Connect_Options::delete_option( self::SHOULD_SHOW_AFTER_CXN_BANNER );
 
@@ -457,10 +457,10 @@ class WC_Connect_Nux {
 					array(
 						// The source differs because we're registering that we had a successful return initiated by
 						// the "connection_banner" source aka "banner_before_connection" banner.
-						self::AUTH_SUCCESS_SOURCE_RETURN_PARAM => 'connection_banner',
+					self::AUTH_SUCCESS_SOURCE_RETURN_PARAM => 'connection_banner',
 						self::AUTH_SUCCESS_NONCE_RETURN_PARAM => wp_create_nonce( self::AUTH_SUCCESS_NONCE_ACTION ),
-						'wcshipping-nux-notice' => 'dismiss',
-						'_wpnonce'              => wp_create_nonce( 'wcshipping_dismiss_notice' ),
+						'wcshipping-nux-notice'            => 'dismiss',
+						'_wpnonce'                         => wp_create_nonce( 'wcshipping_dismiss_notice' ),
 					)
 				),
 				'should_show_jp'    => false,
@@ -491,7 +491,7 @@ class WC_Connect_Nux {
 			isset( $_GET['wcshipping-nux-tos'] )
 			&& isset( $_GET['_wpnonce'] )
 			&& check_admin_referer( 'wcshipping_accepted_tos' )
-			&& 'accept' === $_GET['wcshipping-nux-tos'] ) {
+			&& 'accept' === sanitize_text_field( wp_unslash( $_GET['wcshipping-nux-tos'] ) ) ) {
 			// Make sure we queue up the "after_jetpack_connection" banner if ToS was accepted.
 			// We normally queue this before a Jetpack connection is attempted, but since the
 			// connection already exists for ToS only banners, then we need to register it here
@@ -553,11 +553,12 @@ class WC_Connect_Nux {
 		);
 
 		?>
-		<div class="notice wcshipping-nux__notice notice-<?php echo WC_Connect_Jetpack::is_connected() && self::is_tos_accepted() ? 'success' : 'warning'; ?> <?php echo isset( $content['dismissible_id'] ) ? 'is-dismissible' : ''; ?>" data-dismissible-id="<?php echo isset( $content['dismissible_id'] ) ? esc_attr( $content['dismissible_id'] ) : ''; ?>">
+		<div class="notice wcshipping-nux__notice notice-<?php echo WC_Connect_Jetpack::is_connected() && self::is_tos_accepted() ? 'success' : 'warning'; ?> <?php echo isset( $content['dismissible_id'] ) ? 'is-dismissible' : ''; ?>"
+			data-dismissible-id="<?php echo isset( $content['dismissible_id'] ) ? esc_attr( $content['dismissible_id'] ) : ''; ?>">
 			<div class="wcshipping-nux__notice-content">
 				<p>
 					<?php
-						echo wp_kses( $content['description'], $allowed_html );
+					echo wp_kses( $content['description'], $allowed_html );
 					?>
 				</p>
 				<?php if ( isset( $content['should_show_terms'] ) && $content['should_show_terms'] ) : ?>
@@ -582,22 +583,18 @@ class WC_Connect_Nux {
 			<div class="wcshipping-nux__notice-button">
 
 				<?php if ( isset( $content['button_link'] ) ) : ?>
-					<a
-						class="button button-primary"
-						href="<?php echo esc_url( $content['button_link'] ); ?>"
-					>
+					<a class="button button-primary" href="<?php echo esc_url( $content['button_link'] ); ?>">
 						<?php echo esc_html( $content['button_text'] ); ?>
 					</a>
 				<?php else : ?>
 					<form action="<?php echo esc_attr( admin_url( 'admin-post.php' ) ); ?>" method="post">
 						<input type="hidden" name="action" value="register_wcshipping_jetpack" />
 						<input type="hidden" name="redirect_url"
-								value="<?php echo esc_url( $this->get_jetpack_redirect_url() ); ?>" />
+							value="<?php echo esc_url( $this->get_jetpack_redirect_url() ); ?>" />
 						<?php wp_nonce_field( 'wcshipping_nux_notice' ); ?>
 						<button
 							class="woocommerce-shipping__connect-jetpack wcshipping-nux__notice-content-button button button-primary"
-							onclick="this.className += ' disabled';"
-						>
+							onclick="this.className += ' disabled';">
 							<?php echo esc_html( $content['button_text'] ); ?>
 						</button>
 					</form>

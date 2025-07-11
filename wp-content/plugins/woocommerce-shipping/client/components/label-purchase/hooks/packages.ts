@@ -77,6 +77,7 @@ export function usePackageState(
 		() => getInitialPackageAndTab( savedPackages ),
 		[ savedPackages ]
 	);
+	const [ initialCarrierTab, setInitialCarrierTab ] = useState< string >();
 
 	const [ currentPackageTab, setCurrentPackageTab ] = useState( initialTab );
 	const [ customPackageData, setCustomPackageData ] = useState<
@@ -195,5 +196,7 @@ export function usePackageState(
 		isPackageSpecified,
 		isSelectedASavedPackage,
 		isCustomPackageTab,
+		initialCarrierTab,
+		setInitialCarrierTab,
 	};
 }

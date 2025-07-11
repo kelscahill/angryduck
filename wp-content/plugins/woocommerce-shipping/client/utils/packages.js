@@ -24,9 +24,10 @@ export const getCarrierPackages = (
 						definition.id
 					)
 				) {
-					carrierPackages[ carrierId ].push(
-						camelCaseKeys( definition )
-					);
+					carrierPackages[ carrierId ].push( {
+						...camelCaseKeys( definition ),
+						carrierId,
+					} );
 				}
 			} );
 		}
