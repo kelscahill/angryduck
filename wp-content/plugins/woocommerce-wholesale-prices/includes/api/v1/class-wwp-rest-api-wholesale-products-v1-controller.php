@@ -335,7 +335,7 @@ class WWP_REST_Wholesale_Products_V1_Controller extends WC_REST_Products_Control
      */
     public static function is_wholesale_endpoint( $request ) {
 
-        return apply_filters( 'wwp_is_wholesale_endpoint', is_a( $request, 'WP_REST_Request' ) && strpos( $request->get_route(), 'wholesale/v1' ) !== false ? true : false, $request );
+        return apply_filters( 'wwp_is_wholesale_endpoint', is_a( $request, 'WP_REST_Request' ) && str_contains( $request->get_route(), 'wholesale/v1' ), $request );
     }
 
     /**
@@ -816,13 +816,17 @@ class WWP_REST_Wholesale_Products_V1_Controller extends WC_REST_Products_Control
      * Override the parent method.
      * Add wholesale product query params.
      *
-     * @since 1.16
+     * @since 2.2.5
      * @return array
      */
     public function get_collection_params() {
         $wholesale_price_properties = array();
 
         foreach ( $this->registered_wholesale_roles as $role => $data ) {
+            // Validate $data is an array to prevent fatal errors in PHP 8.0+ when accessing array keys.
+            if ( ! is_array( $data ) || ! isset( $data['roleName'] ) ) {
+                continue;
+            }
             $wholesale_price_properties[ $role ] = array(
                 // translators: %s: wholesale role name.
                 'description'       => sprintf( __( 'Wholesale price for %s', 'woocommerce-wholesale-prices' ), $data['roleName'] ),

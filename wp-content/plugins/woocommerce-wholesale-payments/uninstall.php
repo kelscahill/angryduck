@@ -33,6 +33,7 @@ if ( is_multisite() ) {
     delete_site_option( 'wpay_display_name' );
     delete_site_option( 'wpay_payment_method_name' );
     delete_site_option( 'wpay_refresh_token' );
+    delete_site_option( 'wpay_payment_plan_start_date' );
 } else {
     delete_option( 'wpay_update_data' );
     delete_option( 'wpay_retrieving_update_data' );
@@ -59,4 +60,5 @@ if ( is_multisite() ) {
     delete_option( 'wpay_display_name' );
     delete_option( 'wpay_payment_method_name' );
     delete_option( 'wpay_refresh_token' );
+    delete_option( 'wpay_payment_plan_start_date' );
 }

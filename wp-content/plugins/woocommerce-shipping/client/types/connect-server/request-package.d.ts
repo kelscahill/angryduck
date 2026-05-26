@@ -32,7 +32,7 @@ interface LabelRequestPackages {
 }
 
 export type RequestPackageWithCustoms<
-	T = RequestPackage | LabelRequestPackages
+	T = RequestPackage | LabelRequestPackages,
 > = T & {
 	contents_type: string;
 	contents_explanation?: string;

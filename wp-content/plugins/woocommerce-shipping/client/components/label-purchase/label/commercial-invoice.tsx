@@ -1,8 +1,5 @@
-import React from 'react';
-import { Icon } from '@wordpress/components';
-import { external } from '@wordpress/icons';
+import { ExternalLink } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { Link } from '@woocommerce/components';
 import { Label } from 'types';
 
 interface CommercialInvoiceProps {
@@ -13,15 +10,9 @@ export const CommercialInvoice = ( { label }: CommercialInvoiceProps ) => {
 	const commercialInvoiceUrl = label?.commercialInvoiceUrl;
 	return (
 		commercialInvoiceUrl && (
-			<Link
-				href={ commercialInvoiceUrl }
-				type="external"
-				target="_blank"
-				rel="noopener noreferrer"
-			>
+			<ExternalLink href={ commercialInvoiceUrl }>
 				{ __( 'Print customs form', 'woocommerce-shipping' ) }
-				<Icon icon={ external } />
-			</Link>
+			</ExternalLink>
 		)
 	);
 };

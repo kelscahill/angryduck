@@ -12,9 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Automattic\WooCommerce\Blocks\Package;
 use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields;
-use Automattic\WooCommerce\StoreApi\StoreApi;
-use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
-use Automattic\WooCommerce\StoreApi\Schemas\V1\CheckoutSchema;
 
 /**
  * WC_Stripe_Express_Checkout_Element class.
@@ -23,14 +20,14 @@ class WC_Stripe_Express_Checkout_Element {
 	/**
 	 * Stripe settings.
 	 *
-	 * @var
+	 * @var array
 	 */
 	public $stripe_settings;
 
 	/**
 	 * This Instance.
 	 *
-	 * @var
+	 * @var WC_Stripe_Express_Checkout_Element
 	 */
 	private static $_this;
 
@@ -66,16 +63,6 @@ class WC_Stripe_Express_Checkout_Element {
 	 * @return  void
 	 */
 	public function init() {
-		// Check if ECE feature flag is enabled.
-		if ( ! WC_Stripe_Feature_Flags::is_stripe_ece_enabled() ) {
-			return;
-		}
-
-		// ECE is only available when UPE checkout is enabled.
-		if ( ! WC_Stripe_Feature_Flags::is_upe_checkout_enabled() ) {
-			return;
-		}
-
 		// Checks if Stripe Gateway is enabled.
 		if ( empty( $this->stripe_settings ) || ( isset( $this->stripe_settings['enabled'] ) && 'yes' !== $this->stripe_settings['enabled'] ) ) {
 			return;
@@ -96,7 +83,6 @@ class WC_Stripe_Express_Checkout_Element {
 			return;
 		}
 
-		add_action( 'template_redirect', [ $this, 'set_session' ] );
 		add_action( 'template_redirect', [ $this, 'handle_express_checkout_redirect' ] );
 
 		add_action( 'wp_enqueue_scripts', [ $this, 'scripts' ] );
@@ -114,155 +100,22 @@ class WC_Stripe_Express_Checkout_Element {
 
 		add_action( 'before_woocommerce_pay_form', [ $this, 'localize_pay_for_order_page_scripts' ] );
 
-		$this->setup_custom_checkout_data();
-	}
-
-	/**
-	 * Perform necessary setup steps for supporting custom checkout fields in express checkout,
-	 * including registering space for the data in the Store API,
-	 * and hooking into the action that will let us process the data and update the order.
-	 *
-	 * @return void
-	 */
-	private function setup_custom_checkout_data() {
-		// Register our express checkout data as extended data, which will hold
-		// custom checkout fielddata if present.
-		$extend_schema = StoreApi::container()->get( ExtendSchema::class );
-		$extend_schema->register_endpoint_data(
-			[
-				'endpoint'        => CheckoutSchema::IDENTIFIER,
-				'namespace'       => 'wc-stripe/express-checkout',
-				'schema_callback' => [ $this, 'get_custom_checkout_data_schema' ],
-			]
-		);
-
-		// Update order based on extended data.
-		add_action(
-			'woocommerce_store_api_checkout_update_order_from_request',
-			[ $this, 'process_custom_checkout_data' ],
-			10,
-			2
-		);
-	}
-
-	/**
-	 * Allow third-party to validate and add custom checkout data to
-	 * express checkout orders for stores using classic, shortcode-based checkout.
-	 *
-	 * @param WC_Order $order The order to add custom checkout data to.
-	 * @param WP_REST_Request $request The request object.
-	 * @return void
-	 */
-	public function process_custom_checkout_data( $order, $request ) {
-		$custom_checkout_data = $this->get_custom_checkout_data_from_request( $request );
-		if ( empty( $custom_checkout_data ) ) {
-			return;
-		}
-
-		$errors = new WP_Error();
 		/**
-		 * Allow third-party plugins to validate custom checkout data for express checkout orders.
+		 * Determines whether express checkout orders should process or ignore
+		 * custom, classic checkout fields. Disabled by default.
 		 *
-		 * To be used as a stand-in for the `woocommerce_after_checkout_validation` action.
-		 *
-		 * @since 9.6.0
-		 *
-		 * @param array $custom_checkout_data The custom checkout data.
-		 * @param WP_Error $errors The WP_Error object, for adding errors when validation fails.
+		 * @since 9.7.0
 		 */
-		do_action( 'wc_stripe_express_checkout_after_checkout_validation', $custom_checkout_data, $errors );
-
-		if ( $errors->has_errors() ) {
-			$error_messages = implode( "\n", $errors->get_error_messages() );
-			throw new WC_Data_Exception( 'wc_stripe_express_checkout_invalid_data', $error_messages );
+		if ( apply_filters( 'wc_stripe_express_checkout_enable_classic_checkout_custom_fields', false ) ) {
+			$custom_checkout_fields_support = new WC_Stripe_Express_Checkout_Custom_Fields();
+			$custom_checkout_fields_support->init();
 		}
-
-		/**
-		 * Allow third-party plugins to add custom checkout data for express checkout orders.
-		 *
-		 * To be used as a stand-in for the `woocommerce_checkout_update_order_meta` action.
-		 *
-		 * @since 9.6.0
-		 *
-		 * @param integer $order_id The order ID.
-		 * @param array $custom_checkout_data The custom checkout data.
-		 */
-		do_action( 'wc_stripe_express_checkout_update_order_meta', $order->get_id(), $custom_checkout_data );
-	}
-
-	/**
-	 * Get custom checkout data from the request object.
-	 *
-	 * To support custom fields in express checkout and classic checkout,
-	 * we pass custom data as extended data, i.e. under extensions.
-	 *
-	 * @param WP_REST_Request $request The request object.
-	 * @return array Custom checkout data.
-	 */
-	private function get_custom_checkout_data_from_request( $request ) {
-		$extensions = $request->get_param( 'extensions' );
-		if ( empty( $extensions ) ) {
-			return [];
-		}
-
-		$custom_checkout_data_json = $extensions['wc-stripe/express-checkout']['custom_checkout_data'] ?? '';
-		if ( empty( $custom_checkout_data_json ) ) {
-			return [];
-		}
-
-		$custom_checkout_data = json_decode( $custom_checkout_data_json, true );
-		if ( empty( $custom_checkout_data ) || ! is_array( $custom_checkout_data ) ) {
-			return [];
-		}
-
-		// Perform basic sanitization before passing to actions.
-		$sanitized_custom_checkout_data = [];
-		$custom_checkout_fields         = $this->get_custom_checkout_fields();
-		foreach ( $custom_checkout_data as $key => $value ) {
-			$field_type                                       = $custom_checkout_fields[ $key ]['type'] ?? 'text';
-			$sanitized_key                                    = sanitize_text_field( $key );
-			$sanitized_value                                  = $this->get_sanitized_value( $value, $field_type );
-			$sanitized_custom_checkout_data[ $sanitized_key ] = $sanitized_value;
-		}
-
-		return $sanitized_custom_checkout_data;
-	}
-
-	/**
-	 * Perform basic sanitization on custom checkout field values, based on the field type.
-	 *
-	 * @param string $value The value to sanitize.
-	 * @param string $type The type of the field.
-	 * @return string The sanitized value.
-	 */
-	private function get_sanitized_value( $value, $type ) {
-		if ( 'textarea' === $type ) {
-			return sanitize_textarea_field( $value );
-		} elseif ( 'email' === $type ) {
-			return sanitize_email( $value );
-		}
-
-		return sanitize_text_field( $value );
-	}
-	/**
-	 * Get custom checkout data schema.
-	 *
-	 * @return array Custom checkout data schema.
-	 */
-	public function get_custom_checkout_data_schema() {
-		return [
-			'custom_checkout_data' => [
-				'type'        => [ 'string', 'null' ],
-				'context'     => [],
-				'arg_options' => [],
-			],
-		];
 	}
 
 	/**
 	 * Get this instance.
 	 *
-	 * @return class
+	 * @return WC_Stripe_Express_Checkout_Element
 	 */
 	public static function instance() {
 		return self::$_this;
@@ -271,10 +124,13 @@ class WC_Stripe_Express_Checkout_Element {
 	/**
 	 * Sets the WC customer session if one is not set.
 	 * This is needed so nonces can be verified by AJAX Request.
+	 * DEPRECATED: We now defer creation of sessions until the user actually interacts with the Express Checkout Element.
 	 *
+	 * @deprecated 10.5.0
 	 * @return void
 	 */
 	public function set_session() {
+		wc_deprecated_function( __FUNCTION__, '10.5.0' );
 		// Don't set session cookies on product pages to allow for caching when payment request
 		// buttons are disabled. But keep cookies if there is already an active WC session in place.
 		if (
@@ -289,6 +145,8 @@ class WC_Stripe_Express_Checkout_Element {
 
 	/**
 	 * Handles express checkout redirect when the redirect dialog "Continue" button is clicked.
+	 *
+	 * @return void
 	 */
 	public function handle_express_checkout_redirect() {
 		if (
@@ -329,16 +187,19 @@ class WC_Stripe_Express_Checkout_Element {
 	 * @return array  The settings used for the Stripe express checkout element in JavaScript.
 	 */
 	public function javascript_params() {
+		$publishable_key = WC_Stripe_Mode::is_test()
+			? ( $this->stripe_settings['test_publishable_key'] ?? '' )
+			: ( $this->stripe_settings['publishable_key'] ?? '' );
+
 		return [
 			'ajax_url'                   => WC_AJAX::get_endpoint( '%%endpoint%%' ),
 			'stripe'                     => [
-				'publishable_key'             => WC_Stripe_Mode::is_test() ? $this->stripe_settings['test_publishable_key'] : $this->stripe_settings['publishable_key'],
+				'publishable_key'             => $publishable_key,
 				'allow_prepaid_card'          => apply_filters( 'wc_stripe_allow_prepaid_card', true ) ? 'yes' : 'no',
 				'locale'                      => WC_Stripe_Helper::convert_wc_locale_to_stripe_locale( get_locale() ),
 				'is_link_enabled'             => $this->express_checkout_helper->is_link_enabled(),
 				'is_express_checkout_enabled' => $this->express_checkout_helper->is_express_checkout_enabled(),
 				'is_amazon_pay_enabled'       => $this->express_checkout_helper->is_amazon_pay_enabled(),
-				'is_payment_request_enabled'  => $this->express_checkout_helper->is_payment_request_enabled(),
 			],
 			'nonce'                      => [
 				'payment'                       => wp_create_nonce( 'wc-stripe-express-checkout' ),
@@ -365,105 +226,48 @@ class WC_Stripe_Express_Checkout_Element {
 			'is_pay_for_order'           => $this->express_checkout_helper->is_pay_for_order_page(),
 			'has_block'                  => has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ),
 			'login_confirmation'         => $this->express_checkout_helper->get_login_confirmation_settings(),
-			'is_product_page'            => $this->express_checkout_helper->is_product(),
+			'is_product_page'            => $this->is_product_page_for_ece(),
 			'is_checkout_page'           => $this->express_checkout_helper->is_checkout(),
 			'product'                    => $this->express_checkout_helper->get_product_data(),
-			'is_cart_page'               => is_cart(),
+			'is_cart_page'               => $this->express_checkout_helper->is_cart(),
 			'taxes_based_on_billing'     => wc_tax_enabled() && get_option( 'woocommerce_tax_based_on' ) === 'billing',
 			'allowed_shipping_countries' => $this->express_checkout_helper->get_allowed_shipping_countries(),
-			'custom_checkout_fields'     => $this->get_custom_checkout_fields(),
+			'custom_checkout_fields'     => ( new WC_Stripe_Express_Checkout_Custom_Fields() )->get_custom_checkout_fields(),
+			'has_free_trial'             => $this->express_checkout_helper->has_free_trial(),
 		];
 	}
 
 	/**
-	 * Retrieve custom checkout field IDs.
+	 * Should ECE use product pricing (vs. cart pricing) in the current context.
 	 *
-	 * @return array Custom checkout field IDs.
+	 * For One Page Checkout (OPC), when checkout buttons are enabled, always use cart
+	 * context so discounts/coupons are reflected.
+	 *
+	 * @return bool True to use product pricing; false to use cart totals.
 	 */
-	public function get_custom_checkout_fields() {
-		// Block checkout page
-		if ( has_block( 'woocommerce/checkout' ) ) {
-			try {
-				$checkout_fields = Package::container()->get( CheckoutFields::class );
-				if ( ! $checkout_fields instanceof CheckoutFields ) {
-					return [];
-				}
-
-				$custom_checkout_fields = [];
-				$additional_fields      = $checkout_fields->get_additional_fields();
-				foreach ( $additional_fields as $field_key => $field ) {
-					$location                             = $checkout_fields->get_field_location( $field_key );
-					$custom_checkout_fields[ $field_key ] = [
-						'type'     => $field['type'],
-						'location' => $location,
-					];
-				}
-
-				return $custom_checkout_fields;
-			} catch ( Exception $e ) {
-				return [];
-			}
+	public function is_product_page_for_ece() {
+		if ( ! $this->express_checkout_helper->is_product() ) {
+			return false;
 		}
 
-		// Classic checkout page
-		if ( is_checkout() ) {
-			$custom_checkout_fields   = [];
-			$standard_checkout_fields = $this->get_standard_checkout_fields();
-			$all_fields               = WC()->checkout()->get_checkout_fields();
-			foreach ( $all_fields as $fieldset => $fields ) {
-				foreach ( $fields as $field_key => $field ) {
-					if ( in_array( $field_key, $standard_checkout_fields, true ) ) {
-						continue;
-					}
-
-					$custom_checkout_fields[ $field_key ] = [
-						'type'     => $field['type'],
-						'location' => $fieldset,
-					];
-				}
-			}
-
-			return $custom_checkout_fields;
+		// OPC renders checkout on product pages; if ECE is shown on checkout, use cart pricing.
+		if (
+			$this->express_checkout_helper->is_one_page_checkout()
+			&& $this->express_checkout_helper->should_show_ece_on_checkout_page()
+		) {
+			return false;
 		}
 
-		// Not a checkout page, e.g. product page, cart page.
-		return [];
+		// Otherwise, product context is valid for ECE.
+		return true;
 	}
 
-	/**
-	 * Get standard checkout fields.
-	 *
-	 * @return array Standard checkout fields.
-	 */
-	private function get_standard_checkout_fields() {
-		$default_address_fields  = WC()->countries->get_default_address_fields();
-		$standard_billing_fields = array_map(
-			function ( $field ) {
-				return 'billing_' . $field;
-			},
-			array_keys( $default_address_fields )
-		);
-
-		$standard_shipping_fields = array_map(
-			function ( $field ) {
-				return 'shipping_' . $field;
-			},
-			array_keys( $default_address_fields )
-		);
-
-		$standard_checkout_fields = array_merge(
-			$standard_billing_fields,
-			$standard_shipping_fields,
-			[ 'billing_phone', 'billing_email', 'order_comments' ]
-		);
-
-		return $standard_checkout_fields;
-	}
 
 	/**
 	 * Localizes additional parameters necessary for the Pay for Order page.
 	 *
 	 * @param WC_Order $order The order that needs payment.
+	 * @return void
 	 */
 	public function localize_pay_for_order_page_scripts( $order ) {
 		// Ensure the script is registered before localizing
@@ -474,8 +278,15 @@ class WC_Stripe_Express_Checkout_Element {
 		$data     = [];
 		$items    = [];
 
-		// Allow third-party plugins to show itemization on the payment request button.
-		if ( apply_filters( 'wc_stripe_payment_request_hide_itemization', true ) ) {
+		// Allow third-party plugins to show itemization on express checkout (keep legacy hook for BC).
+		$hide_itemization = apply_filters_deprecated(
+			'wc_stripe_payment_request_hide_itemization',
+			[ true ],
+			'10.6.0',
+			'wc_stripe_express_checkout_hide_itemization'
+		);
+		$hide_itemization = apply_filters( 'wc_stripe_express_checkout_hide_itemization', $hide_itemization );
+		if ( $hide_itemization ) {
 			$items[] = [
 				'label'  => __( 'Subtotal', 'woocommerce-gateway-stripe' ),
 				'amount' => WC_Stripe_Helper::get_stripe_amount( $order->get_subtotal(), $currency ),
@@ -584,11 +395,13 @@ class WC_Stripe_Express_Checkout_Element {
 
 	/**
 	 * Register the express checkout script without enqueuing it.
+	 *
+	 * @return void
 	 */
 	private function register_express_checkout_script() {
 		$asset_data = $this->get_asset_data();
 
-		wp_register_script( 'stripe', 'https://js.stripe.com/v3/', '', '3.0', true );
+		wp_register_script( 'stripe', 'https://js.stripe.com/clover/stripe.js', '', null, true );
 		wp_register_script(
 			'wc_stripe_express_checkout',
 			WC_STRIPE_PLUGIN_URL . '/build/express-checkout.js',
@@ -600,6 +413,8 @@ class WC_Stripe_Express_Checkout_Element {
 
 	/**
 	 * Load scripts and styles.
+	 *
+	 * @return void
 	 */
 	public function scripts() {
 		// If page is not supported, bail.
@@ -682,6 +497,7 @@ class WC_Stripe_Express_Checkout_Element {
 	 *
 	 * @param string $title The gateway title.
 	 * @param string $id    The gateway ID.
+	 * @return string
 	 */
 	public function filter_gateway_title( $title, $id ) {
 		global $theorder;
@@ -716,6 +532,8 @@ class WC_Stripe_Express_Checkout_Element {
 
 	/**
 	 * Display the express checkout button.
+	 *
+	 * @return void
 	 */
 	public function display_express_checkout_button_html() {
 		$gateways = WC()->payment_gateways->get_available_payment_gateways();
@@ -758,13 +576,15 @@ class WC_Stripe_Express_Checkout_Element {
 
 	/**
 	 * Display express checkout button separator.
+	 *
+	 * @return void
 	 */
 	public function display_express_checkout_button_separator_html() {
-		if ( ! is_checkout() && ! is_wc_endpoint_url( 'order-pay' ) ) {
+		if ( ! $this->express_checkout_helper->is_checkout() && ! is_wc_endpoint_url( 'order-pay' ) ) {
 			return;
 		}
 
-		if ( is_checkout() && ! in_array( 'checkout', $this->express_checkout_helper->get_button_locations(), true ) ) {
+		if ( $this->express_checkout_helper->is_checkout() && ! $this->express_checkout_helper->should_show_ece_on_checkout_page() ) {
 			return;
 		}
 
@@ -777,6 +597,7 @@ class WC_Stripe_Express_Checkout_Element {
 	 * Determine whether to filter the cart needs shipping address.
 	 *
 	 * @param boolean $needs_shipping_address Whether the cart needs a shipping address.
+	 * @return bool
 	 */
 	public function filter_cart_needs_shipping_address( $needs_shipping_address ) {
 		if ( $this->express_checkout_helper->has_subscription_product() && wc_get_shipping_method_count( true, true ) === 0 ) {

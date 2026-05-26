@@ -11,6 +11,7 @@ use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodTyp
 use RymeraWebCo\WPay\Helpers\Helper;
 use RymeraWebCo\WPay\Payment_Gateway\WC_Wholesale_Payments;
 use RymeraWebCo\WPay\Helpers\WPay;
+use RymeraWebCo\WPay\Helpers\WPAY_Invoices;
 
 /**
  * Payment_Block class.
@@ -23,7 +24,7 @@ final class Payment_Block extends AbstractPaymentMethodType {
      * Gateway.
      *
      * @since 1.0.0
-     * @var class $gateway
+     * @var WC_Wholesale_Payments $gateway
      */
     private $gateway;
 
@@ -133,12 +134,16 @@ final class Payment_Block extends AbstractPaymentMethodType {
             )
         );
 
+        // Mirror classic: global auto-charge invoices option.
+        $auto_charge_invoices = get_option( 'wpay_stripe_auto_charge_invoices', 'no' );
+
         return array(
             'restUrl'                      => esc_url_raw( rest_url( 'wpay/v1/checkout/choose-plan' ) ),
             'nonce'                        => wp_create_nonce( 'wp_rest' ),
             'title'                        => __( 'Wholesale Payments', 'wc-woocommerce-wholesale-payments' ),
             'description'                  => __( 'Payment plans available for this order.', 'woocommerce-wholesale-payments' ),
             'autoChargeLabel'              => __( 'Auto Charge', 'wc-woocommerce-wholesale-payments' ),
+            'autoChargeInvoicesEnabled'    => wc_string_to_bool( $auto_charge_invoices ),
             'supports'                     => array(
                 'default'            => true,
                 'products'           => true,
@@ -156,6 +161,31 @@ final class Payment_Block extends AbstractPaymentMethodType {
             'paymentPlanItemsStyle'        => $payment_plan_items_style,
             'paymentPlanChargeStatusStyle' => $payment_plan_charge_status_style,
             'selectedPlan'                 => $this->gateway->wpay_get_selected_plan(),
+            'overdueRestriction'           => array(
+                'enabled'   => get_option( 'wpay_overdue_restriction_enabled', 'no' ) === 'yes',
+                'action'    => get_option( 'wpay_overdue_restriction_action', 'on_hold' ),
+                'isOverdue' => is_user_logged_in()
+                    ? WPAY_Invoices::customer_has_overdue_invoices(
+                        get_current_user_id(),
+                        absint( get_option( 'wpay_overdue_days_threshold', 0 ) )
+                    )
+                    : false,
+            ),
+            'creditLimitNotice'            => $this->get_credit_limit_notice(),
         );
+    }
+
+    /**
+     * Get the credit limit notice for Blocks checkout.
+     *
+     * @since 1.0.6
+     * @return string Notice message or empty string.
+     */
+    private function get_credit_limit_notice() {
+        $restriction = $this->gateway->get_credit_limit_restriction( get_current_user_id() );
+
+        return ( 'on_hold' === $restriction )
+            ? WPAY_Invoices::get_credit_limit_notice_message()
+            : '';
     }
 }

@@ -68,6 +68,28 @@ if ( ! class_exists( 'WWP_Helper_Functions' ) ) {
         }
 
         /**
+         * Check if theme is active.
+         *
+         * @since  2.2.8
+         *
+         * @param string $theme_slug The theme slug.
+         * @return boolean
+         */
+        public static function is_theme_active( $theme_slug ) {
+            $theme_slug = strtolower( $theme_slug );
+            $stylesheet = strtolower( (string) get_option( 'stylesheet' ) );
+            $template   = strtolower( (string) get_option( 'template' ) );
+
+            if ( $stylesheet === $theme_slug || $template === $theme_slug ) {
+                return true;
+            }
+
+            // Match child theme variants (e.g. "divi-child") but not infixes (e.g. "subdivision").
+            return str_starts_with( $stylesheet, $theme_slug . '-' )
+                || str_starts_with( $template, $theme_slug . '-' );
+        }
+
+        /**
          * WWOF is active.
          *
          * @since  1.14
@@ -245,6 +267,33 @@ if ( ! class_exists( 'WWP_Helper_Functions' ) ) {
             return file_exists( $wwlc_file );
         }
 
+
+        /**
+         * Check if WWQ is active.
+         *
+         * @since 2.2.5
+         *
+         * @return boolean
+         */
+        public static function is_wwq_active() {
+            return self::is_plugin_active( 'woocommerce-wholesale-quotes/woocommerce-wholesale-quotes.php' );
+        }
+
+        /**
+         * Check if WWQ is installed.
+         *
+         * @since 2.2.5
+         *
+         * @return boolean
+         */
+        public static function is_wwq_installed() {
+            $plugin_file = 'woocommerce-wholesale-quotes/woocommerce-wholesale-quotes.php';
+
+            $wwq_file = trailingslashit( WP_PLUGIN_DIR ) . plugin_basename( $plugin_file );
+
+            return file_exists( $wwq_file );
+        }
+
         /**
          * Check if WPAY is installed
          *
@@ -319,6 +368,18 @@ if ( ! class_exists( 'WWP_Helper_Functions' ) ) {
             $store_toolkit_file = trailingslashit( WP_PLUGIN_DIR ) . plugin_basename( $plugin_file );
 
             return file_exists( $store_toolkit_file );
+        }
+
+        /**
+         * Check if 'SaveTo Wishlist Lite for WooCommerce' is installed.
+         *
+         * @return boolean
+         */
+        public static function is_save_to_wish_list_for_woocommerce_installed() {
+            $plugin_file           = 'saveto-wishlist-lite-for-woocommerce/saveto-wishlist-lite-for-woocommerce.php';
+            $save_to_wishlist_file = trailingslashit( WP_PLUGIN_DIR ) . plugin_basename( $plugin_file );
+
+            return file_exists( $save_to_wishlist_file );
         }
 
         /**
@@ -994,7 +1055,7 @@ if ( ! class_exists( 'WWP_Helper_Functions' ) ) {
             $url = strtolower( trim( $url ) );
 
             // Need to get the host...so let's add the scheme so we can use parse_url.
-            if ( false === strpos( $url, 'http://' ) && false === strpos( $url, 'https://' ) ) {
+            if ( ! str_contains( $url, 'http://' ) && ! str_contains( $url, 'https://' ) ) {
                 $url = 'http://' . $url;
             }
 
@@ -1012,7 +1073,7 @@ if ( ! class_exists( 'WWP_Helper_Functions' ) ) {
 
                 $tlds_to_check = array( '.local', ':8888', ':8080', ':8081', '.invalid', '.example', '.test' );
                 foreach ( $tlds_to_check as $tld ) {
-                    if ( false !== strpos( $host, $tld ) ) {
+                    if ( str_contains( $host, $tld ) ) {
                         $is_local_url = true;
                         break;
                     }
@@ -1466,6 +1527,59 @@ if ( ! class_exists( 'WWP_Helper_Functions' ) ) {
             );
 
             return $icon_url;
+        }
+        /**
+         * Verify an AJAX request by checking wp_doing_ajax(), nonce existence, and nonce validity.
+         *
+         * @param string $nonce_action The nonce action name to verify against.
+         *
+         * @since  2.2.7
+         * @access public
+         *
+         * @return boolean True if the AJAX request passes all security checks, false otherwise.
+         */
+        public static function verify_ajax_nonce( $nonce_action ) {
+            return wp_doing_ajax()
+                && isset( $_POST['nonce'] )
+                && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), $nonce_action );
+        }
+
+        /**
+         * Collect wholesale prices per role from a variable product's child variations.
+         *
+         * Iterates through all child variation IDs, loads each child product, and
+         * collects the `{role_key}_wholesale_price` meta value into an array keyed
+         * by role. Returns an associative array where keys are role keys and values
+         * are arrays of floats representing the wholesale prices found.
+         *
+         * @since 2.2.8
+         *
+         * @param array $children        Array of child variation product IDs.
+         * @param array $wholesale_roles Array of registered wholesale roles keyed by role key.
+         *
+         * @return array Associative array of role_key => float[] wholesale prices.
+         */
+        public static function get_wholesale_prices_per_role_from_variations( $children, $wholesale_roles ) {
+
+            $prices_per_role = array();
+
+            foreach ( $children as $child_id ) {
+                $child_product = wc_get_product( $child_id );
+
+                if ( ! $child_product ) {
+                    continue;
+                }
+
+                foreach ( $wholesale_roles as $role_key => $role ) {
+                    $child_wholesale_price = $child_product->get_meta( $role_key . '_wholesale_price' );
+
+                    if ( is_numeric( $child_wholesale_price ) && $child_wholesale_price > 0 ) {
+                        $prices_per_role[ $role_key ][] = (float) $child_wholesale_price;
+                    }
+                }
+            }
+
+            return $prices_per_role;
         }
     }
 }

@@ -650,7 +650,7 @@ if ( ! class_exists( 'Vite_App' ) ) {
                  * attributes in production mode.
                  */
                 foreach ( $this->manifest[ $this->entry_file_path ]['css'] as $style ) {
-                    if ( false !== strpos( $href, $style ) ) {
+                    if ( str_contains( $href, $style ) ) {
                         $integrity = '';
                         if ( apply_filters( 'wwp_enable_subresource_integrity_check', ! defined( 'WWP_ENABLE_SUBRESOURCE_INTEGRITY_CHECK' ) || WWP_ENABLE_SUBRESOURCE_INTEGRITY_CHECK ) ) {
                             $integrity = sprintf(

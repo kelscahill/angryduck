@@ -6,18 +6,18 @@ export const getPaperSizes = ( country: string ): PaperSize[] => [
 		? []
 		: [
 				{
-					key: 'a4',
+					key: 'a4' as const,
 					name: __( 'A4', 'woocommerce-shipping' ),
 					size: __( '210x297mm', 'woocommerce-shipping' ),
 				},
 		  ] ),
 	{
-		key: 'label',
+		key: 'label' as const,
 		name: __( 'Label (4"x6")', 'woocommerce-shipping' ),
 		size: __( '4"x6"', 'woocommerce-shipping' ),
 	},
 	{
-		key: 'letter',
+		key: 'letter' as const,
 		name: __( 'Letter (8.5"x11")', 'woocommerce-shipping' ),
 		size: __( '8.5"x11"', 'woocommerce-shipping' ),
 	},

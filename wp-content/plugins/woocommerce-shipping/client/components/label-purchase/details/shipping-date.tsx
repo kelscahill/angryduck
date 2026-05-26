@@ -16,7 +16,6 @@ import {
 import clsx from 'clsx';
 import { getDateTS, getDisplayDate } from 'utils';
 import { ControlledPopover } from 'components/controlled-popover';
-import { ShippingDateSpotlight } from './shipping-date-spotlight';
 
 interface ShippingDateProps {
 	canSelectDate?: boolean;
@@ -162,12 +161,6 @@ export const ShippingDate = ( {
 
 	return (
 		<>
-			{ canSelectDate && (
-				<ShippingDateSpotlight
-					referenceSelector=".shipping-date-control"
-					focusSelector=".shipping-date-display"
-				/>
-			) }
 			<BaseControl
 				// Defining label need an id for the control
 				id={ uniqueId( 'shipping-date-control-' ) }

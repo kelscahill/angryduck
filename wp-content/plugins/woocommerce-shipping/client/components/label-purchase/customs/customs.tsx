@@ -21,6 +21,7 @@ export const Customs = (): JSX.Element => {
 	const {
 		customs: { getCustomsState, setCustomsState, setErrors },
 		essentialDetails: { setCustomsCompleted },
+		shipment: { getShipmentOrigin },
 	} = useLabelPurchaseContext();
 
 	const { country } = useSelect(
@@ -31,6 +32,7 @@ export const Customs = (): JSX.Element => {
 	const destinationContext = {
 		country,
 		countryName: getCountryName()( country ),
+		originCountry: getShipmentOrigin()?.country,
 	};
 
 	const initialValues = getCustomsState();

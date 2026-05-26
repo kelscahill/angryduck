@@ -20,7 +20,10 @@ use WP_HTTP_Response;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_User;
+use WWP_Wholesale_Prices;
+use WWPP_Wholesale_Roles;
 use Automattic\WooCommerce\Admin\API\Reports\Products\DataStore as ProductsDataStore;
+
 
 /**
  * WooCommerce Integration class.
@@ -62,6 +65,14 @@ class WC extends Abstract_Class {
      * @var WP_REST_Request
      */
     private $rest_request;
+
+    /**
+     * In-memory memoization cache for expensive computations.
+     *
+     * @since 3.0
+     * @var array
+     */
+    private static $memoization_cache = array();
 
     /**
      * Constructor.
@@ -130,6 +141,10 @@ class WC extends Abstract_Class {
             )
         );
 
+        if ( 'read' === $context && 'product_cat' === $post_type && ! $permission ) {
+            $permission = true;
+        }
+
         /**************************************************************************
          * Override WooCommerce REST API permissions
          **************************************************************************
@@ -184,6 +199,30 @@ class WC extends Abstract_Class {
         }
 
         /***************************************************************************
+         * Add `tags` property to product variations
+         ***************************************************************************
+         *
+         * We add the `tags` property to product variations by inheriting tags
+         * from the parent variable product. This applies when:
+         * - The product has a parent ID (is a variation), OR
+         * - We're querying variations individually and the product has a parent
+         */
+        if ( ( empty( $response->data['tags'] ) && $wc_data->get_parent_id() ) || ( $this->product_variations_query && $wc_data->get_parent_id() ) ) {
+            $response->data['tags'] = wc_get_object_terms( $wc_data->get_parent_id(), 'product_tag' );
+        }
+
+        /***************************************************************************
+         * Add `tags` property to non-variable products
+         ***************************************************************************
+         *
+         * We add the `tags` property to simple products and other non-variable
+         * product types. This handles products that don't have a parent ID.
+         */
+        if ( empty( $response->data['tags'] ) && 'variable' !== $wc_data->get_type() && 'variation' !== $wc_data->get_type() ) {
+            $response->data['tags'] = wc_get_object_terms( $wc_data->get_id(), 'product_tag' );
+        }
+
+        /***************************************************************************
          * Replace `default_attributes` property
          ***************************************************************************
          *
@@ -233,11 +272,27 @@ class WC extends Abstract_Class {
          * working properly.
          */
         if ( 'variation' === $response->data['type'] && ! empty( $response->data['sku'] ) ) {
-            $parent_data = $wc_data->get_parent_data();
+            $parent_id   = $wc_data->get_parent_id();
+            $parent      = $parent_id ? wc_get_product( $parent_id ) : null;
+            $parent_sku  = $parent ? $parent->get_sku() : '';
             $object_data = $wc_data->get_data();
-            if ( empty( $object_data['sku'] ) && $response->data['sku'] === $parent_data['sku'] ) {
+            if ( empty( $object_data['sku'] ) && $response->data['sku'] === $parent_sku ) {
                 $response->data['sku'] = '';
             }
+        }
+
+        /***************************************************************************
+         * Add variation-specific description
+         ***************************************************************************
+        *
+        * When variations are shown individually, display the variation's own
+        * description instead of inheriting from the parent product. This provides
+        * more specific information about each variation.
+        *
+        * @since 3.0.7 Added variation description support for issue #758.
+        */
+        if ( 'variation' === $response->data['type'] && ! empty( $wc_data->get_description() ) ) {
+            $response->data['short_description'] = $wc_data->get_description();
         }
 
         /**************************************************************************
@@ -341,6 +396,18 @@ class WC extends Abstract_Class {
             $response->data['categories'] = wc_get_object_terms( $product->get_parent_id(), 'product_cat' );
         }
 
+        /***************************************************************************
+         * Add `tags` property to product variations
+         ***************************************************************************
+         *
+         * We add the `tags` property to product variations by inheriting tags
+         * from the parent variable product. Variations don't have their own tags
+         * in WooCommerce, so we use the parent's tags.
+         */
+        if ( empty( $response->data['tags'] ) ) {
+            $response->data['tags'] = wc_get_object_terms( $product->get_parent_id(), 'product_tag' );
+        }
+
         if ( empty( $response->data['price_html'] ) ) {
             $response->data['price_html'] = $product->get_price_html();
         }
@@ -383,9 +450,17 @@ class WC extends Abstract_Class {
      * @param array $clauses The query clauses.
      *
      * @since 3.0
+     * @since 3.0.8 Performance optimizations have been added including improved JOIN efficiency and caching for expensive calculations.
      * @return array
      */
     public function search_post_clauses_request( $clauses ) {
+        // Clear caches to ensure fresh results.
+        self::clear_memoization_cache();
+
+        // Only try to clear search cache if rest_request is set.
+        if ( is_a( $this->rest_request, 'WP_REST_Request' ) && $this->rest_request->get_param( 'search' ) ) {
+            wp_cache_delete( 'wwof_search_' . md5( $this->rest_request->get_param( 'search' ) ), 'wwof_queries' );
+        }
 
         global $wpdb;
 
@@ -398,19 +473,67 @@ class WC extends Abstract_Class {
              * beginning of the query to ensure that the `sku` field is available for
              * search.
              */
+
+            // Cache the search term to avoid repeated processing.
+            $search_term             = $this->rest_request->get_param( 'search' );
+            $cache_key               = 'wwof_search_' . md5( $search_term );
+            $cached_clauses          = wp_cache_get( $cache_key, 'wwof_queries' );
+            $form_id                 = $this->rest_request->get_param( 'wwof' );
+            $order_form              = $form_id ? Order_Form::get_instance( $form_id ) : null;
+            $sku_exact_keyword_match = 'no';
+
+            if ( null !== $order_form ) {
+                $exact_match_setting     = $order_form->get_form_header_setting_from_meta_data( 'skuSearchExact' );
+                $sku_exact_keyword_match = ! empty( $exact_match_setting ) ? $exact_match_setting : 'no';
+            }
+
+            if ( false !== $cached_clauses ) {
+                return $cached_clauses;
+            }
+
+            // Optimize JOIN by ensuring proper index usage.
             $clauses['join'] = preg_replace(
                 "/LEFT JOIN {$wpdb->prefix}wc_product_meta_lookup wc_product_meta_lookup\s*ON $wpdb->posts\.ID = wc_product_meta_lookup\.product_id/",
                 '',
                 $clauses['join']
             );
+
+            // Keep using LEFT JOIN to ensure we don't lose products that don't have meta lookup entries.
             $clauses['join'] = " LEFT JOIN {$wpdb->prefix}wc_product_meta_lookup wc_product_meta_lookup ON {$wpdb->prefix}posts.ID = wc_product_meta_lookup.product_id " . $clauses['join'];
 
-            $clauses['where'] = str_replace(
-                ") OR ($wpdb->posts.post_content LIKE",
-                $wpdb->prepare( ") OR (wc_product_meta_lookup.sku LIKE %s) OR ($wpdb->posts.post_content LIKE", '%' . $wpdb->esc_like( $this->rest_request->get_param( 'search' ) ) . '%' ),
-                $clauses['where']
-            );
-            $clauses['where'] = preg_replace( '/ AND \(wc_product_meta_lookup.sku LIKE([^)]+)\)/', '', $clauses['where'] );
+            // Optimize WHERE clause with proper escaping and indexing.
+            $escaped_search = wc_string_to_bool( $sku_exact_keyword_match ) ? $wpdb->esc_like( $search_term ) : '%' . $wpdb->esc_like( $search_term ) . '%';
+
+            // Use simpler, more inclusive SKU search pattern.
+            $sku_search_condition = '';
+            if ( ! empty( $search_term ) ) {
+                // Use a broader LIKE pattern to ensure we catch all potential matches.
+                $sku_search_condition = $wpdb->prepare( 'wc_product_meta_lookup.sku LIKE %s', $escaped_search );
+
+                // When showing variations individually, also search parent product SKUs for variations without their own SKU.
+                if ( $this->product_variations_query ) {
+                    // Add LEFT JOIN to parent product's meta lookup table for variations.
+                    $clauses['join'] .= " LEFT JOIN {$wpdb->prefix}wc_product_meta_lookup parent_lookup 
+                        ON ($wpdb->posts.post_type = 'product_variation' AND $wpdb->posts.post_parent = parent_lookup.product_id) ";
+
+                    // Enhanced SKU search condition that includes parent SKU for variations.
+                    $parent_sku_condition = $wpdb->prepare( 'parent_lookup.sku LIKE %s', $escaped_search );
+                    $sku_search_condition = "($sku_search_condition OR ($wpdb->posts.post_type = 'product_variation' AND $parent_sku_condition))";
+                } else { // in order for this condition to work make sure 'Show Variations Individually' is 'disabled'.
+                    $clauses['where'] .= " OR ($sku_search_condition)"; // this is used for fetching individual variations product matching the sku name.
+                }
+            }
+
+            if ( ! empty( $sku_search_condition ) ) {
+                $clauses['where'] = str_replace(
+                    ") OR ($wpdb->posts.post_content LIKE",
+                    ") OR ($sku_search_condition) OR ($wpdb->posts.post_content LIKE",
+                    $clauses['where']
+                );
+            }
+
+            // Remove any duplicate SKU conditions.
+            $clauses['where'] = preg_replace( '/ AND \(wc_product_meta_lookup\.sku LIKE([^)]+)\)/', '', $clauses['where'] );
 
             $order_by = sanitize_text_field( $this->rest_request->get_param( 'orderby' ) );
             if ( '_sku' === $order_by ) {
@@ -433,6 +556,9 @@ class WC extends Abstract_Class {
              * @since 3.0.1
              */
             $clauses = apply_filters( 'wwof_search_post_clauses_request', $clauses, $this );
+
+            // Cache the optimized clauses for 5 minutes.
+            wp_cache_set( $cache_key, $clauses, 'wwof_queries', 300 );
         }
 
         return $clauses;
@@ -444,32 +570,94 @@ class WC extends Abstract_Class {
      * @param array $clauses Array of clauses.
      *
      * @since 3.0
+     * @since 3.0.7 Added support for priority products.
+     * @since 3.0.8 Performance optimizations have been added including improved JOIN efficiency and caching for expensive calculations.
      * @return array
      */
     public function replace_clauses( $clauses ) {
+        // Clear memoization cache to ensure fresh results.
+        self::clear_memoization_cache();
 
         global $wpdb;
 
         if ( defined( 'REST_REQUEST' ) && is_a( $this->rest_request, 'WP_REST_Request' ) && ! $this->search_sku_in_product_lookup_table ) {
-            $order_by = sanitize_text_field( $this->rest_request->get_param( 'orderby' ) );
-            $order    = sanitize_text_field( $this->rest_request->get_param( 'order' ) );
+            $order_by = $this->rest_request->get_param( 'orderby' ) ? sanitize_text_field( $this->rest_request->get_param( 'orderby' ) ) : '';
+            $order    = $this->rest_request->get_param( 'order' ) ? sanitize_text_field( $this->rest_request->get_param( 'order' ) ) : 'ASC';
             $order    = strtoupper( $order );
 
-            $order_form = Order_Form::get_instance( $this->rest_request->get_param( 'wwof' ) );
+            $form_id    = $this->rest_request->get_param( 'wwof' );
+            $order_form = $form_id ? Order_Form::get_instance( $form_id ) : null;
+
+            if ( ! $order_form ) {
+                return $clauses;
+            }
 
             /***************************************************************************
-             * Show favourites first
+             * Show priority products first
              ***************************************************************************
              *
-             * We show favourites first on top of the list if the setting is enabled and
-             * it's not limited to only show favourites.
+             * We show priority products first on top of the list below the favourites if selected in the settings.
+             */
+            $priority_products = $order_form->get_settings( 'priorityProducts' );
+            if ( ! empty( $priority_products ) ) {
+                // Use memoization for priority products to avoid repeated processing within the same request.
+                $priority_memo_key = 'priority_' . md5( wp_json_encode( $priority_products ) );
+
+                if ( ! isset( self::$memoization_cache[ $priority_memo_key ] ) ) {
+                    // Fallback to object cache if not in memory.
+                    $priority_cache_key    = 'wwof_priority_' . md5( wp_json_encode( $priority_products ) );
+                    $cached_priority_order = wp_cache_get( $priority_cache_key, 'wwof_queries' );
+
+                    if ( false === $cached_priority_order ) {
+                        $product_lists_placeholders = implode( ', ', array_fill( 0, count( $priority_products ), '%d' ) );
+                        $reversed_priority_products = array_reverse( $priority_products );
+                        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+                        $cached_priority_order = $wpdb->prepare( "FIELD($wpdb->posts.ID, $product_lists_placeholders) DESC, ", $reversed_priority_products );
+                        wp_cache_set( $priority_cache_key, $cached_priority_order, 'wwof_queries', 600 );
+                    }
+
+                    // Store in memory for this request.
+                    self::$memoization_cache[ $priority_memo_key ] = $cached_priority_order;
+                }
+
+                $cached_priority_order = self::$memoization_cache[ $priority_memo_key ];
+
+                $clauses['orderby'] = $cached_priority_order . $clauses['orderby'];
+            }
+
+            /***************************************************************************
+             * Show favorites first
+             ***************************************************************************
+             *
+             * We show favorites first on top of the list if the setting is enabled and
+             * it's not limited to only show favorites. Performance optimizations have been
+             * added including caching for repeated operations.
              */
             if ( $order_form->allow_favourites() && ! $order_form->only_show_favourites() ) {
                 $favourites = WWOF::get_favourite_products();
                 if ( ! empty( $favourites ) ) {
-                    $placeholders = implode( ', ', array_fill( 0, count( $favourites ), '%d' ) );
-                    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-                    $clauses['orderby'] = $wpdb->prepare( "FIELD($wpdb->posts.ID, $placeholders) DESC, ", $favourites ) . $clauses['orderby'];
+                    // Use memoization for favourites to avoid repeated processing within the same request.
+                    $favourites_memo_key = 'favourites_' . md5( wp_json_encode( $favourites ) );
+
+                    if ( ! isset( self::$memoization_cache[ $favourites_memo_key ] ) ) {
+                        // Fallback to object cache if not in memory.
+                        $favourites_cache_key    = 'wwof_favourites_' . md5( wp_json_encode( $favourites ) );
+                        $cached_favourites_order = wp_cache_get( $favourites_cache_key, 'wwof_queries' );
+
+                        if ( false === $cached_favourites_order ) {
+                            $placeholders = implode( ', ', array_fill( 0, count( $favourites ), '%d' ) );
+                            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+                            $cached_favourites_order = $wpdb->prepare( "FIELD($wpdb->posts.ID, $placeholders) DESC, ", $favourites );
+                            wp_cache_set( $favourites_cache_key, $cached_favourites_order, 'wwof_queries', 300 );
+                        }
+
+                        // Store in memory for this request.
+                        self::$memoization_cache[ $favourites_memo_key ] = $cached_favourites_order;
+                    }
+
+                    $cached_favourites_order = self::$memoization_cache[ $favourites_memo_key ];
+
+                    $clauses['orderby'] = $cached_favourites_order . $clauses['orderby'];
                 }
             }
 
@@ -481,9 +669,8 @@ class WC extends Abstract_Class {
              * not enabled).
              */
             if ( '_sku' === $order_by ) {
-                $clauses['join'] = "
-LEFT JOIN $wpdb->wc_product_meta_lookup wc_product_meta_lookup ON $wpdb->posts.ID = wc_product_meta_lookup.product_id" .
-                    $clauses['join'];
+                // Use LEFT JOIN to ensure we don't lose products when ordering by SKU.
+                $clauses['join'] = "LEFT JOIN $wpdb->wc_product_meta_lookup wc_product_meta_lookup ON $wpdb->posts.ID = wc_product_meta_lookup.product_id" . $clauses['join'];
 
                 $clauses['orderby'] = str_replace(
                     "$wpdb->posts.post_date $order",
@@ -500,26 +687,52 @@ LEFT JOIN $wpdb->wc_product_meta_lookup wc_product_meta_lookup ON $wpdb->posts.I
              * E.g. last 7 days, last 30 days, last 365 days.
              */
             if ( 'popularity' === $order_by ) {
-                $popularity_period = sanitize_text_field( $this->rest_request->get_param( 'popularity_period' ) );
+                $popularity_period = $this->rest_request->get_param( 'popularity_period' ) ?
+                    sanitize_text_field( $this->rest_request->get_param( 'popularity_period' ) ) : '';
                 $popularity_period = ! empty( $popularity_period ) ? $popularity_period : $order_form->get_settings( 'popularityPeriod' );
                 if ( ! empty( $popularity_period ) ) {
-                    $popularity_period   = intval( $popularity_period );
-                    $popularity_args     = array(
-                        'context'       => 'view',
-                        'page'          => 1,
-                        'per_page'      => 100,
-                        'after'         => gmdate( 'Y-m-d 00:00:00', strtotime( "-$popularity_period days" ) ),
-                        'before'        => gmdate( 'Y-m-d 23:59:59' ),
-                        'order'         => 'desc',
-                        'orderby'       => 'items_sold',
-                        'match'         => 'all',
-                        'extended_info' => false,
-                    );
-                    $popularity_args     = apply_filters( 'wwof_wc_rest_popularity_period_args', $popularity_args, $this );
-                    $products_data_store = new ProductsDataStore();
-                    $products_data       = $products_data_store->get_data( $popularity_args )->data;
-                    if ( ! empty( $products_data ) ) {
-                        $popular_product_ids          = wp_list_pluck( $products_data, 'product_id' );
+                    // Use memoization for popularity data to avoid expensive calculations within the same request.
+                    $popularity_memo_key = 'popularity_' . $popularity_period . '_' . gmdate( 'Y-m-d' );
+
+                    if ( ! isset( self::$memoization_cache[ $popularity_memo_key ] ) ) {
+                        // Fallback to object cache if not in memory.
+                        $popularity_cache_key = 'wwof_popularity_' . $popularity_period . '_' . gmdate( 'Y-m-d' );
+                        $popular_product_ids  = wp_cache_get( $popularity_cache_key, 'wwof_queries' );
+
+                        if ( false === $popular_product_ids ) {
+                            $popularity_period   = intval( $popularity_period );
+                            $popularity_args     = array(
+                                'context'       => 'view',
+                                'page'          => 1,
+                                'per_page'      => 100,
+                                'after'         => gmdate( 'Y-m-d 00:00:00', strtotime( "-$popularity_period days" ) ),
+                                'before'        => gmdate( 'Y-m-d 23:59:59' ),
+                                'order'         => 'desc',
+                                'orderby'       => 'items_sold',
+                                'match'         => 'all',
+                                'extended_info' => false,
+                            );
+                            $popularity_args     = apply_filters( 'wwof_wc_rest_popularity_period_args', $popularity_args, $this );
+                            $products_data_store = new ProductsDataStore();
+                            $products_data       = $products_data_store->get_data( $popularity_args )->data;
+
+                            if ( ! empty( $products_data ) ) {
+                                $popular_product_ids = wp_list_pluck( $products_data, 'product_id' );
+                                // Cache for 1 hour since popularity data doesn't change frequently.
+                                wp_cache_set( $popularity_cache_key, $popular_product_ids, 'wwof_queries', 3600 );
+                            } else {
+                                $popular_product_ids = array();
+                                wp_cache_set( $popularity_cache_key, $popular_product_ids, 'wwof_queries', 3600 );
+                            }
+                        }
+
+                        // Store in memory for this request.
+                        self::$memoization_cache[ $popularity_memo_key ] = $popular_product_ids;
+                    }
+
+                    $popular_product_ids = self::$memoization_cache[ $popularity_memo_key ];
+
+                    if ( ! empty( $popular_product_ids ) ) {
                         $popular_products_placeholder = implode( ', ', array_fill( 0, count( $popular_product_ids ), '%d' ) );
 
                         $clauses['where'] .= $wpdb->prepare(
@@ -545,8 +758,10 @@ LEFT JOIN $wpdb->wc_product_meta_lookup wc_product_meta_lookup ON $wpdb->posts.I
                     $clauses['where']
                 );
 
-                $clauses['join'] .= "
-LEFT JOIN $wpdb->posts pv ON ($wpdb->posts.post_type = 'product_variation' AND $wpdb->posts.post_parent = pv.ID) ";
+                // Optimize JOIN for product variations.
+                $clauses['join'] .= "LEFT JOIN $wpdb->posts pv
+                    ON ($wpdb->posts.post_type = 'product_variation'
+                    AND $wpdb->posts.post_parent = pv.ID) ";
 
                 $clauses['where'] = " AND ($wpdb->posts.post_type != 'product_variation' OR ($wpdb->posts.post_type = 'product_variation' AND pv.post_status = 'publish')) " . $clauses['where'];
 
@@ -565,10 +780,13 @@ END AS menu_order";
                 }
 
                 if ( is_a( $this->rest_request, 'WP_REST_Request' ) &&
-                    ( $this->rest_request->get_param( 'category' ) || $this->rest_request->get_param( 'category__in' ) ) ) {
+                    (
+                        ( $this->rest_request->get_param( 'category' ) && ! empty( $this->rest_request->get_param( 'category' ) ) ) ||
+                        ( $this->rest_request->get_param( 'category__in' ) && ! empty( $this->rest_request->get_param( 'category__in' ) ) )
+                    )
+                ) {
 
-                    $clauses['join'] .= "
-LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwoftr.object_id)";
+                    $clauses['join'] .= "LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwoftr.object_id)";
 
                     $clauses['where'] = preg_replace(
                         "/($wpdb->term_relationships\.term_taxonomy_id\s+IN\s+\(([^\)]+)\))/",
@@ -619,7 +837,9 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
 
         $this->product_variations_query = 'yes' === $request->get_param( 'product_variations' );
 
-        $search_sku = sanitize_text_field( $request->get_param( 'search_sku' ) );
+        $search_sku  = sanitize_text_field( $request->get_param( 'search_sku' ) );
+        $search_tags = sanitize_text_field( $request->get_param( 'search_tags' ) );
+
         if ( $search_sku ) {
             /***************************************************************************
              * Replace `AND` with `OR` for SKU search
@@ -633,8 +853,13 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
             $this->search_sku_in_product_lookup_table = $search_sku;
         }
 
-        $show_zero_inventory = $request->get_param( 'show_zero_inventory' );
-        if ( empty( $show_zero_inventory ) || 'yes' !== $show_zero_inventory ) {
+        $show_zero_inventory      = $request->get_param( 'show_zero_inventory' );
+        $show_zero_inventory_bool = function_exists( 'wc_string_to_bool' )
+            ? wc_string_to_bool( (string) $show_zero_inventory )
+            : ( 'yes' === $show_zero_inventory || '1' === $show_zero_inventory || 1 === $show_zero_inventory || true === $show_zero_inventory );
+        // Accept "enabled" as truthy for historical frontend usage.
+        $show_zero_inventory_bool = $show_zero_inventory_bool || 'enabled' === $show_zero_inventory;
+        if ( ! $show_zero_inventory_bool ) {
             $args['meta_query'] = WC_Helper::add_meta_query(
                 $args,
                 array(
@@ -671,6 +896,15 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
         }
 
         $post__in = $request->get_param( 'include' );
+        $post__in = ! empty( $post__in ) ? (array) $post__in : array();
+
+        if ( empty( $post__in ) ) {
+            $include_from_settings = (array) $order_form->get_settings( 'includeProducts' );
+            if ( ! empty( $include_from_settings ) ) {
+                $args['post__in'] = array_map( 'absint', $include_from_settings );
+                $post__in         = $args['post__in'];
+            }
+        }
 
         /***************************************************************************
          * Include favourites if enabled
@@ -679,16 +913,15 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
          * We include favourites if this setting is enabled and it's limited to
          * only show favourites.
          */
-        if ( $order_form->only_show_favourites() ) {
+        if ( $order_form->allow_favourites() && $order_form->only_show_favourites() ) {
             $favourites = WWOF::get_favourite_products();
             if ( ! empty( $favourites ) ) {
-                $post__in = array_merge( $post__in, $favourites );
-                $post__in = array_flip( array_flip( $post__in ) );
+                $post__in         = array_values( array_unique( array_map( 'absint', (array) $favourites ) ) );
+                $args['post__in'] = $post__in;
+            } else {
+                $post__in         = array( 0 );
+                $args['post__in'] = $post__in;
             }
-            if ( empty( $post__in ) ) {
-                $post__in = array( 0 );
-            }
-            $args['post__in'] = $post__in;
         }
 
         /***************************************************************************
@@ -754,7 +987,8 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
                     array(
                         'taxonomy' => 'product_type',
                         'field'    => 'slug',
-                        'terms'    => array( 'simple' ),
+                        'terms'    => array( 'simple', 'grouped', 'external' ),
+                        'operator' => 'IN',
                     ),
                 )
             );
@@ -772,7 +1006,7 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
                 array(
                     'taxonomy' => 'product_type',
                     'field'    => 'slug',
-                    'terms'    => array( 'simple', 'variable' ),
+                    'terms'    => array( 'simple', 'variable', 'grouped', 'external' ),
                 )
             );
         }
@@ -784,60 +1018,40 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
          * We limit products query to visible products only. Products marked as
          * `private` and/or have `hidden` catalog visibility should be excluded.
          */
-        $args['tax_query'] = WC_Helper::add_tax_query(
-            $args,
-            array(
-                'relation' => 'OR',
+        $product_visibility_terms = wc_get_product_visibility_term_ids();
+        if ( ! empty( $product_visibility_terms['exclude-from-catalog'] ) ) {
+            $tax_query = array(
                 array(
-                    'taxonomy'         => 'product_visibility',
-                    'operator'         => 'NOT EXISTS',
-                    'include_children' => false,
+                    'taxonomy' => 'product_visibility',
+                    'field'    => 'term_taxonomy_id',
+                    'terms'    => $product_visibility_terms['exclude-from-catalog'],
+                    'operator' => 'NOT IN',
                 ),
-                array(
-                    'relation' => 'AND',
-                    array(
-                        'taxonomy'         => 'product_visibility',
-                        'terms'            => 'exclude-from-catalog',
-                        'field'            => 'name',
-                        'operator'         => 'NOT IN',
-                        'include_children' => false,
-                    ),
-                    array(
-                        'taxonomy'         => 'product_visibility',
-                        'terms'            => 'exclude-from-search',
-                        'field'            => 'name',
-                        'operator'         => 'IN',
-                        'include_children' => false,
-                    ),
-                ),
-                array(
-                    'relation' => 'AND',
-                    array(
-                        'taxonomy'         => 'product_visibility',
-                        'terms'            => 'exclude-from-catalog',
-                        'field'            => 'name',
-                        'operator'         => 'IN',
-                        'include_children' => false,
-                    ),
-                    array(
-                        'taxonomy'         => 'product_visibility',
-                        'terms'            => 'exclude-from-search',
-                        'field'            => 'name',
-                        'operator'         => 'NOT IN',
-                        'include_children' => false,
-                    ),
-                ),
-                array(
-                    'taxonomy'         => 'product_visibility',
-                    'terms'            => array( 'exclude-from-catalog', 'exclude-from-search' ),
-                    'field'            => 'name',
-                    'operator'         => 'NOT IN',
-                    'include_children' => false,
-                ),
-            )
-        );
+            );
+
+            $args['tax_query'] = WC_Helper::add_tax_query( $args, $tax_query );
+        }
 
         add_filter( 'posts_clauses_request', array( $this, 'replace_clauses' ), 100 );
+
+        if ( $search_tags ) {
+            unset( $args['s'] );
+
+            // Use $search_tags instead of retrieving again.
+            $tag_term = get_term_by( 'slug', $search_tags, 'product_tag' );
+
+            if ( $tag_term && ! is_wp_error( $tag_term ) ) {
+                $tag_tax_query     = array(
+                    array(
+                        'taxonomy' => 'product_tag',
+                        'field'    => 'slug',
+                        'terms'    => array( $search_tags ),
+                        'operator' => 'IN',
+                    ),
+                );
+                $args['tax_query'] = WC_Helper::add_tax_query( $args, $tag_tax_query );
+            }
+        }
 
         /**
          * Add filter to allow other plugins to customize the product REST query args
@@ -909,7 +1123,7 @@ LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwo
          *
          * @see woocommerce/assets/js/frontend/add-to-cart.js:165
          */
-        $script = <<<JS
+        $script = <<<'JS'
 (($) => {
   $(document.body).on('removed_from_cart', (event, fragments) => {
     document.body.dispatchEvent(new Event('wwof_removed_from_cart'))
@@ -1044,5 +1258,164 @@ JS;
          * Enqueue custom scripts for WooCommerce.
          */
         add_action( 'wwof_enqueue_wwof_product_listing_sc_script', array( $this, 'enqueue_script' ) );
+
+        /**
+         * If a product is restricted, then run this.
+         */
+        add_filter( 'wwp_rest_wholesale_product_meta_query', array( $this, 'unrestrict_product_for_admin_and_shop_manager' ), 9, 4 );
+
+        /**
+         * Sort the products based on price column filter
+         */
+        add_action( 'wwp_after_product_get_items', array( $this, 'sort_products_by_price' ), 10, 2 );
+
+        /**************************************************************************
+         * Add GTIN (global_unique_id) to WC Product REST API Response
+         **************************************************************************
+         *
+         * We expose the `global_unique_id` field (GTIN) stored as `_global_unique_id`
+         * private meta (introduced in WooCommerce 9.2+) in the REST API response for
+         * both products and product variations.
+         */
+        add_filter( 'woocommerce_rest_prepare_product_object', array( $this, 'add_product_gtin_to_rest_response' ), 100, 3 );
+        add_filter( 'woocommerce_rest_prepare_product_variation_object', array( $this, 'add_product_gtin_to_rest_response' ), 100, 3 );
+    }
+
+
+    /**
+     * Callback for sorting the products by price filter column.
+     *
+     * @since 3.0.8
+     *
+     * @param object $request Request object.
+     * @param object $response Response object.
+     *
+     * @return void
+     */
+    public function sort_products_by_price( $request, $response ) {
+        $query_params                = $request->get_params();
+        $order                       = isset( $query_params['order'] ) ?
+            $query_params['order'] : 'asc';
+        $order_by                    = isset( $query_params['orderby'] ) ?
+            $query_params['orderby'] : 'popularity';
+        $current_user_wholesale_role = class_exists( 'WWPP_Wholesale_Roles' ) && ! empty( WWPP_Wholesale_Roles::instance()->getUserWholesaleRole() ) ?
+            WWPP_Wholesale_Roles::instance()->getUserWholesaleRole()
+            : array( 'wholesale_customer' );
+
+        $get_wholesale_price = function ( $product, $role ) {
+            $wholesale_data = isset( $product['wholesale_data']['wholesale_price'] ) && ! empty( $product['wholesale_data']['wholesale_price'] )
+                ? $product['wholesale_data']['wholesale_price']
+                : array();
+            return isset( $wholesale_data[ $role ] )
+                ? (float) $wholesale_data[ $role ]
+                : ( isset( $product['price'] ) ? (float) $product['price'] : 0.0 );
+        };
+
+        if ( ( 'price' === $order_by ) ) {
+            $existing_products = $response->data ?? array();
+
+            usort(
+                $existing_products,
+                function ( $product_one, $product_two ) use ( $current_user_wholesale_role, $order, $get_wholesale_price ) {
+                    $product_one_wholesale_price = $get_wholesale_price( $product_one, $current_user_wholesale_role[0] );
+                    $product_two_wholesale_price = $get_wholesale_price( $product_two, $current_user_wholesale_role[0] );
+
+                    if ( 'asc' === $order ) {
+                        return $product_one_wholesale_price <=> $product_two_wholesale_price;
+                    } else {
+                        return $product_two_wholesale_price <=> $product_one_wholesale_price;
+                    }
+                }
+            );
+
+            $response->data = $existing_products;
+        }
+    }
+
+    /**
+     * Callback for unrestricting 'admin/shop manager' from viewing restricted category.
+     *
+     * @since 3.0.8
+     *
+     * @param array  $meta_query Meta query.
+     * @param string $wholesale_role Wholesale role.
+     * @param array  $args_copy Args Array.
+     * @param object $request Request object.
+     *
+     * @return array
+     */
+    public function unrestrict_product_for_admin_and_shop_manager( $meta_query, $wholesale_role, $args_copy, $request ) {
+        // Allow admins and shop managers to view all products, bypassing restrictions.
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            return $meta_query;
+        }
+
+        global $wc_wholesale_prices_premium;
+
+        // Check if WWPP is active and has the required API structure.
+        if ( null === $wc_wholesale_prices_premium
+            || ! isset( $wc_wholesale_prices_premium->wwpp_rest_api->wwpp_rest_api_wholesale_products_controller )
+        ) {
+            return $meta_query;
+        }
+
+        remove_filter(
+            'wwp_rest_wholesale_product_meta_query',
+            array(
+                $wc_wholesale_prices_premium->wwpp_rest_api->wwpp_rest_api_wholesale_products_controller,
+                'rest_meta_query_args',
+            ),
+            10,
+            4
+        );
+
+        return $meta_query;
+    }
+
+    /**
+     * Clear the memoization cache.
+     *
+     * @since 3.0.8 Added this method to clear the memoization cache.
+     * @return void
+     */
+    public static function clear_memoization_cache() {
+        self::$memoization_cache = array();
+    }
+
+    /**
+     * Add the GTIN (global_unique_id) field to the WC REST API product response.
+     *
+     * WooCommerce 9.2+ stores GTIN as the `_global_unique_id` private meta field.
+     * We expose it as `global_unique_id` in the REST response so the frontend
+     * order form can display it in the GTIN column element.
+     *
+     * @param WP_REST_Response $response The response object.
+     * @param WC_Product       $wc_data  Object data.
+     * @param WP_REST_Request  $request  Request object.
+     *
+     * @since 3.0
+     * @return WP_REST_Response
+     */
+    public function add_product_gtin_to_rest_response( $response, $wc_data, $request ) {
+
+        if ( ! $request->get_param( 'wwof' ) || $request->get_param( 'context' ) === 'edit' ) {
+            return $response;
+        }
+
+        /***************************************************************************
+         * Add `global_unique_id` property to product object
+         ***************************************************************************
+         *
+         * We add the `global_unique_id` property (GTIN) to the REST response.
+         * The `get_global_unique_id()` method was introduced in WooCommerce 9.2,
+         * so we check for its existence first for backwards compatibility.
+         */
+        if ( method_exists( $wc_data, 'get_global_unique_id' ) ) {
+            $response->data['global_unique_id'] = $wc_data->get_global_unique_id();
+        } else {
+            $response->data['global_unique_id'] = get_post_meta( $wc_data->get_id(), '_global_unique_id', true );
+        }
+
+        return $response;
     }
 }

@@ -2,6 +2,10 @@
 
 namespace Automattic\WCShipping\Connect;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 class WC_Connect_Privacy {
 	/**
 	 * @var WC_Connect_Service_Settings_Store

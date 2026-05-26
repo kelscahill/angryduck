@@ -13,4 +13,3 @@ declare module '@wordpress/preferences' {
 	} >;
 	export const PreferenceToggleMenuItem: any;
 }
-

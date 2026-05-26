@@ -6,7 +6,7 @@ import {
 	__experimentalSpacer as Spacer,
 	Icon,
 } from '@wordpress/components';
-import { warning } from '@wordpress/icons';
+import { caution as warning } from '@wordpress/icons';
 import { createInterpolateElement } from '@wordpress/element';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 
@@ -40,7 +40,7 @@ export const LegacyWarning = () => {
 					),
 					hasCustomsForm
 						? _x(
-								' and customs form',
+								'and customs form',
 								'Migrated Label Description',
 								'woocommerce-shipping'
 						  )

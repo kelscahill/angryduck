@@ -15,7 +15,9 @@ export const PromoBanner = () => {
 
 	useLayoutEffect( () => {
 		const banner = document.querySelector( '.promo-banner' );
-		if ( ! banner ) return;
+		if ( ! banner ) {
+			return;
+		}
 		const observer = new ResizeObserver( () => {
 			document.documentElement.style.setProperty(
 				'--wcs-promo-banner-height',

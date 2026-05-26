@@ -9,6 +9,10 @@
  * Restore a post: /sites/%s/posts/%d/restore
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Update_Post_Endpoint(
 	array(
 		'description'          => 'Create a post.',
@@ -197,6 +201,8 @@ new WPCOM_JSON_API_Update_Post_Endpoint(
 
 /**
  * Update post endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Update_Post_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 	/**
@@ -537,6 +543,7 @@ class WPCOM_JSON_API_Update_Post_Endpoint extends WPCOM_JSON_API_Post_Endpoint {
 
 			$post_id = wp_insert_post( add_magic_quotes( $insert ), true );
 		} else {
+			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable -- $post is set and validated several blocks earlier if $new (only set once) is falsy.
 			$insert['ID'] = $post->ID;
 
 			// wp_update_post ignores date unless edit_date is set

@@ -86,7 +86,11 @@ if ( ! class_exists( 'WWLC_Upgrade_Account' ) ) {
 
             if ( $show_upgrade_notice && get_option( 'wwlc_enable_account_upgrade' ) === 'yes' ) {
 
-                if ( isset( $_GET['remove'] ) && filter_var( $_GET['remove'], FILTER_VALIDATE_BOOLEAN ) === true ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                if (
+                    isset( $_GET['remove'], $_GET['_wwlc_nonce'] ) &&
+                    filter_var( $_GET['remove'], FILTER_VALIDATE_BOOLEAN ) === true && // phpcs:ignore WordPress.Security.ValidatedSanitizedInput, WordPress.Security.NonceVerification.Recommended -- Nonce verified below.
+                    wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wwlc_nonce'] ) ), 'wwlc_remove_upgrade_notice_' . $user->ID )
+                ) {
                     update_user_meta( $user->ID, 'wwlc_request_upgrade_approved', false );
                 }
 
@@ -95,18 +99,18 @@ if ( ! class_exists( 'WWLC_Upgrade_Account' ) ) {
                     $message = get_option( 'wwlc_account_upgrade_message' );
                     $message = ! empty( $message ) ? html_entity_decode( $message ) : __( 'You are registered as a standard customer. Click here to {link}request an account upgrade{/link}.', 'woocommerce-wholesale-lead-capture' );
                     echo '<div class="wwlc_upgrade_account_request_message">';
-                    echo apply_filters( 'wwlc_upgrade_account_request_message', $this->format_string( $message ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    echo wp_kses_post( apply_filters( 'wwlc_upgrade_account_request_message', $this->format_string( $message ) ) );
                     echo '</div>';
                     echo '<br/><br/>';
 
                 } elseif ( in_array( 'wwlc_unapproved', $user_roles, true ) && get_user_meta( $user->ID, 'wwlc_request_upgrade', true ) ) {
 
-                    echo apply_filters( 'wwlc_upgrade_account_pending_approval', __( 'Your account is pending for approval.', 'woocommerce-wholesale-lead-capture' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    echo wp_kses_post( apply_filters( 'wwlc_upgrade_account_pending_approval', __( 'Your account is pending for approval.', 'woocommerce-wholesale-lead-capture' ) ) );
                     echo '<br/><br/>';
 
                 } elseif ( get_user_meta( $user->ID, 'wwlc_request_upgrade_approved', true ) ) {
                     global $wp;
-                    $current_url = home_url( add_query_arg( array(), $wp->request ) ) . '?remove=true';?>
+                    $current_url = wp_nonce_url( home_url( add_query_arg( array(), $wp->request ) ) . '?remove=true', 'wwlc_remove_upgrade_notice_' . $user->ID, '_wwlc_nonce' );?>
 
                     <div class="woocommerce-message woocommerce-message--success woocommerce-Message woocommerce-Message--success woocommerce-success">
                         <a class="woocommerce-Button button" href="<?php echo esc_url( $current_url ); ?>"><?php esc_html_e( 'Remove', 'woocommerce-wholesale-lead-capture' ); ?></a>

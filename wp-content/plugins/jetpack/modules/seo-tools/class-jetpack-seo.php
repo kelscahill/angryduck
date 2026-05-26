@@ -7,6 +7,8 @@
 
 /**
  * An SEO expert walks into a bar, bars, pub, public house, Irish pub, drinks, beer, wine, liquor, Grey Goose, Cristal...
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Jetpack_SEO {
 	/**
@@ -101,6 +103,9 @@ class Jetpack_SEO {
 		$authors = array();
 
 		foreach ( $wp_query->posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
 			$authors[] = get_the_author_meta( 'display_name', (int) $post->post_author );
 		}
 
@@ -275,6 +280,10 @@ class Jetpack_SEO {
 		 * @param array Array that consists of meta name and meta content pairs.
 		 */
 		$meta = apply_filters( 'jetpack_seo_meta_tags', $meta );
+
+		if ( ! is_array( $meta ) ) {
+			return;
+		}
 
 		// Output them.
 		foreach ( $meta as $name => $content ) {

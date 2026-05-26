@@ -55,7 +55,7 @@ export const SelectableItems = ( {
 					subject = parent;
 					const subjectSubItemIds = getSubItemIds( subject );
 					localSelections = localSelections.filter(
-						( { id } ) => ! subjectSubItemIds.includes( id )
+						( { id } ) => ! subjectSubItemIds.includes( `${ id }` )
 					);
 				}
 			}
@@ -78,7 +78,7 @@ export const SelectableItems = ( {
 				...localSelections.filter(
 					( { id } ) =>
 						id !== item.id &&
-						! subItemIds.includes( id ) &&
+						! subItemIds.includes( `${ id }` ) &&
 						( isSubItem( item ) ? id !== item.parentId : true )
 				),
 				...( add ? [ subject ] : [] ),
@@ -119,7 +119,7 @@ export const SelectableItems = ( {
 				</>
 			}
 			renderPrefix={ ( item: ShipmentItem | ShipmentSubItem ) => {
-				const subItemIds: number[] = getSubItemIds( item );
+				const subItemIds = getSubItemIds( item );
 
 				return (
 					<CheckboxControl

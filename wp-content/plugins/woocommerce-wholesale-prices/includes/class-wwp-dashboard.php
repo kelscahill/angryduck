@@ -146,31 +146,43 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
                 return;
             }
 
-            if ( filter_input( INPUT_GET, 'page', FILTER_SANITIZE_FULL_SPECIAL_CHARS ) === 'wholesale-suite' ) {
-
-                // Important: Must enqueue this script in order to use WP REST API via JS.
-                wp_enqueue_script( 'wp-api' );
-
-                wp_localize_script(
-                    'wp-api',
-                    'dashboard_options',
-                    array(
-                        'root'  => esc_url_raw( rest_url() ),
-                        'nonce' => wp_create_nonce( 'wp_rest' ),
-                    )
-                );
-
-                // React Order Form Scripts.
-                $paths = array(
-                    'handle'   => 'dashboard_app',
-                    'dir_name' => 'dashboard-app',
-                    'js_path'  => WWP_JS_PATH,
-                    'js_url'   => WWP_JS_URL,
-                );
-
-                WWP_Helper_Functions::load_react_scripts( $paths );
-
+            // Only load on the wholesale dashboard page.
+            $screen = get_current_screen();
+            if ( ! $screen || 'toplevel_page_wholesale-suite' !== $screen->id ) {
+                return;
             }
+
+            // Load vue scripts.
+            $app = new Vite_App(
+                'wwp-dashboard-app-scripts',
+                'src/apps/dashboard/index.ts',
+                array(
+                    'wp-i18n',
+                    'wp-url',
+                    'wp-hooks',
+                    'wp-html-entities',
+                    'lodash',
+                    'jquery',
+                ),
+                array()
+            );
+
+            $app->enqueue();
+
+            wp_localize_script(
+                'wwp-dashboard-app-scripts',
+                'wwpDashboard',
+                array(
+					'plugin_name'                          => __( 'StoreAgent AI', 'woocommerce-wholesale-prices' ),
+					'plugin_image_url'                     => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'storeagent-ai-for-woocommerce' ),
+                    'plugin_description'                   => __( 'Get AI Agents for WooCommerce with StoreAgent.ai, the free AI-powered plugin designed to automate tasks, personalize customer interactions, and optimize your eCommerce operations.', 'woocommerce-wholesale-prices' ),
+                    'rest_url'                             => rest_url(),
+                    'dashboard_nonce'                      => wp_create_nonce( 'wp_rest' ),
+                    'dashboard_ajax_base_url'              => admin_url( 'admin-ajax.php' ),
+                    'dashboard_ajax_nonce_install_plugin'  => wp_create_nonce( 'wwp_install_plugin' ),
+                    'dashboard_ajax_nonce_activate_plugin' => wp_create_nonce( 'wwp_activate_plugin' ),
+				),
+            );
         }
 
         /**
@@ -347,6 +359,7 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
                             'learn_more_link' => esc_url( WWP_Helper_Functions::get_utm_url( 'woocommerce-wholesale-lead-capture', 'wwp', 'upsell', 'dashboardlearnmorewwlc' ) ),
                         ),
                     ),
+                    'plugin_suggestion'       => $this->plugin_suggestions(),
                 );
 
                 $response = apply_filters( 'wwp_dashboard_data', $response );
@@ -354,6 +367,198 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
             }
 
             return rest_ensure_response( $response );
+        }
+
+
+        /**
+         * Randomly suggest plugins that are not installed
+         *
+         * @return array
+         */
+        public function plugin_suggestions() {
+            $plugins = array(
+                array(
+                    'plugin_name'        => __( 'Advanced Coupons for WooCommerce (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'advanced-coupons-for-woocommerce-free' ),
+                    'plugin_description' => __( 'Extends your coupon features so you can market your store better. Adds cart conditions (coupon rules), buy one get one (BOGO) deals, url coupons, coupon categories and loads more. Install this free plugin.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_acfwf_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'advanced-coupons-for-woocommerce-free/advanced-coupons-for-woocommerce-free.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_acfwf_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'advanced-coupons-for-woocommerce-free',
+                    'plugin-file'        => 'advanced-coupons-for-woocommerce-free/advanced-coupons-for-woocommerce-free.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+                array(
+                    'plugin_name'        => __( 'StoreAgent AI for WooCommerce (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'storeagent-ai-for-woocommerce' ),
+                    'plugin_description' => __( 'Get AI Agents for WooCommerce with StoreAgent.ai, the free AI-powered plugin designed to automate tasks, personalize customer interactions, and optimize your eCommerce operations.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_storeagent_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'storeagent-ai-for-woocommerce/storeagent-ai-for-woocommerce.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_storeagent_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'storeagent-ai-for-woocommerce',
+                    'plugin-file'        => 'storeagent-ai-for-woocommerce/storeagent-ai-for-woocommerce.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+                array(
+                    'plugin_name'        => __( 'Product Feed Pro (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'woo-product-feed-pro' ),
+                    'plugin_description' => __( 'Helps you generate and manage product feeds for various marketing channels, such as Google Shopping, Facebook, and more, to optimize your eCommerce store\'s visibility and sales.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_adtribes_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'woo-product-feed-pro/woocommerce-sea.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_adtribes_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'woo-product-feed-pro',
+                    'plugin-file'        => 'woo-product-feed-pro/woocommerce-sea.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+                array(
+                    'plugin_name'        => __( 'WC Vendors (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'wc-vendors' ),
+                    'plugin_description' => __( 'Easiest way to create your multivendor marketplace and earn commission from every sale. Create a WooCommerce marketplace with multi-seller, product vendor & multi vendor commissions.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_wcvendors_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'wc-vendors/class-wc-vendors.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_wcvendors_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'wc-vendors',
+                    'plugin-file'        => 'wc-vendors/class-wc-vendors.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+                array(
+                    'plugin_name'        => __( 'Invoice Gateway for WooCommerce (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'invoice-gateway-for-woocommerce' ),
+                    'plugin_description' => __( 'Accept orders via a special invoice payment gateway method which lets your customer enter their order without upfront payment. Then just issue an invoice from your accounting system and paste in the number.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_invoice_gateway_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'invoice-gateway-for-woocommerce/invoice-gateway-for-woocommerce.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_invoice_gateway_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'invoice-gateway-for-woocommerce',
+                    'plugin-file'        => 'invoice-gateway-for-woocommerce/invoice-gateway-for-woocommerce.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+                array(
+                    'plugin_name'        => __( 'Store Toolkit for WooCommerce (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'woocommerce-store-toolkit' ),
+                    'plugin_description' => __( 'A growing set of commonly-used WooCommerce admin tools such as deleting WooCommerce data in bulk, such as products, orders, coupons, and customers. It also adds extra small features, order filtering, and more.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_store_toolkit_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'woocommerce-store-toolkit/store-toolkit.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_store_toolkit_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'woocommerce-store-toolkit',
+                    'plugin-file'        => 'woocommerce-store-toolkit/store-toolkit.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+                array(
+                    'plugin_name'        => __( 'SaveTo Wishlist Lite for WooCommerce (Free Plugin)', 'woocommerce-wholesale-prices' ),
+                    'plugin_image_url'   => WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'saveto-wishlist-lite-for-woocommerce' ),
+                    'plugin_description' => __( 'A simple, powerful WooCommerce wishlist plugin to help customers save products they love and buy later.', 'woocommerce-wholesale-prices' ),
+                    'plugin_status'      => WWP_Helper_Functions::is_save_to_wish_list_for_woocommerce_installed() ? ( WWP_Helper_Functions::is_plugin_active( 'saveto-wishlist-lite-for-woocommerce/saveto-wishlist-lite-for-woocommerce.php' ) ? 'active' : 'not-active' ) : 'not-installed',
+                    'plugin_tags'        => WWP_Helper_Functions::is_save_to_wish_list_for_woocommerce_installed() ? array(
+						__( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ) : array(
+                        __( 'Free Plugin', 'woocommerce-wholesale-prices' ),
+                        __( 'Recommended', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'plugin-slug'        => 'saveto-wishlist-lite-for-woocommerce',
+                    'plugin-file'        => 'saveto-wishlist-lite-for-woocommerce/saveto-wishlist-lite-for-woocommerce.php',
+                    'button_texts'       => array(
+                        'install_and_active'        => __( 'Install & Activate', 'woocommerce-wholesale-prices' ),
+                        'activate'                  => __( 'Activate', 'woocommerce-wholesale-prices' ),
+                        'active'                    => __( 'Active', 'woocommerce-wholesale-prices' ),
+                        'installed'                 => __( 'Installed', 'woocommerce-wholesale-prices' ),
+                        'installing_and_activating' => __( 'Installing & Activating...', 'woocommerce-wholesale-prices' ),
+                        'activating'                => __( 'Activating...', 'woocommerce-wholesale-prices' ),
+                        'installed_and_activated'   => __( 'Installed & Activated', 'woocommerce-wholesale-prices' ),
+                        'activated'                 => __( 'Activated', 'woocommerce-wholesale-prices' ),
+                    ),
+                ),
+            );
+
+            /**
+             * Remove activated plugins
+             */
+            foreach ( $plugins as $key => $plugin ) {
+                if ( ( isset( $plugin['plugin-file'] ) && is_plugin_active( $plugin['plugin-file'] ) ) ) {
+                    unset( $plugins[ $key ] );
+                }
+            }
+
+            $random_plugin_key = ! empty( $plugins ) ? array_rand( $plugins ) : 0;
+
+            return ! empty( $plugins ) ? $plugins[ $random_plugin_key ] : array();
         }
 
         /**
@@ -660,26 +865,26 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
         public function internationalization() {
             $texts = array(
                 'dashboard'                 => __( 'Dashboard', 'woocommerce-wholesale-prices' ),
-                'quick_stats'               => __( 'Quick Stats:', 'woocommerce-wholesale-prices' ),
+                'quick_stats'               => __( 'Quick Stats', 'woocommerce-wholesale-prices' ),
                 'quick_stats_note'          => __( 'The stats will only count orders that are in processing or completed status.', 'woocommerce-wholesale-prices' ),
                 'wholesale_orders'          => __( 'Wholesale Orders', 'woocommerce-wholesale-prices' ),
                 'wholesale_revenue'         => __( 'Wholesale Revenue', 'woocommerce-wholesale-prices' ),
-                'top_wholesale_customers'   => __( 'Top Wholesale Customers:', 'woocommerce-wholesale-prices' ),
-                'recent_wholesale_orders'   => __( 'Recent Wholesale Orders:', 'woocommerce-wholesale-prices' ),
+                'top_wholesale_customers'   => __( 'Top Wholesale Customers', 'woocommerce-wholesale-prices' ),
+                'recent_wholesale_orders'   => __( 'Recent Wholesale Orders', 'woocommerce-wholesale-prices' ),
                 'view_order'                => __( 'View Order', 'woocommerce-wholesale-prices' ),
-                'view_all_wholesale_orders' => __( 'View All Wholesale Orders &rarr;', 'woocommerce-wholesale-prices' ),
-                'helpful_resources'         => __( 'Helpful Resources:', 'woocommerce-wholesale-prices' ),
+                'view_all_wholesale_orders' => __( 'View All Wholesale Orders', 'woocommerce-wholesale-prices' ),
+                'helpful_resources'         => __( 'Helpful Resources', 'woocommerce-wholesale-prices' ),
                 'getting_started_guides'    => __( 'Getting Started Guides', 'woocommerce-wholesale-prices' ),
                 'read_documentation'        => __( 'Read Documentation', 'woocommerce-wholesale-prices' ),
                 'settings'                  => __( 'Settings', 'woocommerce-wholesale-prices' ),
                 'contact_support'           => __( 'Contact Support', 'woocommerce-wholesale-prices' ),
-                'license_activation_status' => __( 'License Activation Status:', 'woocommerce-wholesale-prices' ),
+                'license_activation_status' => __( 'License Activation Status', 'woocommerce-wholesale-prices' ),
                 'wholesale_prices_premium'  => __( 'Wholesale Prices Premium', 'woocommerce-wholesale-prices' ),
                 'wholesale_order_form'      => __( 'Wholesale Order Form', 'woocommerce-wholesale-prices' ),
                 'wholesale_lead_capture'    => __( 'Wholesale Lead Capture', 'woocommerce-wholesale-prices' ),
-                'view_licenses'             => __( 'View Licenses &rarr;', 'woocommerce-wholesale-prices' ),
+                'view_licenses'             => __( 'View Licenses', 'woocommerce-wholesale-prices' ),
                 'wholesale_suite_plugins'   => __( 'Wholesale Suite Plugins:', 'woocommerce-wholesale-prices' ),
-                'deactivated_plugins'       => __( 'Deactivated Plugins:', 'woocommerce-wholesale-prices' ),
+                'deactivated_plugins'       => __( 'Deactivated Plugins', 'woocommerce-wholesale-prices' ),
                 'activate_plugin'           => __( 'Activate', 'woocommerce-wholesale-prices' ),
                 'click_to_activate'         => __( 'Click to activate the plugin.', 'woocommerce-wholesale-prices' ),
                 'no_data'                   => __( 'No Data', 'woocommerce-wholesale-prices' ),
@@ -739,7 +944,7 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
 
                     $wws_license_statuses[ strtolower( $plugin_key ) ] = array(
                         'status' => $license_status,
-                        'text'   => $plugin_data['name'] . " (<span class='. $license_status .'>" . $license_status_i18n . '</span>)',
+                        'text'   => $plugin_data['name'] . '(<span class=' . $license_status . '>' . $license_status_i18n . '</span>)',
                     );
                 } else {
                     $wws_license_statuses[ strtolower( $plugin_key ) ] = array(
@@ -766,6 +971,21 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
          */
         public function clear_cache_on_new_orders() {
             $this->clear_cache();
+        }
+
+        /**
+         * Add Wholesale Class.
+         *
+         * @param array $classes Body Class.
+         *
+         * @return array
+         */
+        public function add_wholesale_class( $classes ) {
+            $screen = get_current_screen();
+            if ( $screen && 'toplevel_page_wholesale-suite' === $screen->id ) {
+                $classes .= ' wholesale-dashboard';
+            }
+            return $classes;
         }
 
         /**
@@ -895,6 +1115,8 @@ if ( ! class_exists( 'WWP_Dashboard' ) ) {
 
             // Clear cache on new/update order.
             add_action( 'save_post_shop_order', array( $this, 'clear_cache_on_new_orders' ), 10 );
+
+            add_filter( 'admin_body_class', array( $this, 'add_wholesale_class' ), 10, 1 );
         }
     }
 

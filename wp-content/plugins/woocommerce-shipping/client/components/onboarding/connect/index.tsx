@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link } from '@woocommerce/components';
 import {
 	__experimentalText as Text,
 	Button,
+	ExternalLink,
 	Icon,
 	Notice,
 } from '@wordpress/components';
@@ -119,24 +119,14 @@ const Connect: React.FC< ContainerProps > = ( {
 					),
 					{
 						tos: (
-							<Link
-								href="https://wordpress.com/tos/"
-								target="_blank"
-								rel="noopener noreferrer"
-								type="external"
-							>
+							<ExternalLink href="https://wordpress.com/tos/">
 								{ ' ' }
-							</Link>
+							</ExternalLink>
 						),
 						privacy_policy: (
-							<Link
-								href="https://automattic.com/privacy/"
-								target="_blank"
-								rel="noopener noreferrer"
-								type="external"
-							>
+							<ExternalLink href="https://automattic.com/privacy/">
 								{ ' ' }
-							</Link>
+							</ExternalLink>
 						),
 						icon: <Icon icon="external" />,
 					}

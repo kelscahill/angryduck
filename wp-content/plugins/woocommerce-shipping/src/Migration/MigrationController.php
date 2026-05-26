@@ -183,8 +183,11 @@ class MigrationController {
 	 * @return array
 	 */
 	public function get_labels_migration_progress(): int {
-		$total     = $this->label_migrator->get_total_count();
+		$total = $this->label_migrator->get_total_count();
+		if ( 0 === $total ) {
+			return 0;
+		}
 		$processed = $total - $this->label_migrator->get_total_pending_count();
-		return ( $processed * 100.0 ) / $total;
+		return (int) ( ( $processed * 100.0 ) / $total );
 	}
 }

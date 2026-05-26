@@ -299,13 +299,14 @@ return array(
         'content' => array(
             'orderLabel'           => __( 'Order', 'woocommerce-wholesale-payments' ),
             'status'               => array(
-                'yes'     => __( 'Active', 'woocommerce-wholesale-payments' ),
-                'no'      => __( 'Inactive', 'woocommerce-wholesale-payments' ),
-                'pending' => __( 'Pending', 'woocommerce-wholesale-payments' ),
-                'open'    => __( 'Open', 'woocommerce-wholesale-payments' ),
-                'overdue' => __( 'Overdue', 'woocommerce-wholesale-payments' ),
-                'paid'    => __( 'Paid', 'woocommerce-wholesale-payments' ),
-                'void'    => __( 'Void', 'woocommerce-wholesale-payments' ),
+                'yes'      => __( 'Active', 'woocommerce-wholesale-payments' ),
+                'no'       => __( 'Inactive', 'woocommerce-wholesale-payments' ),
+                'pending'  => __( 'Pending', 'woocommerce-wholesale-payments' ),
+                'open'     => __( 'Open', 'woocommerce-wholesale-payments' ),
+                'overdue'  => __( 'Overdue', 'woocommerce-wholesale-payments' ),
+                'paid'     => __( 'Paid', 'woocommerce-wholesale-payments' ),
+                'void'     => __( 'Void', 'woocommerce-wholesale-payments' ),
+                'deferred' => __( 'Pending Completion', 'woocommerce-wholesale-payments' ),
             ),
             'autoCharge'           => array(
                 'yes' => __( 'Yes', 'woocommerce-wholesale-payments' ),

@@ -109,7 +109,7 @@ class WC extends Abstract_Class {
             return strtotime( gmdate( 'Y-m-21', strtotime( 'next month' ) ) );
         }
 
-        return gmdate( 'F jS, Y', strtotime( gmdate( 'Y-m-21', strtotime( 'next month' ) ) ) );
+        return date_i18n( wc_date_format(), strtotime( gmdate( 'Y-m-21', strtotime( 'next month' ) ) ) );
     }
 
     /**
@@ -291,8 +291,8 @@ class WC extends Abstract_Class {
                         esc_html(
                             sprintf(
                                 $status_text,
-                                gmdate(
-                                    'F d, Y',
+                                date_i18n(
+                                    wc_date_format(),
                                     $status['ts']
                                 )
                             )
@@ -404,31 +404,91 @@ class WC extends Abstract_Class {
         if ( empty( $payment_plan ) ) {
             return;
         }
-        $invoice     = $order->get_meta( '_wpay_stripe_invoice' );
+
+        $is_deferred = 'yes' === $order->get_meta( '_wpay_schedule_deferred' );
         $auto_charge = $order->get_meta( '_wpay_auto_charge' );
 
-        if ( 'yes' === $auto_charge ) {
-            $invoices               = WPAY_Invoices::get_invoices( $order->get_id() );
-            $invoice['amounts_due'] = array_map(
-                function ( $invoice ) {
-                    $breakdown_due_date = (int) $invoice->breakdown_due_date;
-                    $created_date       = strtotime( $invoice->created_at );
-                    $created_at         = gmdate( 'Y-m-d H:i:s', $created_date );
-                    $due_date           = strtotime( $created_at . ' + ' . $breakdown_due_date . ' days' );
-
-                    return array(
-                        'amount'   => $invoice->breakdown_amount,
-                        'due_date' => $due_date,
-                        'status'   => $invoice->stripe_invoice_status ?? 'pending',
-                    );
-                },
-                $invoices
-            );
-
-            $invoice['hosted_invoice_url'] = ! empty( $invoice[0]['hosted_invoice_url'] ) ? $invoice[0]['hosted_invoice_url'] : '';
+        // Build deferred preview data when schedule is pending order completion.
+        if ( $is_deferred ) {
+            $invoice = $this->build_deferred_invoice_preview( $payment_plan, $order );
+        } elseif ( 'yes' === $auto_charge ) {
+            $invoice = $this->build_auto_charge_invoice_data( $order->get_id(), $order->get_meta( '_wpay_stripe_invoice' ) );
+        } else {
+            $invoice = $order->get_meta( '_wpay_stripe_invoice' );
         }
 
         include_once Helper::locate_front_template_part( 'order-invoice-payments-progress' );
+    }
+
+    /**
+     * Build invoice data for auto-charge orders from the wpay_invoices DB table.
+     *
+     * Populates `amounts_due` and `hosted_invoice_url` on the given invoice array
+     * using stored invoice records, since auto-charge orders store `_wpay_stripe_invoice`
+     * in a format incompatible with direct key extraction.
+     *
+     * @param int   $order_id The order ID.
+     * @param array $invoice  The existing invoice meta array.
+     *
+     * @since 1.0.0
+     * @return array The invoice array with `amounts_due` and `hosted_invoice_url` populated.
+     */
+    private function build_auto_charge_invoice_data( $order_id, $invoice ) {
+        $db_invoices            = WPAY_Invoices::get_invoices( $order_id );
+        $invoice['amounts_due'] = array_map(
+            function ( $inv ) {
+                $breakdown_due_date = (int) $inv->breakdown_due_date;
+                $created_date       = strtotime( $inv->created_at );
+                $created_at         = gmdate( 'Y-m-d H:i:s', $created_date );
+                $due_date           = strtotime( $created_at . ' + ' . $breakdown_due_date . ' days' );
+
+                return array(
+                    'amount'   => $inv->breakdown_amount,
+                    'due_date' => $due_date,
+                    'status'   => $inv->stripe_invoice_status ?? 'pending',
+                );
+            },
+            $db_invoices
+        );
+
+        $invoice['hosted_invoice_url'] = $invoice[0]['hosted_invoice_url'] ?? '';
+
+        return $invoice;
+    }
+
+    /**
+     * Build a preview invoice array for deferred orders pending completion.
+     *
+     * Generates `amounts_due` entries from the payment plan breakdown with
+     * a "deferred" status so the customer-facing template can show a
+     * "Pending order completion" message instead of empty data.
+     *
+     * @since 1.0.6
+     *
+     * @param string   $payment_plan_json The JSON-encoded payment plan.
+     * @param WC_Order $order             The WooCommerce order.
+     * @return array Invoice array with `amounts_due` and `hosted_invoice_url`.
+     */
+    private function build_deferred_invoice_preview( $payment_plan_json, $order ) {
+        $plan_data   = json_decode( $payment_plan_json, true );
+        $breakdown   = isset( $plan_data['breakdown'] ) ? $plan_data['breakdown'] : array();
+        $order_total = (int) round( (float) $order->get_total() * 100 );
+
+        $cent_amounts = WPay::calculate_breakdown_amounts( $breakdown, $order_total );
+        $amounts_due  = array();
+
+        foreach ( $cent_amounts as $amount ) {
+            $amounts_due[] = array(
+                'amount'   => $amount,
+                'due_date' => 0,
+                'status'   => 'deferred',
+            );
+        }
+
+        return array(
+            'amounts_due'        => $amounts_due,
+            'hosted_invoice_url' => '',
+        );
     }
 
     /**
@@ -466,6 +526,14 @@ class WC extends Abstract_Class {
      */
     public function orders_app_entry( $has_orders ) {
 
+        // Fallback for single order view and thank-you pages where the orders_actions filter doesn't fire.
+        if ( $has_orders && empty( $this->my_account_orders ) && is_numeric( $has_orders ) ) {
+            $order = wc_get_order( $has_orders );
+            if ( $order && ! empty( WPay::get_order_plan( $order ) ) && 'cancelled' !== $order->get_status( 'edit' ) ) {
+                $this->my_account_orders[] = $order;
+            }
+        }
+
         if ( $has_orders && ! empty( $this->my_account_orders ) ) {
             $invoices       = array();
             $invoice_fields = array(
@@ -473,7 +541,17 @@ class WC extends Abstract_Class {
                 'hosted_invoice_url' => '',
             );
             foreach ( $this->my_account_orders as $account_order ) {
-                $invoice = (array) $account_order->get_meta( '_wpay_stripe_invoice' );
+                $is_deferred = 'yes' === $account_order->get_meta( '_wpay_schedule_deferred' );
+                $auto_charge = $account_order->get_meta( '_wpay_auto_charge' );
+
+                if ( $is_deferred ) {
+                    $plan_json = $account_order->get_meta( '_wpay_plan' );
+                    $invoice   = $this->build_deferred_invoice_preview( $plan_json, $account_order );
+                } elseif ( 'yes' === $auto_charge ) {
+                    $invoice = $this->build_auto_charge_invoice_data( $account_order->get_id(), (array) $account_order->get_meta( '_wpay_stripe_invoice' ) );
+                } else {
+                    $invoice = (array) $account_order->get_meta( '_wpay_stripe_invoice' );
+                }
 
                 $invoices[ $account_order->get_id() ] = array_intersect_key( $invoice, $invoice_fields );
             }
@@ -489,6 +567,23 @@ class WC extends Abstract_Class {
             }
         }
         printf( '<div id="view-payments-app"></div>' );
+    }
+
+    /**
+     * Enqueue checkout styles.
+     *
+     * @since 1.0.6
+     * @return void
+     */
+    public function enqueue_checkout_styles() {
+        if ( is_checkout() || is_account_page() ) {
+            wp_enqueue_style(
+                'wpay-checkout',
+                plugins_url( 'dist/css/checkout.css', WPAY_PLUGIN_FILE ),
+                array(),
+                filemtime( WPAY_PLUGIN_DIR_PATH . 'dist/css/checkout.css' )
+            );
+        }
     }
 
     /**
@@ -515,6 +610,7 @@ class WC extends Abstract_Class {
                     'overdue'         => __( 'Overdue', 'woocommerce-wholesale-payments' ),
                     'pending'         => __( 'Pending', 'woocommerce-wholesale-payments' ),
                     'paymentTimeline' => __( 'Payment Timeline', 'woocommerce-wholesale-payments' ),
+                    'deferred'        => __( 'Pending Order Completion', 'woocommerce-wholesale-payments' ),
                 ),
                 'wcSettings' => array(
                     'currency' => array(
@@ -602,6 +698,87 @@ class WC extends Abstract_Class {
     }
 
     /**
+     * Display overdue balance notice on My Account orders page.
+     *
+     * @since 1.0.6
+     * @return void
+     */
+    public function overdue_balance_notice() {
+        if ( 'yes' !== get_option( 'wpay_overdue_restriction_enabled', 'no' ) ) {
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return;
+        }
+
+        $days_threshold = absint( get_option( 'wpay_overdue_days_threshold', 0 ) );
+        if ( WPAY_Invoices::customer_has_overdue_invoices( $user_id, $days_threshold ) ) {
+            // Context: My Account orders page — error-level notice encouraging invoice payment.
+            // Intentionally different wording from checkout notices (see payment-fields.php and wpay-payment-method.js).
+            wc_print_notice(
+                __( 'You have an outstanding overdue balance. Please pay your overdue invoices to continue using payment plans.', 'woocommerce-wholesale-payments' ),
+                'error'
+            );
+        }
+    }
+
+    /**
+     * Display the credit limit field on the user profile page.
+     *
+     * @param \WP_User $user The user object.
+     *
+     * @since 1.0.6
+     * @return void
+     */
+    public function user_profile_credit_limit_field( $user ) {
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            return;
+        }
+
+        if ( 'yes' !== get_option( 'wpay_credit_limit_enabled', 'no' ) ) {
+            return;
+        }
+
+        $credit_limit = get_user_meta( $user->ID, '_wpay_credit_limit', true );
+        ?>
+        <h3><?php esc_html_e( 'Wholesale Payments Credit Limit', 'woocommerce-wholesale-payments' ); ?></h3>
+        <table class="form-table">
+            <tr>
+                <th><label for="wpay_credit_limit"><?php esc_html_e( 'Credit Limit', 'woocommerce-wholesale-payments' ); ?></label></th>
+                <td>
+                    <input type="number" name="wpay_credit_limit" id="wpay_credit_limit" value="<?php echo esc_attr( $credit_limit ); ?>" min="0" step="any" class="regular-text" />
+                    <p class="description"><?php esc_html_e( 'Maximum outstanding balance allowed for this customer. Leave blank to use the role or global limit.', 'woocommerce-wholesale-payments' ); ?></p>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    /**
+     * Save the credit limit field from the user profile page.
+     *
+     * @param int $user_id The user ID.
+     *
+     * @since 1.0.6
+     * @return void
+     */
+    public function save_user_profile_credit_limit_field( $user_id ) {
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            return;
+        }
+
+        $credit_limit = filter_input( INPUT_POST, 'wpay_credit_limit', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION );
+
+        if ( '' === $credit_limit || null === $credit_limit || false === $credit_limit ) {
+            delete_user_meta( $user_id, '_wpay_credit_limit' );
+        } else {
+            update_user_meta( $user_id, '_wpay_credit_limit', (float) $credit_limit );
+        }
+    }
+
+    /**
      * Run the integration.
      *
      * @since 1.0.0
@@ -634,6 +811,7 @@ class WC extends Abstract_Class {
         add_filter( 'woocommerce_order_query_args', array( $this, 'orders_list_table_query' ) );
         add_filter( 'woocommerce_order_details_after_order_table', array( $this, 'view_payments_progress' ) );
         add_filter( 'woocommerce_my_account_my_orders_actions', array( $this, 'orders_actions' ), 10, 2 );
+        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_checkout_styles' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_orders_script' ) );
         add_action( 'woocommerce_view_order', array( $this, 'orders_app_entry' ) );
         add_action( 'woocommerce_after_account_orders', array( $this, 'orders_app_entry' ) );
@@ -641,5 +819,12 @@ class WC extends Abstract_Class {
         add_action( 'before_woocommerce_init', array( $this, 'hpos_compatibility' ) );
         add_filter( 'pre_kses', array( $this, 'pre_kses' ), 100 );
         add_filter( 'woocommerce_order_get_payment_method_title', array( $this, 'order_payment_method_title' ), 10, 2 );
+        add_action( 'woocommerce_before_account_orders', array( $this, 'overdue_balance_notice' ) );
+
+        // Credit limit user profile fields.
+        add_action( 'show_user_profile', array( $this, 'user_profile_credit_limit_field' ) );
+        add_action( 'edit_user_profile', array( $this, 'user_profile_credit_limit_field' ) );
+        add_action( 'personal_options_update', array( $this, 'save_user_profile_credit_limit_field' ) );
+        add_action( 'edit_user_profile_update', array( $this, 'save_user_profile_credit_limit_field' ) );
     }
 }

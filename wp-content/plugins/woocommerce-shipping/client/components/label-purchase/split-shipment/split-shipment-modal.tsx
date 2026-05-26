@@ -15,6 +15,7 @@ import {
 	forwardRef,
 	useCallback,
 	useState,
+	useEffect,
 } from '@wordpress/element';
 import { dispatch } from '@wordpress/data';
 import {
@@ -67,6 +68,7 @@ export const SplitShipmentModal = forwardRef<
 			labelShipmentIdsToUpdate,
 			hasVariations,
 			hasMultipleShipments,
+			isReturnShipment,
 		},
 		labels: { hasPurchasedLabel },
 		customs: { updateCustomsItems },
@@ -111,14 +113,10 @@ export const SplitShipmentModal = forwardRef<
 			...oldShipments,
 			[ Object.keys( oldShipments ).length ]: newShipment,
 		};
-		setShipments(
-			normalizeShipments( newShipments ) as Record<
-				string,
-				ShipmentItem[]
-			>
-		);
+		const { normalizedShipments } = normalizeShipments( newShipments );
+		setShipments( normalizedShipments );
 
-		resetSelections( Object.keys( newShipments ) );
+		resetSelections( Object.keys( normalizedShipments ) );
 	};
 
 	const addSelectionForShipment =
@@ -201,6 +199,13 @@ export const SplitShipmentModal = forwardRef<
 		recordEvent( 'split_shipment_modal_notice_dismissed' );
 	};
 
+	// Reset selections when modal opens
+	// we need to do this because items can have been selected for "extra labels"
+	// and we don't want to carry over those extra labels to the split shipment items table.
+	useEffect( () => {
+		resetSelections( Object.keys( shipments ) );
+	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
+
 	return (
 		<Modal
 			title={ __( 'Split Shipment', 'woocommerce-shipping' ) }
@@ -234,7 +239,7 @@ export const SplitShipmentModal = forwardRef<
 							'There was an error while updating the shipments. %s',
 							'woocommerce-shipping'
 						),
-						updateError
+						String( updateError )
 					) }
 				</Notice>
 			) }
@@ -290,7 +295,10 @@ export const SplitShipmentModal = forwardRef<
 							orderItems={ shipment }
 							selectAll={ selectAll( key ) }
 							shipmentIndex={ index }
-							isDisabled={ hasShipmentPurchasedLabel }
+							isDisabled={
+								hasShipmentPurchasedLabel ||
+								isReturnShipment( key )
+							}
 						/>
 					);
 				} ) }

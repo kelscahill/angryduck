@@ -245,4 +245,187 @@ class Cli extends \WP_CLI_Command {
 
         WP_CLI::success( 'Done!' );
     }
+
+    /**
+     * Creates database indexes for better query performance.
+     *
+     * ## OPTIONS
+     * [--force]
+     * : Force index creation even if indexes already exist.
+     *
+     * [--dry-run]
+     * : Show what indexes would be created without actually creating them.
+     *
+     * ## EXAMPLES
+     *      wp wwof create_database_indexes
+     *      wp wwof create_database_indexes --force
+     *      wp wwof create_database_indexes --dry-run
+     *
+     * @param array $args       Arguments.
+     * @param array $assoc_args Associative arguments.
+     *
+     * @since 3.0.8
+     * @throws ExitException Exit exception.
+     */
+    public function create_database_indexes( $args = array(), $assoc_args = array() ) {
+
+        global $wpdb;
+
+        $force   = isset( $assoc_args['force'] );
+        $dry_run = isset( $assoc_args['dry-run'] );
+
+        WP_CLI::line( 'Starting database index creation for WWOF performance optimization...' );
+
+        // Check if indexes already exist (unless forced).
+        if ( ! $force && ! $dry_run ) {
+            $indexes_completed = wp_cache_get( 'wwof_indexes_completed', 'wwof_db_optimization' );
+            if ( false !== $indexes_completed ) {
+                WP_CLI::warning( 'Indexes have already been created successfully. Use --force to recreate them.' );
+                return;
+            }
+        }
+
+        // Get database optimizer instance.
+        $optimizer = new \RymeraWebCo\WWOF\Helpers\Database_Optimizer();
+
+        try {
+            if ( $dry_run ) {
+                WP_CLI::line( 'DRY RUN - No indexes will be created.' );
+                WP_CLI::line( 'The following indexes would be created:' );
+                WP_CLI::line( '- idx_wc_product_meta_lookup_product_sku on wc_product_meta_lookup' );
+                WP_CLI::line( '- idx_wc_product_meta_lookup_price on wc_product_meta_lookup' );
+                WP_CLI::line( '- idx_wc_product_meta_lookup_sku_exact on wc_product_meta_lookup' );
+                WP_CLI::line( '- idx_term_relationships_object_term on wp_term_relationships' );
+                WP_CLI::line( '- idx_term_relationships_term_taxonomy on wp_term_relationships' );
+                WP_CLI::line( '- idx_posts_content_type_status on wp_posts' );
+                WP_CLI::line( '- idx_posts_type_status on wp_posts' );
+                WP_CLI::line( '- idx_posts_content_shortcode on wp_posts' );
+                WP_CLI::success( 'Dry run completed. Use without --dry-run to create indexes.' );
+                return;
+            }
+
+            // Force flag handling - if forced, reset completion flag first.
+            if ( $force ) {
+                $optimizer->reset_completion_flag();
+                WP_CLI::line( 'Reset completion flag for forced recreation.' );
+            }
+
+            // Use the manual method for CLI execution.
+            $result = $optimizer->create_indexes_manual();
+
+            if ( is_wp_error( $result ) ) {
+                WP_CLI::error( 'Failed to create database indexes: ' . $result->get_error_message() );
+                return;
+            }
+
+            WP_CLI::success( 'Database indexes created successfully!' );
+            WP_CLI::line( 'These indexes will improve query performance for:' );
+            WP_CLI::line( '- SKU searches and product lookups' );
+            WP_CLI::line( '- Term relationship queries' );
+            WP_CLI::line( '- Shortcode pattern searches' );
+            WP_CLI::line( '- Post content filtering' );
+
+            // Show next scheduled run info.
+            $next_scheduled = wp_next_scheduled( 'wwof_create_database_indexes' );
+            if ( $next_scheduled ) {
+                WP_CLI::line( 'Next scheduled run: ' . gmdate( 'Y-m-d H:i:s', $next_scheduled ) );
+            } else {
+                WP_CLI::line( 'No future scheduled runs (indexes completed successfully).' );
+            }
+        } catch ( \Exception $exception ) {
+            WP_CLI::error( 'Failed to create database indexes: ' . $exception->getMessage() );
+        }
+    }
+
+    /**
+     * Check the status of database optimization.
+     *
+     * ## EXAMPLES
+     *      wp wwof check_database_status
+     *
+     * @param array $args       Arguments.
+     * @param array $assoc_args Associative arguments.
+     *
+     * @since 3.0.8
+     * @throws ExitException Exit exception.
+     */
+    public function check_database_status( $args = array(), $assoc_args = array() ) {
+
+        // Get database optimizer instance.
+        $optimizer = new \RymeraWebCo\WWOF\Helpers\Database_Optimizer();
+
+        WP_CLI::line( 'WWOF Database Optimization Status:' );
+        WP_CLI::line( '================================' );
+
+        // Check completion status.
+        $indexes_completed = wp_cache_get( 'wwof_indexes_completed', 'wwof_db_optimization' );
+        if ( false !== $indexes_completed ) {
+            WP_CLI::success( '✓ Database indexes have been created successfully.' );
+        } else {
+            WP_CLI::warning( '✗ Database indexes have not been created yet.' );
+        }
+
+        // Check if currently running.
+        $is_running = wp_cache_get( 'wwof_indexes_running', 'wwof_db_optimization' );
+        if ( false !== $is_running ) {
+            WP_CLI::warning( '⚠ Database index creation is currently running.' );
+        }
+
+        // Check scheduled action status.
+        $next_scheduled = wp_next_scheduled( 'wwof_create_database_indexes' );
+        if ( $next_scheduled ) {
+            WP_CLI::line( 'Next scheduled run: ' . gmdate( 'Y-m-d H:i:s', $next_scheduled ) );
+            WP_CLI::line( 'Time until next run: ' . human_time_diff( time(), $next_scheduled ) );
+        } elseif ( false !== $indexes_completed ) {
+                WP_CLI::line( 'No scheduled runs (indexes completed successfully).' );
+            } else {
+                WP_CLI::warning( 'No scheduled runs found. Indexes may not be scheduled.' );
+        }
+
+        // Show performance stats if available.
+        $stats = $optimizer->get_performance_stats();
+        if ( ! empty( $stats ) ) {
+            WP_CLI::line( '' );
+            WP_CLI::line( 'Performance Statistics:' );
+            WP_CLI::line( '- Total queries: ' . $stats['total_queries'] );
+            WP_CLI::line( '- Cache hits: ' . $stats['cache_hits'] );
+            WP_CLI::line( '- Cache misses: ' . $stats['cache_misses'] );
+        }
+
+        // Show available commands.
+        WP_CLI::line( '' );
+        WP_CLI::line( 'Available Commands:' );
+        WP_CLI::line( '- wp wwof create_database_indexes (create indexes now)' );
+        WP_CLI::line( '- wp wwof create_database_indexes --force (force recreation)' );
+        WP_CLI::line( '- wp wwof create_database_indexes --dry-run (see what would be created)' );
+    }
+
+    /**
+     * Reset database optimization completion flag for testing.
+     *
+     * ## EXAMPLES
+     *      wp wwof reset_database_flags
+     *
+     * @param array $args       Arguments.
+     * @param array $assoc_args Associative arguments.
+     *
+     * @since 3.0.8
+     */
+    public function reset_database_flags( $args = array(), $assoc_args = array() ) {
+
+        // Get database optimizer instance.
+        $optimizer = new \RymeraWebCo\WWOF\Helpers\Database_Optimizer();
+
+        WP_CLI::line( 'Resetting WWOF database optimization flags...' );
+
+        // Reset completion flag.
+        $optimizer->reset_completion_flag();
+
+        // Clear any scheduled events.
+        wp_clear_scheduled_hook( 'wwof_create_database_indexes' );
+
+        WP_CLI::success( 'Database optimization flags have been reset.' );
+        WP_CLI::line( 'The system will now schedule a new index creation task.' );
+        WP_CLI::line( 'Use "wp wwof check_database_status" to verify the reset.' );
+    }
 }

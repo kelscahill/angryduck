@@ -90,7 +90,7 @@ class WooCommerceBlocksIntegration implements IntegrationInterface {
 		$script_asset_path   = WCSHIPPING_PLUGIN_DIST_DIR . $handle . '.asset.php';
 		$script_asset        = file_exists( $script_asset_path )
 		? require $script_asset_path : array();  // nosemgrep: audit.php.lang.security.file.inclusion-arg --- This is a safe file inclusion.
-		$script_dependencies = $script_asset['dependencies'] ?? array();
+		$script_dependencies = Utils::filter_dev_dependencies( $script_asset['dependencies'] ?? array() );
 		$script_version      = $script_asset['version'] ?? Utils::get_file_version( $script_path );
 
 		wp_register_script(

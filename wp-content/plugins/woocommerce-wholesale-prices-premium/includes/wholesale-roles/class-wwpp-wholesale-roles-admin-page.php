@@ -97,7 +97,23 @@ class WWPP_Wholesale_Roles_Admin_Page {
     public function view_wholesale_roles_admin_page() {
         do_action( 'before_wwpp-wholesale-roles-page_submenu_page_callback' ); // phpcs:ignore.
 
+        $order    = isset( $_GET['order'] ) ? ( 'asc' === $_GET['order'] ? 'desc' : 'asc' ) : 'asc'; //phpcs:ignore
+        $orderby  = isset( $_GET['orderby'] ) ? $_GET['orderby'] : 'name'; //phpcs:ignore
+
         $all_registered_wholesale_roles = $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles();
+
+        uasort(
+            $all_registered_wholesale_roles,
+            function ( $a, $b ) use ( $order, $orderby ) {
+                $column = 'name' === $orderby ? 'roleName' : 'roleName'; // based on this $column data the sorting column inside role array can be change for comparison.
+
+                if ( 'asc' === $order ) {
+                    return $b[ $column ] < $a[ $column ] ? 1 : - 1;
+                } else {
+                    return $a[ $column ] < $b[ $column ] ? 1 : -1;
+                }
+            }
+        );
 
         if ( count( $all_registered_wholesale_roles ) <= 1 ) {
             $wholesale_roles_total_text = sprintf( '<span class="wholesale-roles-count">%1$s</span> ' . __( 'item', 'woocommerce-wholesale-prices-premium' ), count( $all_registered_wholesale_roles ) );
@@ -144,7 +160,9 @@ class WWPP_Wholesale_Roles_Admin_Page {
             wp_die();
         }
 
-        $new_role            = WWPP_Helper_Functions::sanitize_array( $_POST['newRole'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $new_role            = WWPP_Helper_Functions::sanitize_array( $_POST['newRole'] ); //phpcs:ignore
         $new_role['roleKey'] = empty( $new_role['roleKey'] ) ? WWPP_Helper_Functions::sanitize_role_key( wp_unslash( $new_role['roleName'] ) ) : wp_unslash( $new_role['roleKey'] );
         $response            = array();
 
@@ -224,7 +242,9 @@ class WWPP_Wholesale_Roles_Admin_Page {
                 wp_die();
             }
 
-            $role = WWPP_Helper_Functions::sanitize_array( $_POST['role'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+
+            $role = WWPP_Helper_Functions::sanitize_array( $_POST['role'] ); //phpcs:ignore
         }
 
         global $wpdb;
@@ -299,7 +319,9 @@ class WWPP_Wholesale_Roles_Admin_Page {
             wp_die();
         }
 
-        $role_key = sanitize_text_field( $_POST['roleKey'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $role_key = sanitize_text_field( $_POST['roleKey'] ); //phpcs:ignore
         $err_msg  = $this->check_settings_for_used_wholesale_role( $role_key );
 
         if ( $err_msg ) {

@@ -1,0 +1,50 @@
+---
+description:
+globs: tests/Cypress/cypress/step_definitions/**/*.js,tests/Cypress/cypress/tests/**/*.js
+alwaysApply: false
+---
+# Introduction
+
+- Role: You are an automation test engineer.
+- Objective: Ensure all step definitions are written consistently, follow Cucumber + Cypress best practices, and remain maintainable.
+- Knowledge
+  - Gherkin
+  - Cucumber
+  - Cypress
+  - Lodash
+  - Cypress Cucumber Preprocessor
+- References
+  - Existing scenario steps: https://rymera-web-co.github.io/automated-test-helper/existing_steps.txt
+  - Cypress Cucumber Preprocessor
+    - Cucumber Basics: https://raw.githubusercontent.com/badeball/cypress-cucumber-preprocessor/refs/heads/master/docs/cucumber-basics.md
+    - Step Definitions: https://raw.githubusercontent.com/badeball/cypress-cucumber-preprocessor/refs/heads/master/docs/step-definitions.md
+
+---
+
+# General Rules
+
+- Formatting
+  - Indentation: 2 spaces
+  - Use single quotes for all string values
+- Instructions
+  - Comment every step definition like a JS function
+    - Explain the purpose
+    - Include @param and @example where possible
+  - Reuse existing steps in the `Existing scenario steps` reference
+
+# Example
+
+
+/**
+ * Log in as a user by using its username and the data from the "users" fixture. The
+ * login process will be done via HTTP request.
+ *
+ * @param {string} username The username of the user to be logged in. should be
+ *        listed in the "users" fixture.
+ *
+ * @example
+ * Given the "admin" user is logged in
+ */
+Given("the {string} user is logged in", (user) => {
+  // The code here.
+});

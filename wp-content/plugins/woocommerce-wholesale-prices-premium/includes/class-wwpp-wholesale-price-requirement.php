@@ -57,6 +57,28 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
         private $_composite_product_items;
 
         /**
+         * Preload cart variation result
+         *
+         * @var array
+         */
+        private $cart_variation_result = array();
+
+        /**
+         * Preload variation attributes.
+         *
+         * @var array
+         */
+        private $cart_variation_attributes = array();
+
+
+        /**
+         * Cart variation quantity total.
+         *
+         * @var  array
+         */
+        private $cart_variation_qty_total = array();
+
+        /**
          * Class Methods
          */
 
@@ -631,6 +653,10 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
             $this->_bundle_product_items    = array();
             $this->_composite_product_items = array();
 
+            $bundle_items_extracted         = array();
+            $composite_items_extracted      = array();
+            $cart_items_for_composite_items = array();
+
             foreach ( $cart_object->get_cart() as $cart_item_key => $cart_item ) {
 
                 if ( WWP_Helper_Functions::wwp_get_product_type( $cart_item['data'] ) === 'bundle' ) {
@@ -638,25 +664,35 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
                     $bundle_product = wc_get_product( $product_id );
                     $bundle_items   = $bundle_product->get_bundled_items();
 
-                    foreach ( $bundle_items as $bundle_item ) {
-                        $this->_bundle_product_items[ $bundle_item->item_id ] = array( 'is_priced_individually' => $bundle_item->is_priced_individually() );
+                    if ( ! empty( $bundle_items ) ) {
+                        array_push( $bundle_items_extracted, ...$bundle_items );
                     }
                 } elseif ( WWP_Helper_Functions::wwp_get_product_type( $cart_item['data'] ) === 'composite' ) {
 
                     $product_id        = WWP_Helper_Functions::wwp_get_product_id( $cart_item['data'] );
                     $composite_product = wc_get_product( $product_id );
 
-                    if ( method_exists( $composite_product, 'get_composite_data' ) ) {
-                        $composite_items = $composite_product->get_composite_data();
-                        foreach ( $composite_items as $composite_item ) {
-
-                            $composite_item_obj = new WC_CP_Component( $composite_item['component_id'], $cart_item['data'] );
-
-                            $this->_composite_product_items[ $composite_item['component_id'] ] = array( 'is_priced_individually' => $composite_item_obj->is_priced_individually() );
-
+                    if ( method_exists( $composite_product, 'get_composite_data' ) && count( $composite_product->get_composite_data() ) > 0 ) {
+                        foreach ( $composite_product->get_composite_data() as $component_data ) {
+                            $composite_items_extracted[]      = $component_data;
+                            $cart_items_for_composite_items[] = $cart_item['data'];
                         }
                     }
                 }
+            }
+
+            foreach ( $bundle_items_extracted as $bundle_item ) {
+                $this->_bundle_product_items[ $bundle_item->item_id ] = array( 'is_priced_individually' => $bundle_item->is_priced_individually() );
+            }
+
+            $min_count = min( count( $composite_items_extracted ), count( $cart_items_for_composite_items ) ); // we need to loop over these two to get the composite product proper calculation. made this into linear time O(n).
+            for ( $i = 0; $i < $min_count; $i++ ) {
+                $composite_item = $composite_items_extracted[ $i ];
+                $cart_item_data = $cart_items_for_composite_items[ $i ];
+
+                $composite_item_obj = new WC_CP_Component( $composite_item['component_id'], $cart_item_data );
+
+                $this->_composite_product_items[ $composite_item['component_id'] ] = array( 'is_priced_individually' => $composite_item_obj->is_priced_individually() );
             }
         }
 
@@ -685,13 +721,11 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
             }
             // Not a wholesale user and/or no product price.
 
-            if ( isset( $cart_item['bundled_by'] ) && $cart_item['bundled_by'] &&
-                array_key_exists( $cart_item['bundled_item_id'], $this->_bundle_product_items ) && ! $this->_bundle_product_items[ $cart_item['bundled_item_id'] ]['is_priced_individually'] ) {
+            if ( isset( $cart_item['bundled_by'] ) && $cart_item['bundled_by'] && isset( $this->_bundle_product_items[ $cart_item['bundled_item_id'] ] ) && ! empty( $this->_bundle_product_items[ $cart_item['bundled_item_id'] ] ) && ! $this->_bundle_product_items[ $cart_item['bundled_item_id'] ]['is_priced_individually'] ) {
                 return false;
             }
 
-            if ( isset( $cart_item['composite_parent'] ) && $cart_item['composite_parent'] &&
-                array_key_exists( $cart_item['composite_item'], $this->_composite_product_items ) && ! $this->_composite_product_items[ $cart_item['composite_item'] ]['is_priced_individually'] ) {
+            if ( isset( $cart_item['composite_parent'] ) && $cart_item['composite_parent'] && isset( $this->_composite_product_items[ $cart_item['composite_item'] ] ) && ! empty( $this->_composite_product_items[ $cart_item['composite_item'] ] ) && ! $this->_composite_product_items[ $cart_item['composite_item'] ]['is_priced_individually'] ) {
                 return false;
             }
 
@@ -782,56 +816,14 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
             } elseif ( $product_obj->get_type() === 'variation' ) {
 
                 // Process variable level wholesale minimum order quantity.
-                $variable_id    = $cart_item['data']->get_parent_id();
-                $variation_id   = $cart_item['data']->get_id();
-                $variable_total = 0;
-
-                // Get total items of a variable product in cart ( Total items of its variations ).
-                foreach ( $cart_object->cart_contents as $cart_item_key => $ci ) {
-                    if ( $ci['data']->get_type() === 'variation' && $ci['data']->get_parent_id() === $variable_id ) {
-                        $variable_total += $ci['quantity'];
-                    }
-                }
+                $variation_id = $cart_item['data']->get_id();
 
                 // Check variable product requirements.
-                $check_result = WWPP_Helper_Functions::check_if_variable_product_requirement_is_meet( $variable_id, $variation_id, $cart_item, $variable_total, $user_wholesale_role[0] );
+                $check_result = isset( $this->cart_variation_result[ $variation_id ] ) ? $this->cart_variation_result[ $variation_id ] : false;
 
                 if ( is_array( $check_result ) ) {
 
-                    // Construct variation attributes.
-                    $variable_attributes = '';
-
-                    if ( is_array( $cart_item['variation'] ) && ! empty( $cart_item['variation'] ) ) {
-
-                        foreach ( $cart_item['variation'] as $attribute => $attributeVal ) {
-
-                            $attribute = str_replace( 'attribute_', '', $attribute );
-
-                            if ( strpos( $attribute, 'pa_' ) !== false ) {
-
-                                // Attribute based variable product attribute.
-                                $attribute = str_replace( 'pa_', '', $attribute );
-
-                                $attributeVal = str_replace( '-', ' ', $attributeVal );
-                                $attributeVal = ucwords( $attributeVal );
-
-                            }
-
-                            $attribute = str_replace( '-', ' ', $attribute );
-                            $attribute = ucwords( $attribute );
-
-                            if ( ! empty( $variable_attributes ) ) {
-                                $variable_attributes .= ', ';
-                            }
-
-                            $variable_attributes .= $attribute . ': ' . $attributeVal;
-
-                        }
-                    }
-
-                    if ( ! empty( $variable_attributes ) ) {
-                        $variable_attributes = '(' . $variable_attributes . ')';
-                    }
+                    $variable_attributes = isset( $this->cart_variation_attributes[ $variation_id ] ) ? $this->cart_variation_attributes[ $variation_id ] : '';
 
                     switch ( $check_result['fail_type'] ) {
                         case 'variable_level_moq':
@@ -951,12 +943,13 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * @since 1.30.2
          */
         public function minimum_order_requirement_notice() {
-
+            global $wc_wholesale_prices_premium;
             $user_wholesale_role = $this->_wwpp_wholesale_roles->getUserWholesaleRole();
 
             if ( ! empty( $user_wholesale_role ) ) {
                 $cart_object           = WC()->cart;
-                $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_object->cart_contents_total, $cart_object, $user_wholesale_role );
+                $cart_total            = is_cart() ? $wc_wholesale_prices_premium->wwpp_wholesale_prices->preload_calculate_cart_total : WWPP_Helper_Functions::calculate_cart_totals( $cart_object->cart_contents_total, $cart_object, $user_wholesale_role );
+                $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_total, $cart_object, $user_wholesale_role );
 
                 if ( true !== $apply_wholesale_price && is_array( $apply_wholesale_price ) ) {
                     wc_print_notice( $apply_wholesale_price['message'], $apply_wholesale_price['type'] );
@@ -1330,7 +1323,8 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
             $apply_wholesale_price = true;
             if ( ! empty( $user_wholesale_role ) ) {
                 $cart_object           = WC()->cart;
-                $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_object->cart_contents_total, $cart_object, $user_wholesale_role );
+                $cart_total            = WWPP_Helper_Functions::calculate_cart_totals( $cart_object->cart_contents_total, $cart_object, $user_wholesale_role );
+                $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_total, $cart_object, $user_wholesale_role );
             }
 
             return array( 'notices' => true !== $apply_wholesale_price ? $apply_wholesale_price : null );
@@ -1386,7 +1380,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
                 );
                 $script->enqueue();
 
-                $css = <<<CSS
+                $css = <<<'CSS'
 .wwpp-block-notice .wc-block-components-notices .wc-block-components-notice-banner.is-info {
   background-color: #3D9CD2;
   color: #FFF;
@@ -1427,6 +1421,92 @@ CSS;
         }
 
         /**
+         * Preload necessary cart requirement data for wholesale price validation.
+         *
+         * This method processes the cart contents to:
+         * 1. Calculate total quantities for variable products (sum of all variations)
+         * 2. Check if wholesale price requirements are met for each variation
+         * 3. Format variation attributes for display in notices/messages
+         *
+         * The method stores results in class properties for later use:
+         * - $this->cart_variation_result: Contains requirement check results for variations
+         * - $this->cart_variation_attributes: Contains formatted attribute strings for variations
+         *
+         * @since 2.0.7
+         * @param WC_Cart $cart_object The WooCommerce cart object containing cart contents.
+         * @param array   $user_wholesale_role Current Wholesale User.
+         * @return void
+         */
+        public function preload_necessary_cart_requirement_datas( $cart_object, $user_wholesale_role ) {
+            $this->cart_variation_qty_total = array(); // Since this is called twice and the total is manipulated for a variable product, for example, the first time this is called the cart total has 10 belonging to a specific variable id, then the second time it becomes double which is 20 and so on. This is why the total was showing an error on the cart page for min order requirements, so every time this is called the property '$this->cart_variation_qty_total' becomes non-persistent.
+
+            /**
+             * Calculate the total to be used below.
+             */
+            foreach ( $cart_object->cart_contents as $cart_content ) {
+                if ( 'variation' === $cart_content['data']->get_type() ) {
+                    $this->cart_variation_qty_total[ $cart_content['data']->get_parent_id() ] = ( isset( $this->cart_variation_qty_total[ $cart_content['data']->get_parent_id() ] ) ? $this->cart_variation_qty_total[ $cart_content['data']->get_parent_id() ] : 0 ) + $cart_content['quantity'];
+                }
+            }
+
+            /**
+             * Store the result to be used later in this 'class'.
+             */
+            foreach ( $cart_object->cart_contents as $cart_content ) {
+                if ( 'variation' === $cart_content['data']->get_type() ) {
+                    $variable_id    = $cart_content['data']->get_parent_id();
+                    $variation_id   = $cart_content['data']->get_id();
+                    $variable_total = isset( $this->cart_variation_qty_total[ $variable_id ] ) ? $this->cart_variation_qty_total[ $variable_id ] : 0;
+
+                    $check_result = WWPP_Helper_Functions::check_if_variable_product_requirement_is_meet( $variable_id, $variation_id, $cart_content, $variable_total, $user_wholesale_role[0] );
+
+                    $this->cart_variation_result[ $variation_id ] = $check_result;
+                }
+            }
+
+            /**
+             * Form the variation attributes to be used as 'message' for notice.
+             */
+            foreach ( $cart_object->cart_contents as $cart_content ) {
+                if ( 'variation' === $cart_content['data']->get_type() ) {
+                    $variation_id = $cart_content['data']->get_id();
+
+                    $variable_attributes = '';
+
+                    if ( isset( $cart_content['variation'] ) && is_array( $cart_content['variation'] ) ) {
+                        foreach ( $cart_content['variation'] as $attribute => $attributeVal ) {
+
+                            $attribute = str_replace( 'attribute_', '', $attribute );
+
+                            if ( str_contains( $attribute, 'pa_' ) ) {
+
+                                // Attribute based variable product attribute.
+                                $attribute = str_replace( 'pa_', '', $attribute );
+
+                                $attributeVal = str_replace( '-', ' ', $attributeVal );
+                                $attributeVal = ucwords( $attributeVal );
+
+                            }
+
+                            $attribute = str_replace( '-', ' ', $attribute );
+                            $attribute = ucwords( $attribute );
+
+                            if ( ! empty( $variable_attributes ) ) {
+                                $variable_attributes .= ', ';
+                            }
+
+                            $variable_attributes .= $attribute . ': ' . $attributeVal;
+                        }
+                    }
+
+                    if ( ! empty( $variable_attributes ) ) {
+                        $this->cart_variation_attributes[ $variation_id ] = '(' . $variable_attributes . ')';
+                    }
+                }
+            }
+        }
+
+        /**
          * Execute model.
          *
          * @since  1.12.8
@@ -1461,6 +1541,8 @@ CSS;
             add_filter( 'wwp_apply_wholesale_price_per_product_level', array( $this, 'filter_if_apply_wholesale_price_per_product_level' ), 10, 5 );
             add_filter( 'wwp_apply_wholesale_price_cart_level', array( $this, 'filter_if_apply_wholesale_price_cart_level' ), 10, 5 );
             add_action( 'wwp_wholesale_requirements_not_passed', array( $this, 'disable_purchasing_capabilities' ), 10, 2 );
+
+            add_action( 'wwp_before_apply_product_wholesale_price_cart_loop', array( $this, 'preload_necessary_cart_requirement_datas' ), 5, 2 );
 
             // Print minimum order requirement notice.
             add_action( 'woocommerce_before_cart', array( $this, 'minimum_order_requirement_notice' ), 10 );

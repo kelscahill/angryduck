@@ -1,18 +1,16 @@
-<?php if (!defined('ABSPATH')) {
+<?php if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
-// Exit if accessed directly
+// Exit if accessed directly.
 
-if (!class_exists('WWPP_REST_API')) {
+if ( ! class_exists( 'WWPP_REST_API' ) ) {
 
     /**
      * Model that houses the logic of WWPP API.
      *
      * @since 1.24.4
      */
-    class WWPP_REST_API
-    {
-
+    class WWPP_REST_API {
         /*
         |--------------------------------------------------------------------------
         | Class Properties
@@ -30,17 +28,42 @@ if (!class_exists('WWPP_REST_API')) {
          * Property that holds WWPP API Controllers.
          *
          * @since 1.25
+         * @var object
          */
         public $wwpp_rest_api_wholesale_products_controller;
+
+        /**
+         * Property that holds wholesale variations controller.
+         *
+         * @var object
+         */
         public $wwpp_rest_api_wholesale_variations_controller;
+
+        /**
+         * Property that holds wholesale roles controller.
+         *
+         * @var object
+         */
         public $wwpp_rest_api_wholesale_roles_controller;
+
+        /**
+         * Property that holds wholesale general discount controller.
+         *
+         * @var object
+         */
         public $wwpp_rest_api_wholesale_general_discount_controller;
+
+        /**
+         * Property that holds wholesale category discount controller.
+         *
+         * @var object
+         */
         public $wwpp_rest_api_wholesale_category_discount_controller;
 
         /**
          * WWP API Minimum Version
          */
-        const WWP_MIN_VERSION = "1.16";
+        const WWP_MIN_VERSION = '1.16';
 
         /*
         |--------------------------------------------------------------------------
@@ -54,9 +77,8 @@ if (!class_exists('WWPP_REST_API')) {
          * @since 1.24.4
          * @access public
          */
-        public function __construct()
-        {
-            add_action('woocommerce_loaded', array($this, 'load_wwpp_api'), 10);
+        public function __construct() {
+            add_action( 'woocommerce_loaded', array( $this, 'load_wwpp_api' ), 10 );
         }
 
         /**
@@ -67,15 +89,13 @@ if (!class_exists('WWPP_REST_API')) {
          *
          * @return WWPP_REST_API
          */
-        public static function instance()
-        {
+        public static function instance() {
 
-            if (!self::$_instance instanceof self) {
+            if ( ! self::$_instance instanceof self ) {
                 self::$_instance = new self();
             }
 
             return self::$_instance;
-
         }
 
         /**
@@ -84,18 +104,16 @@ if (!class_exists('WWPP_REST_API')) {
          * @since 1.27.0
          * @access public
          */
-        public function load_wwpp_api()
-        {
+        public function load_wwpp_api() {
 
-            // API legacy Controllers using wc/v3 namespace
-            add_action('rest_api_init', array($this, 'load_api_legacy_controllers'), 6);
+            // API legacy Controllers using wc/v3 namespace.
+            add_action( 'rest_api_init', array( $this, 'load_api_legacy_controllers' ), 6 );
 
-            // API controllers using wholesale/v1 namespace
-            add_action('rest_api_init', array($this, 'load_api_wwpp_controllers'), 6);
+            // API controllers using wholesale/v1 namespace.
+            add_action( 'rest_api_init', array( $this, 'load_api_wwpp_controllers' ), 6 );
 
-            // Authenticate users if api keys are provided
-            add_action('woocommerce_rest_is_request_to_rest_api', array($this, 'authenticate_user'));
-
+            // Authenticate users if api keys are provided.
+            add_action( 'woocommerce_rest_is_request_to_rest_api', array( $this, 'authenticate_user' ) );
         }
 
         /**
@@ -104,13 +122,11 @@ if (!class_exists('WWPP_REST_API')) {
          * @since 1.24.4
          * @access public
          */
-        public function load_api_legacy_controllers()
-        {
+        public function load_api_legacy_controllers() {
 
             require_once WWPP_INCLUDES_PATH . 'api/legacy/class-wc-api-wholesale-products-controller.php';
             require_once WWPP_INCLUDES_PATH . 'api/legacy/class-wc-api-wholesale-products-variations-controller.php';
             require_once WWPP_INCLUDES_PATH . 'api/legacy/class-wc-api-wholesale-roles-controller.php';
-
         }
 
         /**
@@ -119,29 +135,29 @@ if (!class_exists('WWPP_REST_API')) {
          * @since 1.24.4
          * @access public
          */
-        public function load_api_wwpp_controllers()
-        {
+        public function load_api_wwpp_controllers() {
 
-            if (self::wwp_api_min_version()) {
+            if ( self::wwp_api_min_version() ) {
 
-                // WWPP API Helpers
+                // First load the WooCommerce Wholesale Prices controllers.
+                require_once WWP_INCLUDES_PATH . 'api/v1/class-wwp-rest-api-wholesale-roles-v1-controller.php';
+
+                // WWPP API Helpers.
                 require_once WWPP_INCLUDES_PATH . 'api/helpers/class-wwpp-api-helpers.php';
 
-                // WWPP API Controllers
+                // WWPP API Controllers.
                 require_once WWPP_INCLUDES_PATH . 'api/v1/class-wwpp-rest-api-wholesale-products-v1-controller.php';
                 require_once WWPP_INCLUDES_PATH . 'api/v1/class-wwpp-rest-api-wholesale-products-variations-v1-controller.php';
                 require_once WWPP_INCLUDES_PATH . 'api/v1/class-wwpp-rest-api-wholesale-roles-v1-controller.php';
                 require_once WWPP_INCLUDES_PATH . 'api/v1/class-wwpp-rest-api-wholesale-general-discount-v1-controller.php';
                 require_once WWPP_INCLUDES_PATH . 'api/v1/class-wwpp-rest-api-wholesale-category-discount-v1-controller.php';
 
-                $this->wwpp_rest_api_wholesale_products_controller = new WWPP_REST_Wholesale_Products_V1_Controller;
-                $this->wwpp_rest_api_wholesale_variations_controller = new WWPP_REST_Wholesale_Product_Variations_V1_Controller;
-                $this->wwpp_rest_api_wholesale_roles_controller = new WWPP_REST_Wholesale_Roles_V1_Controller;
-                $this->wwpp_rest_api_wholesale_general_discount_controller = new WWPP_REST_Wholesale_General_Discount_V1_Controller;
-                $this->wwpp_rest_api_wholesale_category_discount_controller = new WWPP_REST_Wholesale_Category_Discount_V1_Controller;
-
+                $this->wwpp_rest_api_wholesale_products_controller          = new WWPP_REST_Wholesale_Products_V1_Controller();
+                $this->wwpp_rest_api_wholesale_variations_controller        = new WWPP_REST_Wholesale_Product_Variations_V1_Controller();
+                $this->wwpp_rest_api_wholesale_roles_controller             = new WWPP_REST_Wholesale_Roles_V1_Controller();
+                $this->wwpp_rest_api_wholesale_general_discount_controller  = new WWPP_REST_Wholesale_General_Discount_V1_Controller();
+                $this->wwpp_rest_api_wholesale_category_discount_controller = new WWPP_REST_Wholesale_Category_Discount_V1_Controller();
             }
-
         }
 
         /**
@@ -150,42 +166,35 @@ if (!class_exists('WWPP_REST_API')) {
          * @since 1.24.4
          * @access public
          *
-         * @param bool $rest_request
+         * @param bool $rest_request Whether this is a REST API request.
          * @return boolean
          */
-        public function authenticate_user($rest_request)
-        {
+        public function authenticate_user( $rest_request ) {
 
-            $rest_prefix = trailingslashit(rest_get_url_prefix());
-            $request_uri = esc_url_raw(wp_unslash($_SERVER['REQUEST_URI']));
+            $rest_prefix = trailingslashit( rest_get_url_prefix() );
+            $request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
 
             // Authenticate if the request is using the wholesale/v1 namespace.
-            if ((false !== strpos($request_uri, $rest_prefix . 'wholesale/'))) {
+            if ( str_contains( $request_uri, $rest_prefix . 'wholesale/' ) ) {
                 return true;
             }
 
             return $rest_request;
-
         }
 
         /**
-         * Authenticate if user if using WWPP rest base if api keys are provided.
+         * Check if the WWP plugin meets the minimum version requirements.
          *
          * @since 1.24.4
          * @access public
          *
-         * @param bool $rest_request
          * @return boolean
          */
-        public static function wwp_api_min_version()
-        {
+        public static function wwp_api_min_version() {
 
-            $wwp_plugin_data = WWP_Helper_Functions::get_plugin_data('woocommerce-wholesale-prices/woocommerce-wholesale-prices.bootstrap.php');
+            $wwp_plugin_data = WWP_Helper_Functions::get_plugin_data( 'woocommerce-wholesale-prices/woocommerce-wholesale-prices.bootstrap.php' );
 
-            return (version_compare($wwp_plugin_data['Version'], self::WWP_MIN_VERSION, '>=')) ? true : false;
-
+            return ( version_compare( $wwp_plugin_data['Version'], self::WWP_MIN_VERSION, '>=' ) ) ? true : false;
         }
-
     }
-
 }

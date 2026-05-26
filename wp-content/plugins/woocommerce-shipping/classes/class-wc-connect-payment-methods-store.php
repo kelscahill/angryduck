@@ -42,12 +42,12 @@ class WC_Connect_Payment_Methods_Store {
 		$response_body = $this->api_client->get_payment_methods();
 
 		if ( is_wp_error( $response_body ) ) {
-			$this->logger->log( $response_body, __FUNCTION__ );
+			$this->logger->log( $response_body, __METHOD__ );
 			return false;
 		}
 
 		if ( is_wp_error( $this->validate_payment_methods_response( $response_body ) ) ) {
-			$this->logger->log( $response_body, __FUNCTION__ );
+			$this->logger->log( $response_body, __METHOD__ );
 			return false;
 		}
 

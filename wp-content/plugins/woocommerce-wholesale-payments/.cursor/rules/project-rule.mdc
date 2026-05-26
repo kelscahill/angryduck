@@ -1,11 +1,11 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: false
 ---
 ---
 description: You are a WordPress plugin developer maintaining woocommerce-wholesale-payments plugin codebase that is dependent on WooCommerce
-globs: 
+globs:
 alwaysApply: true
 ---
 
@@ -83,4 +83,7 @@ Key Conventions
 9. Use WooCommerce's Action Scheduler API for scheduling tasks.
 10. Use JavaScript Standard Style formatting for all JavaScript and TypeScript code and files.
 
-  
+Important
+Be concise with your answers. Do not acknowledge my messages causing duplication unless explicitly asked to do so. Do not provide summaries of the changes you made unless explicitly asked to do so.
+
+Only perform the tasks that have been asked by the user to perform. You are not permitted to modify files and code that are not relevant to the problem specified by the user. Your job is to do what you're told to do. Only express creativity when explicitly asked to do so.

@@ -103,6 +103,11 @@ if ( ! class_exists( 'WWP_Notice_Bar' ) ) {
             $message      = $this->_notice_bar_lite_message;
 
             // phpcs:disable WordPress.Security.NonceVerification.Recommended
+            $page      = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+            $tab       = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+            $post_type = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( $_GET['post_type'] ) ) : '';
+            $fbwr      = isset( $_GET['wwpp_fbwr'] ) ? sanitize_text_field( wp_unslash( $_GET['wwpp_fbwr'] ) ) : '';
+
             if ( ! $this->has_wws_premiums() && $this->noticebar_lite_has_allowed_pages() ) {
                 // Show in Wholesale Dashboard, About, Help, and Upgrade to Premium page.
                 // Show also on WWS license page if already migrated like in ACFW.
@@ -110,30 +115,24 @@ if ( ! class_exists( 'WWP_Notice_Bar' ) ) {
             } elseif (
                 ! $this->has_wws_premiums() &&
                 'admin.php' === $pagenow &&
-                isset( $_GET['page'] ) &&
-                'wc-settings' === $_GET['page'] &&
-                isset( $_GET['tab'] ) &&
-                'wwp_settings' === $_GET['tab']
+                'wc-settings' === $page &&
+                'wwp_settings' === $tab
             ) {
                 // Show in WC Settings > Wholesale Price tab.
                 require_once WWP_VIEWS_PATH . 'view-wwp-notice-bar-lite.php';
             } elseif ( ! $this->has_wws_premiums() &&
                 'edit.php' === $pagenow &&
-                isset( $_GET['post_type'] ) &&
-                'shop_order' === $_GET['post_type'] &&
-                isset( $_GET['wwpp_fbwr'] ) &&
-                ( 'all_wholesale_orders' === $_GET['wwpp_fbwr'] || 'wholesale_customer' === $_GET['wwpp_fbwr'] )
+                'shop_order' === $post_type &&
+                ( 'all_wholesale_orders' === $fbwr || 'wholesale_customer' === $fbwr )
             ) {
                 // Show in Wholesale > Orders and WooCommerce > Orders,
                 // where orders are filtered by "All Wholesale Orders" and "Wholesale Customers".
                 require_once WWP_VIEWS_PATH . 'view-wwp-notice-bar-lite.php';
             } elseif ( ! $this->has_wws_premiums() &&
                 'admin.php' === $pagenow &&
-                isset( $_GET['page'] ) &&
-                'wholesale-settings' === $_GET['page']
+                'wholesale-settings' === $page
             ) {
-                // Show in Wholesale > Orders and WooCommerce > Orders,
-                // where orders are filtered by "All Wholesale Orders" and "Wholesale Customers".
+                // Show in Wholesale > Settings.
                 require_once WWP_VIEWS_PATH . 'view-wwp-notice-bar-lite.php';
             }
             // phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -148,7 +147,8 @@ if ( ! class_exists( 'WWP_Notice_Bar' ) ) {
         public function noticebar_lite_has_allowed_pages() {
 
             $allowed_pages = apply_filters( 'wwp_noticebar_lite_allowed_pages', array( 'wholesale-suite', 'wws-help-page', 'wws-about-page' ) );
-            if ( isset( $_GET['page'] ) && in_array( $_GET['page'], $allowed_pages, true ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $current_page  = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            if ( ! empty( $current_page ) && in_array( $current_page, $allowed_pages, true ) ) {
                 return true;
             } else {
                 return false;

@@ -1,0 +1,1 @@
+System.register(["../../../common/LeadCaptureRecommended.vue_vue_type_style_index_0_lang-legacy.DGI7OF9-.js","../../../common/preload-helper-legacy.CIXZiioE.js","../index-legacy.CKwsq3d1.js"],function(e,t){"use strict";return{setters:[t=>{t._,e("default",t._)},null,null],execute:function(){}}});

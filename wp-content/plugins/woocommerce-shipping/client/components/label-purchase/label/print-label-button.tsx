@@ -1,11 +1,14 @@
 import { Button, MenuGroup, MenuItem, Dropdown } from '@wordpress/components';
+import { dispatch } from '@wordpress/data';
 import { chevronDown } from '@wordpress/icons';
 import { useLabelPurchaseContext } from 'context/label-purchase';
-import { useCallback, forwardRef, useState } from '@wordpress/element';
+import { useCallback, forwardRef, useRef, useState } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 import { PaperSize } from 'types';
 import { recordEvent } from 'utils';
+import { persistPaperSize } from 'utils/label/persist-paper-size';
 
-export const PrintLabelButton = forwardRef( ( props, ref ) => {
+export const PrintLabelButton = forwardRef( ( _props, ref ) => {
 	const {
 		labels: {
 			selectedLabelSize,
@@ -19,6 +22,42 @@ export const PrintLabelButton = forwardRef( ( props, ref ) => {
 
 	const [ labelSize, setLabelSize ] =
 		useState< PaperSize >( selectedLabelSize );
+	const hasNotifiedPersistFailureRef = useRef( false );
+
+	// `printLabel` rejects with a plain `{ cause, message }` payload on error,
+	// not an Error instance, so this helper is shared by both the Print button
+	// and the size-picker dropdown to surface a notice and stop the failure
+	// from bubbling as an unhandled rejection. Accepts both `string` and
+	// `string[]` shapes so a future caller that resolves with a single
+	// message string (or any code that hands us an `Error` instance with a
+	// plain `.message`) still produces a useful notice instead of the
+	// generic fallback.
+	const notifyPrintFailure = useCallback( ( e: unknown ) => {
+		const rawMessage = ( e as { message?: unknown } )?.message;
+		let firstMessage: string | undefined;
+		if ( Array.isArray( rawMessage ) ) {
+			firstMessage = rawMessage.find(
+				( line ): line is string =>
+					typeof line === 'string' && line.length > 0
+			);
+		} else if ( typeof rawMessage === 'string' && rawMessage.length > 0 ) {
+			firstMessage = rawMessage;
+		}
+		const fallback = __(
+			'Error printing label, try to print later.',
+			'woocommerce-shipping'
+		);
+		(
+			dispatch( 'core/notices' ) as {
+				createErrorNotice: (
+					message: string,
+					options?: { isDismissible?: boolean }
+				) => void;
+			}
+		 ).createErrorNotice( firstMessage ?? fallback, {
+			isDismissible: true,
+		} );
+	}, [] );
 
 	const onPrintClick = async () => {
 		const tracksProperties = {
@@ -26,7 +65,11 @@ export const PrintLabelButton = forwardRef( ( props, ref ) => {
 			default_label_size: selectedLabelSize.key,
 		};
 		recordEvent( 'label_print_button_clicked', tracksProperties );
-		await printLabel( true, labelSize );
+		try {
+			await printLabel( true, labelSize );
+		} catch ( e ) {
+			notifyPrintFailure( e );
+		}
 	};
 
 	const handleSizeSelect = useCallback(
@@ -40,10 +83,42 @@ export const PrintLabelButton = forwardRef( ( props, ref ) => {
 				tracksProperties
 			);
 			setLabelSize( size );
-			await printLabel( true, size );
-			onClose();
+			try {
+				await persistPaperSize( size.key );
+			} catch ( e ) {
+				// Don't block the print on a persist failure; the user has
+				// already paid and just wants the PDF. Log so we surface
+				// drift in Sentry without halting the flow.
+				// eslint-disable-next-line no-console
+				console.warn( '[wcshipping] Failed to persist paper size', e );
+				if ( ! hasNotifiedPersistFailureRef.current ) {
+					hasNotifiedPersistFailureRef.current = true;
+					(
+						dispatch( 'core/notices' ) as {
+							createWarningNotice: (
+								message: string,
+								options?: { isDismissible?: boolean }
+							) => void;
+						}
+					 ).createWarningNotice(
+						__(
+							"We couldn't save your paper-size preference. Your next print will still use the size you picked.",
+							'woocommerce-shipping'
+						),
+						{ isDismissible: true }
+					);
+				}
+			}
+			try {
+				await printLabel( true, size );
+				// Only close the dropdown on success so the merchant can
+				// retry with another size if the print failed.
+				onClose();
+			} catch ( e ) {
+				notifyPrintFailure( e );
+			}
 		},
-		[ printLabel, selectedLabelSize ]
+		[ printLabel, selectedLabelSize, notifyPrintFailure ]
 	);
 
 	const handleChevronClick = useCallback( ( onToggle: () => void ) => {

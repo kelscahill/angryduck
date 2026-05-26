@@ -138,6 +138,9 @@ class SyncController extends BaseOptionsController {
 				$new_sync_mode = array_replace_recursive( $sync_mode, $new_params );
 
 				$this->options->update( OptionsInterface::API_PULL_SYNC_MODE, $new_sync_mode );
+
+				do_action( 'woocommerce_gla_sync_mode_updated', $sync_mode, $new_sync_mode );
+
 				return $this->prepare_item_for_response( $this->options->get( OptionsInterface::API_PULL_SYNC_MODE ), $request );
 			} catch ( Exception $e ) {
 				return $this->response_from_exception( $e );
@@ -241,8 +244,9 @@ class SyncController extends BaseOptionsController {
 				$valid_params[ $key ]['push'] = $param['push'];
 			}
 
+			// API Pull mode is disabled for all users; if pull was passed, force it to false.
 			if ( isset( $param['pull'] ) && is_bool( $param['pull'] ) ) {
-				$valid_params[ $key ]['pull'] = $param['pull'];
+				$valid_params[ $key ]['pull'] = false;
 			}
 		}
 

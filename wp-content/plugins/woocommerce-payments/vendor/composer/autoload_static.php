@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
+class ComposerStaticInit378a9a5633bb31c700e86b2690499d49
 {
     public static $files = array (
         '3773ef3f09c37da5478d578e32b03a4b' => __DIR__ . '/..' . '/automattic/jetpack-assets/actions.php',
@@ -13,45 +13,45 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
     );
 
     public static $prefixLengthsPsr4 = array (
-        'W' => 
+        'W' =>
         array (
             'WCPay\\Vendor\\' => 13,
             'WCPay\\PaymentMethods\\Configs\\' => 29,
             'WCPay\\MultiCurrency\\' => 20,
             'WCPay\\' => 6,
         ),
-        'C' => 
+        'C' =>
         array (
             'Composer\\Installers\\' => 20,
         ),
-        'A' => 
+        'A' =>
         array (
             'Automattic\\Jetpack\\Autoloader\\' => 30,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'WCPay\\Vendor\\' => 
+        'WCPay\\Vendor\\' =>
         array (
             0 => __DIR__ . '/../..' . '/lib/packages',
         ),
-        'WCPay\\PaymentMethods\\Configs\\' => 
+        'WCPay\\PaymentMethods\\Configs\\' =>
         array (
             0 => __DIR__ . '/../..' . '/includes/payment-methods/Configs',
         ),
-        'WCPay\\MultiCurrency\\' => 
+        'WCPay\\MultiCurrency\\' =>
         array (
             0 => __DIR__ . '/../..' . '/includes/multi-currency',
         ),
-        'WCPay\\' => 
+        'WCPay\\' =>
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
-        'Composer\\Installers\\' => 
+        'Composer\\Installers\\' =>
         array (
             0 => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers',
         ),
-        'Automattic\\Jetpack\\Autoloader\\' => 
+        'Automattic\\Jetpack\\Autoloader\\' =>
         array (
             0 => __DIR__ . '/..' . '/automattic/jetpack-autoloader/src',
         ),
@@ -74,6 +74,7 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
         'Automattic\\Jetpack\\Connection\\Connection_Assets' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-connection-assets.php',
         'Automattic\\Jetpack\\Connection\\Connection_Notice' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-connection-notice.php',
         'Automattic\\Jetpack\\Connection\\Error_Handler' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-error-handler.php',
+        'Automattic\\Jetpack\\Connection\\External_Storage' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-external-storage.php',
         'Automattic\\Jetpack\\Connection\\Initial_State' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-initial-state.php',
         'Automattic\\Jetpack\\Connection\\Manager' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-manager.php',
         'Automattic\\Jetpack\\Connection\\Manager_Interface' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/interface-manager.php',
@@ -91,10 +92,12 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
         'Automattic\\Jetpack\\Connection\\SSO\\User_Admin' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/sso/class-user-admin.php',
         'Automattic\\Jetpack\\Connection\\Secrets' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-secrets.php',
         'Automattic\\Jetpack\\Connection\\Server_Sandbox' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-server-sandbox.php',
+        'Automattic\\Jetpack\\Connection\\Storage_Provider_Interface' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/interface-storage-provider.php',
         'Automattic\\Jetpack\\Connection\\Tokens' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-tokens.php',
         'Automattic\\Jetpack\\Connection\\Tokens_Locks' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-tokens-locks.php',
         'Automattic\\Jetpack\\Connection\\Traits\\WPCOM_REST_API_Proxy_Request' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/traits/trait-wpcom-rest-api-proxy-request.php',
         'Automattic\\Jetpack\\Connection\\Urls' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-urls.php',
+        'Automattic\\Jetpack\\Connection\\User_Account_Status' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-user-account-status.php',
         'Automattic\\Jetpack\\Connection\\Users_Connection_Admin' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-users-connection-admin.php',
         'Automattic\\Jetpack\\Connection\\Utils' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-utils.php',
         'Automattic\\Jetpack\\Connection\\Webhooks' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-webhooks.php',
@@ -122,6 +125,7 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
         'Automattic\\Jetpack\\Status' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-status.php',
         'Automattic\\Jetpack\\Status\\Cache' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-cache.php',
         'Automattic\\Jetpack\\Status\\Host' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-host.php',
+        'Automattic\\Jetpack\\Status\\Request' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-request.php',
         'Automattic\\Jetpack\\Status\\Visitor' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-visitor.php',
         'Automattic\\Jetpack\\Sync\\Actions' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/class-actions.php',
         'Automattic\\Jetpack\\Sync\\Codec_Interface' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/interface-codec.php',
@@ -161,6 +165,7 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
         'Automattic\\Jetpack\\Sync\\Modules\\WP_Super_Cache' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/modules/class-wp-super-cache.php',
         'Automattic\\Jetpack\\Sync\\Modules\\WooCommerce' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/modules/class-woocommerce.php',
         'Automattic\\Jetpack\\Sync\\Modules\\WooCommerce_HPOS_Orders' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/modules/class-woocommerce-hpos-orders.php',
+        'Automattic\\Jetpack\\Sync\\Modules\\WooCommerce_Products' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/modules/class-woocommerce-products.php',
         'Automattic\\Jetpack\\Sync\\Package_Version' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/class-package-version.php',
         'Automattic\\Jetpack\\Sync\\Queue' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/class-queue.php',
         'Automattic\\Jetpack\\Sync\\Queue\\Queue_Storage_Options' => __DIR__ . '/..' . '/automattic/jetpack-sync/src/sync-queue/class-queue-storage-options.php',
@@ -309,6 +314,7 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
         'WCPay\\Internal\\Service\\SessionService' => __DIR__ . '/../..' . '/src/Internal/Service/SessionService.php',
         'WCPay\\MultiCurrency\\AdminNotices' => __DIR__ . '/../..' . '/includes/multi-currency/AdminNotices.php',
         'WCPay\\MultiCurrency\\Analytics' => __DIR__ . '/../..' . '/includes/multi-currency/Analytics.php',
+        'WCPay\\MultiCurrency\\AsyncPriceRenderer' => __DIR__ . '/../..' . '/includes/multi-currency/AsyncPriceRenderer.php',
         'WCPay\\MultiCurrency\\Compatibility' => __DIR__ . '/../..' . '/includes/multi-currency/Compatibility.php',
         'WCPay\\MultiCurrency\\Compatibility\\BaseCompatibility' => __DIR__ . '/../..' . '/includes/multi-currency/Compatibility/BaseCompatibility.php',
         'WCPay\\MultiCurrency\\Compatibility\\WooCommerceBookings' => __DIR__ . '/../..' . '/includes/multi-currency/Compatibility/WooCommerceBookings.php',
@@ -345,7 +351,25 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
         'WCPay\\MultiCurrency\\UserSettings' => __DIR__ . '/../..' . '/includes/multi-currency/UserSettings.php',
         'WCPay\\MultiCurrency\\Utils' => __DIR__ . '/../..' . '/includes/multi-currency/Utils.php',
         'WCPay\\PaymentMethods\\Configs\\Constants\\PaymentMethodCapability' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Constants/PaymentMethodCapability.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\AffirmDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/AffirmDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\AfterpayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/AfterpayDefinition.php',
         'WCPay\\PaymentMethods\\Configs\\Definitions\\AlipayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/AlipayDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\AmazonPayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/AmazonPayDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\ApplePayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/ApplePayDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\BancontactDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/BancontactDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\BecsDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/BecsDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\CardDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/CardDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\EpsDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/EpsDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\GiropayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/GiropayDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\GooglePayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/GooglePayDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\GrabPayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/GrabPayDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\IdealDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/IdealDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\KlarnaDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/KlarnaDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\LinkDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/LinkDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\MultibancoDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/MultibancoDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\P24Definition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/P24Definition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\SepaDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/SepaDefinition.php',
+        'WCPay\\PaymentMethods\\Configs\\Definitions\\SofortDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/SofortDefinition.php',
         'WCPay\\PaymentMethods\\Configs\\Definitions\\WechatPayDefinition' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Definitions/WechatPayDefinition.php',
         'WCPay\\PaymentMethods\\Configs\\Interfaces\\PaymentMethodDefinitionInterface' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Interfaces/PaymentMethodDefinitionInterface.php',
         'WCPay\\PaymentMethods\\Configs\\Registry\\PaymentMethodDefinitionRegistry' => __DIR__ . '/../..' . '/includes/payment-methods/Configs/Registry/PaymentMethodDefinitionRegistry.php',
@@ -394,9 +418,9 @@ class ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit82ae2b86cd431fd736751ad4c4460abb::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit378a9a5633bb31c700e86b2690499d49::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit378a9a5633bb31c700e86b2690499d49::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit378a9a5633bb31c700e86b2690499d49::$classMap;
 
         }, null, ClassLoader::class);
     }

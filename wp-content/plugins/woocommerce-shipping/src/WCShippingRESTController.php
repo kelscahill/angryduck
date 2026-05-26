@@ -6,6 +6,10 @@ use Automattic\WCShipping\Exceptions\RESTRequestException;
 use WC_REST_Controller;
 use WP_REST_Request;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * WCShippingRESTController class.
  */
@@ -92,6 +96,37 @@ abstract class WCShippingRESTController extends WC_REST_Controller {
 	}
 
 	/**
+	 * Find the first duplicated positive `order_id` in a batch payload.
+	 *
+	 * Malformed items are ignored here so endpoint-specific shape validation can report them using
+	 * the response contract for that batch route.
+	 *
+	 * @param array $items Batch items that may contain `order_id`.
+	 * @return int|null Duplicated positive order ID, or null when the batch has no duplicates.
+	 */
+	protected function get_duplicate_positive_order_id( array $items ): ?int {
+		$seen_order_ids = array();
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) || ! isset( $item['order_id'] ) ) {
+				continue;
+			}
+
+			$candidate = (int) $item['order_id'];
+			if ( $candidate <= 0 ) {
+				continue;
+			}
+
+			if ( isset( $seen_order_ids[ $candidate ] ) ) {
+				return $candidate;
+			}
+
+			$seen_order_ids[ $candidate ] = true;
+		}
+
+		return null;
+	}
+
+	/**
 	 * Get the route for the controller.
 	 *
 	 * @return string
@@ -117,7 +152,8 @@ abstract class WCShippingRESTController extends WC_REST_Controller {
 	 */
 	public static function prevent_route_caching() {
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
-			define( 'DONOTCACHEPAGE', true ); // Play nice with WP-Super-Cache
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WP-Super-Cache constant.
+				define( 'DONOTCACHEPAGE', true );
 		}
 
 		// Prevent our REST API endpoint responses from being added to browser cache

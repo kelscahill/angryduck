@@ -9,4 +9,5 @@ export interface ShipmentAddressState< T = OriginAddress > {
 	addressNeedsConfirmation: boolean;
 	isAddressVerificationInProgress?: boolean;
 	formErrors: Record< string, string >;
+	warnings?: Array< Record< string, string > >;
 }

@@ -1,0 +1,1 @@
+System.register(["../../../../../../../../../common/hooks-legacy.BRKQHcMP.js","../../../../../../../../../common/NoOptions.vue_vue_type_script_setup_true_lang-legacy.eYQydbUq.js"],function(e,t){"use strict";var o,s,n,u;return{setters:[e=>{o=e.d,s=e.l,n=e.o},e=>{u=e._}],execute:function(){e("default",o({__name:"FormPaginationOptions",setup:e=>(e,t)=>(n(),s(u))}))}}});

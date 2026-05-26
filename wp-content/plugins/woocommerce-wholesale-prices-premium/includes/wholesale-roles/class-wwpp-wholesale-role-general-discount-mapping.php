@@ -98,8 +98,10 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         // Fetch discount mapping from $_POST var and sanitize.
-        $discount_mapping = array_map( 'sanitize_text_field', $_POST['discountMapping'] );
+        $discount_mapping = isset( $_POST['discountMapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['discountMapping'] ) ) : array();
 
         $saved_discount_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_GENERAL_DISCOUNT_MAPPING );
         if ( ! is_array( $saved_discount_mapping ) ) {
@@ -157,7 +159,9 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
-        $discount_mapping = array_map( 'sanitize_text_field', $_POST['discountMapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $discount_mapping = isset( $_POST['discountMapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['discountMapping'] ) ) : array();
 
         $saved_discount_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_GENERAL_DISCOUNT_MAPPING );
         if ( ! is_array( $saved_discount_mapping ) ) {
@@ -217,7 +221,9 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
-        $wholesale_role = sanitize_text_field( $_POST['wholesaleRole'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $wholesale_role = isset( $_POST['wholesaleRole'] ) ? sanitize_text_field( wp_unslash( $_POST['wholesaleRole'] ) ) : '';
 
         $saved_discount_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_GENERAL_DISCOUNT_MAPPING );
         if ( ! is_array( $saved_discount_mapping ) ) {
@@ -418,14 +424,16 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         if ( ! isset( $_POST['qty_based_discount_mapping'] ) ) {
             $response = array(
                 'status'    => 'fail',
                 'error_msg' => __( 'Required data not supplied', 'woocommerce-wholesale-prices-premium' ),
             );
         } else {
-            $rule    = array_map( 'sanitize_text_field', $_POST['qty_based_discount_mapping'] );
-            $user_id = sanitize_key( $_POST['user_id'] );
+            $rule    = array_map( 'sanitize_text_field', wp_unslash( $_POST['qty_based_discount_mapping'] ) );
+            $user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
 
             $quantity_discount_rule_mapping = $user_id ? get_user_meta( $user_id, 'wwpp_wholesale_discount_qty_discount_mapping', true ) : get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_QTY_BASED_DISCOUNT_MAPPING, array() );
 
@@ -482,14 +490,16 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         if ( ! isset( $_POST['qty_based_discount_mapping'] ) ) {
             $response = array(
                 'status'    => 'fail',
                 'error_msg' => __( 'Required data not supplied', 'woocommerce-wholesale-prices-premium' ),
             );
         } else {
-            $rule    = array_map( 'sanitize_text_field', $_POST['qty_based_discount_mapping'] );
-            $user_id = sanitize_key( $_POST['user_id'] );
+            $rule    = array_map( 'sanitize_text_field', wp_unslash( $_POST['qty_based_discount_mapping'] ) );
+            $user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
 
             $quantity_discount_rule_mapping = $user_id ? get_user_meta( $user_id, 'wwpp_wholesale_discount_qty_discount_mapping', true ) : get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_QTY_BASED_DISCOUNT_MAPPING, array() );
 
@@ -542,14 +552,16 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         if ( ! isset( $_POST['index'] ) ) {
             $response = array(
                 'status'    => 'fail',
                 'error_msg' => __( 'Required data not supplied', 'woocommerce-wholesale-prices-premium' ),
             );
         } else {
-            $user_id                        = sanitize_key( $_POST['user_id'] );
-            $index                          = sanitize_key( $_POST['index'] );
+            $user_id                        = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
+            $index                          = sanitize_key( wp_unslash( $_POST['index'] ) );
             $quantity_discount_rule_mapping = $user_id ? get_user_meta( $user_id, 'wwpp_wholesale_discount_qty_discount_mapping', true ) : get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_QTY_BASED_DISCOUNT_MAPPING, array() );
 
             if ( ! is_array( $quantity_discount_rule_mapping ) ) {
@@ -605,6 +617,8 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         if ( ! isset( $_POST['cart_total_based_discount_mapping'] ) ) {
             $response = array(
                 'status'    => 'fail',
@@ -612,7 +626,7 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             );
         } else {
             // Sanitize.
-            $rule = array_map( 'sanitize_text_field', $_POST['cart_total_based_discount_mapping'] );
+            $rule = array_map( 'sanitize_text_field', wp_unslash( $_POST['cart_total_based_discount_mapping'] ) );
 
             if ( ! empty( $rule['min_total_price'] ) && $rule['min_total_price'] <= 0 ) {
                 return array(
@@ -667,6 +681,8 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         if ( ! isset( $_POST['cart_total_based_discount_mapping'] ) ) {
             $response = array(
                 'status'    => 'fail',
@@ -674,7 +690,7 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             );
         } else {
             // Sanitize.
-            $rule = array_map( 'sanitize_text_field', $_POST['cart_total_based_discount_mapping'] );
+            $rule = array_map( 'sanitize_text_field', wp_unslash( $_POST['cart_total_based_discount_mapping'] ) );
 
             if ( ! empty( $rule['min_total_price'] ) && $rule['min_total_price'] <= 0 ) {
                 return array(
@@ -724,6 +740,8 @@ class WWPP_Wholesale_Role_General_Discount_Mapping {
             );
             wp_die();
         }
+
+        WWPP_Helper_Functions::require_capability_or_send_error();
 
         if ( ! isset( $_POST['index'] ) ) {
             $response = array(

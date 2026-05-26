@@ -7,7 +7,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 $wholesale_only_purchases_i18n = array(
     'no'  => __( 'No', 'woocommerce-wholesale-prices-premium' ),
     'yes' => __( 'Yes', 'woocommerce-wholesale-prices-premium' ),
-);?>
+);
+
+$current_menu_page_url = menu_page_url( 'wwpp-wholesale-roles-page', false ) . '&order=' . $order . '&orderby=' . $orderby;
+?>
 
 <div id='wwpp-wholesale-roles-page' class='wwpp-page wrap nosubsub'>
     <h2><?php esc_html_e( 'Wholesale Roles', 'woocommerce-wholesale-prices-premium' ); ?></h2>
@@ -26,7 +29,13 @@ $wholesale_only_purchases_i18n = array(
                         <thead>
                             <tr>
                                 <th scope="col" id="role-name" class="manage-column column-role-name">
-                                    <span><?php esc_html_e( 'Name', 'woocommerce-wholesale-prices-premium' ); ?></span>
+                                    <a href="<?php echo esc_url( $current_menu_page_url ); ?>" style="display: flex;">
+                                        <span><?php esc_html_e( 'Name', 'woocommerce-wholesale-prices-premium' ); ?></span>
+                                        <span class="sorting-indicators">
+                                            <span class="sorting-indicator asc" aria-hidden="true"></span>
+                                            <span class="sorting-indicator desc" aria-hidden="true"></span>
+                                        </span>
+                                    </a>
                                 </th>
                                 <th scope="col" id="role-key" class="manage-column column-role-key">
                                     <span><?php esc_html_e( 'Key', 'woocommerce-wholesale-prices-premium' ); ?></span>
@@ -57,8 +66,8 @@ $wholesale_only_purchases_i18n = array(
 
                                 <td class="role-name column-role-name">
 
-                                    <?php if ( array_key_exists( 'main', $ws_role ) && $ws_role['main'] ) { ?>
-
+                                    <?php if ( is_array( $ws_role ) && array_key_exists( 'main', $ws_role ) && $ws_role['main'] ) { ?>
+                                    
                                     <strong><a class="main-role-name"><?php echo esc_html( $ws_role['roleName'] ); ?></a></strong>
 
                                     <div class="row-actions">

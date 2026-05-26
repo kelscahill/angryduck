@@ -24,6 +24,7 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WC;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WP;
 use Automattic\WooCommerce\GoogleListingsAndAds\Value\BuiltScriptDependencyArray;
 use WC_Product;
+use WC_Countries;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -121,7 +122,7 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 		add_action(
 			'woocommerce_before_thankyou',
 			function ( $order_id ) use ( $ads_conversion_id, $ads_conversion_label ) {
-				$this->maybe_display_conversion_and_purchase_event_snippets( $ads_conversion_id, $ads_conversion_label, $order_id );
+				$this->maybe_display_purchase_event_snippet( $ads_conversion_id, $ads_conversion_label, $order_id );
 			},
 		);
 
@@ -236,10 +237,14 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 	public function activate_global_site_tag( string $ads_conversion_id ) {
 		if ( $this->gtag_js->is_adding_framework() ) {
 			if ( $this->gtag_js->ga4w_v2 ) {
+				$inline_script  = $this->get_gtag_config( $ads_conversion_id );
+				$inline_script .= "\n" . $this->get_enhanced_conversion_tag();
+
 				$this->wp->wp_add_inline_script(
 					'woocommerce-google-analytics-integration',
-					$this->get_gtag_config( $ads_conversion_id )
+					$inline_script
 				);
+
 			} else {
 				// Legacy code to support Google Analytics for WooCommerce version < 2.0.0.
 				add_filter(
@@ -282,6 +287,9 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 			<?php
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				echo $this->get_gtag_config( $ads_conversion_id );
+
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				echo $this->get_enhanced_conversion_tag();
 			?>
 		</script>
 
@@ -341,13 +349,13 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 	}
 
 	/**
-	 * Display the JavaScript code to track conversions on the order confirmation page.
+	 * Display the JavaScript code to track purchase on the order confirmation page.
 	 *
 	 * @param string $ads_conversion_id Google Ads account conversion ID.
 	 * @param string $ads_conversion_label Google Ads conversion label.
 	 * @param int    $order_id The order id.
 	 */
-	public function maybe_display_conversion_and_purchase_event_snippets( string $ads_conversion_id, string $ads_conversion_label, int $order_id ): void {
+	public function maybe_display_purchase_event_snippet( string $ads_conversion_id, string $ads_conversion_label, int $order_id ): void {
 		// Only display on the order confirmation page.
 		if ( ! is_order_received_page() ) {
 			return;
@@ -363,24 +371,10 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 		$order->update_meta_data( self::ORDER_CONVERSION_META_KEY, 1 );
 		$order->save_meta_data();
 
-		$conversion_gtag_info =
-		sprintf(
-			'gtag("event", "conversion", {
-			send_to: "%s",
-			value: %f,
-			currency: "%s",
-			transaction_id: "%s"});',
-			esc_js( "{$ads_conversion_id}/{$ads_conversion_label}" ),
-			$order->get_total(),
-			esc_js( $order->get_currency() ),
-			esc_js( $order->get_id() ),
-		);
-		$this->add_inline_event_script( $conversion_gtag_info );
-
 		// Get the item info in the order
 		$item_info = [];
 		foreach ( $order->get_items() as $item_id => $item ) {
-			$product_id   = $item->get_product_id();
+			$product_id   = $item->get_variation_id() ?: $item->get_product_id();
 			$product_name = $item->get_name();
 			$quantity     = $item->get_quantity();
 			$price        = $order->get_item_total( $item );
@@ -486,7 +480,7 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 
 		foreach ( WC()->cart->get_cart() as $cart_item ) {
 			// gets the product id
-			$id = $cart_item['product_id'];
+			$id = ! empty( $cart_item['variation_id'] ) ? $cart_item['variation_id'] : $cart_item['product_id'];
 
 			// gets the product object
 			$product = $cart_item['data'];
@@ -601,5 +595,113 @@ class GlobalSiteTag implements Service, Registerable, Conditional, OptionsAwareI
 			$this->get_version(),
 			false
 		);
+	}
+
+	/**
+	 * Set user data config when Enhanced Conversions is enabled.
+	 *
+	 * @return string|null
+	 */
+	public function get_enhanced_conversion_tag() {
+		$enhanced_conversions = $this->options->get( OptionsInterface::ADS_ENHANCED_CONVERSIONS_ENABLED );
+
+		if ( ! $enhanced_conversions ) {
+			return;
+		}
+
+		// Retrieve user data from the current session, returns an empty array if not set.
+		$customer = $this->wc->get_customer_details();
+
+		$ec_data = [];
+
+		// Add email address to enhanced conversion data.
+		if ( ! empty( $customer['email'] ) ) {
+			$ec_data['sha256_email_address'] = $this->normalize_and_hash( $customer['email'] );
+		}
+
+		// Add address details if available.
+		if ( ! empty( $customer['first_name'] ) && ! empty( $customer['last_name'] ) && ! empty( $customer['postcode'] ) && ! empty( $customer['country'] ) ) {
+			$ec_data['address'] = [
+				'sha256_first_name' => $this->normalize_and_hash( $customer['first_name'] ),
+				'sha256_last_name'  => $this->normalize_and_hash( $customer['last_name'] ),
+				'postal_code'       => $customer['postcode'],
+				'country'           => $customer['country'],
+			];
+
+			if ( ! empty( $customer['address'] ) ) {
+				$ec_data['address']['street'] = $customer['address'];
+			}
+
+			if ( ! empty( $customer['city'] ) ) {
+				$ec_data['address']['city'] = $customer['city'];
+			}
+
+			if ( ! empty( $customer['state'] ) ) {
+				$ec_data['address']['region'] = $customer['state'];
+			}
+		}
+
+		// Phone number can only be added when email and/or address is present.
+		if ( empty( $ec_data ) ) {
+			return;
+		}
+
+		// Add phone number if available, requires country code for correct format.
+		if ( ! empty( $customer['phone'] ) && ! empty( $customer['country'] ) ) {
+			$phone = $this->format_phone_to_international( $customer['phone'], $customer['country'] );
+
+			if ( ! empty( $phone ) ) {
+				$ec_data['sha256_phone_number'] = $this->normalize_and_hash( $phone );
+			}
+		}
+
+		// Return the tag.
+		return sprintf(
+			'gtag("set", "user_data", %s);',
+			wp_json_encode( $ec_data )
+		);
+	}
+
+	/**
+	 * Converts a customers phone number to E.164 format.
+	 *
+	 * @param string $phone The customer entered phone number.
+	 * @param string $country The customer country code.
+	 * @return string
+	 */
+	private function format_phone_to_international( $phone, $country ) {
+		// Get the calling code for the customers country.
+		$countries    = new WC_Countries();
+		$calling_code = $countries->get_country_calling_code( $country );
+
+		// Cannot create a international number if there is no valid call code.
+		if ( empty( $calling_code ) ) {
+			return '';
+		}
+
+		// Remove any non-digit characters and the leading 0 from the phone number.
+		$phone = ltrim( preg_replace( '/[^0-9]/', '', $phone ), '0' );
+
+		// Prepend the calling code.
+		$phone = $calling_code . $phone;
+
+		// Validate the number is the correct length.
+		if ( strlen( $phone ) < 11 || strlen( $phone ) > 15 ) {
+			return '';
+		}
+
+		return $phone;
+	}
+
+	/**
+	 * Normalize and hash enhanced conversion data.
+	 *
+	 * @param string $value The value to hash.
+	 * @param string $algo The hashing algorithm to use.
+	 *
+	 * @return string
+	 */
+	private function normalize_and_hash( $value, $algo = 'sha256' ): string {
+		return hash( $algo, strtolower( trim( $value ) ) );
 	}
 }

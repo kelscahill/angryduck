@@ -1,11 +1,15 @@
-<?php if (!defined('ABSPATH')) {
+<?php if ( ! defined( 'ABSPATH' ) ) {
     exit;
 } // Exit if accessed directly
 
-if (!class_exists('WWLC_Invisible_Recaptcha')) {
+if ( ! class_exists( 'WWLC_Invisible_Recaptcha' ) ) {
 
+    /**
+     * Handle Invisible reCAPTCHA compatibility.
+     *
+     * @since 1.15
+     */
     class WWLC_Invisible_Recaptcha {
-
         /*
         |--------------------------------------------------------------------------
         | Class Properties
@@ -35,7 +39,7 @@ if (!class_exists('WWLC_Invisible_Recaptcha')) {
          * @access public
          * @since 1.15
          */
-        public function __construct($dependencies) {}
+        public function __construct( $dependencies ) {}
 
         /**
          * Ensure that only one instance of WWLC_Invisible_Recaptcha is loaded or can be loaded (Singleton Pattern).
@@ -45,14 +49,13 @@ if (!class_exists('WWLC_Invisible_Recaptcha')) {
          * @return WWLC_Invisible_Recaptcha
          * @since 1.15
          */
-        public static function instance($dependencies = null) {
+        public static function instance( $dependencies = null ) {
 
-            if (!self::$_instance instanceof self) {
-                self::$_instance = new self($dependencies);
+            if ( ! self::$_instance instanceof self ) {
+                self::$_instance = new self( $dependencies );
             }
 
             return self::$_instance;
-
         }
 
         /**
@@ -67,16 +70,15 @@ if (!class_exists('WWLC_Invisible_Recaptcha')) {
 
             global $post;
 
-            if ($post && $post instanceof WP_POST) {
-                if (has_shortcode($post->post_content, 'wwlc_registration_form') || has_shortcode($post->post_content, 'wwlc_login_form')) {
-                    wp_deregister_script('google-invisible-recaptcha');
+            if ( $post && $post instanceof WP_POST ) {
+                if ( has_shortcode( $post->post_content, 'wwlc_registration_form' ) || has_shortcode( $post->post_content, 'wwlc_login_form' ) ) {
+                    wp_deregister_script( 'google-invisible-recaptcha' );
                 }
             }
-
         }
 
         /**
-         * Override Invisible Recaptcha for wordpress. Always make the captcha valid since we are doing our custom code.
+         * Override Invisible Recaptcha for WordPress. Always make the captcha valid since we are doing our custom code.
          * This is to avoid any error after registration for submission.
          * Happens on ajax request.
          *
@@ -85,16 +87,19 @@ if (!class_exists('WWLC_Invisible_Recaptcha')) {
          * @since 1.15
          * @return bool
          */
-        public function is_recaptcha_valid($value) {
+        public function is_recaptcha_valid( $value ) {
 
-            if (isset($_POST['action']) && $_POST['action'] == 'wwlc_create_user') {
-                if (isset($_POST['wwlc_register_user_nonce_field']) && wp_verify_nonce($_POST['wwlc_register_user_nonce_field'], 'wwlc_register_user')) {
+            // Only bypass the third-party reCAPTCHA plugin when WWLC's own reCAPTCHA is enabled
+            // (WWLC handles its own verification in that case).
+            if ( 'yes' === get_option( 'wwlc_security_enable_recaptcha' )
+                && isset( $_POST['action'] ) && 'wwlc_create_user' === sanitize_text_field( wp_unslash( $_POST['action'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified below.
+            ) {
+                if ( isset( $_POST['wwlc_register_user_nonce_field'] ) && wp_verify_nonce( sanitize_key( $_POST['wwlc_register_user_nonce_field'] ), 'wwlc_register_user' ) ) {
                     return true;
                 }
             }
 
             return $value;
-
         }
 
         /**
@@ -105,10 +110,9 @@ if (!class_exists('WWLC_Invisible_Recaptcha')) {
          */
         public function run() {
 
-            // Fix conflicts with "Invisible reCaptcha for WordPress" plugin
-            add_action('wp_print_scripts', array($this, 'remove_script'), 100);
-            add_filter('google_invre_is_valid_request_filter', array($this, 'is_recaptcha_valid'), 100);
-
+            // Fix conflicts with "Invisible reCaptcha for WordPress" plugin.
+            add_action( 'wp_print_scripts', array( $this, 'remove_script' ), 100 );
+            add_filter( 'google_invre_is_valid_request_filter', array( $this, 'is_recaptcha_valid' ), 100 );
         }
     }
 }

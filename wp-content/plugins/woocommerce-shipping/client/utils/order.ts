@@ -55,23 +55,39 @@ export const composeName = ( {
 };
 
 export const addressToString = (
-	address: Pick<
-		Destination | OriginAddress,
-		| 'address'
-		| 'address1'
-		| 'address2'
-		| 'city'
-		| 'state'
-		| 'postcode'
-		| 'country'
-	>
+	address:
+		| Pick<
+				Destination | OriginAddress,
+				| 'address'
+				| 'address1'
+				| 'address2'
+				| 'city'
+				| 'state'
+				| 'postcode'
+				| 'country'
+		  >
+		| null
+		| undefined
 ) => {
+	// Handle null or undefined address
+	if ( ! address ) {
+		return '';
+	}
+
 	const concatAddress = composeAddress( {
 		address: address.address,
 		address_1: address.address1,
 		address_2: address.address2,
 	} );
-	return `${ concatAddress }, ${ address.city }, ${ address.state } ${ address.postcode }, ${ address.country }`;
+
+	const parts = [
+		concatAddress,
+		address.city || '',
+		`${ address.state || '' } ${ address.postcode || '' }`.trim(),
+		address.country || '',
+	].filter( ( part ) => part ); // Remove empty parts
+
+	return parts.join( ', ' );
 };
 
 export const formatAddressFields = (

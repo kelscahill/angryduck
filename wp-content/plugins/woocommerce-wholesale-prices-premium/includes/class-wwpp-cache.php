@@ -591,7 +591,13 @@ class WWPP_Cache {
             $user_cached_data = array();
         }
 
-        $user_cached_data[ $product_id ] = $price_arr;
+        /**
+         * Do not override current product id pricing array, this overrides the current user role pricing array, causing bug in rest api calling this current method.
+         * This solves bug (issue-#1441)
+         */
+        if ( ! isset( $user_cached_data[ $product_id ] ) ) {
+            $user_cached_data[ $product_id ] = $price_arr;
+        }
 
         // Save cache.
         $this->aelia_currency_compat( $user_id, $user_cached_data, self::WHOLESALE_PRICE_CACHE_KEY );
@@ -680,6 +686,20 @@ class WWPP_Cache {
             // Purge all cache.
             $wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->usermeta WHERE meta_key = %s", self::WHOLESALE_PRICE_CACHE_KEY ) );
         }
+    }
+
+    /**
+     * Delete all WWPP Reports Cache data.
+     *
+     * @since 2.0.8.1
+     * @return int|bool Number of rows affected or false on error.
+     */
+    public function invalidate_reports_cache() {
+        global $wpdb;
+        $cache_key_prefix    = 'wwpp_reports';
+        $wild_card_parameter = '%' . $wpdb->esc_like( $cache_key_prefix ) . '%';
+        $sanitized_sql       = $wpdb->prepare( "DELETE FROM {$wpdb->prefix}options WHERE option_name LIKE %s", $wild_card_parameter );
+        return $wpdb->query( $sanitized_sql ); //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared
     }
 
     /**

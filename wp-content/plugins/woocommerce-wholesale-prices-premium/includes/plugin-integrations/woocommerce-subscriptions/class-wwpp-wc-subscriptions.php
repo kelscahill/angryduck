@@ -103,14 +103,15 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
 
             $user_wholesale_role = $this->_get_current_user_wholesale_role();
             if ( ! empty( $user_wholesale_role ) ) {
-                $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                $wholesale_price   = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                $wholesale_price   = $this->get_pricing_data_based_on_pricing_levels( $wholesale_price, $product, $user_wholesale_role );
+                $hide_retail_price = wc_string_to_bool( get_option( 'wwpp_settings_hide_original_price' ) );
 
-                if ( ! empty( $wholesale_price ) ) {
-                    $original_price_string = '<del class="original-computed-price">' . $subscription_string . '</del>';
-                    $price_string          = apply_filters( 'wwpp_filter_wholesale_subscription_price_string', $original_price_string, $wholesale_price, $product, $user_wholesale_role );
-                    $price_string         .= $this->get_subscription_price_string( $product );
-                    return $price_string;
-                }
+                $original_price_string = '<del class="original-computed-price">' . $subscription_string . '</del>';
+                $price_string          = $hide_retail_price ? '' : apply_filters( 'wwpp_filter_wholesale_subscription_price_string', $original_price_string, $wholesale_price, $product, $user_wholesale_role );
+                $price_string         .= ( is_cart() && ! $hide_retail_price ) ? '<del class="original-computed-price">' . $this->get_subscription_price_string( $product, $product->get_regular_price(), $this->get_sign_up_fee( $product, '', true ), '', false ) . '</del>' : '';
+                $price_string         .= $this->get_subscription_price_string( $product );
+                return $price_string;
             }
 
             return $subscription_string;
@@ -143,6 +144,7 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
 
                 // Get the wholesale price.
                 $raw_wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                $raw_wholesale_price = $this->get_pricing_data_based_on_pricing_levels( $raw_wholesale_price, $product, $user_wholesale_role );
             }
 
             if ( strcasecmp( $raw_wholesale_price, '' ) !== 0 ) {
@@ -507,17 +509,23 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
          *
          * @param mixed  $product A WC_Product object.
          * @param string $user_wholesale_role User wholesale role.
+         * @param bool   $raw_sign_up_fee Raw Sign Up Fee.
          *
          * @since 2.0.2
          * @return int|string
          */
-        public function get_sign_up_fee( $product, $user_wholesale_role = '' ) {
+        public function get_sign_up_fee( $product, $user_wholesale_role = '', $raw_sign_up_fee = false ) {
 
             if ( empty( $user_wholesale_role ) ) {
                 $user_wholesale_role = $this->_get_current_user_wholesale_role();
             }
 
-            $sign_up_fee         = $this->get_meta_data( $product, 'subscription_sign_up_fee' );
+            $sign_up_fee = $this->get_meta_data( $product, 'subscription_sign_up_fee' );
+
+            if ( $raw_sign_up_fee ) {
+                return $sign_up_fee;
+            }
+
             $product_sign_up_fee = apply_filters( 'woocommerce_subscriptions_product_sign_up_fee', $sign_up_fee, $product );
 
             $wholesale_signup_price = $product->get_meta( $user_wholesale_role . '_wholesale_signup_fee', true );
@@ -710,6 +718,7 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
                     $price = $sign_up_fee;
                 } else {
                     $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                    $wholesale_price = $this->get_pricing_data_based_on_pricing_levels( $wholesale_price, $product, $user_wholesale_role );
                     $price           = (float) $wholesale_price + $sign_up_fee; // Casting to float for php8 compatibility.
                 }
             }
@@ -810,10 +819,11 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
             $user_wholesale_role = $this->_get_current_user_wholesale_role();
 
             if ( ! empty( $user_wholesale_role ) ) {
-                $product = $cart_item['data'];
+                $product         = $cart_item['data'];
+                $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                $wholesale_price = $this->get_pricing_data_based_on_pricing_levels( $wholesale_price, $product, $user_wholesale_role );
 
                 if ( WC_Subscriptions_Product::is_subscription( $product ) ) {
-                    $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
                     $sign_up_fee     = $this->get_sign_up_fee( $product, $user_wholesale_role );
                     $line_item_price = ( $wholesale_price + $sign_up_fee ) * $cart_item['quantity'];
 
@@ -822,6 +832,22 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
             }
 
             return $subtotal;
+        }
+
+        /**
+         * Get the final wholesale price for subscription based products.
+         *
+         * @param int    $price Price of the product.
+         * @param object $product Product Object.
+         * @param strin  $user_wholesale_role User role.
+         * @return int
+         */
+        public function get_pricing_data_based_on_pricing_levels( $price, $product, $user_wholesale_role ) {
+            if ( empty( $price ) ) { // for subscriptions products that do not have product level pricing.
+                $price_array = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $product->get_id(), array( $user_wholesale_role ) );
+                $price       = wc_tax_enabled() ? $price_array['wholesale_price_with_tax'] : $price_array['wholesale_price_with_no_tax'];
+            }
+            return $price;
         }
 
         /**

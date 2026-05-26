@@ -1,1 +1,0 @@
-System.register(["../apps/settings/index-legacy.CV2KRSvP.js"],(function(t,e){"use strict";var n;return{setters:[t=>{n=t.r}],execute:function(){t("u",(function(t){const e="function"==typeof t?t():t,s=n(e);return[s,function(t){s.value=t}]}))}}}));

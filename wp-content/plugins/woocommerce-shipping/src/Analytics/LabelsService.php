@@ -139,9 +139,13 @@ class LabelsService {
 
 		$rows = array_map(
 			function ( $label ) use ( $fields ) {
+				$formatted_label = array();
 				foreach ( $fields as $field ) {
-					if ( 'refund' === $field ) {
-						$formatted_label[ $field ] = $this->get_label_refund_status( $label );
+					if ( 'order_id' === $field ) {
+						$formatted_label[ $field ] = intval( $label[ $field ] );
+					} elseif ( 'refund' === $field ) {
+						$formatted_label[ $field ]           = isset( $formatted_label[ $field ] ) ? (array) $formatted_label[ $field ] : array();
+						$formatted_label[ $field ]['status'] = $this->get_label_refund_status( $label );
 					} else {
 						$formatted_label[ $field ] = $label[ $field ];
 					}
@@ -162,7 +166,7 @@ class LabelsService {
 				'total_refunds' => array_sum(
 					array_map(
 						function ( $label ) {
-							$refund = is_object( $label['refund'] ) ? (array) $label['refund'] : $label['refund'];
+							$refund = isset( $label['refund'] ) ? (array) $label['refund'] : '';
 							return ! empty( $refund ) && 'complete' === $refund['status'] ? 1 : 0;
 						},
 						$labels
@@ -179,8 +183,8 @@ class LabelsService {
 	 * @return string Possible return values are '', 'Rejected', 'Complete', or 'Requested'
 	 */
 	public function get_label_refund_status( array $label ): string {
-		// Hasn't been requested yet
-		if ( ! isset( $label['refund'] ) ) {
+		// Hasn't been requested yet.
+		if ( empty( $label['refund'] ) ) {
 			return '';
 		}
 
@@ -191,7 +195,7 @@ class LabelsService {
 			return ucfirst( $refund['status'] );
 		}
 
-		// Pending is the default status
+		// Pending is the default status.
 		return __( 'Requested', 'woocommerce-shipping' );
 	}
 }

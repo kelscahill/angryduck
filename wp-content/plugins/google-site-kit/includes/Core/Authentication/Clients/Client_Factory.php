@@ -12,6 +12,7 @@ namespace Google\Site_Kit\Core\Authentication\Clients;
 
 use Exception;
 use Google\Site_Kit\Core\Authentication\Google_Proxy;
+use Google\Site_Kit\Core\HTTP\Middleware;
 use Google\Site_Kit_Dependencies\GuzzleHttp\Client;
 use WP_HTTP_Proxy;
 
@@ -62,6 +63,16 @@ final class Client_Factory {
 
 		$http_client        = $client->getHttpClient();
 		$http_client_config = self::get_http_client_config( $http_client->getConfig() );
+
+		/**
+		 * Filters the Guzzle HTTP client configuration used for Google API requests.
+		 *
+		 * @since 1.177.0
+		 *
+		 * @param array $http_client_config Guzzle HTTP client configuration array.
+		 */
+		$http_client_config = apply_filters( 'googlesitekit_http_client_config', $http_client_config );
+
 		// In Guzzle 6+, the HTTP client is immutable, so only a new instance can be set.
 		$client->setHttpClient( new Client( $http_client_config ) );
 
@@ -149,12 +160,17 @@ final class Client_Factory {
 			$config['proxy'] = "{$auth}{$http_proxy->host()}:{$http_proxy->port()}";
 		}
 
+		// Respect WordPress HTTP request blocking settings.
+		$config['handler']->push(
+			Middleware::block_external_request()
+		);
+
 		/**
 		 * Filters the IP version to force hostname resolution with.
 		 *
 		 * @since 1.115.0
 		 *
-		 * @param $force_ip_resolve null|string IP version to force. Default: null.
+		 * @param null|string $force_ip_resolve IP version to force. Default: null.
 		 */
 		$force_ip_resolve = apply_filters( 'googlesitekit_force_ip_resolve', null );
 		if ( in_array( $force_ip_resolve, array( null, 'v4', 'v6' ), true ) ) {

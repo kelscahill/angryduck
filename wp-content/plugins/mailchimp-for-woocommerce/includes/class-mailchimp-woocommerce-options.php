@@ -16,7 +16,7 @@ abstract class MailChimp_WooCommerce_Options
     protected $api;
     protected $plugin_name = 'mailchimp-woocommerce';
     protected $environment = 'production';
-    protected $version = '1.0.0';
+    protected $version = '1.0.2';
     protected $plugin_options = null;
     protected $is_admin = false;
 
@@ -181,23 +181,27 @@ abstract class MailChimp_WooCommerce_Options
     }
 
     /**
+     * Transient key used for this cache entry. Keeping the legacy "cached-"
+     * infix so the key space doesn't collide with any non-cached option.
+     */
+    protected function cachedTransientKey($key)
+    {
+        return $this->plugin_name . '-cached-' . $key;
+    }
+
+    /**
      * @param $key
      * @param null $default
      * @return null|mixed
      */
     public function getCached($key, $default = null)
     {
-        $cached = $this->getData("cached-$key", false);
-	    if (empty($cached) || !($cached = is_string($cached) ? unserialize($cached) : [])) {
-            return $default;
-        }
+        $cached = get_transient($this->cachedTransientKey($key));
 
-        if (empty($cached['till']) || (time() > $cached['till'])) {
-            $this->removeData("cached-$key");
-            return $default;
-        }
-
-        return $cached['value'];
+        // Preserves the original "falsy means miss" semantics: a cached value
+        // of false/0/''/[] was never distinguishable from a miss in the old
+        // getData-based implementation, so callers already tolerate that.
+        return $cached === false ? $default : $cached;
     }
 
     /**
@@ -208,10 +212,7 @@ abstract class MailChimp_WooCommerce_Options
      */
     public function setCached($key, $value, $seconds = 60)
     {
-        $time = time();
-        $data = array('at' => $time, 'till' => $time + $seconds, 'value' => $value);
-        $this->setData("cached-$key", serialize($data));
-
+        set_transient($this->cachedTransientKey($key), $value, (int) $seconds);
         return $this;
     }
 
@@ -228,6 +229,14 @@ abstract class MailChimp_WooCommerce_Options
             $this->setCached($key, $value, $seconds);
         }
         return $value;
+    }
+
+    /**
+     * Drop a cached entry — equivalent to expiring it immediately.
+     */
+    public function removeCached($key)
+    {
+        return delete_transient($this->cachedTransientKey($key));
     }
 
     /**
@@ -321,7 +330,27 @@ abstract class MailChimp_WooCommerce_Options
     {
         \Mailchimp_Woocommerce_DB_Helpers::delete_option('mailchimp-woocommerce-errors.store_info');
         \Mailchimp_Woocommerce_DB_Helpers::delete_option('mailchimp-woocommerce-validation.api.ping');
+
+        // Transient-backed caches.
+        delete_transient('mailchimp-woocommerce-cached-api-lists');
+        delete_transient('mailchimp-woocommerce-cached-api-ping-check');
+        delete_transient('mailchimp_woocommerce_store_id_verified');
+
+        // One-time-check throttle transients. Clearing these forces the
+        // next admin request to re-verify/retry any schema or migration
+        // work that was rate-limited.
+        delete_transient('mailchimp_woocommerce_jobs_table_verified');
+        delete_transient('mailchimp_woocommerce_cart_index_check_backoff');
+        delete_transient('mailchimp_woocommerce_carts_gc_ran');
+        delete_transient('mailchimp_woocommerce_carts_create_backoff');
+        delete_transient('mailchimp_woocommerce_currency_sync_backoff');
+
+        // Legacy rows written by the previous getCached/setCached implementation
+        // that stored serialized arrays directly in wp_options. Also includes
+        // the old store-id-last-verified timestamp option that has been
+        // replaced by a transient. Harmless if they're already gone.
         \Mailchimp_Woocommerce_DB_Helpers::delete_option('mailchimp-woocommerce-cached-api-lists');
         \Mailchimp_Woocommerce_DB_Helpers::delete_option('mailchimp-woocommerce-cached-api-ping-check');
+        \Mailchimp_Woocommerce_DB_Helpers::delete_option('mailchimp-woocommerce-store-id-last-verified');
     }
 }

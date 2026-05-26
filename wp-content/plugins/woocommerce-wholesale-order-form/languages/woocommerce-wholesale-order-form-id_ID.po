@@ -1,0 +1,3284 @@
+# #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+# Copyright (C) 2026 Rymera Web Co
+# This file is distributed under the GPL          v2 or later.
+# #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+# Copyright (C) 2026 
+# This file is distributed under the same license as the WooCommerce Wholesale Order Form plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Wholesale Order Form\n"
+"Report-Msgid-Bugs-To: https://wholesalesuiteplugin.com/my-account/support/\n"
+"POT-Creation-Date: 2026-03-24T02:01:47+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: id\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"#-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order "
+"Form 3.0.9.1)  #-#-#-#-#\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: woocommerce-wholesale-order-form\n"
+"#-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: woocommerce-wholesale-order-form\n"
+
+#. Plugin Name of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+#: woocommerce-wholesale-order-form.php
+msgid "WooCommerce Wholesale Order Form"
+msgstr "WooCommerce Wholesale Order Form"
+
+#. Plugin URI of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "https://wholesalesuiteplugin.com/"
+msgstr "https://wholesalesuiteplugin.com/"
+
+#. Description of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid ""
+"WooCommerce Extension to Provide Wholesale Product Listing Functionality"
+msgstr "Ekstensi WooCommerce untuk Menyediakan Fungsi Daftar Produk Grosir"
+
+#. Author of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "Rymera Web Co"
+msgstr "Rymera Web Co"
+
+#. Author URI of the plugin
+#: woocommerce-wholesale-order-form.bootstrap.php
+msgid "https://rymera.com.au/"
+msgstr "https://rymera.com.au/"
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:233
+#, php-format
+msgid "%1$sClick here to activate %3$s plugin &rarr;%2$s"
+msgstr "%1$sKlik di sini untuk mengaktifkan plugin %3$s &rarr;%2$s"
+
+#: bootstrap/App.php:245
+msgid "Activate this plugin"
+msgstr "Aktifkan plugin ini"
+
+#. translators: %1$s = opening <p> tag; %2$s = closing </p> tag; %3$s = WooCommerce Wholesale Order Form
+#: bootstrap/App.php:255
+#, php-format
+msgid ""
+"%1$sUnable to activate %3$s plugin. Please install and activate WooCoomerce "
+"plugin first.%2$s"
+msgstr ""
+"%1$sTidak dapat mengaktifkan plugin %3$s. Silakan instal dan aktifkan plugin "
+"WooCommerce terlebih dahulu.%2$s"
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:266
+#, php-format
+msgid "%1$sClick here to install %3$s plugin &rarr;%2$s"
+msgstr "%1$sKlik di sini untuk menginstal plugin %3$s &rarr;%2$s"
+
+#: bootstrap/App.php:278
+msgid "Install this plugin"
+msgstr "Instal plugin ini"
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = opening <p> tag; %4$s = closing </p> tag
+#: bootstrap/App.php:290
+#, php-format
+msgid ""
+"%3$s%1$sWooCommerce Wholesale Order%2$s Form plugin missing dependency:%4$s"
+msgstr ""
+"%3$s%1$sWooCommerce Wholesale Order%2$s Form plugin membutuhkan dependensi "
+"yang hilang:%4$s"
+
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: bootstrap/App.php:315
+#, php-format
+msgid "%1$sClick here to update WooCommerce Wholesale Prices Plugin &rarr;%2$s"
+msgstr ""
+"%1$sKlik di sini untuk memperbarui Plugin WooCommerce Wholesale Prices &rarr;"
+"%2$s"
+
+#: constants.php:254
+msgid "Default Sorting"
+msgstr "Pengurutan Bawaan"
+
+#: constants.php:255
+msgid "Custom Ordering (menu order) + Name"
+msgstr "Pengurutan Kustom (urutan menu) + Nama"
+
+#: constants.php:256 includes/I18n/order-form-strings.php:315
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Name"
+msgstr "Nama"
+
+#: constants.php:257 includes/I18n/order-form-strings.php:333
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Sort by Date"
+msgstr "Urutkan berdasarkan Tanggal"
+
+#: constants.php:258 includes/I18n/order-form-strings.php:271
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "SKU"
+msgstr "SKU"
+
+#: includes/Abstracts/Abstract_Shortcode.php:119
+msgid "You do not have permission to view this content."
+msgstr "Anda tidak memiliki izin untuk melihat konten ini."
+
+#: includes/Classes/License_Manager.php:310
+#: includes/Classes/License_Manager.php:459
+#: includes/Classes/License_Manager.php:549
+#: includes/Classes/License_Manager.php:637
+msgid "Security check failed"
+msgstr "Pemeriksaan keamanan gagal"
+
+#: includes/Classes/License_Manager.php:323
+#: includes/Classes/License_Manager.php:470
+msgid "Required parameters not supplied"
+msgstr "Parameter yang diperlukan tidak diberikan"
+
+#: includes/Classes/License_Manager.php:450
+#: includes/Classes/License_Manager.php:538
+#: includes/Classes/License_Manager.php:628
+msgid "Invalid AJAX Operation"
+msgstr "Operasi AJAX tidak valid"
+
+#: includes/Classes/License_Manager.php:505
+msgid "Failed to dismiss license notice"
+msgstr "Gagal menutup pemberitahuan lisensi"
+
+#: includes/Classes/License_Manager.php:565
+msgid "Please wait for 60 seconds before refreshing license status again."
+msgstr "Harap tunggu 60 detik sebelum memperbarui status lisensi lagi."
+
+#: includes/Classes/License_Manager.php:602
+msgid "Failed to refresh license status"
+msgstr "Gagal memperbarui status lisensi"
+
+#: includes/Classes/License_Manager.php:658
+msgid "Failed to dismiss license reminder pointer"
+msgstr "Gagal menutup penunjuk pengingat lisensi"
+
+#: includes/Classes/License_Manager.php:707
+msgid ""
+"Failed to activate license. Failed to connect to license server. Please "
+"contact plugin support."
+msgstr ""
+"Gagal mengaktifkan lisensi. Gagal terhubung ke server lisensi. Silakan "
+"hubungi dukungan plugin."
+
+#: includes/Classes/License_Manager.php:854
+#: includes/Classes/License_Manager.php:1282
+msgid "Active"
+msgstr "Aktif"
+
+#: includes/Classes/License_Manager.php:856
+#: includes/Classes/License_Manager.php:1285
+msgid "Disabled"
+msgstr "Dinonaktifkan"
+
+#: includes/Classes/License_Manager.php:858
+#: includes/Classes/License_Manager.php:1284
+msgid "Invalid"
+msgstr "Tidak valid"
+
+#: includes/Classes/License_Manager.php:860
+#: includes/Classes/License_Manager.php:1283
+msgid "Expired"
+msgstr "Kedaluwarsa"
+
+#: includes/Classes/License_Manager.php:862
+msgid "Unlicensed"
+msgstr "Tidak berlisensi"
+
+#: includes/Classes/License_Manager.php:1204
+msgid "Failed To Save License Details"
+msgstr "Gagal Menyimpan Detail Lisensi"
+
+#: includes/Classes/License_Manager.php:1263
+msgid "Oops! Forgot to activate your Wholesale Suite license?"
+msgstr "Ups! Lupa mengaktifkan lisensi Wholesale Suite Anda?"
+
+#. Translators: %1$s - line break, %2$s - opening <a> tag, %3$s - closing </a> tag.
+#: includes/Classes/License_Manager.php:1267
+#, fuzzy, php-format
+msgid ""
+"A valid license key is required for Wholesale Suite's premium plugins. But "
+"don't worry! It's super easy to get fully activated.%1$sSimply click here to "
+"enter your license and, once done, you'll be finished your setup.%1$sDon't "
+"have a license? %2$sClick here%3$s."
+msgstr ""
+"Kunci lisensi yang valid diperlukan untuk plugin premium Wholesale Suite. "
+"Tapi jangan khawatir! Sangat mudah untuk mengaktifkannya sepenuhnya."
+"%1$sCukup klik di sini untuk memasukkan lisensi Anda dan, setelah selesai, "
+"Anda akan menyelesaikan pengaturan.%1$sBelum memiliki lisensi? %2$sKlik di "
+"sini%3$s."
+
+#: includes/Classes/License_Manager.php:1275
+msgid "Close"
+msgstr "Tutup"
+
+#: includes/Classes/License_Manager.php:1276
+msgid "Enter License Key"
+msgstr "Masukkan Kunci Lisensi"
+
+#. Translators: %s - the plugin name.
+#: includes/Classes/License_Manager.php:1424
+#, php-format
+msgid "Oops! Did you forget to enter your license for %s?"
+msgstr "Ups! Apakah Anda lupa memasukkan lisensi untuk %s?"
+
+#. Translators: %s - the plugin name.
+#: includes/Classes/License_Manager.php:1430
+#, php-format
+msgid "%1$sAction required!%2$s Enter your license for %3$s to continue."
+msgstr ""
+"%1$sTindakan diperlukan!%2$s Masukkan lisensi Anda untuk %3$s untuk "
+"melanjutkan."
+
+#: includes/Classes/License_Manager.php:1442
+msgid ""
+"Enter your license to full activate Wholesale Suite and gain access to "
+"automatic updates, technical support, and premium features."
+msgstr ""
+"Masukkan lisensi Anda untuk mengaktifkan penuh Wholesale Suite dan "
+"mendapatkan akses ke pembaruan otomatis, dukungan teknis, dan fitur premium."
+
+#. Translators: %1$s - the purchase link opening tag, %2$s - the purchase link closing tag.
+#: includes/Classes/License_Manager.php:1446
+#, php-format
+msgid ""
+"Don’t worry, your wholesale customers & orders completely safe and your "
+"premium wholesale features are still working. But you will need to enter a "
+"license key to continue using Wholesale Suite. If you don’t have a license, "
+"please %1$spurchase one to proceed%2$s."
+msgstr ""
+"Jangan khawatir, pelanggan grosir & pesanan Anda sepenuhnya aman dan fitur "
+"grosir premium Anda masih berfungsi. Namun Anda perlu memasukkan kunci "
+"lisensi untuk terus menggunakan Wholesale Suite. Jika Anda tidak memiliki "
+"lisensi, silakan %1$sbeli satu untuk melanjutkan%2$s."
+
+#: includes/Classes/License_Manager.php:1464
+msgid "License Key:"
+msgstr "Kunci Lisensi:"
+
+#: includes/Classes/License_Manager.php:1474
+msgid "License Email:"
+msgstr "Email Lisensi:"
+
+#: includes/Classes/License_Manager.php:1484
+msgid "Activate Key"
+msgstr "Aktifkan Kunci"
+
+#. Translators: %1$s - the login link opening tag, %2$s - the login link closing tag.
+#: includes/Classes/License_Manager.php:1492
+#, php-format
+msgid "Can’t find your key? %1$sLogin to your account%2$s."
+msgstr "Tidak dapat menemukan kunci Anda? %1$sMasuk ke akun Anda%2$s."
+
+#. Translators: %s - the plugin name.
+#: includes/Classes/License_Manager.php:1546
+#, php-format
+msgid ""
+"%1$sAction required!%2$s Your Wholesale Suite license is about to expire in "
+"%3$s days."
+msgstr ""
+"%1$sTindakan diperlukan!%2$s Lisensi Wholesale Suite Anda akan kedaluwarsa "
+"dalam %3$s hari."
+
+#. Translators: %s is the license expiration date
+#: includes/Classes/License_Manager.php:1558
+#, fuzzy, php-format
+msgid ""
+"Your Wholesale Suite license is about to expire in %1$s days and automatic "
+"renewals are turned off. The current license will expire on %2$s. Once "
+"expired, you won't have access to premium features, plugin updates, or "
+"support. To avoid interruptions simply reactivate your subscription."
+msgstr ""
+"Lisensi Wholesale Suite Anda akan kedaluwarsa dalam %1$s hari dan pembaruan "
+"otomatis dimatikan. Lisensi saat ini akan kedaluwarsa pada %2$s. Setelah "
+"kedaluwarsa, Anda tidak akan memiliki akses ke fitur premium, pembaruan "
+"plugin, atau dukungan. Untuk menghindari gangguan cukup aktifkan kembali "
+"langganan Anda."
+
+#: includes/Classes/License_Manager.php:1570
+msgid "Login & Reactivate"
+msgstr "Masuk & Aktifkan Kembali"
+
+#: includes/Classes/License_Manager.php:1573
+#: includes/Classes/License_Manager.php:1633
+#: includes/Classes/License_Manager.php:1699
+#: includes/Classes/License_Manager.php:1732
+#: includes/Classes/License_Manager.php:1763
+msgid "Learn More"
+msgstr "Pelajari Lebih Lanjut"
+
+#: includes/Classes/License_Manager.php:1611
+msgid "Oh no! Your Wholesale Suite license has expired!"
+msgstr "Oh tidak! Lisensi Wholesale Suite Anda telah kedaluwarsa!"
+
+#. Translators: %s is the license expiration date
+#: includes/Classes/License_Manager.php:1617
+#: includes/Classes/License_Manager.php:1717
+#, php-format
+msgid ""
+"Don’t worry, your wholesale customers & orders are completely safe and your "
+"premium wholesale features are still working. We’ve also extended premium "
+"feature functionality until %s, at which point functionality will become "
+"limited."
+msgstr ""
+"Jangan khawatir, pelanggan grosir & pesanan Anda sepenuhnya aman dan fitur "
+"grosir premium Anda masih berfungsi. Kami juga telah memperpanjang "
+"fungsionalitas fitur premium hingga %s, di mana pada saat itu fungsionalitas "
+"akan menjadi terbatas."
+
+#: includes/Classes/License_Manager.php:1625
+msgid ""
+"Renew your Wholesale Suite license now to continue receiving automatic "
+"updates, technical support, and access to Wholesale Suite premium features."
+msgstr ""
+"Perbarui lisensi Wholesale Suite Anda sekarang untuk terus menerima "
+"pembaruan otomatis, dukungan teknis, dan akses ke fitur premium Wholesale "
+"Suite."
+
+#: includes/Classes/License_Manager.php:1630 includes/Classes/WP_Admin.php:118
+#: templates/admin/parts/settings/license/interstitial.php:83
+msgid "Renew License"
+msgstr "Perbarui Lisensi"
+
+#. Translators: %1$s - span opening tag, %2$s - span closing tag.
+#: includes/Classes/License_Manager.php:1679
+#, php-format
+msgid ""
+"%1$sUrgent!%2$s This Wholesale Suite license key has been disabled. This "
+"could be due to a number of reasons:"
+msgstr ""
+"%1$sUrgent!%2$s Kunci lisensi Wholesale Suite ini telah dinonaktifkan. Ini "
+"bisa disebabkan oleh sejumlah alasan:"
+
+#: includes/Classes/License_Manager.php:1687
+msgid "A refund or chargeback was initiated against this license key"
+msgstr "Pengembalian dana atau chargeback dimulai terhadap kunci lisensi ini"
+
+#: includes/Classes/License_Manager.php:1688
+msgid "The license key may have violated our Terms of Service"
+msgstr "Kunci lisensi mungkin telah melanggar Ketentuan Layanan kami"
+
+#: includes/Classes/License_Manager.php:1689
+msgid ""
+"There may have been a malfunction with the license key and this is a false "
+"positive"
+msgstr ""
+"Mungkin ada kerusakan pada kunci lisensi dan ini adalah hasil positif palsu"
+
+#: includes/Classes/License_Manager.php:1691
+msgid ""
+"Don’t worry, your wholesale customers & orders are completely safe and your "
+"premium wholesale features are still working for now, but a valid license is "
+"required to continue using Wholesale Suite."
+msgstr ""
+"Jangan khawatir, pelanggan grosir & pesanan Anda sepenuhnya aman dan fitur "
+"grosir premium Anda masih berfungsi untuk saat ini, tetapi lisensi yang "
+"valid diperlukan untuk terus menggunakan Wholesale Suite."
+
+#: includes/Classes/License_Manager.php:1692
+#, fuzzy
+msgid ""
+"If you feel this is a mistake, please reach out to our support team "
+"immediately and we'll be happy to help."
+msgstr ""
+"Jika Anda merasa ini adalah kesalahan, silakan hubungi tim dukungan kami "
+"segera dan kami akan dengan senang hati membantu."
+
+#: includes/Classes/License_Manager.php:1696
+msgid "Contact Support"
+msgstr "Hubungi Dukungan"
+
+#: includes/Classes/License_Manager.php:1711
+msgid "Oh no! Your Wholesale Suite license has failed to renew!"
+msgstr "Oh tidak! Lisensi Wholesale Suite Anda gagal diperbarui!"
+
+#: includes/Classes/License_Manager.php:1725
+#: includes/Classes/License_Manager.php:1756
+msgid ""
+"Login to your Wholesale Suite account to correct this issue to continue "
+"receiving automatic updates, technical support, and access to Wholesale "
+"Suite premium features."
+msgstr ""
+"Masuk ke akun Wholesale Suite Anda untuk memperbaiki masalah ini guna terus "
+"menerima pembaruan otomatis, dukungan teknis, dan akses ke fitur premium "
+"Wholesale Suite."
+
+#: includes/Classes/License_Manager.php:1729
+#: includes/Classes/License_Manager.php:1760
+msgid "Login & Renew License"
+msgstr "Masuk & Perbarui Lisensi"
+
+#. Translators: %1$s - span opening tag, %2$s - span closing tag.
+#: includes/Classes/License_Manager.php:1748
+#, php-format
+msgid ""
+"%1$sAction required!%2$s Your license has failed to renew and is now "
+"disabled."
+msgstr ""
+"%1$sTindakan diperlukan!%2$s Lisensi Anda gagal diperbarui dan sekarang "
+"dinonaktifkan."
+
+#: includes/Classes/License_Manager.php:1755
+msgid ""
+"An active Wholesale Suite license is required to continue receiving "
+"automatic updates, technical support, and access to Wholesale Suite premium "
+"features."
+msgstr ""
+"Lisensi Wholesale Suite yang aktif diperlukan untuk terus menerima pembaruan "
+"otomatis, dukungan teknis, dan akses ke fitur premium Wholesale Suite."
+
+#: includes/Classes/License_Manager.php:1865
+#: includes/Classes/License_Manager.php:1866 includes/Classes/WP_Admin.php:122
+#: includes/Classes/WP_Admin.php:125
+msgid "License"
+msgstr "Lisensi"
+
+#: includes/Classes/License_Manager.php:1908
+#: includes/Classes/License_Manager.php:1909
+msgid "WWS License"
+msgstr "Lisensi WWS"
+
+#: includes/Classes/License_Manager.php:1951
+#: includes/I18n/order-form-strings.php:337
+#: dist/apps/wwof/front/components/FormTable/Extras/SeeWholesalePrices-legacy.BEWsZUvd.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/SeeWholesalePrices.ClxA68yd.js:1
+msgid "Wholesale Prices"
+msgstr "Harga Grosir"
+
+#: includes/Classes/License_Manager.php:1972
+msgid "Wholesale Lead"
+msgstr "Prospek Grosir"
+
+#: includes/Classes/License_Manager.php:1993
+#: templates/admin/order-forms-admin-page.php:13
+msgid "Wholesale Order Form"
+msgstr "Formulir Pemesanan Grosir"
+
+#: includes/Classes/Migrate_Form_Data.php:58
+msgid "No forms found."
+msgstr "Tidak ada formulir yang ditemukan."
+
+#: includes/Classes/Migrate_Form_Data.php:200
+#: includes/Factories/Order_Form.php:312
+#: includes/Shortcodes/WWOF_Product_Listing.php:109
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Access Denied"
+msgstr "Akses Ditolak"
+
+#: includes/Classes/Migrate_Form_Data.php:201
+#: includes/Factories/Order_Form.php:313
+msgid "You do not have permission to view wholesale product listing."
+msgstr "Anda tidak memiliki izin untuk melihat daftar produk grosir."
+
+#: includes/Classes/Order_Forms_Admin_Page.php:52
+#: includes/Classes/Order_Forms_Admin_Page.php:53
+#: includes/I18n/order-form-strings.php:349
+#: includes/Post_Types/Order_Form_Post_Type.php:34
+#: includes/Post_Types/Order_Form_Post_Type.php:49
+#: includes/Post_Types/Order_Form_Post_Type.php:51
+#: includes/Post_Types/Order_Form_Post_Type.php:53
+#: includes/Post_Types/Order_Form_Post_Type.php:65
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Order Forms"
+msgstr "Formulir Pemesanan"
+
+#: includes/Classes/WP_Admin.php:131
+msgid "Getting Started"
+msgstr "Memulai"
+
+#. translators: %d = number of order forms migrated
+#: includes/CLI/Cli.php:67
+#, php-format
+msgid "Migrated %d Order Form to v3."
+msgid_plural "%d Order Forms migrated to v3."
+msgstr[0] "%d Formulir Pemesanan dimigrasikan ke v3."
+msgstr[1] "%d Formulir Pemesanan dimigrasikan ke v3."
+
+#: includes/CLI/Cli.php:77
+msgid "Order Forms migrated to v3."
+msgstr "Formulir Pemesanan dimigrasikan ke v3."
+
+#: includes/CLI/Cli.php:130
+msgid "Order Forms imported."
+msgstr "Formulir Pemesanan diimpor."
+
+#: includes/CLI/Cli.php:135
+msgid "No Order Forms found in the JSON file."
+msgstr "Tidak ada Formulir Pemesanan yang ditemukan dalam file JSON."
+
+#: includes/CLI/Cli.php:194
+msgid "Class Symfony\\Component\\Yaml\\Yaml not found."
+msgstr "Class Symfony\\Component\\Yaml\\Yaml tidak ditemukan."
+
+#. translators: %s = given format
+#: includes/CLI/Cli.php:201
+#, php-format
+msgid "Invalid format %%y%s%%n."
+msgstr "Format %%y%s%%n tidak valid."
+
+#. translators: %1$s = format; %2$s = file path in uploads dir
+#: includes/CLI/Cli.php:209
+#, php-format
+msgid "Order Forms exported to %1$s format in: %2$s"
+msgstr "Formulir Pemesanan diekspor ke format %1$s di: %2$s"
+
+#: includes/CLI/Cli.php:218
+msgid "No Order Forms found."
+msgstr "Tidak ada Formulir Pemesanan yang ditemukan."
+
+#. translators: %1$s = opening <strong>; %2$s = closing </strong>
+#: includes/Factories/Migration_Wizard.php:89
+#, php-format
+msgid ""
+"Congrats! %1$sWholesale Order Form%2$s 2.0 introduces a new form builder, "
+"multiple forms, and lots of great new options making it more powerful than "
+"ever."
+msgstr ""
+"Selamat! %1$sWholesale Order Form%2$s 2.0 memperkenalkan pembuat formulir "
+"baru, beberapa formulir, dan banyak opsi baru yang bagus sehingga lebih kuat "
+"dari sebelumnya."
+
+#: includes/Factories/Migration_Wizard.php:98
+msgid ""
+"Get started by migrating your old form over to the new style. If you're not "
+"ready yet, you can choose to do it later via the Order Form Settings area."
+msgstr ""
+"Mulailah dengan memigrasikan formulir lama Anda ke gaya baru. Jika Anda "
+"belum siap, Anda dapat memilih untuk melakukannya nanti melalui area "
+"Pengaturan Formulir Pemesanan."
+
+#: includes/Factories/Migration_Wizard.php:104
+msgid "Wholesale Order Form Migration Wizard"
+msgstr "Wizard Migrasi Formulir Pemesanan Grosir"
+
+#: includes/Factories/Migration_Wizard.php:112
+msgid "Start Migration Wizard"
+msgstr "Mulai Wizard Migrasi"
+
+#: includes/Factories/Order_Form.php:195
+msgid "Invalid order form."
+msgstr "Formulir pemesanan tidak valid."
+
+#: includes/Factories/Order_Form.php:540 includes/REST/Order_Form.php:179
+msgid "Form title is required."
+msgstr "Judul formulir wajib diisi."
+
+#: includes/Factories/Order_Form.php:546
+msgid "Form body is required."
+msgstr "Isi formulir wajib diisi."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/Factories/Setup_Wizard.php:97
+#, php-format
+msgid ""
+"Congratulations! %1$sWholesale Order Forms%2$s plugin has been successfully "
+"installed and is ready to be set up."
+msgstr ""
+"Selamat! Plugin %1$sWholesale Order Forms%2$s telah berhasil dipasang dan "
+"siap untuk dikonfigurasi."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: includes/Factories/Setup_Wizard.php:107
+#, php-format
+msgid ""
+"Get Started quickly by clicking %1$s\"Start Setup\"%2$s and we'll guide you "
+"through creating your first form."
+msgstr ""
+"Mulai dengan cepat dengan mengklik %1$s\"Mulai Pengaturan\"%2$s dan kami "
+"akan memandu Anda dalam membuat formulir pertama Anda."
+
+#: includes/Factories/Setup_Wizard.php:116
+msgid "Wholesale Order Form Setup Wizard"
+msgstr "Wizard Pengaturan Formulir Pemesanan Grosir"
+
+#: includes/Factories/Setup_Wizard.php:124
+msgid "Start Setup Wizard"
+msgstr "Mulai Wizard Pengaturan"
+
+#: includes/Factories/Vite_App.php:449
+msgid ""
+"Manifest file not found. Did you run the build script from package.json file?"
+msgstr ""
+"File manifest tidak ditemukan. Apakah Anda sudah menjalankan skrip build "
+"dari file package.json?"
+
+#: includes/Factories/Vite_App.php:816
+msgid "Order Form Blocks"
+msgstr "Blok Formulir Pemesanan"
+
+#: includes/Helpers/Database_Optimizer.php:181
+msgid "WWOF database indexes created successfully via scheduled action."
+msgstr "Indeks database WWOF berhasil dibuat melalui tindakan terjadwal."
+
+#. translators: %s: error message
+#: includes/Helpers/Database_Optimizer.php:192
+#, php-format
+msgid "WWOF database index creation failed: %s"
+msgstr "Pembuatan indeks database WWOF gagal: %s"
+
+#: includes/Helpers/Database_Optimizer.php:218
+msgid "WWOF database index creation rescheduled for next hour due to failure."
+msgstr ""
+"Pembuatan indeks database WWOF dijadwal ulang untuk jam berikutnya karena "
+"kegagalan."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity; %4$s = formatted price
+#: includes/Helpers/WWPP.php:249
+#, php-format
+msgid ""
+"%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s or minimum order "
+"subtotal of %1$s%5$s%2$s is required to activate wholesale pricing in the "
+"cart."
+msgstr ""
+"%1$sCATATAN:%2$s Jumlah pesanan minimum sebesar %1$s%3$s%2$s atau subtotal "
+"pesanan minimum sebesar %1$s%5$s%2$s diperlukan untuk mengaktifkan harga "
+"grosir di keranjang."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity; %4$s = formatted price
+#: includes/Helpers/WWPP.php:261
+#, php-format
+msgid ""
+"%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s and minimum order "
+"subtotal of %1$s%5$s%2$s is required to activate wholesale pricing in the "
+"cart."
+msgstr ""
+"%1$sCATATAN:%2$s Jumlah pesanan minimum sebesar %1$s%3$s%2$s dan subtotal "
+"pesanan minimum sebesar %1$s%5$s%2$s diperlukan untuk mengaktifkan harga "
+"grosir di keranjang."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity
+#: includes/Helpers/WWPP.php:274
+#, php-format
+msgid ""
+"%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s is required to "
+"activate wholesale pricing in the cart."
+msgstr ""
+"%1$sCATATAN:%2$s Jumlah pesanan minimum sebesar %1$s%3$s%2$s diperlukan "
+"untuk mengaktifkan harga grosir di keranjang."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = formatted price
+#: includes/Helpers/WWPP.php:284
+#, php-format
+msgid ""
+"%1$sNOTE:%2$s A minimum order subtotal of %1$s%3$s%2$s is required to "
+"activate wholesale pricing in the cart."
+msgstr ""
+"%1$sCATATAN:%2$s Subtotal pesanan minimum sebesar %1$s%3$s%2$s diperlukan "
+"untuk mengaktifkan harga grosir di keranjang."
+
+#: includes/I18n/order-form-strings.php:25
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Add Form"
+msgstr "Tambah Formulir"
+
+#: includes/I18n/order-form-strings.php:26
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Add Row"
+msgstr "Tambah Baris"
+
+#: includes/I18n/order-form-strings.php:27
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Add column to this row"
+msgstr "Tambah kolom ke baris ini"
+
+#: includes/I18n/order-form-strings.php:28
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody-legacy.CW4A3wti.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody.Dr2RpE8o.js:1
+msgid "Add columns to the form header to display products data."
+msgstr "Tambahkan kolom ke header formulir untuk menampilkan data produk."
+
+#: includes/I18n/order-form-strings.php:29
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Are you sure you want to delete this column?"
+msgstr "Apakah Anda yakin ingin menghapus kolom ini?"
+
+#: includes/I18n/order-form-strings.php:30
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Are you sure you want to delete this element?"
+msgstr "Apakah Anda yakin ingin menghapus elemen ini?"
+
+#: includes/I18n/order-form-strings.php:31
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Are you sure you want to delete this row?"
+msgstr "Apakah Anda yakin ingin menghapus baris ini?"
+
+#: includes/I18n/order-form-strings.php:32
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
+msgid "Click and drag the elements you want on your order form into position."
+msgstr ""
+"Klik dan seret elemen yang Anda inginkan pada formulir pemesanan ke "
+"posisinya."
+
+#: includes/I18n/order-form-strings.php:33
+#: dist/common/ColumnHeadingText.vue_vue_type_script_setup_true_lang-legacy.Bn0ug-Hs.js:1
+#: dist/common/ColumnHeadingText.vue_vue_type_script_setup_true_lang.DXLuwDAy.js:1
+msgid "Column Heading Text"
+msgstr "Teks Judul Kolom"
+
+#: includes/I18n/order-form-strings.php:34
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Column Settings"
+msgstr "Pengaturan Kolom"
+
+#: includes/I18n/order-form-strings.php:35
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Delete Column"
+msgstr "Hapus Kolom"
+
+#: includes/I18n/order-form-strings.php:36
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Delete Element"
+msgstr "Hapus Elemen"
+
+#: includes/I18n/order-form-strings.php:37
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+msgid "Delete Form"
+msgstr "Hapus Formulir"
+
+#: includes/I18n/order-form-strings.php:38
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Delete Row"
+msgstr "Hapus Baris"
+
+#: includes/I18n/order-form-strings.php:39
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Double click to edit."
+msgstr "Klik dua kali untuk mengedit."
+
+#: includes/I18n/order-form-strings.php:40
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+msgid "Drop Table Columns Here"
+msgstr "Lepaskan Kolom Tabel di Sini"
+
+#: includes/I18n/order-form-strings.php:41
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Edit"
+msgstr "Edit"
+
+#: includes/I18n/order-form-strings.php:42
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang-legacy.CUdZtFzv.js:1
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang.RR9Sdi6L.js:1
+msgid "Edit Form"
+msgstr "Edit Formulir"
+
+#: includes/I18n/order-form-strings.php:43
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/ElementAlignment-legacy.DTicIO-C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/ElementAlignment.C3bEfV64.js:1
+msgid "Element Alignment"
+msgstr "Perataan Elemen"
+
+#: includes/I18n/order-form-strings.php:44
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Element Settings"
+msgstr "Pengaturan Elemen"
+
+#: includes/I18n/order-form-strings.php:45
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+msgid "Element Width"
+msgstr "Lebar Elemen"
+
+#: includes/I18n/order-form-strings.php:46
+#: dist/common/MainForm.vue_vue_type_script_setup_true_lang-legacy.BinTjfdU.js:1
+#: dist/common/MainForm.vue_vue_type_script_setup_true_lang.Cf9qlL8J.js:1
+msgid "Enter form title"
+msgstr "Masukkan judul formulir"
+
+#: includes/I18n/order-form-strings.php:47
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody-legacy.CW4A3wti.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody.Dr2RpE8o.js:1
+msgid "Form Body Settings"
+msgstr "Pengaturan Isi Formulir"
+
+#: includes/I18n/order-form-strings.php:48
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+msgid "Form Editor"
+msgstr "Editor Formulir"
+
+#: includes/I18n/order-form-strings.php:49
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
+msgid "HEADER/FOOTER ELEMENTS"
+msgstr "ELEMEN HEADER/FOOTER"
+
+#: includes/I18n/order-form-strings.php:50
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Hide Form Title"
+msgstr "Sembunyikan Judul Formulir"
+
+#: includes/I18n/order-form-strings.php:51
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
+msgid "Order Form Elements"
+msgstr "Elemen Formulir Pemesanan"
+
+#: includes/I18n/order-form-strings.php:52
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+msgid "Publish"
+msgstr "Terbitkan"
+
+#: includes/I18n/order-form-strings.php:53
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Re-order Column"
+msgstr "Urutkan Ulang Kolom"
+
+#: includes/I18n/order-form-strings.php:54
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Re-order Element"
+msgstr "Urutkan Ulang Elemen"
+
+#: includes/I18n/order-form-strings.php:55
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Re-order Row"
+msgstr "Urutkan Ulang Baris"
+
+#: includes/I18n/order-form-strings.php:56
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Requires the form title and table to be set first."
+msgstr "Memerlukan judul formulir dan tabel untuk diatur terlebih dahulu."
+
+#: includes/I18n/order-form-strings.php:57
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/RowAlign-legacy.CYYgZvxH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/RowAlign.Bzu9bGSJ.js:1
+msgid "Row Alignment"
+msgstr "Perataan Baris"
+
+#: includes/I18n/order-form-strings.php:58
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Rows Settings"
+msgstr "Pengaturan Baris"
+
+#: includes/I18n/order-form-strings.php:59
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+msgid "Save Draft"
+msgstr "Simpan Draf"
+
+#: includes/I18n/order-form-strings.php:60
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+msgid "Saving..."
+msgstr "Menyimpan..."
+
+#: includes/I18n/order-form-strings.php:61
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Stops the form title from being displayed before the form."
+msgstr "Menghentikan judul formulir agar tidak ditampilkan sebelum formulir."
+
+#: includes/I18n/order-form-strings.php:62
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
+msgid "TABLE ELEMENTS"
+msgstr "ELEMEN TABEL"
+
+#: includes/I18n/order-form-strings.php:63
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Title"
+msgstr "Judul"
+
+#: includes/I18n/order-form-strings.php:68
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Add to Cart Link Behavior"
+msgstr "Perilaku Tautan Tambah ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:69
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+msgid "Box Width"
+msgstr "Lebar Kotak"
+
+#: includes/I18n/order-form-strings.php:70
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang-legacy.oHel0oNQ.js:1
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang.Bsg1dP4h.js:1
+msgid "Button Color"
+msgstr "Warna Tombol"
+
+#: includes/I18n/order-form-strings.php:71
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+#: dist/common/ButtonTextControl.vue_vue_type_script_setup_true_lang-legacy.DjOtO-jf.js:1
+#: dist/common/ButtonTextControl.vue_vue_type_script_setup_true_lang.DXfXljSp.js:1
+msgid "Button Text"
+msgstr "Teks Tombol"
+
+#: includes/I18n/order-form-strings.php:72
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang-legacy.oHel0oNQ.js:1
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang.Bsg1dP4h.js:1
+msgid "Button Text Color"
+msgstr "Warna Teks Tombol"
+
+#: includes/I18n/order-form-strings.php:73
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Choose how the link will be opened when clicked."
+msgstr "Pilih cara membuka tautan ketika diklik."
+
+#: includes/I18n/order-form-strings.php:74
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+msgid "Clear Button Text"
+msgstr "Teks Tombol Hapus"
+
+#: includes/I18n/order-form-strings.php:75
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang-legacy.RI6ROnN7.js:1
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang.JKZ3nttA.js:1
+msgid "Display Product Addons Totals"
+msgstr "Tampilkan Total Tambahan Produk"
+
+#: includes/I18n/order-form-strings.php:76
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang-legacy.yFX5xWZ1.js:1
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang.BL0jc-4y.js:1
+msgid "Display Variation Dropdown"
+msgstr "Tampilkan Dropdown Variasi"
+
+#: includes/I18n/order-form-strings.php:77
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Empty Cart Text"
+msgstr "Teks Keranjang Kosong"
+
+#: includes/I18n/order-form-strings.php:78
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize-legacy.BjuG107e.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize.Bd1EIzDF.js:1
+msgid "Font Size"
+msgstr "Ukuran Font"
+
+#: includes/I18n/order-form-strings.php:79
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:1
+msgid "Hide Combo Variation Name Prefix"
+msgstr "Sembunyikan Awalan Nama Variasi Combo"
+
+#: includes/I18n/order-form-strings.php:80
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions-legacy.DPLRY-_U.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions.DDtNMHRi.js:1
+msgid "Hide column when no variable products detected"
+msgstr "Sembunyikan kolom ketika tidak ada produk variabel yang terdeteksi"
+
+#: includes/I18n/order-form-strings.php:81
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Image Click Action"
+msgstr "Tindakan Klik Gambar"
+
+#: includes/I18n/order-form-strings.php:82
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Image Size"
+msgstr "Ukuran Gambar"
+
+#: includes/I18n/order-form-strings.php:83
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions-legacy.Ci58G3zw.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions.C-Bxe-iP.js:1
+msgid "Max Characters"
+msgstr "Maksimal Karakter"
+
+#: includes/I18n/order-form-strings.php:84
+#: dist/common/NoOptions.vue_vue_type_script_setup_true_lang-legacy.eYQydbUq.js:1
+#: dist/common/NoOptions.vue_vue_type_script_setup_true_lang.TCm1N7cq.js:1
+msgid "No available options."
+msgstr "Tidak ada opsi yang tersedia."
+
+#: includes/I18n/order-form-strings.php:85
+#: dist/common/NoStyles.vue_vue_type_script_setup_true_lang-legacy.BWq7V_bh.js:1
+#: dist/common/NoStyles.vue_vue_type_script_setup_true_lang.-Cg6x9HV.js:1
+msgid "No available style settings."
+msgstr "Tidak ada pengaturan gaya yang tersedia."
+
+#: includes/I18n/order-form-strings.php:86
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Opens the link in new tab."
+msgstr "Membuka tautan di tab baru."
+
+#: includes/I18n/order-form-strings.php:87
+msgid "Placeholder"
+msgstr "Teks Placeholder"
+
+#: includes/I18n/order-form-strings.php:88
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions-legacy.DmzVeskh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions.nr36Is42.js:1
+msgid "Product ID Click Action"
+msgstr "Tindakan Klik ID Produk"
+
+#: includes/I18n/order-form-strings.php:89
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions-legacy.CMnBcVrU.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions.-MAyqJWP.js:1
+msgid "Product Name Click Action"
+msgstr "Tindakan Klik Nama Produk"
+
+#: includes/I18n/order-form-strings.php:90
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+msgid "Search Button Text"
+msgstr "Teks Tombol Cari"
+
+#: includes/I18n/order-form-strings.php:91
+msgid "Show Clear Button"
+msgstr "Tampilkan Tombol Hapus"
+
+#: includes/I18n/order-form-strings.php:92
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+msgid "Show a button to clear filters next to the search button."
+msgstr "Tampilkan tombol untuk menghapus filter di sebelah tombol cari."
+
+#: includes/I18n/order-form-strings.php:93
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions-legacy.DPLRY-_U.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions.DDtNMHRi.js:1
+msgid "Smart Visibility"
+msgstr "Visibilitas Cerdas"
+
+#: includes/I18n/order-form-strings.php:94
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang-legacy.CjQqf-cS.js:1
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang.Bt0lIOre.js:1
+msgid "Sortable"
+msgstr "Dapat Diurutkan"
+
+#: includes/I18n/order-form-strings.php:95
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+msgid "Styles"
+msgstr "Gaya"
+
+#: includes/I18n/order-form-strings.php:96
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CategoryFilterOptions-legacy.BNnOfXjc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CategoryFilterOptions.Dkj5Yhq0.js:1
+msgid "Submit on Change"
+msgstr "Kirim saat Berubah"
+
+#: includes/I18n/order-form-strings.php:97
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles-legacy.DDigMf0_.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles.gmgMlXZv.js:1
+msgid "Table Alignment"
+msgstr "Perataan Tabel"
+
+#: includes/I18n/order-form-strings.php:98
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles-legacy.DDigMf0_.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles.gmgMlXZv.js:1
+msgid "Table Width"
+msgstr "Lebar Tabel"
+
+#: includes/I18n/order-form-strings.php:99
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:5
+msgid "Variation Style"
+msgstr "Gaya Variasi"
+
+#: includes/I18n/order-form-strings.php:100
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang-legacy.yFX5xWZ1.js:1
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang.BL0jc-4y.js:1
+msgid "Add a variation dropdown below the product name."
+msgstr "Tambahkan dropdown variasi di bawah nama produk."
+
+#: includes/I18n/order-form-strings.php:101
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang-legacy.RI6ROnN7.js:1
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang.JKZ3nttA.js:1
+msgid "Add product addons totals calculation below the product addons options."
+msgstr ""
+"Tambahkan perhitungan total tambahan produk di bawah opsi tambahan produk."
+
+#: includes/I18n/order-form-strings.php:102
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang-legacy.CjQqf-cS.js:1
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang.Bt0lIOre.js:1
+msgid "Allow sorting the table by this column."
+msgstr "Izinkan pengurutan tabel berdasarkan kolom ini."
+
+#: includes/I18n/order-form-strings.php:103
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions-legacy.Ci58G3zw.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions.C-Bxe-iP.js:1
+msgid "Leave blank to display the full short description text."
+msgstr "Biarkan kosong untuk menampilkan teks deskripsi singkat penuh."
+
+#: includes/I18n/order-form-strings.php:108
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Allow Favourites"
+msgstr "Izinkan Favorit"
+
+#: includes/I18n/order-form-strings.php:109
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Allow searching by SKU"
+msgstr "Izinkan pencarian berdasarkan SKU"
+
+#: includes/I18n/order-form-strings.php:110
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Allow searching by Tag"
+msgstr "Izinkan pencarian berdasarkan Tag"
+
+#: includes/I18n/order-form-strings.php:111
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Allow users to add products to their favourites."
+msgstr "Izinkan pengguna menambahkan produk ke daftar favorit mereka."
+
+#: includes/I18n/order-form-strings.php:112
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Categories"
+msgstr "Kategori"
+
+#: includes/I18n/order-form-strings.php:113
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Default Category"
+msgstr "Kategori Bawaan"
+
+#: includes/I18n/order-form-strings.php:114
+msgid "Enable Add to Cart Notification"
+msgstr "Aktifkan Notifikasi Tambah ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:115
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Enable exact keyword search by SKU"
+msgstr "Aktifkan pencarian kata kunci tepat berdasarkan SKU"
+
+#: includes/I18n/order-form-strings.php:116
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"Enable virtual table to improve rendering performance on very long lists."
+msgstr ""
+"Aktifkan tabel virtual untuk meningkatkan kinerja rendering pada daftar yang "
+"sangat panjang."
+
+#: includes/I18n/order-form-strings.php:117
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"Enabling this setting will list down each product variation individually and "
+"have its own row in the wholesale order form."
+msgstr ""
+"Mengaktifkan pengaturan ini akan mendaftarkan setiap variasi produk secara "
+"individual dan memiliki barisnya sendiri dalam formulir pemesanan grosir."
+
+#: includes/I18n/order-form-strings.php:118
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Exact SKU Keyword Match"
+msgstr "Pencocokan Kata Kunci SKU Tepat"
+
+#: includes/I18n/order-form-strings.php:119
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Exclude Products"
+msgstr "Kecualikan Produk"
+
+#: includes/I18n/order-form-strings.php:120
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Excluded Category"
+msgstr "Kategori yang Dikecualikan"
+
+#: includes/I18n/order-form-strings.php:121
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Height"
+msgstr "Tinggi"
+
+#: includes/I18n/order-form-strings.php:122
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Height of the virtual table."
+msgstr "Tinggi tabel virtual."
+
+#: includes/I18n/order-form-strings.php:123
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Include Products"
+msgstr "Sertakan Produk"
+
+#: includes/I18n/order-form-strings.php:124
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Included Category"
+msgstr "Kategori yang Disertakan"
+
+#: includes/I18n/order-form-strings.php:125
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Lazy Loading"
+msgstr "Pemuatan Malas (Lazy Loading)"
+
+#: includes/I18n/order-form-strings.php:126
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Leave empty to use default. Default is 10 seconds."
+msgstr ""
+"Biarkan kosong untuk menggunakan nilai bawaan. Nilai bawaan adalah 10 detik."
+
+#: includes/I18n/order-form-strings.php:127
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Min: 1 — Max: 100"
+msgstr "Min: 1 — Maks: 100"
+
+#: includes/I18n/order-form-strings.php:128
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "More results are loaded into the page based on the user scrolling."
+msgstr "Lebih banyak hasil dimuat ke halaman berdasarkan pengguliran pengguna."
+
+#: includes/I18n/order-form-strings.php:129
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Notification Duration"
+msgstr "Durasi Notifikasi"
+
+#: includes/I18n/order-form-strings.php:130
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"Only show this specific products in the order form. Variations are excluded "
+"in the selection."
+msgstr ""
+"Hanya tampilkan produk tertentu ini dalam formulir pemesanan. Variasi tidak "
+"termasuk dalam seleksi."
+
+#: includes/I18n/order-form-strings.php:131
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Adds a notification message when adding product(s) to cart."
+msgstr "Menambahkan pesan notifikasi saat menambahkan produk ke keranjang."
+
+#: includes/I18n/order-form-strings.php:132
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Popularity Period"
+msgstr "Periode Popularitas"
+
+#: includes/I18n/order-form-strings.php:133
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Priority Products"
+msgstr "Produk Prioritas"
+
+#: includes/I18n/order-form-strings.php:134
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Product Sorting"
+msgstr "Pengurutan Produk"
+
+#: includes/I18n/order-form-strings.php:135
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Product Sorting By"
+msgstr "Pengurutan Produk Berdasarkan"
+
+#: includes/I18n/order-form-strings.php:136
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Products per page"
+msgstr "Produk per halaman"
+
+#: includes/I18n/order-form-strings.php:137
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "SKU Search"
+msgstr "Pencarian SKU"
+
+#: includes/I18n/order-form-strings.php:138
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Select Favourite Icon"
+msgstr "Pilih Ikon Favorit"
+
+#: includes/I18n/order-form-strings.php:139
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Show Variations Individually"
+msgstr "Tampilkan Variasi Secara Individual"
+
+#: includes/I18n/order-form-strings.php:140
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Show products that have zero inventory."
+msgstr "Tampilkan produk yang memiliki inventaris nol."
+
+#: includes/I18n/order-form-strings.php:141
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"Show this specific products at the top of the list in the order form. "
+"Variations are excluded in the selection."
+msgstr ""
+"Tampilkan produk tertentu ini di bagian atas daftar dalam formulir "
+"pemesanan. Variasi tidak termasuk dalam seleksi."
+
+#: includes/I18n/order-form-strings.php:142
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show wholesale minimum requirement notices above the search form."
+msgstr ""
+"Tampilkan pemberitahuan persyaratan minimum grosir di atas formulir "
+"pencarian."
+
+#: includes/I18n/order-form-strings.php:143
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Simplify Add to Cart Notices"
+msgstr "Sederhanakan Pemberitahuan Tambah ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:144
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"Specify products to hide from the order form. Variations are included in the "
+"selection."
+msgstr ""
+"Tentukan produk yang akan disembunyikan dari formulir pemesanan. Variasi "
+"termasuk dalam seleksi."
+
+#: includes/I18n/order-form-strings.php:145
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Subtotal Suffix"
+msgstr "Sufiks Subtotal"
+
+#: includes/I18n/order-form-strings.php:146
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Tag Search"
+msgstr "Pencarian Tag"
+
+#: includes/I18n/order-form-strings.php:147
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Tax Display"
+msgstr "Tampilan Pajak"
+
+#: includes/I18n/order-form-strings.php:148
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "User Role Filter"
+msgstr "Filter Peran Pengguna"
+
+#: includes/I18n/order-form-strings.php:149
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Virtual Table"
+msgstr "Tabel Virtual"
+
+#: includes/I18n/order-form-strings.php:150
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Virtual Table Height"
+msgstr "Tinggi Tabel Virtual"
+
+#: includes/I18n/order-form-strings.php:151
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Zero Inventory"
+msgstr "Inventaris Nol"
+
+#: includes/I18n/order-form-strings.php:156
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab-legacy.CCTx-73B.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab.B3d3-7s2.js:1
+msgid "This form can be found on the following locations."
+msgstr "Formulir ini dapat ditemukan di lokasi berikut."
+
+#: includes/I18n/order-form-strings.php:157
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang-legacy.CROfTkav.js:1
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang.FnyypEjG.js:3
+msgid "Used in pages:"
+msgstr "Digunakan di halaman:"
+
+#: includes/I18n/order-form-strings.php:162
+msgid "Done"
+msgstr "Selesai"
+
+#: includes/I18n/order-form-strings.php:163
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+msgid "Update"
+msgstr "Perbarui"
+
+#: includes/I18n/order-form-strings.php:168
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Access Denied Message"
+msgstr "Pesan Akses Ditolak"
+
+#: includes/I18n/order-form-strings.php:169
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Allow Public Read"
+msgstr "Izinkan Pembacaan Publik"
+
+#: includes/I18n/order-form-strings.php:170
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Allow order form access publicly."
+msgstr "Izinkan akses formulir pemesanan secara publik."
+
+#: includes/I18n/order-form-strings.php:171
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Form Permissions"
+msgstr "Izin Formulir"
+
+#: includes/I18n/order-form-strings.php:172
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Message"
+msgstr "Pesan"
+
+#: includes/I18n/order-form-strings.php:173
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid ""
+"Message to display to users who do not have permission to access the "
+"wholesale order form."
+msgstr ""
+"Pesan yang ditampilkan kepada pengguna yang tidak memiliki izin untuk "
+"mengakses formulir pemesanan grosir."
+
+#: includes/I18n/order-form-strings.php:174
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Permission Options"
+msgstr "Opsi Izin"
+
+#: includes/I18n/order-form-strings.php:175
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Select User Role(s) to Allow Access"
+msgstr "Pilih Peran Pengguna untuk Mengizinkan Akses"
+
+#: includes/I18n/order-form-strings.php:180
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+msgid "Add"
+msgstr "Tambah"
+
+#: includes/I18n/order-form-strings.php:181
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+msgid "Add Selected to Cart"
+msgstr "Tambah yang Dipilih ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:182
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductName-legacy.ZGZ1W2g3.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductName.BUAoyyql.js:1
+msgid "Add to Favourite"
+msgstr "Tambah ke Favorit"
+
+#: includes/I18n/order-form-strings.php:183
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Add to cart"
+msgstr "Tambah ke keranjang"
+
+#: includes/I18n/order-form-strings.php:184
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+msgid "Adding products to cart..."
+msgstr "Menambahkan produk ke keranjang..."
+
+#: includes/I18n/order-form-strings.php:185
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Adding..."
+msgstr "Menambahkan..."
+
+#: includes/I18n/order-form-strings.php:186
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:1
+msgid "Available on backorder"
+msgstr "Tersedia dalam pesanan tertunda"
+
+#: includes/I18n/order-form-strings.php:187
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown-legacy.CExbwAVW.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown.SGJm2yqP.js:3
+msgid "Choose an option"
+msgstr "Pilih opsi"
+
+#: includes/I18n/order-form-strings.php:188
+msgid "Delete"
+msgstr "Hapus"
+
+#: includes/I18n/order-form-strings.php:189
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Error"
+msgstr "Kesalahan"
+
+#: includes/I18n/order-form-strings.php:190
+#: dist/apps/wwof/front/components/FormTable/FormTable-legacy.CDBBUcQa.js:1
+#: dist/apps/wwof/front/components/FormTable/FormTable.AqAi6bqr.js:1
+msgid "No records found!"
+msgstr "Tidak ada catatan yang ditemukan!"
+
+#: includes/I18n/order-form-strings.php:191
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/OnlyShowFavourites-legacy.BvSPi5r0.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/OnlyShowFavourites.D3Wdvn2Q.js:1
+msgid "Only show favourites"
+msgstr "Hanya tampilkan favorit"
+
+#: includes/I18n/order-form-strings.php:192
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Only show products on users favourites list."
+msgstr "Hanya tampilkan produk dalam daftar favorit pengguna."
+
+#: includes/I18n/order-form-strings.php:193
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody-legacy.CW4A3wti.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody.Dr2RpE8o.js:1
+msgid "Order Form Table"
+msgstr "Tabel Formulir Pemesanan"
+
+#: includes/I18n/order-form-strings.php:194
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Remove from cart"
+msgstr "Hapus dari keranjang"
+
+#: includes/I18n/order-form-strings.php:195
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Removing..."
+msgstr "Menghapus..."
+
+#: includes/I18n/order-form-strings.php:196
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton-legacy.CAqBe0Er.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton.DK7-fgUl.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput-legacy.CD1iQF7d.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput.tg2QRQZs.js:1
+msgid "Search Products"
+msgstr "Cari Produk"
+
+#: includes/I18n/order-form-strings.php:197
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess-legacy.YY45GKB9.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess.RWeNnLJL.js:3
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart-legacy.63VStZOp.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart.DyH4IEZX.js:1
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "View Cart"
+msgstr "Lihat Keranjang"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d is the stock quantity.
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = stock quantity
+#: includes/I18n/order-form-strings.php:203
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:3
+#, php-format
+msgid "%d in stock"
+msgstr "%d dalam stok"
+
+#: includes/I18n/order-form-strings.php:204
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:5
+msgid "Additional Note"
+msgstr "Catatan Tambahan"
+
+#: includes/I18n/order-form-strings.php:205
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Dimensions"
+msgstr "Dimensi"
+
+#: includes/I18n/order-form-strings.php:206
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:5
+msgid "In stock"
+msgstr "Tersedia dalam stok"
+
+#: includes/I18n/order-form-strings.php:207
+#: dist/apps/wwof/front/components/FormTable/Extras/LoginToSeePrices-legacy.BwLpHsLU.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/LoginToSeePrices.DWXa05rB.js:1
+msgid "Login to see prices"
+msgstr "Masuk untuk melihat harga"
+
+#: includes/I18n/order-form-strings.php:208
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Login URL"
+msgstr "URL Login"
+
+#: includes/I18n/order-form-strings.php:209
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "No"
+msgstr "Tidak"
+
+#: includes/I18n/order-form-strings.php:210
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "None"
+msgstr "Tidak Ada"
+
+#: includes/I18n/order-form-strings.php:211
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductGtin-legacy.B68blyM3.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductGtin.DFRAoiKA.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductSku-legacy.wLhg7cLG.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductSku.DteXIiQP.js:1
+msgid "Not applicable"
+msgstr "Tidak berlaku"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d is the stock quantity remaining.
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of remaining items in stock
+#: includes/I18n/order-form-strings.php:213
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:5
+#, php-format
+msgid "Only %d left in stock"
+msgstr "Hanya %d tersisa dalam stok"
+
+#: includes/I18n/order-form-strings.php:214
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:1
+msgid "Stock not sufficient"
+msgstr "Stok tidak mencukupi"
+
+#: includes/I18n/order-form-strings.php:215
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Tags"
+msgstr "Tag"
+
+#: includes/I18n/order-form-strings.php:216
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "URL of the login page. Uses default WordPress login URL if left blank."
+msgstr ""
+"URL halaman login. Menggunakan URL login WordPress bawaan jika dikosongkan."
+
+#: includes/I18n/order-form-strings.php:217
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Weight"
+msgstr "Berat"
+
+#: includes/I18n/order-form-strings.php:218
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions-legacy.CiXddtq4.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions.Dkby3451.js:1
+msgid "Wholesale Quantity Based Pricing Tables"
+msgstr "Tabel Harga Berbasis Kuantitas Grosir"
+
+#: includes/I18n/order-form-strings.php:219
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Width"
+msgstr "Lebar"
+
+#: includes/I18n/order-form-strings.php:220
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "cm"
+msgstr "cm"
+
+#: includes/I18n/order-form-strings.php:225
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+msgid "Enter Out of Stock Text"
+msgstr "Masukkan Teks Stok Habis"
+
+#: includes/I18n/order-form-strings.php:226
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+msgid "Out of Stock Text"
+msgstr "Teks Stok Habis"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s: default value
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = default login url
+#: includes/I18n/order-form-strings.php:232
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+#, php-format
+msgid "Default: %s"
+msgstr "Bawaan: %s"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s: variation attribute name
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = attribute name
+#: includes/I18n/order-form-strings.php:234
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown-legacy.CExbwAVW.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown.SGJm2yqP.js:3
+#, php-format
+msgid "Select %s"
+msgstr "Pilih %s"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$s: opening login link tag, %2$s: closing link tag
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: includes/I18n/order-form-strings.php:236
+#: dist/apps/wwof/front/index-legacy.js:1 dist/apps/wwof/front/index.js:3
+#, php-format
+msgid "Please %1$slogin%2$s to view the form with your favourite products."
+msgstr ""
+"Silakan %1$smasuk%2$s untuk melihat formulir dengan produk favorit Anda."
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$d: quantity, %2$d: total items
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of items
+#: includes/I18n/order-form-strings.php:238
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess-legacy.YY45GKB9.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess.RWeNnLJL.js:3
+#, php-format
+msgid "x %1$d = total %2$d item(s)"
+msgstr "x %1$d = total %2$d item"
+
+#: includes/I18n/order-form-strings.php:239
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Pre-Text"
+msgstr "Teks Awal"
+
+#: includes/I18n/order-form-strings.php:240
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductPrice-legacy.Cy6os6ek.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductPrice.C-YmcCZX.js:1
+msgid ""
+"Displayed items include sample mappings for your main wholesale role. Users "
+"should only see the mapping for their role in the frontend."
+msgstr ""
+"Item yang ditampilkan mencakup pemetaan contoh untuk peran grosir utama "
+"Anda. Pengguna hanya boleh melihat pemetaan untuk peran mereka di tampilan "
+"depan."
+
+#: includes/I18n/order-form-strings.php:245
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Confirm old form data cleanup"
+msgstr "Konfirmasi pembersihan data formulir lama"
+
+#: includes/I18n/order-form-strings.php:246
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid ""
+"Welcome to version 3.0 of Wholesale Order Form! Your forms have "
+"automatically been migrated to the new version. Once you have confirmed "
+"everything is working, click below to clean up the old form data."
+msgstr ""
+"Selamat datang di versi 3.0 Wholesale Order Form! Formulir Anda telah secara "
+"otomatis dimigrasikan ke versi baru. Setelah Anda mengkonfirmasi semuanya "
+"berfungsi, klik di bawah untuk membersihkan data formulir lama."
+
+#: includes/I18n/order-form-strings.php:251
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Action"
+msgstr "Tindakan"
+
+#: includes/I18n/order-form-strings.php:252
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton-legacy.eo6HO11P.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton.BuAiS_Ct.js:1
+msgid "Add To Cart"
+msgstr "Tambah ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:253
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Add to Cart Button"
+msgstr "Tombol Tambah ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:254
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Add to Cart Checkbox"
+msgstr "Kotak Centang Tambah ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:255
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Cart Subtotal"
+msgstr "Subtotal Keranjang"
+
+#: includes/I18n/order-form-strings.php:256
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Category Filter"
+msgstr "Filter Kategori"
+
+#: includes/I18n/order-form-strings.php:257
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Form Pagination"
+msgstr "Paginasi Formulir"
+
+#: includes/I18n/order-form-strings.php:258
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "In Stock Amount"
+msgstr "Jumlah Stok Tersedia"
+
+#: includes/I18n/order-form-strings.php:259
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Only Show Favourites"
+msgstr "Hanya Tampilkan Favorit"
+
+#: includes/I18n/order-form-strings.php:260
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductCategoryOptions-legacy.BzNjWX5p.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductCategoryOptions.2HFSLbLm.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Category"
+msgstr "Kategori Produk"
+
+#: includes/I18n/order-form-strings.php:261
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Product Count"
+msgstr "Jumlah Produk"
+
+#: includes/I18n/order-form-strings.php:262
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions-legacy.DmzVeskh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions.nr36Is42.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product ID"
+msgstr "ID Produk"
+
+#: includes/I18n/order-form-strings.php:263
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Image"
+msgstr "Gambar Produk"
+
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form-strings.php:264
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Meta"
+msgstr "Meta Produk"
+
+#: includes/I18n/order-form-strings.php:265
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions-legacy.CMnBcVrU.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions.-MAyqJWP.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Name"
+msgstr "Nama Produk"
+
+#: includes/I18n/order-form-strings.php:266
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Quantity Input"
+msgstr "Input Jumlah"
+
+#: includes/I18n/order-form-strings.php:267
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Search & Clear Buttons"
+msgstr "Tombol Cari & Hapus"
+
+#: includes/I18n/order-form-strings.php:268
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:1
+msgid "Search Form"
+msgstr "Formulir Pencarian"
+
+#: includes/I18n/order-form-strings.php:269
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Search Input"
+msgstr "Input Pencarian"
+
+#: includes/I18n/order-form-strings.php:270
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Short Description"
+msgstr "Deskripsi Singkat"
+
+#: includes/I18n/order-form-strings.php:272
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Variation Dropdown"
+msgstr "Dropdown Variasi"
+
+#: includes/I18n/order-form-strings.php:277
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:1
+msgid "Form Body"
+msgstr "Isi Formulir"
+
+#: includes/I18n/order-form-strings.php:278
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+msgid "Form Footer"
+msgstr "Footer Formulir"
+
+#: includes/I18n/order-form-strings.php:279
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+msgid "Form Footer Settings"
+msgstr "Pengaturan Footer Formulir"
+
+#: includes/I18n/order-form-strings.php:280
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+msgid "Form Header"
+msgstr "Header Formulir"
+
+#: includes/I18n/order-form-strings.php:281
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+msgid "Form Header Settings"
+msgstr "Pengaturan Header Formulir"
+
+#: includes/I18n/order-form-strings.php:282
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+msgid "Row Settings"
+msgstr "Pengaturan Baris"
+
+#: includes/I18n/order-form-strings.php:283
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show Form Footer"
+msgstr "Tampilkan Footer Formulir"
+
+#: includes/I18n/order-form-strings.php:284
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show Form Header"
+msgstr "Tampilkan Header Formulir"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d is the column number
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = column number
+#: includes/I18n/order-form-strings.php:286
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:5
+#, php-format
+msgid "Column %d Settings"
+msgstr "Pengaturan Kolom %d"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s is the field name
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = field name
+#: includes/I18n/order-form-strings.php:288
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+#, php-format
+msgid "%s Field Settings"
+msgstr "Pengaturan Bidang %s"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s is the table element name
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = field name
+#: includes/I18n/order-form-strings.php:290
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+#, php-format
+msgid "Table %s Field Settings"
+msgstr "Pengaturan Bidang Tabel %s"
+
+#: includes/I18n/order-form-strings.php:295
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Ascending"
+msgstr "Menaik"
+
+#: includes/I18n/order-form-strings.php:296
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize-legacy.BjuG107e.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize.Bd1EIzDF.js:1
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang-legacy.B0A_QqB4.js:1
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang.DBUyE9lT.js:1
+msgid "Auto"
+msgstr "Otomatis"
+
+#: includes/I18n/order-form-strings.php:297
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Cancel"
+msgstr "Batal"
+
+#: includes/I18n/order-form-strings.php:298
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Click Action"
+msgstr "Aksi Klik"
+
+#: includes/I18n/order-form-strings.php:299
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:1
+msgid "Combo (Less Clicks/Faster)"
+msgstr "Kombo (Lebih Sedikit Klik/Lebih Cepat)"
+
+#: includes/I18n/order-form-strings.php:300
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Default"
+msgstr "Bawaan"
+
+#: includes/I18n/order-form-strings.php:301
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Descending"
+msgstr "Menurun"
+
+#: includes/I18n/order-form-strings.php:302
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions-legacy.Ci58G3zw.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions.C-Bxe-iP.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Description"
+msgstr "Deskripsi"
+
+#: includes/I18n/order-form-strings.php:303
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Excluding Tax"
+msgstr "Tidak Termasuk Pajak"
+
+#: includes/I18n/order-form-strings.php:304
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang-legacy.B0A_QqB4.js:1
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang.DBUyE9lT.js:1
+msgid "Full Width"
+msgstr "Lebar Penuh"
+
+#: includes/I18n/order-form-strings.php:305
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "ID"
+msgstr "ID"
+
+#: includes/I18n/order-form-strings.php:306
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Image"
+msgstr "Gambar"
+
+#: includes/I18n/order-form-strings.php:307
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/InStockAmountOptions-legacy.BuhVEonL.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/InStockAmountOptions.BAE_-5hd.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "In Stock"
+msgstr "Dalam Stok"
+
+#: includes/I18n/order-form-strings.php:308
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Including Tax"
+msgstr "Termasuk Pajak"
+
+#: includes/I18n/order-form-strings.php:309
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Last 7 days"
+msgstr "7 hari terakhir"
+
+#: includes/I18n/order-form-strings.php:310
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Last 30 days"
+msgstr "30 hari terakhir"
+
+#: includes/I18n/order-form-strings.php:311
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Last 365 days"
+msgstr "365 hari terakhir"
+
+#: includes/I18n/order-form-strings.php:312
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab-legacy.CCTx-73B.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab.B3d3-7s2.js:1
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang-legacy.CUdZtFzv.js:1
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang.RR9Sdi6L.js:1
+msgid "Locations"
+msgstr "Lokasi"
+
+#: includes/I18n/order-form-strings.php:313
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding-legacy.70zMeHtj.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding.D9-gL8Vd.js:1
+msgid "Margin"
+msgstr "Margin"
+
+#: includes/I18n/order-form-strings.php:314
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Menu Order"
+msgstr "Urutan Menu"
+
+#: includes/I18n/order-form-strings.php:316
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Navigate to Single Product Page"
+msgstr "Navigasi ke Halaman Produk Tunggal"
+
+#: includes/I18n/order-form-strings.php:317
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+msgid "Number"
+msgstr "Angka"
+
+#: includes/I18n/order-form-strings.php:318
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "OK"
+msgstr "OK"
+
+#: includes/I18n/order-form-strings.php:319
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Open in new tab"
+msgstr "Buka di tab baru"
+
+#: includes/I18n/order-form-strings.php:320
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Open in same tab"
+msgstr "Buka di tab yang sama"
+
+#: includes/I18n/order-form-strings.php:321
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions-legacy.DPLRY-_U.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions.DDtNMHRi.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Options"
+msgstr "Pilihan"
+
+#: includes/I18n/order-form-strings.php:322
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding-legacy.70zMeHtj.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding.D9-gL8Vd.js:1
+msgid "Padding"
+msgstr "Padding"
+
+#: includes/I18n/order-form-strings.php:323
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Popularity (default)"
+msgstr "Popularitas (bawaan)"
+
+#: includes/I18n/order-form-strings.php:324
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions-legacy.CiXddtq4.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions.Dkby3451.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang-legacy.S75-atsQ.js:1
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang.mCPp5D5Q.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Price"
+msgstr "Harga"
+
+#: includes/I18n/order-form-strings.php:325
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang-legacy.S75-atsQ.js:1
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang.mCPp5D5Q.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Quantity"
+msgstr "Jumlah"
+
+#: includes/I18n/order-form-strings.php:326
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang-legacy.S75-atsQ.js:1
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang.mCPp5D5Q.js:1
+msgid "Save"
+msgstr "Simpan"
+
+#: includes/I18n/order-form-strings.php:327
+#: templates/admin/parts/settings/license/license-form.php:96
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+msgid "Save Changes"
+msgstr "Simpan Perubahan"
+
+#: includes/I18n/order-form-strings.php:328
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter-legacy.ChjB_iWr.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter.DjiZQIP-.js:1
+msgid "Select Category"
+msgstr "Pilih Kategori"
+
+#: includes/I18n/order-form-strings.php:329
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang-legacy.CUdZtFzv.js:1
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang.RR9Sdi6L.js:1
+msgid "Settings"
+msgstr "Pengaturan"
+
+#: includes/I18n/order-form-strings.php:330
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Show Image Popup"
+msgstr "Tampilkan Popup Gambar"
+
+#: includes/I18n/order-form-strings.php:331
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show Minimum Requirement Notice"
+msgstr "Tampilkan Pemberitahuan Persyaratan Minimum"
+
+#: includes/I18n/order-form-strings.php:332
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Show Product Details Popup"
+msgstr "Tampilkan Popup Detail Produk"
+
+#: includes/I18n/order-form-strings.php:334
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:1
+msgid "Standard (One Box Per Attribute)"
+msgstr "Standar (Satu Kotak Per Atribut)"
+
+#: includes/I18n/order-form-strings.php:335
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Status"
+msgstr "Status"
+
+#: includes/I18n/order-form-strings.php:336
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "WooCommerce Default"
+msgstr "Bawaan WooCommerce"
+
+#: includes/I18n/order-form-strings.php:338
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Yes"
+msgstr "Ya"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$s is the opening <kbd> tag, %2$s is the closing </kbd> tag
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form-strings.php:340
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+#, php-format
+msgid "Submit on %1$sENTER%2$s/%1$sRETURN%2$s"
+msgstr "Kirim dengan %1$sENTER%2$s/%1$sRETURN%2$s"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$s is the opening <strong> tag, %2$s is the closing </strong> tag
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form-strings.php:342
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:3
+#, php-format
+msgid "%1$sStandard%2$s &mdash; Limitation is only up to 100 variations."
+msgstr "%1$sStandar%2$s &mdash; Batas hanya hingga 100 variasi."
+
+#: includes/I18n/order-form-strings.php:343
+msgid "Min: 1 &mdash; Max: 100"
+msgstr "Min: 1 &mdash; Maks: 100"
+
+#: includes/I18n/order-form-strings.php:348
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Order Form Name"
+msgstr "Nama Formulir Pemesanan"
+
+#: includes/I18n/order-form-strings.php:350
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Shortcode"
+msgstr "Shortcode"
+
+#: includes/I18n/order-form-strings.php:351
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Duplicate"
+msgstr "Duplikat"
+
+#: includes/I18n/order-form-strings.php:356
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+msgid "Add Selected Products To Cart"
+msgstr "Tambahkan Produk Terpilih ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:357
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Add Selected Products to Cart"
+msgstr "Tambahkan Produk Terpilih ke Keranjang"
+
+#: includes/I18n/order-form-strings.php:358
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton-legacy.CAqBe0Er.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton.DK7-fgUl.js:1
+msgid "Clear Filters"
+msgstr "Hapus Filter"
+
+#: includes/I18n/order-form-strings.php:359
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Deleting..."
+msgstr "Menghapus..."
+
+#: includes/I18n/order-form-strings.php:360
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:3
+msgid "Empty Cart"
+msgstr "Kosongkan Keranjang"
+
+#: includes/I18n/order-form-strings.php:361
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize-legacy.BjuG107e.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize.Bd1EIzDF.js:1
+msgid "Enter a number"
+msgstr "Masukkan angka"
+
+#: includes/I18n/order-form-strings.php:362
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "ERROR"
+msgstr "GALAT"
+
+#: includes/I18n/order-form-strings.php:363
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton-legacy.eo6HO11P.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton.BuAiS_Ct.js:1
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "ERROR:"
+msgstr "GALAT:"
+
+#: includes/I18n/order-form-strings.php:364
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+msgid "Error adding to cart:"
+msgstr "Galat menambahkan ke keranjang:"
+
+#: includes/I18n/order-form-strings.php:365
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Form saved"
+msgstr "Formulir disimpan"
+
+#: includes/I18n/order-form-strings.php:366
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter-legacy.ChjB_iWr.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter.DjiZQIP-.js:1
+msgid "Loading..."
+msgstr "Memuat..."
+
+#: includes/I18n/order-form-strings.php:367
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+msgid "Out of Stock"
+msgstr "Stok Habis"
+
+#: includes/I18n/order-form-strings.php:368
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:1
+#: dist/common/QuantityInput.vue_vue_type_script_setup_true_lang-legacy.nfr_XJGe.js:1
+#: dist/common/QuantityInput.vue_vue_type_script_setup_true_lang.wKMzdea8.js:1
+msgid "Out of stock"
+msgstr "Stok habis"
+
+#: includes/I18n/order-form-strings.php:369
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton-legacy.CAqBe0Er.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton.DK7-fgUl.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput-legacy.CD1iQF7d.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput.tg2QRQZs.js:1
+msgid "Please enter a search query."
+msgstr "Silakan masukkan kata kunci pencarian."
+
+#: includes/I18n/order-form-strings.php:370
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton-legacy.eo6HO11P.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton.BuAiS_Ct.js:1
+msgid "Successfully added:"
+msgstr "Berhasil ditambahkan:"
+
+#: includes/I18n/order-form-strings.php:371
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Subtotal: "
+msgstr "Subtotal: "
+
+#: includes/I18n/order-form-strings.php:372
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Your form has been saved successfully!"
+msgstr "Formulir Anda telah berhasil disimpan!"
+
+#: includes/I18n/order-form-strings.php:373
+#: includes/Shortcodes/WWOF_Product_Listing.php:113
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "You do not have permission to view this order form."
+msgstr "Anda tidak memiliki izin untuk melihat formulir pemesanan ini."
+
+#: includes/I18n/order-form-strings.php:374
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:1
+msgid "(excl. tax)"
+msgstr "(tidak termasuk pajak)"
+
+#: includes/I18n/order-form-strings.php:375
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:1
+msgid "(incl. tax)"
+msgstr "(termasuk pajak)"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s is the image alt text
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = image name
+#: includes/I18n/order-form-strings.php:377
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+#, php-format
+msgid "Image: %s"
+msgstr "Gambar: %s"
+
+#: includes/I18n/order-form-strings.php:378
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/FormPagination-legacy.BpZQ6MKl.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/FormPagination.BG8MKBCr.js:1
+msgid "Pagination is hidden when \"Lazy Loading\" option is enabled."
+msgstr "Paginasi disembunyikan ketika opsi \"Lazy Loading\" diaktifkan."
+
+#: includes/I18n/order-form-strings.php:383
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Enter meta key"
+msgstr "Masukkan kunci meta"
+
+#: includes/I18n/order-form-strings.php:384
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Enter meta name"
+msgstr "Masukkan nama meta"
+
+#: includes/I18n/order-form-strings.php:389
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Are you sure you want to delete V2 Form Data?"
+msgstr "Apakah Anda yakin ingin menghapus Data Formulir V2?"
+
+#: includes/I18n/order-form-strings.php:390
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Cleanup Old Form Data"
+msgstr "Bersihkan Data Formulir Lama"
+
+#: includes/I18n/order-form-strings.php:391
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Deleted"
+msgstr "Dihapus"
+
+#: includes/I18n/order-form-strings.php:392
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Migrate V2 Form Data"
+msgstr "Migrasikan Data Formulir V2"
+
+#: includes/I18n/order-form-strings.php:393
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Migrated"
+msgstr "Dimigrasikan"
+
+#: includes/I18n/order-form-strings.php:394
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Migrating..."
+msgstr "Memigrasikan..."
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d: number of products added to cart
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of items added to cart
+#: includes/I18n/order-form-strings.php:400
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart-legacy.63VStZOp.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart.DyH4IEZX.js:3
+#, php-format
+msgid "%d product added."
+msgid_plural "%d products added."
+msgstr[0] "%d produk ditambahkan."
+msgstr[1] "%d produk ditambahkan."
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d: number of products
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = total number of products
+#: includes/I18n/order-form-strings.php:402
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/ProductCount-legacy.8b2AA9bn.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/ProductCount.DMzti5Jb.js:3
+#, php-format
+msgid "%d Product"
+msgid_plural "%d Products"
+msgstr[0] "%d Produk"
+msgstr[1] "%d Produk"
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d: number of pages
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of locations found
+#: includes/I18n/order-form-strings.php:404
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang-legacy.CROfTkav.js:1
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang.FnyypEjG.js:3
+#, php-format
+msgid "%d page"
+msgid_plural "%d pages"
+msgstr[0] "%d halaman"
+msgstr[1] "%d halaman"
+
+#: includes/Integrations/WWP.php:104
+msgid "Database Optimization"
+msgstr "Optimasi Basis Data"
+
+#: includes/Integrations/WWP.php:125
+msgid "Scheduling database optimization."
+msgstr "Menjadwalkan optimasi basis data."
+
+#: includes/Integrations/WWP.php:132
+msgid "Database optimization scheduled."
+msgstr "Optimasi basis data dijadwalkan."
+
+#: includes/Integrations/WWP.php:138
+msgid "Database optimization scheduled successfully!"
+msgstr "Optimasi basis data berhasil dijadwalkan!"
+
+#. translators: %s: error message
+#: includes/Integrations/WWP.php:145
+#, php-format
+msgid "Database optimization scheduling failed: %s"
+msgstr "Penjadwalan optimasi basis data gagal: %s"
+
+#. translators: %s: error message
+#: includes/Integrations/WWP.php:155
+#, php-format
+msgid "Failed to schedule database optimization: %s"
+msgstr "Gagal menjadwalkan optimasi basis data: %s"
+
+#: includes/Integrations/WWP.php:194
+msgid "Optimization Complete"
+msgstr "Optimasi Selesai"
+
+#: includes/Integrations/WWP.php:196
+msgid "Optimization Running..."
+msgstr "Optimasi Berjalan..."
+
+#: includes/Integrations/WWP.php:198
+msgid "Optimize Database"
+msgstr "Optimalkan Basis Data"
+
+#: includes/Integrations/WWP.php:213
+msgid "Database optimization has been completed successfully."
+msgstr "Optimasi basis data telah berhasil diselesaikan."
+
+#: includes/Integrations/WWP.php:215
+msgid "Database optimization is currently running. Please wait."
+msgstr "Optimasi basis data sedang berjalan. Harap tunggu."
+
+#: includes/Integrations/WWP.php:217
+msgid "Click to schedule database optimization for improved performance."
+msgstr ""
+"Klik untuk menjadwalkan optimasi basis data guna meningkatkan performa."
+
+#: includes/Post_Types/Order_Form_Post_Type.php:50
+msgid "Order Form"
+msgstr "Formulir Pemesanan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:52
+msgid "Parent Order Form"
+msgstr "Formulir Pemesanan Induk"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:54
+msgid "View Order Form"
+msgstr "Lihat Formulir Pemesanan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:55
+msgid "Add Order Form"
+msgstr "Tambah Formulir Pemesanan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:56
+msgid "New Order Form"
+msgstr "Formulir Pemesanan Baru"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:57
+msgid "Edit Order Form"
+msgstr "Edit Formulir Pemesanan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:58
+msgid "Update Order Form"
+msgstr "Perbarui Formulir Pemesanan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:59
+msgid "Search Order Forms"
+msgstr "Cari Formulir Pemesanan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:60
+msgid "No Order Form found"
+msgstr "Tidak ada Formulir Pemesanan ditemukan"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:61
+msgid "No Order Forms found in Trash"
+msgstr "Tidak ada Formulir Pemesanan ditemukan di Sampah"
+
+#: includes/Post_Types/Order_Form_Post_Type.php:66
+msgid "Order Forms CPT"
+msgstr "CPT Formulir Pemesanan"
+
+#: includes/REST/Admin_Notices.php:93
+msgid "Invalid notice key."
+msgstr "Kunci pemberitahuan tidak valid."
+
+#: includes/REST/Favourites.php:89 includes/REST/Favourites.php:106
+msgid "Product ID."
+msgstr "ID Produk."
+
+#: includes/REST/Favourites.php:128
+msgid "Product saved to favourites."
+msgstr "Produk disimpan ke favorit."
+
+#: includes/REST/Favourites.php:130
+msgid "Product already in favourites."
+msgstr "Produk sudah ada di favorit."
+
+#: includes/REST/Favourites.php:149
+msgid "Product removed from favourites."
+msgstr "Produk dihapus dari favorit."
+
+#: includes/REST/Favourites.php:151
+msgid "Product not found in favourites."
+msgstr "Produk tidak ditemukan di favorit."
+
+#: includes/REST/License_Manager.php:101
+msgid "License activation notice dismissed!"
+msgstr "Pemberitahuan aktivasi lisensi diabaikan!"
+
+#: includes/REST/License_Manager.php:180
+msgid ""
+"Failed to activate license. Failed to connect to activation access point. "
+"Please contact plugin support."
+msgstr ""
+"Gagal mengaktifkan lisensi. Gagal terhubung ke titik akses aktivasi. Silakan "
+"hubungi dukungan plugin."
+
+#: includes/REST/License_Manager.php:198
+msgid ""
+"Failed to activate license. Activation access point return invalid response. "
+"Please contact plugin support."
+msgstr ""
+"Gagal mengaktifkan lisensi. Titik akses aktivasi mengembalikan respons tidak "
+"valid. Silakan hubungi dukungan plugin."
+
+#: includes/REST/License_Manager.php:292
+msgid ""
+"Something went wrong activating the license. Please contact plugin support."
+msgstr ""
+"Terjadi kesalahan saat mengaktifkan lisensi. Silakan hubungi dukungan plugin."
+
+#: includes/REST/Order_Form.php:186
+msgid "Order Form Table must have columns for display."
+msgstr "Tabel Formulir Pemesanan harus memiliki kolom untuk ditampilkan."
+
+#: includes/REST/Order_Form.php:234
+msgid "Form could not be updated."
+msgstr "Formulir tidak dapat diperbarui."
+
+#: includes/REST/Order_Form.php:547
+msgid "Invalid form id"
+msgstr "ID formulir tidak valid"
+
+#: includes/REST/Order_Form.php:555
+msgid "Original form not found"
+msgstr "Formulir asli tidak ditemukan"
+
+#: includes/REST/Order_Form.php:639
+msgid "V2 Order Forms migrated to V3!"
+msgstr "Formulir Pemesanan V2 dimigrasikan ke V3!"
+
+#: includes/REST/Order_Form.php:676
+msgid "V2 Order Forms data deleted!"
+msgstr "Data Formulir Pemesanan V2 dihapus!"
+
+#: includes/REST/Order_Form.php:679
+msgid "No V2 Order Forms found!"
+msgstr "Tidak ada Formulir Pemesanan V2 ditemukan!"
+
+#: includes/REST/Setup_Wizard.php:97
+msgid "The setup wizard has been dismissed."
+msgstr "Panduan penyiapan telah diabaikan."
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:144
+msgid "Logout and login here"
+msgstr "Keluar dan masuk di sini"
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:145
+msgid "Login Here"
+msgstr "Masuk Di Sini"
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:173
+msgid "No order form ID specified."
+msgstr "Tidak ada ID formulir pemesanan yang ditentukan."
+
+#: includes/Shortcodes/WWOF_Product_Listing.php:175
+#: includes/Shortcodes/WWOF_Product_Listing.php:182
+msgid ""
+"There is a config error on this form. Please contact the site administrator."
+msgstr ""
+"Terdapat kesalahan konfigurasi pada formulir ini. Silakan hubungi "
+"administrator situs."
+
+#. translators: %d = order form ID given to [wwof_product_listing] shortcode
+#: includes/Shortcodes/WWOF_Product_Listing.php:180
+#, php-format
+msgid "Order form ID %d does not exist!"
+msgstr "ID formulir pemesanan %d tidak ada!"
+
+#: templates/admin/parts/notices/getting-started.php:70
+msgid ""
+"Thank you for choosing Wholesale Suite – the most complete wholesale "
+"solution for building wholesale sales into your existing WooCommerce driven "
+"store."
+msgstr ""
+"Terima kasih telah memilih Wholesale Suite – solusi grosir paling lengkap "
+"untuk membangun penjualan grosir ke dalam toko berbasis WooCommerce Anda "
+"yang ada."
+
+#: templates/admin/parts/notices/getting-started.php:78
+msgid ""
+"To help you get up and running as quickly and as smoothly as possible, we've "
+"published a number of getting started guides for our tools. You'll find "
+"links to these at any time inside the Help section in the settings for each "
+"plugin, but here are the links below so you can read them now."
+msgstr ""
+"Untuk membantu Anda memulai secepat dan semulus mungkin, kami telah "
+"menerbitkan sejumlah panduan memulai untuk alat kami. Anda akan menemukan "
+"tautan ke panduan tersebut kapan saja di bagian Bantuan dalam pengaturan "
+"setiap plugin, namun berikut tautan di bawah ini agar Anda dapat membacanya "
+"sekarang."
+
+#: templates/admin/parts/notices/getting-started.php:89
+msgid "Wholesale Prices Premium Guide"
+msgstr "Panduan Harga Grosir Premium"
+
+#: templates/admin/parts/notices/getting-started.php:94
+msgid "Wholesale Prices Guide"
+msgstr "Panduan Harga Grosir"
+
+#: templates/admin/parts/notices/getting-started.php:99
+msgid "Wholesale Order Form Guide"
+msgstr "Panduan Formulir Pemesanan Grosir"
+
+#: templates/admin/parts/notices/getting-started.php:106
+#: templates/admin/parts/notices/getting-started.php:145
+msgid "Dismiss this notice."
+msgstr "Tutup pemberitahuan ini."
+
+#: templates/admin/parts/notices/getting-started.php:124
+msgid ""
+"Thank you for choosing Order Form to provide an efficient, optimized "
+"ordering experience for your wholesale customers. We know they're going to "
+"love it!"
+msgstr ""
+"Terima kasih telah memilih Formulir Pemesanan untuk memberikan pengalaman "
+"pemesanan yang efisien dan optimal bagi pelanggan grosir Anda. Kami tahu "
+"mereka akan menyukainya!"
+
+#: templates/admin/parts/notices/getting-started.php:131
+msgid ""
+"The plugin has already created an order form page which you'll find under "
+"the Wholesale menu. We highly recommend reading the getting started guide to "
+"help you get up to speed on customizing order form experience."
+msgstr ""
+"Plugin telah membuat halaman formulir pemesanan yang akan Anda temukan di "
+"bawah menu Grosir. Kami sangat menyarankan membaca panduan memulai untuk "
+"membantu Anda memahami cara menyesuaikan pengalaman formulir pemesanan."
+
+#: templates/admin/parts/notices/getting-started.php:138
+msgid "Read the Getting Started guide"
+msgstr "Baca panduan Memulai"
+
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:13
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:18
+msgid "Refetch Plugin Update Data"
+msgstr "Ambil Ulang Data Pembaruan Plugin"
+
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:21
+msgid "Are you sure you want to refetch plugin update data?"
+msgstr "Apakah Anda yakin ingin mengambil ulang data pembaruan plugin?"
+
+#: templates/admin/parts/settings/help/fetch-update-data-button.php:30
+msgid ""
+"This will refetch the plugin update data. Useful for debugging failed plugin "
+"update operations."
+msgstr ""
+"Ini akan mengambil ulang data pembaruan plugin. Berguna untuk men-debug operasi "
+"pembaruan plugin yang gagal."
+
+#: templates/admin/parts/settings/help/help-resources.php:14
+#: templates/admin/parts/settings/help/help-resources.php:26
+msgid "Knowledge Base"
+msgstr "Basis Pengetahuan"
+
+#: templates/admin/parts/settings/help/help-resources.php:20
+msgid "Looking for documentation? Please see our growing"
+msgstr "Mencari dokumentasi? Silakan lihat yang terus berkembang"
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: templates/admin/parts/settings/license/interstitial.php:30
+#, php-format
+msgid "%1$sUrgent!%2$s Your Wholesale Suite license has expired!"
+msgstr "%1$sMenunggu!%2$s Lisensi Wholesale Suite Anda telah kedaluwarsa!"
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: templates/admin/parts/settings/license/interstitial.php:40
+#, php-format
+msgid "%1$sUrgent!%2$s Your Wholesale Suite license is missing!"
+msgstr "%1$sMenunggu!%2$s Lisensi Wholesale Suite Anda tidak ada!"
+
+#. translators: %1$s and %2$s opening and closing strong tags respectively.
+#: templates/admin/parts/settings/license/interstitial.php:50
+#, php-format
+msgid "%1$sUrgent!%2$s Your Wholesale Suite license is disabled!"
+msgstr "%1$sMenunggu!%2$s Lisensi Wholesale Suite Anda dinonaktifkan!"
+
+#: templates/admin/parts/settings/license/interstitial.php:59
+msgid ""
+"Without an active license, your website front end will still continue to "
+"receive wholesale orders, leads and show wholesale pricing but premium "
+"functionality has been disabled until a valid license is entered."
+msgstr ""
+"Tanpa lisensi aktif, bagian depan situs web Anda akan tetap menerima pesanan "
+"grosir, prospek dan menampilkan harga grosir, namun fungsionalitas premium "
+"telah dinonaktifkan hingga lisensi yang valid dimasukkan."
+
+#: templates/admin/parts/settings/license/interstitial.php:75
+msgid "No license found"
+msgstr "Tidak ada lisensi ditemukan"
+
+#: templates/admin/parts/settings/license/interstitial.php:85
+msgid "Enter License Now"
+msgstr "Masukkan Lisensi Sekarang"
+
+#: templates/admin/parts/settings/license/interstitial.php:87
+msgid "Repurchase New License"
+msgstr "Beli Ulang Lisensi Baru"
+
+#: templates/admin/parts/settings/license/interstitial.php:91
+msgid "Enter a new license"
+msgstr "Masukkan lisensi baru"
+
+#: templates/admin/parts/settings/license/interstitial.php:92
+msgid "Refresh license status"
+msgstr "Perbarui status lisensi"
+
+#: templates/admin/parts/settings/license/interstitial.php:94
+msgid "Don’t have a license yet? Purchase here."
+msgstr "Belum memiliki lisensi? Beli di sini."
+
+#: templates/admin/parts/settings/license/license-form.php:39
+msgid "License Expired"
+msgstr "Lisensi Kedaluwarsa"
+
+#. translators: %1$s = license expiration date; %2$s = <br> tag; %3$s = opening <strong> tag; %4$s = </strong> closing tag; %5$s = opening <a> tag; %6$s = closing </a> tag
+#: templates/admin/parts/settings/license/license-form.php:45
+#, php-format
+msgid ""
+"The entered license was purchased over 12 months ago and expired on %1$s."
+"%2$sTo continue receiving support & updates please %3$s%5$sclick here to "
+"renew your license%6$s.%4$s"
+msgstr ""
+"Lisensi yang dimasukkan dibeli lebih dari 12 bulan yang lalu dan kedaluwarsa pada %1$s."
+"%2$sUntuk terus menerima dukungan & pembaruan silakan %3$s%5$sklik di sini untuk "
+"memperbarui lisensi Anda%6$s.%4$s"
+
+#: templates/admin/parts/settings/license/license-form.php:67
+msgid "License Email"
+msgstr "Email Lisensi"
+
+#: templates/admin/parts/settings/license/license-form.php:81
+msgid "License Key"
+msgstr "Kunci Lisensi"
+
+#. translators: %s: current server PHP version
+#: woocommerce-wholesale-order-form.bootstrap.php:120
+#, php-format
+msgid ""
+"WooCommerce Wholesale Order Form plugin requires at least PHP 7.3 to work "
+"properly. Your server is currently using PHP %s."
+msgstr ""
+"Plugin WooCommerce Wholesale Order Form membutuhkan setidaknya PHP 7.3 untuk berfungsi "
+"dengan baik. Server Anda saat ini menggunakan PHP %s."
+
+#. translators: %1$s = "Form Header" or "Form Footer"
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Currently, set to NOT show %1$s section."
+msgstr "Saat ini, diatur untuk TIDAK menampilkan bagian %1$s."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Are you sure you want to delete this form?"
+msgid_plural "Are you sure you want to delete these forms?"
+msgstr[0] "Apakah Anda yakin ingin menghapus formulir ini?"
+msgstr[1] "Apakah Anda yakin ingin menghapus formulir-formulir ini?"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Form successfully deleted."
+msgstr "Formulir berhasil dihapus."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "The form has been successfully deleted."
+msgstr "Formulir telah berhasil dihapus."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange-legacy.TQ3iZWG0.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange.Cty2Ic6m.js:1
+msgid "Min Price"
+msgstr "Harga Minimum"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange-legacy.TQ3iZWG0.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange.Cty2Ic6m.js:1
+msgid "Max Price"
+msgstr "Harga Maksimum"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "Min Price Placeholder"
+msgstr "Placeholder Harga Minimum"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "Max Price Placeholder"
+msgstr "Placeholder Harga Maksimum"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "Step Increment"
+msgstr "Kenaikan Langkah"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "The increment value for the price inputs."
+msgstr "Nilai kenaikan untuk input harga."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PrintButton-legacy.D18mPg03.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PrintButton.uKtrE_r0.js:1
+msgid "Print Order Form"
+msgstr "Cetak Formulir Pemesanan"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+msgid "Show Icon"
+msgstr "Tampilkan Ikon"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+msgid "Display a printer icon next to the button text."
+msgstr "Tampilkan ikon printer di sebelah teks tombol."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Meta key with underscore prefix are private hence, this will not work."
+msgstr "Kunci meta dengan awalan garis bawah bersifat privat, oleh karena itu ini tidak akan berfungsi."
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid ""
+"Note: Meta key with underscore prefix (%1$s_%2$s) are private hence they "
+"will not be displayed."
+msgstr ""
+"Catatan: Kunci meta dengan awalan garis bawah (%1$s_%2$s) bersifat privat sehingga "
+"tidak akan ditampilkan."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+msgid "Show Field Labels"
+msgstr "Tampilkan Label Bidang"
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+msgid "Display the label name for each product meta field."
+msgstr "Tampilkan nama label untuk setiap bidang meta produk."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:3
+msgid ""
+"%1$sNote:%2$s If pagination element is added in the editor, this will be "
+"hidden in the frontend."
+msgstr ""
+"%1$sCatatan:%2$s Jika elemen paginasi ditambahkan di editor, ini akan "
+"disembunyikan di bagian depan."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:5
+msgid ""
+"%1$sWarning:%2$s Enabling this option might have significant impact on the "
+"speed of fetching and/or displaying results in the order form table "
+"especially if you have a large number of variations per product."
+msgstr ""
+"%1$sPeringatan:%2$s Mengaktifkan opsi ini mungkin berdampak signifikan pada "
+"kecepatan pengambilan dan/atau penampilan hasil di tabel formulir pemesanan "
+"terutama jika Anda memiliki banyak variasi per produk."
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"%1$sIf you have products with variation option set to ANY, this will render "
+"confusing product items. In this case, we recommend disabling this "
+"option%2$s."
+msgstr ""
+"%1$sJika Anda memiliki produk dengan opsi variasi disetel ke APA SAJA, ini akan "
+"menampilkan item produk yang membingungkan. Dalam kasus ini, kami menyarankan "
+"untuk menonaktifkan opsi ini%2$s."
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid ""
+"Simplifies the \"Add to Cart Notices\" by displaying icons next to the \"Add "
+"to Cart\" button instead of showing popup/slide notifications."
+msgstr ""
+"Menyederhanakan \"Pemberitahuan Tambah ke Keranjang\" dengan menampilkan ikon di sebelah "
+"tombol \"Tambah ke Keranjang\" alih-alih menampilkan notifikasi popup/geser."
+
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Are you sure you want to duplicate this form?"
+msgstr "Apakah Anda yakin ingin menduplikasi formulir ini?"
+
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Form successfully duplicated."
+msgstr "Formulir berhasil diduplikasi."
+
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "The form has been successfully duplicated."
+msgstr "Formulir telah berhasil diduplikasi."
+
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Defaults to \"Access Denied\" if left blank."
+msgstr "Bawaan \"Akses Ditolak\" jika dibiarkan kosong."
+
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid ""
+"Defaults to \"You do not have permission to view this order form.\" if left "
+"blank."
+msgstr ""
+"Bawaan \"Anda tidak memiliki izin untuk melihat formulir pemesanan ini.\" jika "
+"dibiarkan kosong."
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid ""
+"Below is a list of all the order forms for displaying products that you have "
+"on your store. Click each form to edit it's settings or add a new form using "
+"the %1$sAdd Form%2$s button below. Forms can be placed on pages via the "
+"given shortcode or via an editor block. Forms can be reused on multiple "
+"pages and you can also query what pages each form appears on."
+msgstr ""
+"Berikut adalah daftar semua formulir pemesanan untuk menampilkan produk yang Anda miliki "
+"di toko Anda. Klik setiap formulir untuk mengedit pengaturannya atau tambahkan formulir baru menggunakan "
+"tombol %1$sTambah Formulir%2$s di bawah. Formulir dapat ditempatkan di halaman melalui "
+"shortcode yang diberikan atau melalui blok editor. Formulir dapat digunakan kembali di beberapa "
+"halaman dan Anda juga dapat menanyakan halaman mana saja yang memuat setiap formulir."
+
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Form deleted"
+msgid_plural "Forms deleted"
+msgstr[0] "Formulir dihapus"
+msgstr[1] "Formulir dihapus"
+
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Your form was successfully deleted."
+msgid_plural "Your forms were successfully deleted."
+msgstr[0] "Formulir Anda berhasil dihapus."
+msgstr[1] "Formulir-formulir Anda berhasil dihapus."
+
+#. translators: %1$s = pre-text setting value; %2$s = formatted amount; %3$s = tax suffix text
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:3
+msgctxt "Price amount excluding tax"
+msgid "%1$s%2$s %3$s"
+msgstr "%1$s%2$s %3$s"
+
+#: dist/apps/wwof/front/index-legacy.js:1 dist/apps/wwof/front/index.js:1
+msgid ""
+"This Order Form is in \"Draft\" status. It will only be visible to admin "
+"users."
+msgstr ""
+"Formulir Pemesanan ini berstatus \"Draf\". Formulir ini hanya akan terlihat oleh pengguna "
+"admin."
+
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Price Range"
+msgstr "Rentang Harga"
+
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Print Button"
+msgstr "Tombol Cetak"
+
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Unable to find the element for lazy-loading."
+msgstr "Tidak dapat menemukan elemen untuk lazy-loading."
+
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "GTIN"
+msgstr "GTIN"
+
+#. translators: %1$s opening <strong> tag; %2$s = closing </strong> tag
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:5
+msgid ""
+"%1$sCombo%2$s &mdash; Recommended for products with large variations (more "
+"than 100 variations). With this option selected, variations more than 100 "
+"are lazy loaded on scroll down."
+msgstr ""
+"%1$sKombo%2$s &mdash; Direkomendasikan untuk produk dengan variasi besar (lebih "
+"dari 100 variasi). Dengan opsi ini dipilih, variasi lebih dari 100 "
+"dimuat secara lazy saat menggulir ke bawah."
+
+#: dist/vanilla/admin/notices/getting-started-legacy.js:1
+#: dist/vanilla/admin/notices/getting-started.js:1
+msgid "Something went wrong dismissing the getting started notice."
+msgstr "Terjadi kesalahan saat menutup pemberitahuan memulai."

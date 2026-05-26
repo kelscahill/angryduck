@@ -3,6 +3,7 @@ import { dispatch, select } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { mapValues } from 'lodash';
+import { useDebounce } from '@wordpress/compose';
 import {
 	Label,
 	LabelPurchaseError,
@@ -20,17 +21,22 @@ import {
 	getPDFFileName,
 	getPrintURL,
 	getPackingSlipPrintURL,
+	getStoreOrigin,
 	printDocument,
 	getLastOrderCompleted,
 	shouldAutomaticallyOpenPrintDialog,
 	printPackingSlipDocument,
 	maybeDecrementPromoRemaining,
+	toUTCMidnightISOString,
 } from 'utils';
 import { labelPurchaseStore } from 'data/label-purchase';
 import { usePackageState } from './packages';
 import { useShipmentState } from './shipment';
 import { useRatesState } from './rates';
-import { TIME_TO_WAIT_TO_CHECK_PURCHASED_LABEL_STATUS_MS } from '../constants';
+import {
+	TIME_TO_WAIT_TO_CHECK_PURCHASED_LABEL_STATUS_MS,
+	MAX_LABEL_STATUS_RETRIES,
+} from '../constants';
 import { CUSTOM_PACKAGE_TYPES } from '../packages/constants';
 import { getPaperSizes } from '../label';
 import { useHazmatState } from './hazmat';
@@ -51,7 +57,8 @@ interface UseLabelsStateProps {
 	getShipmentHazmat: ReturnType<
 		typeof useHazmatState
 	>[ 'getShipmentHazmat' ];
-	updateRates: ReturnType< typeof useRatesState >[ 'updateRates' ];
+	isFetching: ReturnType< typeof useRatesState >[ 'isFetching' ];
+	resetRates: ReturnType< typeof useRatesState >[ 'resetRates' ];
 	getShipmentOrigin: ReturnType<
 		typeof useShipmentState
 	>[ 'getShipmentOrigin' ];
@@ -66,6 +73,14 @@ interface UseLabelsStateProps {
 	getCurrentShipmentDate: ReturnType<
 		typeof useShipmentState
 	>[ 'getCurrentShipmentDate' ];
+	getCurrentShipmentIsReturn: ReturnType<
+		typeof useShipmentState
+	>[ 'getCurrentShipmentIsReturn' ];
+	getCurrentShipmentParentId: ReturnType<
+		typeof useShipmentState
+	>[ 'getCurrentShipmentParentId' ];
+	returnShipments: ReturnType< typeof useShipmentState >[ 'returnShipments' ];
+	removeShipment?: ( shipmentId: string ) => void; // Added removeShipment
 }
 
 const handlePurchaseException = ( e: LabelPurchaseError ) =>
@@ -106,13 +121,17 @@ export function useLabelsState( {
 	getSelectionItems,
 	totalWeight,
 	getShipmentHazmat,
-	updateRates,
+	isFetching,
+	resetRates,
 	getShipmentOrigin,
 	customs: { maybeApplyCustomsToPackage, getCustomsState },
 	applyHazmatToPackage,
 	shipments,
 	getSelectedRateOptions,
 	getCurrentShipmentDate,
+	getCurrentShipmentIsReturn,
+	getCurrentShipmentParentId,
+	removeShipment, // Added removeShipment
 }: UseLabelsStateProps ) {
 	const order = getCurrentOrder();
 	const getShipmentLabel = useCallback(
@@ -127,16 +146,14 @@ export function useLabelsState( {
 	const country = getShipmentOrigin()?.country;
 
 	const paperSizes = getPaperSizes( country );
-	const [ labels, setLabels ] = useState<
-		Record< string, Label | undefined >
-	>(
+	const [ , setLabels ] = useState< Record< string, Label | undefined > >(
 		purchasedLabels ?? {
 			0: currentShipmentLabel,
 		}
 	);
 
 	useEffect( () => {
-		setLabels( ( prevState: typeof labels ) => ( {
+		setLabels( ( prevState: Record< string, Label | undefined > ) => ( {
 			...prevState,
 			// we want to update the label for the current shipment even if the label turned out to be refunded, in this case currentShipmentLabel will be undefined
 			[ currentShipmentId ]: currentShipmentLabel,
@@ -155,8 +172,9 @@ export function useLabelsState( {
 	);
 
 	const getCurrentShipmentLabel = useCallback(
-		( shipmentId = currentShipmentId ) => labels[ shipmentId ],
-		[ labels, currentShipmentId ]
+		( shipmentId = currentShipmentId ) =>
+			select( labelPurchaseStore ).getPurchasedLabel( shipmentId ),
+		[ currentShipmentId ]
 	);
 
 	const [ isPurchasing, setIsPurchasing ] = useState( false );
@@ -171,15 +189,101 @@ export function useLabelsState( {
 		string[]
 	>( [] );
 
+	// Dismiss the top-of-view purchase error notice when the merchant kicks
+	// off a fresh rate fetch — they've moved on from the failed attempt.
+	useEffect( () => {
+		if ( isFetching ) {
+			setLabelStatusUpdateErrors( [] );
+		}
+	}, [ isFetching ] );
+
+	const hasPurchasedLabel = useCallback(
+		(
+			checkStatus = true,
+			excludeRefunded = false,
+			shipmentId: string = currentShipmentId
+		): boolean => {
+			const label = getShipmentLabel( shipmentId );
+			if ( excludeRefunded && label?.refund ) {
+				return false;
+			}
+
+			if ( checkStatus ) {
+				return label?.status === LABEL_PURCHASE_STATUS.PURCHASED;
+			}
+
+			return (
+				// label is purchased if it's not errored
+				( label &&
+					label.status !== LABEL_PURCHASE_STATUS.PURCHASE_ERROR ) ??
+				false
+			);
+		},
+		[ currentShipmentId, getShipmentLabel ]
+	);
+
+	// Track retry count for label status polling
+	const [ labelStatusRetryCount, setLabelStatusRetryCount ] = useState<
+		Record< number, number >
+	>( {} );
+
+	const [ isAnyRequestInProgress, setIsAnyRequestInProgress ] =
+		useState( false );
+
+	/**
+	 * Debounced function to hide the progress state. We only debounce when hiding (not showing)
+	 * to ensure the modal appears immediately but closes smoothly after a short delay.
+	 * useCallback is required because useDebounce recreates the debounced function when
+	 * the callback reference changes, which would break the debounce timing.
+	 */
+	const debouncedSetProgressFalse = useDebounce(
+		useCallback( () => setIsAnyRequestInProgress( false ), [] ),
+		300
+	);
+
+	useEffect( () => {
+		if ( isPurchasing || isUpdatingStatus ) {
+			debouncedSetProgressFalse.cancel();
+			setIsAnyRequestInProgress( true );
+		} else {
+			/**
+			 * Debounce hiding the "Processing your order" modal to provide a smoother UX
+			 * and prevent abrupt UI changes when the request completes (success or error).
+			 */
+			debouncedSetProgressFalse();
+		}
+	}, [ isPurchasing, isUpdatingStatus, debouncedSetProgressFalse ] );
+
+	// Helper function to reset retry count for a specific label
+	const resetLabelRetryCount = useCallback(
+		( labelId: number ) => {
+			setLabelStatusRetryCount( ( prev ) => {
+				const { [ labelId ]: _, ...rest } = prev;
+				return rest;
+			} );
+		},
+		[ setLabelStatusRetryCount ]
+	);
+
 	const maybeUpdateRates = useCallback( () => {
 		if (
 			! currentShipmentLabel ||
 			currentShipmentLabel.status === LABEL_PURCHASE_STATUS.PURCHASE_ERROR
 		) {
-			// The purchase might not be successful yet.
-			updateRates(); // Update rates so that the same shipment id is not used again
+			// Remove the current shipment if it has no purchased label and was created for a failed purchase
+			if (
+				removeShipment &&
+				! hasPurchasedLabel( false, false, currentShipmentId )
+			) {
+				removeShipment( currentShipmentId );
+			}
 		}
-	}, [ currentShipmentLabel, updateRates ] );
+	}, [
+		currentShipmentLabel,
+		hasPurchasedLabel,
+		currentShipmentId,
+		removeShipment,
+	] );
 
 	const printLabel = useCallback(
 		async (
@@ -206,7 +310,11 @@ export function useLabelsState( {
 			if ( size ) {
 				labelSize = size;
 			}
-			const path = getPrintURL( labelSize.key, label.labelId );
+			const path = getPrintURL(
+				labelSize.key,
+				label.labelId,
+				getStoreOrigin().country
+			);
 			try {
 				const pdfJson = await apiFetch< PDFJson >( {
 					path,
@@ -300,6 +408,27 @@ export function useLabelsState( {
 		): Promise< void | LabelPurchaseError > => {
 			const { resolve, reject } = resolvers ?? {};
 			setIsUpdatingStatus( true );
+
+			// Get current retry count for this label
+			const currentRetryCount = labelStatusRetryCount[ labelId ] || 0;
+
+			// Check if we've exceeded max retries
+			if ( currentRetryCount >= MAX_LABEL_STATUS_RETRIES ) {
+				setIsUpdatingStatus( false );
+				maybeUpdateRates();
+				// Reset retry count for this label
+				resetLabelRetryCount( labelId );
+				return ( reject ?? Promise.reject< LabelPurchaseError > )?.( {
+					cause: 'status_error',
+					message: [
+						__(
+							'Label purchase is taking longer than expected. The purchase may still be processing. Please try refreshing the status in a few minutes or contact support if the issue persists.',
+							'woocommerce-shipping'
+						),
+					],
+				} );
+			}
+
 			try {
 				await dispatch( labelPurchaseStore ).fetchLabelStatus(
 					order.id,
@@ -308,6 +437,8 @@ export function useLabelsState( {
 			} catch ( e ) {
 				setIsUpdatingStatus( false );
 				maybeUpdateRates();
+				// Reset retry count on error
+				resetLabelRetryCount( labelId );
 				const message = getLabelStatusErrorMessage( e as Error );
 				return ( reject ?? Promise.reject< LabelPurchaseError > )?.( {
 					cause: 'status_error',
@@ -316,18 +447,26 @@ export function useLabelsState( {
 			}
 
 			const label =
-				select( labelPurchaseStore ).getPurchasedLabel(
-					currentShipmentId
-				);
+				select( labelPurchaseStore ).getLabelByLabelId( labelId );
 
 			if ( ! label ) {
 				setIsUpdatingStatus( false );
+				// Reset retry count
+				resetLabelRetryCount( labelId );
 				return ( resolve ?? Promise.resolve )();
 			}
 
 			if ( label.status === LABEL_PURCHASE_STATUS.PURCHASE_ERROR ) {
 				setIsUpdatingStatus( false );
+				// Clear fetched rates and the rate-fetch warning so the merchant
+				// must explicitly request rates again after a failed purchase;
+				// the previous rates may reference a shipment id that's no
+				// longer reusable, and any prior fetch warning is no longer
+				// relevant to an empty rates panel.
+				resetRates();
 				maybeUpdateRates();
+				// Reset retry count
+				resetLabelRetryCount( labelId );
 				return ( reject ?? Promise.reject< LabelPurchaseError > )?.( {
 					cause: 'status_error',
 					message: [
@@ -341,6 +480,12 @@ export function useLabelsState( {
 			}
 
 			if ( label.status === LABEL_PURCHASE_STATUS.PURCHASE_IN_PROGRESS ) {
+				// Increment retry count
+				setLabelStatusRetryCount( ( prev ) => ( {
+					...prev,
+					[ labelId ]: currentRetryCount + 1,
+				} ) );
+
 				setTimeout( () => {
 					try {
 						fetchLabelStatus( labelId, resolvers );
@@ -353,6 +498,8 @@ export function useLabelsState( {
 					}
 				}, TIME_TO_WAIT_TO_CHECK_PURCHASED_LABEL_STATUS_MS );
 			} else {
+				// Success - reset retry count
+				resetLabelRetryCount( labelId );
 				setLabels( ( prevLabels ) => ( {
 					...prevLabels,
 					[ currentShipmentId ]: label,
@@ -370,6 +517,9 @@ export function useLabelsState( {
 			setLabels,
 			maybeUpdateRates,
 			maybePrintLabel,
+			labelStatusRetryCount,
+			resetLabelRetryCount,
+			resetRates,
 		]
 	);
 
@@ -435,8 +585,10 @@ export function useLabelsState( {
 				),
 			] as RequestPackageWithCustoms< LabelRequestPackages >[];
 
-			const shippingDate =
-				getCurrentShipmentDate()?.shippingDate?.toISOString();
+			const currentShipmentDate = getCurrentShipmentDate()?.shippingDate;
+			const shippingDate = currentShipmentDate
+				? toUTCMidnightISOString( currentShipmentDate )
+				: undefined;
 
 			try {
 				await dispatch( labelPurchaseStore ).purchaseLabel(
@@ -460,7 +612,9 @@ export function useLabelsState( {
 					},
 					{
 						label_date: shippingDate,
-					}
+					},
+					getCurrentShipmentIsReturn(),
+					getCurrentShipmentParentId()
 				);
 			} catch ( e ) {
 				setIsPurchasing( false );
@@ -477,8 +631,6 @@ export function useLabelsState( {
 				}
 				return handlePurchaseException( e as LabelPurchaseError );
 			}
-
-			select( labelPurchaseStore ).getPurchasedLabel( currentShipmentId );
 
 			setIsPurchasing( false );
 		},
@@ -497,32 +649,9 @@ export function useLabelsState( {
 			applyHazmatToPackage,
 			getSelectedRateOptions,
 			getCurrentShipmentDate,
+			getCurrentShipmentIsReturn,
+			getCurrentShipmentParentId,
 		]
-	);
-
-	const hasPurchasedLabel = useCallback(
-		(
-			checkStatus = true,
-			excludeRefunded = false,
-			shipmentId: string = currentShipmentId
-		): boolean => {
-			const label = getShipmentLabel( shipmentId );
-			if ( excludeRefunded && label?.refund ) {
-				return false;
-			}
-
-			if ( checkStatus ) {
-				return label?.status === LABEL_PURCHASE_STATUS.PURCHASED;
-			}
-
-			return (
-				// label is purchased if it's not errored
-				( label &&
-					label.status !== LABEL_PURCHASE_STATUS.PURCHASE_ERROR ) ??
-				false
-			);
-		},
-		[ currentShipmentId, getShipmentLabel ]
 	);
 
 	const getLabelProductIds = useCallback(
@@ -535,7 +664,9 @@ export function useLabelsState( {
 
 	const updatePurchaseStatus = useCallback(
 		async ( labelId: number ) => {
-			if ( isUpdatingStatus ) return;
+			if ( isUpdatingStatus ) {
+				return;
+			}
 			setIsUpdatingStatus( true );
 			try {
 				await new Promise< void >( ( resolve, reject ) =>
@@ -721,5 +852,6 @@ export function useLabelsState( {
 		hasMissingPurchase,
 		hasUnfinishedShipment,
 		isCurrentTabPurchasingExtraLabel,
+		isAnyRequestInProgress,
 	};
 }

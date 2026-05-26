@@ -3,6 +3,7 @@ export interface RequestAddress {
 	company?: string;
 	name?: string;
 	phone: string;
+	email: string;
 	country: string;
 	state: string;
 	address: string;

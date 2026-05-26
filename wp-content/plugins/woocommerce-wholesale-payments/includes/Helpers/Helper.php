@@ -64,6 +64,7 @@ class Helper {
             'rymeraStripeApiUrl' => Rymera_Stripe::instance()->api_url,
             'wpNonce'            => wp_create_nonce( 'wp_rest' ),
             'wcNonce'            => wp_create_nonce( 'wc_store_api' ),
+            'dateFormat'         => wc_date_format(),
         );
 
         return wp_parse_args( $merge, $defaults );

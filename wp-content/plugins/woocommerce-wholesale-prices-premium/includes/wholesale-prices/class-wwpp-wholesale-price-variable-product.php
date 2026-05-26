@@ -164,7 +164,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Variable_Product' ) ) {
                             $price_suffix = get_option( 'woocommerce_price_display_suffix' );
                         }
 
-                        if ( strpos( $price_suffix, '{price_including_tax}' ) === false && strpos( $price_suffix, '{price_excluding_tax}' ) === false && ! $args['return_wholesale_price_only'] ) {
+                        if ( ! str_contains( $price_suffix, '{price_including_tax}' ) && ! str_contains( $price_suffix, '{price_excluding_tax}' ) && ! $args['return_wholesale_price_only'] ) {
 
                             $wsprice                          = ! empty( $args['max_wholesale_price_without_taxing'] ) ? $args['max_wholesale_price_without_taxing'] : null;
                             $return_value['wholesale_price'] .= WWP_Wholesale_Prices::get_wholesale_price_suffix( $args['product'], $args['user_wholesale_role'], $wsprice );
@@ -230,7 +230,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Variable_Product' ) ) {
                     // @since 2.0.0.6 Changes for load issues on variable products with many variations.
                     // @since 2.0.1 Change back to get_post_meta to avoid performance issue.
                     foreach ( $children as $variation_id ) {
-                        $roles_variation_is_visible = get_post_meta( $variation_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+                        $roles_variation_is_visible = get_post_meta( $variation_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, false );
 
                         if ( ! empty( $roles_variation_is_visible ) && ( in_array( 'all', $roles_variation_is_visible, true ) || in_array( $user_wholesale_role, $roles_variation_is_visible, true ) ) ) {
                             $filtered_children[] = $variation_id;
@@ -333,7 +333,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Variable_Product' ) ) {
                     // @since 2.0.1 Change back to get_post_meta to avoid performance issue.
                     foreach ( $children as $variation_id ) {
 
-                        $roles_variation_is_visible = get_post_meta( $variation_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+                        $roles_variation_is_visible = get_post_meta( $variation_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, false );
                         if ( ! is_array( $roles_variation_is_visible ) ) {
                             $roles_variation_is_visible = array();
                         }
@@ -421,7 +421,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Variable_Product' ) ) {
 
                     // Wholesale Exclusive Variation
                     // Array of wholesale role(s) in which this variation is exclusive to show.
-                    $roles_variation_is_visible = get_post_meta( $variation_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+                    $roles_variation_is_visible = get_post_meta( $variation_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, false );
 
                     if ( empty( $roles_variation_is_visible ) || in_array( 'all', $roles_variation_is_visible, true ) || in_array( $user_wholesale_role, $roles_variation_is_visible, true ) ) {
 

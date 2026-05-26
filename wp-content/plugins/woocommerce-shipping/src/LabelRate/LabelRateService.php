@@ -123,6 +123,125 @@ class LabelRateService {
 	}
 
 	/**
+	 * Get rates for many orders in parallel, against a single shared origin.
+	 *
+	 * Each order is prepared with the same per-order logic as get_all_rates() (payment method,
+	 * tax identifiers, customs updates, package multiplexing for signature/UPSDAP options),
+	 * with the shared `$origin` merged into each prepared payload before dispatch. The HTTP
+	 * requests to Connect Server are dispatched in parallel via the API client's
+	 * get_label_rates_batch() method. The per-order side-effects (customs metadata persistence)
+	 * still run sequentially in the prep loop to avoid product-meta write races.
+	 *
+	 * Bulk batches are confined to a single origin per request because UPSDAP terms-of-service
+	 * acceptance is per-origin and the FedEx ToS is once per site, so per-order origin would
+	 * complicate ToS gating without serving a real workflow.
+	 *
+	 * @param array $origin Shared origin address for all orders in the batch.
+	 * @param array $orders List of per-order rate-quote payloads (order_id, destination, packages, ...).
+	 *
+	 * @return array Map of order_id => parsed rates response (stdClass) or WP_Error.
+	 */
+	public function get_all_rates_for_batch( array $origin, array $orders ): array {
+		$prepared          = array(); // numeric index => prepared payload (ready for HTTP)
+		$package_ids       = array(); // numeric index => original package IDs (for merge_extra_rates)
+		$order_ids         = array(); // numeric index => order_id (for keying the result)
+		$invalid_order_ids = array(); // input index => WP_Error for items we cannot rate (no usable order_id)
+
+		// Settings-derived fields are batch-wide, not per-order: compute them once and reuse.
+		$payment_method_id = $this->settings_store->get_selected_payment_method_id();
+		$tax_identifiers   = $this->build_tax_identifiers();
+
+		foreach ( $orders as $input_index => $order ) {
+			$order_id = isset( $order['order_id'] ) ? (int) $order['order_id'] : 0;
+			if ( $order_id <= 0 ) {
+				$invalid_order_ids[ $input_index ] = new WP_Error(
+					'invalid_order_id',
+					__( 'Order is missing a valid order_id and could not be rated.', 'woocommerce-shipping' )
+				);
+				continue;
+			}
+
+			// Inject the batch-level origin into every prepared payload so the rest of the
+			// per-order pipeline (customs, normalization, dispatch) is shape-identical to the
+			// single-order flow.
+			$order['origin']            = $origin;
+			$order['payment_method_id'] = $payment_method_id;
+			$order['tax_identifiers']   = $tax_identifiers;
+
+			// Note: this passes $order by reference and may write to product meta.
+			$this->update_product_and_payload_customs_information( $order );
+
+			$original_ids      = $this->get_package_ids_from_payload( $order );
+			$order['packages'] = $this->get_request_payload_packages( $order['packages'] );
+			$prepared_payload  = $this->normalize_api_rate_request( $order );
+
+			$index                 = count( $prepared );
+			$prepared[ $index ]    = $prepared_payload;
+			$package_ids[ $index ] = $original_ids;
+			$order_ids[ $index ]   = $order_id;
+		}
+
+		// Live (BatchableApiClient) implements get_label_rates_batch() for parallel dispatch.
+		// E2E/mocks only inherit get_label_rates() from the abstract parent, so fall back to
+		// a sequential loop there instead of fataling. Per-order results stay aligned with $order_ids.
+		if ( method_exists( $this->api_client, 'get_label_rates_batch' ) ) {
+			$responses = $this->api_client->get_label_rates_batch( $prepared );
+		} else {
+			$responses = array();
+			foreach ( $prepared as $index => $prepared_payload ) {
+				$responses[ $index ] = $this->api_client->get_label_rates( $prepared_payload );
+			}
+		}
+
+		$results = array();
+
+		// Surface order_id validation failures captured during prep so callers see every input item.
+		foreach ( $invalid_order_ids as $order_index => $order_error ) {
+			// Use a stable string key for invalid items since there is no usable order_id to key by.
+			$results[ "invalid_order_{$order_index}" ] = $order_error;
+		}
+
+		foreach ( $order_ids as $index => $order_id ) {
+			$response = $responses[ $index ] ?? null;
+			if ( is_wp_error( $response ) ) {
+				$this->logger->log( $response, __CLASS__ );
+				$results[ $order_id ] = $response;
+				continue;
+			}
+			if ( $response && property_exists( $response, 'rates' ) ) {
+				$results[ $order_id ] = $this->merge_extra_rates( $response->rates, $package_ids[ $index ] );
+				continue;
+			}
+			$results[ $order_id ] = new stdClass();
+		}
+		return $results;
+	}
+
+	/**
+	 * Build the tax_identifiers payload entry from the configured settings.
+	 *
+	 * Tax identifiers are derived from store settings and do not vary per order, so the batch
+	 * flow can compute them once and reuse the result across every prepared payload.
+	 *
+	 * @return array
+	 */
+	private function build_tax_identifiers(): array {
+		$tax_identifiers = array();
+		foreach ( $this->settings_store->get_tax_identifiers() as $tax_id_type => $tax_id ) {
+			if ( empty( $tax_id ) ) {
+				continue;
+			}
+			$tax_identifiers[] = array(
+				'tax_id_type'     => strtoupper( $tax_id_type ),
+				'tax_id'          => $tax_id,
+				'issuing_country' => strtoupper( wc_get_base_location()['country'] ),
+				'entity'          => 'SENDER',
+			);
+		}
+		return $tax_identifiers;
+	}
+
+	/**
 	 * Go through the packages from the payload and return a list of IDs.
 	 *
 	 * @param array $payload Request payload.

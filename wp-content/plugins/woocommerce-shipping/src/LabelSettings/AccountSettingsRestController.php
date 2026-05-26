@@ -53,9 +53,15 @@ class AccountSettingsRestController extends WCShippingRESTController {
 	}
 
 	public function get_account_settings() {
+		$settings = $this->account_settings->get();
+
+		if ( isset( $settings['formData'] ) && is_array( $settings['formData'] ) ) {
+			$settings['formData']['enabled'] = true;
+		}
+
 		return rest_ensure_response(
 			array_merge(
-				$this->account_settings->get(),
+				$settings,
 				array( 'success' => true ),
 			)
 		);
@@ -64,14 +70,18 @@ class AccountSettingsRestController extends WCShippingRESTController {
 	public function save_account_settings( $request ) {
 		$settings = $request->get_json_params();
 
+		if ( is_array( $settings ) ) {
+			unset( $settings['enabled'] );
+
+			if ( empty( $settings ) ) {
+				return rest_ensure_response( array( 'success' => true ) );
+			}
+		}
+
 		if ( ! $this->settings_store->can_user_manage_payment_methods() ) {
-			// Ignore the user-provided payment method ID if they don't have permission to change it
+			// Ignore the user-provided payment method ID if they don't have permission to change it.
 			$old_settings                           = $this->settings_store->get_account_settings();
 			$settings['selected_payment_method_id'] = $old_settings['selected_payment_method_id'];
-			// Preserve the enabled setting if it's not being explicitly updated
-			if ( ! isset( $settings['enabled'] ) ) {
-				$settings['enabled'] = $old_settings['enabled'];
-			}
 		}
 
 		$result = $this->settings_store->update_account_settings( $settings );

@@ -75,6 +75,12 @@ jQuery( document ).ready( function( $ ) {
                     jQuery( 'input[name="' + jQuery( this ).attr( 'id' ) + '"]' , '.inline-edit-row' ).val( jQuery( this ).text() );
 
             } );
+        /**
+         * For wholesale sale price column default data
+         */
+        $wwop_inline_data.find( ".whole_sale_price" ).each(function(index){
+            jQuery( 'input[name="' + jQuery( this ).attr( 'id' ) + '"]' , '.inline-edit-row' ).val( jQuery( this ).text() );
+        });
 
         /**
          * Only show wholesale price custom field for appropriate types of products (simple)

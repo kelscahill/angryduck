@@ -672,7 +672,7 @@ abstract class OrderDocumentMethods extends OrderDocument {
 				}
 
 				// Set item meta
-				$data['meta'] = wc_display_item_meta( $item, apply_filters( 'wpo_wcpdf_display_item_meta_args', array( 'echo' => false ), $this ) );
+				$data['meta'] = wpo_ips_display_item_meta( $item, apply_filters( 'wpo_wcpdf_display_item_meta_args', array( 'echo' => false ), $this ) );
 
 				$data_list[ $item_id ] = apply_filters( 'wpo_wcpdf_order_item_data', $data, $this->order, $this->get_type() );
 			}
@@ -689,10 +689,11 @@ abstract class OrderDocumentMethods extends OrderDocument {
 	 * @return string $tax_rates imploded list of tax rates
 	 */
 	public function get_tax_rate( $item, $order, $force_calculation = false ) {
-		$tax_data_container = ( $item['type'] == 'line_item' ) ? 'line_tax_data' : 'taxes';
-		$tax_data_key       = ( $item['type'] == 'line_item' ) ? 'subtotal' : 'total';
-		$line_total_key     = ( $item['type'] == 'line_item' ) ? 'line_total' : 'total';
-		$line_tax_key       = ( $item['type'] == 'shipping' ) ? 'total_tax' : 'line_tax';
+		$type               = $item->get_type();
+		$tax_data_container = ( 'line_item' === $type ) ? 'line_tax_data' : 'taxes';
+		$tax_data_key       = ( 'line_item' === $type ) ? 'subtotal'      : 'total';
+		$line_total_key     = ( 'line_item' === $type ) ? 'line_total'    : 'total';
+		$line_tax_key       = ( 'shipping'  === $type ) ? 'total_tax'     : 'line_tax';
 
 		$tax_class          = isset($item['tax_class']) ? $item['tax_class'] : '';
 		$line_tax           = $item[$line_tax_key];
@@ -959,6 +960,20 @@ abstract class OrderDocumentMethods extends OrderDocument {
 			if ( ! empty( $label ) ) {
 				$totals[ $key ]['label'] = wpo_wcpdf_dynamic_translate( $label, 'woocommerce-pdf-invoices-packing-slips' );
 			}
+			
+			// Local pickup specific
+			if (
+				'shipping' === $key &&
+				\wpo_ips_order_has_local_pickup_method( $this->order ) &&
+				apply_filters( 'wpo_ips_show_pickup_location_details', true, $this )
+			) {
+				$order_shipping          = $this->get_order_shipping();
+				$totals[ $key ]['value'] = sprintf(
+					'%s<p class="pickup-location-details">%s</p>',
+					$order_shipping['value'],
+					$total['value']
+				);
+			}
 		}
 
 		// Fix order_total for refunded orders
@@ -1087,25 +1102,34 @@ abstract class OrderDocumentMethods extends OrderDocument {
 
 	/**
 	 * Return the order fees
+	 *
+	 * @param string $tax
+	 *
+	 * @return array
 	 */
-	public function get_order_fees( $tax = 'excl' ) {
-		if ( $_fees = $this->order->get_fees() ) {
-			foreach( $_fees as $id => $fee ) {
-				if ($tax == 'excl' ) {
-					$fee_price = $this->format_price( $fee['line_total'] );
-				} else {
-					$fee_price = $this->format_price( $fee['line_total'] + $fee['line_tax'] );
-				}
+	public function get_order_fees( string $tax = 'excl' ): array {
+		$fees       = array();
+		$order_fees = $this->order->get_fees();
+
+		if ( ! empty( $order_fees ) && is_array( $order_fees ) ) {
+			foreach ( $order_fees as $id => $fee ) {
+				$line_total = (float) $fee->get_total();
+				$line_tax   = (float) $fee->get_total_tax();
+
+				$fee_price = ( 'excl' === $tax )
+					? $this->format_price( $line_total )
+					: $this->format_price( $line_total + $line_tax );
 
 				$fees[ $id ] = array(
-					'label' 		=> $fee['name'],
-					'value'			=> $fee_price,
-					'line_total'	=> $this->format_price( $fee['line_total'] ),
-					'line_tax'		=> $this->format_price( $fee['line_tax'] )
+					'label'      => $fee->get_name(),
+					'value'      => $fee_price,
+					'line_total' => $this->format_price( $line_total ),
+					'line_tax'   => $this->format_price( $line_tax ),
 				);
 			}
-			return $fees;
 		}
+
+		return $fees;
 	}
 
 	/**

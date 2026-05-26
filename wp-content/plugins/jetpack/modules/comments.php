@@ -15,14 +15,16 @@
 
 use Automattic\Jetpack\Assets;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 Assets::add_resource_hint(
 	array(
 		'//jetpack.wordpress.com',
 		'//s0.wp.com',
 		'//public-api.wordpress.com',
-		'//0.gravatar.com',
-		'//1.gravatar.com',
-		'//2.gravatar.com',
+		'//secure.gravatar.com',
 	),
 	'dns-prefetch'
 );

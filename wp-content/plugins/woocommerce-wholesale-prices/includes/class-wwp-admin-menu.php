@@ -7,9 +7,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists( 'WWP_Admin_Menu' ) ) {
 
     /**
-     * Model that houses logic relating to caching.
+     * Model that houses logic relating to the Wholesale admin menu and its submenus.
      *
      * @since 2.0
+     * @since 2.2.8 Added Analytics > Wholesale submenu link, and a Reports teaser landing page that renders when WWPP is inactive (#885).
      */
     class WWP_Admin_Menu {
 
@@ -119,11 +120,6 @@ if ( ! class_exists( 'WWP_Admin_Menu' ) ) {
                 // Dashboard Submenu.
                 add_submenu_page( 'wholesale-suite', $dashboard_label, $dashboard_label, 'manage_woocommerce', 'wholesale-suite', array( $this, 'wholesale_dashboard' ), $show_getting_started ? 1 : 0 );
 
-                // Reports Submenu.
-                if ( WWP_Helper_Functions::is_plugin_active( 'woocommerce-wholesale-prices-premium/woocommerce-wholesale-prices-premium.bootstrap.php' ) ) {
-                    add_submenu_page( 'wholesale-suite', __( 'Reports', 'woocommerce-wholesale-prices' ), __( 'Reports', 'woocommerce-wholesale-prices' ), 'manage_woocommerce', 'wholesale-reports', array( $this, 'wholesale_reports' ), 5 );
-                }
-
                 // Orders Submenu.
                 add_submenu_page( 'wholesale-suite', __( 'Orders', 'woocommerce-wholesale-prices' ), __( 'Orders', 'woocommerce-wholesale-prices' ), 'manage_woocommerce', 'wholesale-orders', array( $this, 'wholesale_orders' ), $show_getting_started ? 3 : 2 );
 
@@ -157,15 +153,108 @@ if ( ! class_exists( 'WWP_Admin_Menu' ) ) {
         }
 
         /**
-         * Redirect Wholesale > Reports submenu to WC Reports page
+         * Register the Wholesale > Reports submenu when WWPP is inactive.
+         *
+         * Gated on WWPP being inactive — when WWPP is active, WWPP's own
+         * `register_wwpp_reports_page` (also hooked at admin_menu priority 99)
+         * registers `wholesale-analytics` and that is the only Reports entry
+         * the user should see. Registering both unconditionally produced a
+         * duplicate "Reports" item in the Wholesale submenu when plugin load
+         * order made WWP run after WWPP at the same priority (the
+         * `remove_submenu_page` no-op'd because the slug didn't exist yet).
+         *
+         * Position 10 matches the value WWPP uses, so the teaser sits at the
+         * same slot in the submenu as the real WWPP Reports — i.e. near the
+         * bottom of the Wholesale submenu (between Help and About) once all
+         * priority-99 plugins have inserted their items.
+         *
+         * @since 2.2.8 Gate registration on WWPP-inactive to avoid duplicate Reports entries from the admin_menu pri-99 race (#885).
+         * @access public
+         *
+         * @return void
+         */
+        public function register_reports_submenu() {
+            if ( WWP_Helper_Functions::is_wwpp_active() ) {
+                return;
+            }
+
+            add_submenu_page(
+                'wholesale-suite',
+                __( 'Reports', 'woocommerce-wholesale-prices' ),
+                __( 'Reports', 'woocommerce-wholesale-prices' ),
+                'manage_woocommerce',
+                'wholesale-reports',
+                array( $this, 'wholesale_reports' ),
+                10
+            );
+        }
+
+        /**
+         * Render the Wholesale > Reports submenu page.
+         *
+         * Renders the static teaser landing page from view-wwp-reports-teaser.php — a
+         * sample-data-only preview of the premium reports plus an upsell modal. The
+         * submenu itself is registered only when WWPP is inactive (see
+         * register_reports_submenu()). When WWPP is active and a user reaches the
+         * legacy slug directly (stale bookmark), maybe_redirect_reports_to_wwpp_analytics()
+         * handles the redirect to wholesale-analytics.
          *
          * @since 2.0
+         * @since 2.2.8 Render the WWP teaser landing page when WWPP is inactive; added belt-and-suspenders capability check at the top of the callback (#885).
          * @access public
+         *
+         * @return void
          */
         public function wholesale_reports() {
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                return;
+            }
+
             do_action( 'before_wholesale-reports_submenu_page_callback' ); // phpcs:ignore
 
-            wp_safe_redirect( admin_url( 'admin.php?page=wc-reports&tab=wwpp_reports' ) );
+            require_once WWP_VIEWS_PATH . 'view-wwp-reports-teaser.php';
+        }
+
+        /**
+         * Redirect direct visits to ?page=wholesale-reports to WWPP's reports page
+         * when WWPP is active.
+         *
+         * When WWPP is active, register_reports_submenu() returns early without
+         * registering the legacy `wholesale-reports` slug. Any user reaching that
+         * slug directly (e.g. via a stale bookmark) would otherwise hit WordPress's
+         * page-access check and get a 403 between admin_menu and admin_init. This
+         * handler hooks admin_menu at priority 100 (after WWPP has registered
+         * `wholesale-analytics`, before the access check) and redirects them to
+         * WWPP's actual report at admin.php?page=wholesale-analytics.
+         *
+         * No-op when WWPP is inactive — the teaser callback handles rendering.
+         *
+         * @since 2.2.8
+         * @access public
+         *
+         * @return void
+         */
+        public function maybe_redirect_reports_to_wwpp_analytics() {
+            if ( ! is_admin() ) {
+                return;
+            }
+
+            if ( ! WWP_Helper_Functions::is_wwpp_active() ) {
+                return;
+            }
+
+            global $pagenow;
+            if ( 'admin.php' !== $pagenow ) {
+                return;
+            }
+
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation, no state mutation.
+            $current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+            if ( 'wholesale-reports' !== $current_page ) {
+                return;
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=wholesale-analytics' ) );
             exit;
         }
 
@@ -279,14 +368,72 @@ if ( ! class_exists( 'WWP_Admin_Menu' ) ) {
         }
 
         /**
+         * Register the "Wholesale" submenu link under the WooCommerce Analytics menu.
+         *
+         * Surfaces the wholesale report to users browsing the Analytics menu so they
+         * discover the feature without leaving WooCommerce's own reporting UI. When
+         * WWPP is active, the link points at WWPP's real reports page
+         * ('admin.php?page=wholesale-analytics'); when WWPP is inactive, it points at
+         * the WWP teaser landing page ('admin.php?page=wholesale-reports') so free
+         * users discover the premium feature.
+         *
+         * @since 2.2.8 Register the Analytics > Wholesale submenu link; URL switches to the WWP teaser landing page when WWPP is inactive (#885).
+         * @access public
+         *
+         * @return void
+         */
+        public function register_analytics_wholesale_link() {
+
+            $analytics_parent = 'wc-admin&path=/analytics/overview';
+
+            // Bail if WooCommerce Analytics is not registered (e.g. woocommerce_admin_disabled filter is on).
+            global $submenu;
+            if ( ! isset( $submenu[ $analytics_parent ] ) ) {
+                return;
+            }
+
+            /**
+             * Filter whether the Analytics > Wholesale submenu link should be shown.
+             *
+             * Allows sites or companion plugins to force-hide the link.
+             *
+             * @since 2.2.8
+             *
+             * @param bool $show Whether to show the Analytics > Wholesale link. Default true.
+             */
+            if ( ! apply_filters( 'wwp_show_analytics_wholesale_menu', true ) ) {
+                return;
+            }
+
+            $target_slug = WWP_Helper_Functions::is_wwpp_active() ? 'wholesale-analytics' : 'wholesale-reports';
+
+            // Menu slug is a URL so WordPress renders the entry as a direct link; no callback needed.
+            add_submenu_page(
+                $analytics_parent,
+                __( 'Wholesale', 'woocommerce-wholesale-prices' ),
+                __( 'Wholesale', 'woocommerce-wholesale-prices' ),
+                'manage_woocommerce',
+                admin_url( 'admin.php?page=' . $target_slug ),
+                '',
+                1
+            );
+        }
+
+        /**
          * Execute model.
          *
          * @since 2.0
+         * @since 2.2.8 Register Analytics > Wholesale submenu link, the Wholesale > Reports teaser submenu (gated on WWPP-inactive), and the WWPP-active redirect from the legacy slug (#885).
          * @access public
+         *
+         * @return void
          */
         public function run() {
             add_action( 'admin_menu', array( $this, 'register_page' ), 98 );
+            add_action( 'admin_menu', array( $this, 'register_reports_submenu' ), 99 );
+            add_action( 'admin_menu', array( $this, 'register_analytics_wholesale_link' ), 99 );
             add_action( 'admin_menu', array( $this, 'maybe_remove_default_admin_submenu' ), 100 );
+            add_action( 'admin_menu', array( $this, 'maybe_redirect_reports_to_wwpp_analytics' ), 100 );
             add_action( 'init', array( $this, 'wc_navigation_bar' ) );
 
             // Removes admin notices in dashboard.

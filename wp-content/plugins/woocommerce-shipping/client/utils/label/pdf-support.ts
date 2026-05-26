@@ -9,6 +9,15 @@ const getActiveXObject = ( name: string ) => {
 };
 
 /**
+ * Detect if the current browser is on a mobile device
+ */
+const isMobile = () => {
+	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(
+		navigator.userAgent
+	);
+};
+
+/**
  * This function result is cached for performance reasons, since browser capabilities won't change.
  *
  * @return {string|false} "native" if the browser can display PDFs and code can reliably call JS
@@ -22,8 +31,8 @@ export const getPDFSupport = memoize( () => {
 		return 'ie';
 	}
 
-	if ( /iPad|iPhone|iPod/.test( navigator.userAgent ) && ! window.MSStream ) {
-		// iOS doesn't support triggering a print dialog, so we should load the pdf in a new tab
+	if ( isMobile() && ! window.MSStream ) {
+		// Mobile browsers don't support triggering a print dialog, so we should load the pdf in a new tab
 		// instead. Windows Phones are filtered out with `! window.MSStream` since the user agent
 		// string can contain the false positive 'like iPhone'
 		return 'addon';

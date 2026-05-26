@@ -564,8 +564,9 @@ class WWPP_Admin_Custom_Fields_Product {
     public function wwpp_toggle_product_quantity_based_wholesale_pricing( $post_id = null, $enable = null, $ajax_call = true ) {
         if ( true === $ajax_call || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
             check_ajax_referer( 'wwpp_toggle_product_quantity_based_wholesale_pricing', 'nonce' );
-            $post_id = sanitize_key( $_POST['post_id'] );
-            $enable  = sanitize_text_field( $_POST['enable'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+            $post_id = isset( $_POST['post_id'] ) ? sanitize_key( wp_unslash( $_POST['post_id'] ) ) : '';
+            $enable  = isset( $_POST['enable'] ) ? sanitize_text_field( wp_unslash( $_POST['enable'] ) ) : '';
         }
 
         // Get product object.
@@ -604,8 +605,9 @@ class WWPP_Admin_Custom_Fields_Product {
     public function wwpp_add_quantity_discount_rule( $post_id = null, $rule = null, $ajax_call = true ) {
         if ( true === $ajax_call || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
             check_ajax_referer( 'wwpp_add_quantity_discount_rule', 'nonce' );
-            $rule    = array_map( 'sanitize_text_field', $_POST['rule'] );
-            $post_id = sanitize_key( $_POST['post_id'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+            $rule    = isset( $_POST['rule'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['rule'] ) ) : array();
+            $post_id = isset( $_POST['post_id'] ) ? sanitize_key( wp_unslash( $_POST['post_id'] ) ) : '';
         }
 
         $thousand_sep = get_option( 'woocommerce_price_thousand_sep' );
@@ -829,9 +831,10 @@ class WWPP_Admin_Custom_Fields_Product {
     public function wwpp_save_quantity_discount_rule( $post_id = null, $index = null, $rule = null, $ajax_call = true ) {
         if ( true === $ajax_call || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
             check_ajax_referer( 'wwpp_save_quantity_discount_rule', 'nonce' );
-            $rule    = array_map( 'sanitize_text_field', $_POST['rule'] );
-            $index   = sanitize_key( $_POST['index'] );
-            $post_id = sanitize_key( $_POST['post_id'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+            $rule    = isset( $_POST['rule'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['rule'] ) ) : array();
+            $index   = isset( $_POST['index'] ) ? sanitize_key( wp_unslash( $_POST['index'] ) ) : '';
+            $post_id = isset( $_POST['post_id'] ) ? sanitize_key( wp_unslash( $_POST['post_id'] ) ) : '';
         }
 
         $thousand_sep = get_option( 'woocommerce_price_thousand_sep' );
@@ -1061,8 +1064,9 @@ class WWPP_Admin_Custom_Fields_Product {
     public function wwpp_delete_quantity_discount_rule( $post_id = null, $index = null, $ajax_call = true ) {
         if ( true === $ajax_call || ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
             check_ajax_referer( 'wwpp_delete_quantity_discount_rule', 'nonce' );
-            $post_id = sanitize_key( $_POST['post_id'] );
-            $index   = sanitize_key( $_POST['index'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+            $post_id = isset( $_POST['post_id'] ) ? sanitize_key( wp_unslash( $_POST['post_id'] ) ) : '';
+            $index   = isset( $_POST['index'] ) ? sanitize_key( wp_unslash( $_POST['index'] ) ) : '';
         }
 
         // Get product object.

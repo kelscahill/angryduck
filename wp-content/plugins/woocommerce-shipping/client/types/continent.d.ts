@@ -1,7 +1,6 @@
 import type { Country } from '@woocommerce/data';
 
-export interface Continent
-{
+export interface Continent {
 	code: string;
 	name: string;
 	countries: Country[];

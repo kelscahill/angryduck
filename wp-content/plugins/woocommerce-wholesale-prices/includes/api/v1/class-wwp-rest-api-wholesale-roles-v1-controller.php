@@ -198,11 +198,15 @@ if ( ! class_exists( 'WWP_REST_Wholesale_Roles_V1_Controller' ) ) {
             if ( ! empty( $role_key ) && isset( $this->wc_wholesale_prices->wwp_wholesale_roles->getAllRegisteredWholesaleRoles()[ $role_key ] ) ) {
 
                 if ( isset( $request['role_name'] ) ) {
-                    $all_registered_wholesale_roles[ $role_key ]['roleName'] = $request['role_name'];
+                    $role_name = sanitize_text_field( $request['role_name'] );
+                    if ( empty( $role_name ) || strlen( $role_name ) > 255 ) {
+                        return new WP_Error( 'invalid_role_name', __( 'Role name must be between 1 and 255 characters.', 'woocommerce-wholesale-prices' ), array( 'status' => 400 ) );
+                    }
+                    $all_registered_wholesale_roles[ $role_key ]['roleName'] = $role_name;
                 }
 
                 if ( isset( $request['description'] ) ) {
-                    $all_registered_wholesale_roles[ $role_key ]['desc'] = $request['description'];
+                    $all_registered_wholesale_roles[ $role_key ]['desc'] = sanitize_textarea_field( $request['description'] );
                 }
 
                 $all_registered_wholesale_roles = apply_filters( 'wwp_api_update_wholesale_roles_filter', $all_registered_wholesale_roles, $request );

@@ -63,15 +63,22 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
          * @since 1.1.0
          * @since 1.12.0 Strip extra slashes before saving.
          *
-         * @param null|array $custom_field Value of custom fields.
+         * @param array|null $custom_field Value of custom fields.
          * @return bool
          */
         public function wwlc_add_registration_form_custom_field( $custom_field = null ) {
 
-            if ( wp_verify_nonce( $_REQUEST['_wpnonce'], 'wwlc_custom_fields_nonce' ) ) {
+            if ( wp_verify_nonce( sanitize_key( $_REQUEST['_wpnonce'] ), 'wwlc_custom_fields_nonce' ) ) {
+
+                if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                        wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+                    }
+                    return false;
+                }
 
                 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-                    $custom_field = $_POST['customField'];
+                    $custom_field = map_deep( wp_unslash( $_POST['customField'] ), 'sanitize_text_field' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
                 }
 
                 $field_id = $custom_field['field_id'];
@@ -143,6 +150,8 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
                     return true;
                 }
             }
+
+            return false;
         }
 
         /**
@@ -152,13 +161,21 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
          * @since 1.12.0 Strip extra slashes before saving.
          *
          * @param null|array $custom_field Value of custom fields.
-         * @return bool
+         * @return bool|void
          */
         public function wwlc_edit_registration_form_custom_field( $custom_field = null ) {
 
-            if ( wp_verify_nonce( $_REQUEST['_wpnonce'], 'wwlc_custom_fields_nonce' ) ) {
+            if ( wp_verify_nonce( sanitize_key( $_REQUEST['_wpnonce'] ), 'wwlc_custom_fields_nonce' ) ) {
+
+                if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                        wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+                    }
+                    return false;
+                }
+
                 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-                    $custom_field = $_POST['customField'];
+                    $custom_field = map_deep( wp_unslash( $_POST['customField'] ), 'sanitize_text_field' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
                 }
 
                 $field_id = $custom_field['field_id'];
@@ -223,9 +240,17 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
          */
         public function wwlc_delete_registration_form_custom_field( $field_id = null ) {
 
-            if ( wp_verify_nonce( $_REQUEST['_wpnonce'], 'wwlc_custom_fields_nonce' ) ) {
+            if ( wp_verify_nonce( sanitize_key( $_REQUEST['_wpnonce'] ), 'wwlc_custom_fields_nonce' ) ) {
+
+                if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                        wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+                    }
+                    return false;
+                }
+
                 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-                    $field_id = $_POST['field_id'];
+                    $field_id = sanitize_text_field( wp_unslash( $_POST['field_id'] ) );
                 }
 
                 $registration_form_custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
@@ -252,34 +277,33 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
 
                 if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 
-                    header( 'Content-Type: application/json' ); // specify we return json.
-                    echo wp_json_encode(
-                        array(
-                            'status' => 'success',
-                        )
+                    wp_send_json_success(
+                        __( 'Custom field deleted successfully.', 'woocommerce-wholesale-lead-capture' )
                     );
-                    die();
 
                 } else {
                     return true;
                 }
             }
+
+            return false;
         }
 
         /**
          * Get custom field by id.
          *
-         * @param @param null|string $field_id Field ID.
-         * @param bool               $ajax_call Flag that we use to disable/enable ajax when this function called by other function.
+         * @param string|null $field_id Field ID.
+         * @param bool        $ajax_call Flag that we use to disable/enable ajax when this function called by other function.
          * @return array/bool
          *
          * @since 1.1.0
          * @since 1.6.3 WWLC-151
          */
         public function wwlc_get_custom_field_by_id( $field_id = null, $ajax_call = true ) {
-            if ( wp_verify_nonce( $_REQUEST['_wpnonce'], 'wwlc_custom_fields_nonce' ) || wp_verify_nonce( $_REQUEST['_wpnonce'], 'wwlc_register_user' ) || wp_verify_nonce( $_REQUEST['_wpnonce'], 'wwlc_update_user' ) ) {
+            $nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_key( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+            if ( wp_verify_nonce( $nonce, 'wwlc_custom_fields_nonce' ) || wp_verify_nonce( $nonce, 'wwlc_register_user' ) || wp_verify_nonce( $nonce, 'wwlc_update_user' ) || wp_verify_nonce( $nonce, 'wwlc_form_nonce' ) ) {
                 if ( defined( 'DOING_AJAX' ) && DOING_AJAX && true === $ajax_call ) {
-                    $field_id = $_POST['field_id'];
+                    $field_id = isset( $_POST['field_id'] ) ? sanitize_text_field( wp_unslash( $_POST['field_id'] ) ) : '';
                 }
 
                 $registration_form_custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
@@ -294,18 +318,15 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
 
                 } elseif ( defined( 'DOING_AJAX' ) && DOING_AJAX && true === $ajax_call ) {
 
-                        header( 'Content-Type: application/json' ); // specify we return json.
-                        echo wp_json_encode(
-                            array(
-                                'status'        => 'fail',
-                                /* translators: %1$s field ID */
-                                'error_message' => sprintf( __( 'Cannot retrieve custom field, %1$s does not exist', 'woocommerce-wholesale-lead-capture' ), $field_id ),
-                            )
-                        );
-                        die();
-
-                    } else {
-                        return false;
+                    wp_send_json(
+                        array(
+                            'status'        => 'fail',
+                            /* translators: %1$s field ID */
+                            'error_message' => sprintf( __( 'Cannot retrieve custom field, %1$s does not exist', 'woocommerce-wholesale-lead-capture' ), $field_id ),
+                        )
+                    );
+                } else {
+                    return array();
                 }
 
                 if ( defined( 'DOING_AJAX' ) && DOING_AJAX && true === $ajax_call ) {
@@ -323,6 +344,8 @@ if ( ! class_exists( 'WWLC_Registration_Form_Custom_Fields' ) ) {
                     return $custom_field;
                 }
             }
+
+            return array();
         }
     }
 }

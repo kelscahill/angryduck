@@ -1,0 +1,1 @@
+System.register(["./hooks-legacy.BRKQHcMP.js"],function(e,o){"use strict";var t,s,n,r,l,u;return{setters:[e=>{t=e.d,s=e.f,n=e.o,r=e.O,l=e.N,u=e.u}],execute:function(){e("_",t({__name:"NoOptions",setup:e=>(e,o)=>(n(),s("p",null,[r("em",null,l(u(wp.i18n.__)("No available options.","woocommerce-wholesale-order-form")),1)]))}))}}});

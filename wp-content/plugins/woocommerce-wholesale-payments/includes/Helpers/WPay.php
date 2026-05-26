@@ -300,8 +300,6 @@ class WPay {
      * @return array{status: string, ts: int|null}
      */
     public static function get_invoice_payment_progress_status( $invoice, $fields = 'all' ) {
-        $amounts_due = $invoice['amounts_due'];
-
         $payment_status = array(
             'status' => 'draft',
             'ts'     => null,
@@ -313,6 +311,29 @@ class WPay {
             return $payment_status;
         }
 
+        // Check if amounts_due exists (required for invoice payment plans beta feature).
+        // If not present, fall back to invoice status.
+        if ( empty( $invoice['amounts_due'] ) || ! is_array( $invoice['amounts_due'] ) ) {
+            // If amounts_due is not available, use invoice status as fallback.
+            $invoice_status = $invoice['status'] ?? 'draft';
+            if ( 'paid' === $invoice_status ) {
+                $payment_status['status'] = 'paid';
+            } elseif ( 'open' === $invoice_status ) {
+                $payment_status['status'] = 'pending';
+            } elseif ( 'past_due' === $invoice_status ) {
+                $payment_status['status'] = 'overdue';
+            }
+
+            if ( 'status' === $fields ) {
+                return $payment_status['status'];
+            } elseif ( 'ts' === $fields ) {
+                return $payment_status['ts'];
+            }
+
+            return $payment_status;
+        }
+
+        $amounts_due       = $invoice['amounts_due'];
         $amounts_due_count = count( $amounts_due );
         $paid_count        = 0;
         foreach ( $amounts_due as $amount_due ) {
@@ -366,9 +387,48 @@ class WPay {
             'past_due' => __( 'Overdue', 'woocommerce-wholesale-payments' ),
             'open'     => __( 'Pending Payment', 'woocommerce-wholesale-payments' ),
             'paid'     => __( 'Paid', 'woocommerce-wholesale-payments' ),
+            'deferred' => __( 'Pending Order Completion', 'woocommerce-wholesale-payments' ),
         );
 
         return $statuses[ $status ] ?? $status;
+    }
+
+    /**
+     * Calculate breakdown amounts in cents from a payment plan.
+     *
+     * Handles both percentage and fixed amount types, with remainder
+     * allocated to the last item to avoid rounding issues.
+     *
+     * @since 1.0.6
+     *
+     * @param array $breakdown   The payment plan breakdown array.
+     * @param int   $order_total The order total in cents.
+     * @return int[] Array of amounts in cents, one per breakdown item.
+     */
+    public static function calculate_breakdown_amounts( $breakdown, $order_total ) {
+        $amounts       = array();
+        $running_total = 0;
+        $last_index    = count( $breakdown ) - 1;
+
+        foreach ( $breakdown as $i => $item ) {
+            $due_type  = isset( $item['due']['type'] ) ? $item['due']['type'] : 'percentage';
+            $due_value = isset( $item['due']['value'] ) ? (float) $item['due']['value'] : 0;
+
+            if ( 'fixed' === $due_type ) {
+                $amount = (int) round( $due_value * 100 );
+            } else {
+                $amount = (int) round( $order_total * ( $due_value / 100 ) );
+            }
+
+            if ( $i === $last_index ) {
+                $amount = $order_total - $running_total;
+            }
+
+            $running_total += $amount;
+            $amounts[]      = $amount;
+        }
+
+        return $amounts;
     }
 
     /**

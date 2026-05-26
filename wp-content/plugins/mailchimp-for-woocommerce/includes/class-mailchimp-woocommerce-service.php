@@ -74,14 +74,6 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
     }
 
     /**
-     * @param WC_Order $order
-     */
-    public function onNewPayPalOrder($order)
-    {
-        $this->onNewOrder($order->get_id());
-    }
-
-    /**
      * This should only fire on a web based order so we can do real campaign tracking here.
      *
      * @param $order_id
@@ -96,9 +88,8 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
 
         // grab the landing site cookie if we have one here.
         $landing_site = $this->getLandingSiteCookie();
-        if (empty($landing_site)) {
+        if (empty($landing_site) && is_a($order, 'WC_Order')) {
             $landing_site =  $order->get_meta('mailchimp_woocommerce_landing_site');
-            if (!$landing_site) $campaign = null;
         }
 
         // expire the landing site cookie so we can rinse and repeat tracking
@@ -166,10 +157,10 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
 
 		// on order save
         if ($is_subscribed) {
-            MailChimp_WooCommerce_HPOS::update_order_meta($order_id, 'mailchimp_woocommerce_is_subscribed', $is_subscribed);
+            MailChimp_WooCommerce_HPOS::update_order_meta($order_id, 'mailchimp_woocommerce_is_subscribed', true);
 	        if ($order = MailChimp_WooCommerce_HPOS::get_order($order_id)) {
 				if ($user_id = $order->get_user_id()) {
-					update_user_meta($user_id, 'mailchimp_woocommerce_is_subscribed', $is_subscribed);
+					update_user_meta($user_id, 'mailchimp_woocommerce_is_subscribed', true);
 				}
 	        }
         }
@@ -284,11 +275,13 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
                 // get user language or default to admin main language
                 $language = $this->user_language ?: substr(get_locale(), 0, 2);
 
+                $session_id = function_exists('WC') ? WC()->session->get_customer_id() : null;
+
                 // fire up the job handler
-                $handler = new MailChimp_WooCommerce_Cart_Update($uid, $user_email, $this->cart, $language);
+                $handler = new MailChimp_WooCommerce_Cart_Update($uid, $user_email, $this->cart, $language, $session_id);
 
                 // if they had the checkbox checked - go ahead and subscribe them if this is the first post.
-                //$handler->setStatus($this->cart_subscribe);
+                $handler->setStatus($this->cart_subscribe);
                 $handler->prepend_to_queue = true;
                 mailchimp_handle_or_queue($handler);
             }
@@ -367,8 +360,13 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
      * @param WP_Post $post_before The post object as it exists after the update
      * @return void
      */
-    public function handleProductUpdated( int $post_ID, WP_Post $post_after, WP_Post $post_before )
+    public function handleProductUpdated( int $post_ID, ?WP_Post $post_after, ?WP_Post $post_before )
     {
+        mailchimp_log('product.updated', "1");
+        if (is_null($post_after) || is_null($post_before)) {
+            return;
+        }
+
         if ('product' !== $post_after->post_type) {
             return;
         }
@@ -378,7 +376,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
             return;
         }
 
-        // 'draft', 'pending'
+        /// old filter array('trash', 'auto-draft', 'draft', 'pending', 'private')
         if (in_array($post_after->post_status, array('trash', 'auto-draft'))) {
             mailchimp_log('product.update.blocked', "product {$post_ID} was blocked because status is {$post_after->post_status}");
             return;
@@ -421,6 +419,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
             'name',
             'status',
             'slug',
+            'backorders'
         ) );
 
         // if there's not a valid prop in the update, just skip this.
@@ -468,7 +467,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
             return;
         }
 
-		if (!in_array($product->get_status(), array('trash', 'auto-draft', 'draft', 'pending'))) {
+		if (!in_array($product->get_status(), array('trash', 'auto-draft', 'draft', 'pending', 'private'))) {
 			if ($product instanceof WC_Product) {
 				mailchimp_debug('queue', "handling meta update for meta [{$meta_key}] on product {$object_id}");
 				mailchimp_handle_or_queue(new MailChimp_WooCommerce_Single_Product($object_id), 5);
@@ -523,7 +522,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
 		}
 
 		// If the product is of a certain status, process it. ( old values included 'draft', 'pending')
-		if (!in_array($post->post_status, array('trash', 'auto-draft'))) {
+		if (!in_array($post->post_status, array('trash', 'auto-draft', 'draft', 'pending', 'private'))) {
 			mailchimp_handle_or_queue(new MailChimp_WooCommerce_Single_Product($post_ID), 5);
 		}
 	}
@@ -549,6 +548,19 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
 			mailchimp_error('delete product variation', $e->getMessage());
 		}
 	}
+
+    public function handleProductVariationUpdated($variation_id, $product)
+    {
+        try {
+            if (!mailchimp_is_configured()) {
+                return;
+            }
+
+            mailchimp_handle_or_queue(new MailChimp_WooCommerce_Single_Product_Variation($variation_id), 5);
+        } catch (Exception $e) {
+            mailchimp_error('update product variation', $e->getMessage());
+        }
+    }
 
     /**
      * Fire new order and order save handling/queueing events when a shop_order post is saved.
@@ -703,7 +715,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
         }
 
         // don't handle any of these statuses because they're not ready for the show
-        if (in_array($post->post_status, array('trash', 'auto-draft', 'draft', 'pending'))) {
+        if (in_array($post->post_status, array('trash', 'auto-draft', 'draft', 'pending', 'private'))) {
             return;
         }
 
@@ -895,6 +907,46 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
         if (isset($_GET['mc_eid'])) {
             mailchimp_set_cookie('mailchimp_email_id', trim($_GET['mc_eid']), $cookie_duration, '/' );
         }
+
+        if (isset($_GET['mc_cid'])) {
+            $campaign = sanitize_text_field( wp_unslash($_GET['mc_cid']));
+            if ( function_exists('WC') && $campaign) {
+                WC()->session->set( 'mc_cid', $campaign );
+            }
+
+            mailchimp_set_cookie('mailchimp_campaign_id', $campaign, $cookie_duration, '/' );
+        }
+    }
+
+    function inject_mailchimp_attribution(WC_Order $order, array $params )
+    {
+        if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+            return;
+        }
+
+        $session_entry = $params['session_entry'] ?? null;
+
+        if ( empty($session_entry) ) {
+            return;
+        }
+        parse_str( parse_url( $session_entry, PHP_URL_QUERY ), $query_params );
+
+        $mc_cid = $query_params['mc_cid'] ?? WC()->session->get( 'mc_cid' ) ?? null;
+
+        if ( empty( $mc_cid ) ) {
+            return;
+        }
+
+        $prefix = '_wc_order_attribution_';
+
+        if ( ! empty( $mc_cid ) ) {
+            $order->update_meta_data( $prefix . 'utm_campaign', $mc_cid );
+            $order->update_meta_data( $prefix . 'source_type', 'utm' );
+            $order->update_meta_data( $prefix . 'utm_source',  'mailchimp' );
+            $order->update_meta_data( $prefix . 'utm_medium',  'email' );
+        }
+
+        $order->save_meta_data();
     }
 
     /**
@@ -978,7 +1030,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
         // Catching images, videos and fonts file types
         preg_match("/^.*\.(ai|bmp|gif|ico|jpeg|jpg|png|ps|psd|svg|tif|tiff|fnt|fon|otf|ttf|3g2|3gp|avi|flv|h264|m4v|mkv|mov|mp4|mpg|mpeg|rm|swf|vob|wmv|aif|cda|mid|midi|mp3|mpa|ogg|wav|wma|wpl)$/i", $landing_site, $matches);
 
-        if (!empty($landing_site) && !wp_doing_ajax() && ( count($matches) == 0 ) && !$this->is_rest() ) {
+        if (!empty($landing_site) && !wp_doing_ajax() && ( count($matches) == 0 ) && !$this->is_rest() && mailchimp_landing_tracking_enabled() ) {
             mailchimp_set_cookie('mailchimp_landing_site', $landing_site, $this->getCookieDuration(), '/' );
             $this->setWooSession('mailchimp_landing_site', $landing_site);
         }
@@ -1342,7 +1394,8 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
             }
             // get job row from db
             global $wpdb;
-            $sql = $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}mailchimp_jobs	WHERE obj_id = %s", $obj_id );
+            $current_action = current_action();
+            $sql = $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}mailchimp_jobs	WHERE obj_id = %s AND job LIKE %s", array($obj_id, "%{$current_action}%") );
             $job_row = $wpdb->get_row( $sql );
 
             if (is_null($job_row) || !is_object($job_row)) {
@@ -1355,7 +1408,7 @@ class MailChimp_Service extends MailChimp_WooCommerce_Options
             // get variables
             $job = unserialize($job_row->job);
 
-            $job_id =$job_row->id;
+            $job_id = $job_row->id;
 
             // process job
             $job->handle();

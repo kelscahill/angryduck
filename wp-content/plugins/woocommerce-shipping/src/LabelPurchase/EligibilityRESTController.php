@@ -130,16 +130,6 @@ class EligibilityRESTController extends WCShippingRESTController {
 			);
 		}
 
-		// Shipping labels should be enabled in account settings.
-		if ( true !== $this->settings_store->get_account_settings()['enabled'] ) {
-			return rest_ensure_response(
-				array(
-					'is_eligible' => false,
-					'reason'      => 'account_settings_disabled',
-				),
-			);
-		}
-
 		// Check if the store is eligible for shipping label creation.
 		if ( ! $this->view_service->is_store_eligible_for_shipping_label_creation( $order ) ) {
 			return rest_ensure_response(

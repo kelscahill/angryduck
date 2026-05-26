@@ -14,6 +14,10 @@ use Automattic\Jetpack\Status;
 use Automattic\Jetpack\Status\Host;
 use Jetpack_Gutenberg;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Registers our block for use in Gutenberg
  * This is done via an action so that we can disable
@@ -74,8 +78,15 @@ add_action(
 			Jetpack_Gutenberg::set_extension_available( 'ai-title-optimization-keywords-support' );
 			Jetpack_Gutenberg::set_extension_available( 'ai-assistant-image-extension' );
 
-			if ( apply_filters( 'breve_enabled', true ) ) {
+			$site_locale = get_locale();
+			// Only enable Write Brief for sites with an English locale.
+			// Disabled by default; set the 'breve_enabled' filter to true to re-enable.
+			if ( str_starts_with( $site_locale, 'en' ) && apply_filters( 'breve_enabled', false ) ) {
 				Jetpack_Gutenberg::set_extension_available( 'ai-proofread-breve' );
+			}
+
+			if ( apply_filters( 'ai_correct_spelling_enabled', false ) ) {
+				Jetpack_Gutenberg::set_extension_available( 'ai-correct-spelling' );
 			}
 
 			if ( apply_filters( 'ai_seo_enhancer_enabled', true ) ) {

@@ -22,6 +22,10 @@
     padding: 8px 12px 8px 42px;
     height: 36px;
     box-sizing: border-box;
+    /* Establish a stacking context below .wp-pointer-close (z-index: 10) so the X
+       close button is reliably above the header regardless of document order. */
+    position: relative;
+    z-index: 1;
 }
 
 .wpay-bar-tooltip .wp-pointer-content p {
@@ -50,6 +54,40 @@
 .wpay-bar-tooltip .wp-pointer-content li {
     list-style: disc;
     margin-bottom: 0;
+}
+
+.wpay-bar-tooltip .wp-pointer-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    z-index: 10;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.wpay-bar-tooltip .wp-pointer-close:before {
+    color: #ffffff;
+    content: "\f153";
+    display: block;
+    font: normal 16px/1 dashicons;
+    text-align: center;
+    width: 16px;
+    height: 16px;
+    -webkit-font-smoothing: antialiased;
+    opacity: 0.8;
+}
+
+.wpay-bar-tooltip .wp-pointer-close:hover:before,
+.wpay-bar-tooltip .wp-pointer-close:focus-visible:before {
+    opacity: 1;
+}
+
+.wpay-bar-tooltip .wp-pointer-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #ffffff;
+    border-radius: 2px;
 }
 
 body.rtl .wpay-bar-tooltip .wp-pointer-content {
@@ -110,9 +148,11 @@ body.rtl .wpay-bar-tooltip .wp-pointer-buttons {
     left: 12px;
 }
 
-/**
- * RTL WPay Pointer
- */
+body.rtl .wpay-bar-tooltip .wp-pointer-close {
+    right: auto;
+    left: 10px;
+}
+
 .wpay-bar-tooltip .wp-pointer-buttons {
     position: absolute;
     bottom: 12px;

@@ -1,5 +1,9 @@
 <?php // phpcs:ignore WordPress.Files.FileName.InvalidClassFileName
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 new WPCOM_JSON_API_Site_Settings_V1_4_Endpoint(
 	array(
 		'description'      => 'Get detailed settings information about a site.',
@@ -119,6 +123,7 @@ new WPCOM_JSON_API_Site_Settings_V1_4_Endpoint(
 			'wpcom_publish_posts_with_markdown'         => '(bool) Whether markdown is enabled for posts',
 			'wpcom_publish_comments_with_markdown'      => '(bool) Whether markdown is enabled for comments',
 			'launchpad_screen'                          => '(string) Whether or not launchpad is presented and what size it will be',
+			'wpcom_newsletter_send_default'             => '(bool) Whether to send newsletter emails by default when publishing a post',
 			'wpcom_featured_image_in_email'             => '(bool) Whether the Featured image is displayed in the New Post email template or not',
 			'jetpack_gravatar_in_email'                 => '(bool) Whether to show author avatar in the email byline',
 			'jetpack_author_in_email'                   => '(bool) Whether to show author display name in the email byline',
@@ -149,6 +154,7 @@ new WPCOM_JSON_API_Site_Settings_V1_4_Endpoint(
 			'jetpack_comment_form_color_scheme'         => '(string) The color scheme for the comment form',
 			'is_fully_managed_agency_site'              => '(bool) Whether the site is a fully managed agency site',
 			'wpcom_hide_action_bar'                     => '(bool) Whether to hide the Action bar',
+			'mcp_abilities'                             => '(array) List of MCP Abilities',
 		),
 
 		'response_format' => array(
@@ -161,6 +167,8 @@ new WPCOM_JSON_API_Site_Settings_V1_4_Endpoint(
 
 /**
  * Settings v1_4 endpoint class.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class WPCOM_JSON_API_Site_Settings_V1_4_Endpoint extends WPCOM_JSON_API_Site_Settings_V1_3_Endpoint {
 

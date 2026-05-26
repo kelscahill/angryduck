@@ -166,6 +166,7 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Variations_Controller' ) ) {
          * @param WP_REST_Request $request Request data.
          *
          * @since 1.18
+         * @since 2.0.9 Harden against SQL injection by passing meta keys as $wpdb->prepare() placeholders and whitelisting the wholesale_role against registered roles.
          * @access public
          * @return array
          */
@@ -176,40 +177,50 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Variations_Controller' ) ) {
             $have_wholesale_price_meta_list = array();
             $wholesale_role                 = sanitize_text_field( $wholesale_role );
 
+            // Validate wholesale_role against registered roles to prevent injection via unregistered role keys.
+            if ( ! empty( $wholesale_role ) && ! isset( $this->registered_wholesale_roles[ $wholesale_role ] ) ) {
+                return array();
+            }
+
             $wholesale_roles_list = ! empty( $wholesale_role ) ? array( $wholesale_role => 1 ) : $this->registered_wholesale_roles;
 
             foreach ( $wholesale_roles_list as $role => $data ) {
-                array_push( $have_wholesale_price_meta_list, "'" . $role . "_wholesale_price'" );
+                $have_wholesale_price_meta_list[] = $role . '_wholesale_price';
             }
-
-            $have_wholesale_price_meta_list = "'" . implode( ', ', $have_wholesale_price_meta_list ) . "'";
 
             $wholesale_products = array();
             $product_id         = intval( $request['product_id'] ); // cast as Integer value, returns 0 if not int, returns whole number if value is float.
 
-            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Ignored for allowing interpolation in IN query.
+            $meta_placeholders = implode( ',', array_fill( 0, count( $have_wholesale_price_meta_list ), '%s' ) );
+
+            // Build prepare args: post type, product id, then meta key list.
+            $prepare_args = array_merge(
+                array( $this->post_type, $product_id ),
+                $have_wholesale_price_meta_list
+            );
+
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
             $results = $wpdb->get_results(
                 $wpdb->prepare(
-                    "SELECT 
-                        DISTINCT p.ID 
-                    FROM 
-                        $wpdb->posts p 
-                        INNER JOIN $wpdb->postmeta pm1 ON (p.ID = pm1.post_id) 
-                        INNER JOIN $wpdb->postmeta pm2 ON (p.ID = pm2.post_id) 
-                    WHERE 
-                        p.post_status = 'publish' 
+                    "SELECT
+                        DISTINCT p.ID
+                    FROM
+                        $wpdb->posts p
+                        INNER JOIN $wpdb->postmeta pm1 ON (p.ID = pm1.post_id)
+                        INNER JOIN $wpdb->postmeta pm2 ON (p.ID = pm2.post_id)
+                    WHERE
+                        p.post_status = 'publish'
                         AND p.post_type = %s
                         AND p.post_parent = %d
                         AND (
-                            pm1.meta_key IN ( $have_wholesale_price_meta_list ) 
+                            pm1.meta_key IN ( $meta_placeholders )
                             AND CAST(pm1.meta_value AS SIGNED) > 0
                         )",
-                    $this->post_type,
-                    $product_id
+                    $prepare_args
                 ),
                 ARRAY_A
             );
-            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Ignored for allowing interpolation in IN query.
+            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
             if ( $results ) {
 

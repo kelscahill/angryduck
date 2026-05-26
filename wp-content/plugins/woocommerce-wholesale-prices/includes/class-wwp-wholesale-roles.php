@@ -346,22 +346,24 @@ class WWP_Wholesale_Roles {
         $wholesale_roles                = array();
         $all_registered_wholesale_roles = $this->getAllRegisteredWholesaleRoles();
 
-        $wholesale_roles_query = "SELECT ID FROM $wpdb->users
-                WHERE ID IN (
-                    SELECT user_id FROM $wpdb->usermeta
-                    WHERE meta_key = '{$wpdb->prefix}capabilities'
-                    AND";
+        $placeholders = array();
+        $values       = array();
 
         foreach ( $all_registered_wholesale_roles as $role_key => $role_data ) {
-            if ( array_key_first( $all_registered_wholesale_roles ) !== $role_key ) {
-                $wholesale_roles_query .= ' OR';
-            }
-            $wholesale_roles_query .= $wpdb->prepare( ' meta_value LIKE %s', '%' . $role_key . '%' );
+            $placeholders[] = 'meta_value LIKE %s';
+            $values[]       = '%' . $wpdb->esc_like( $role_key ) . '%';
         }
 
-        $wholesale_roles_query .= ' )';
+        $query = "SELECT ID FROM {$wpdb->users}
+            WHERE ID IN (
+                SELECT user_id FROM {$wpdb->usermeta}
+                WHERE meta_key = %s
+                AND (" . implode( ' OR ', $placeholders ) . ')
+            )';
 
-        $query_result       = $wpdb->get_results( $wholesale_roles_query, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        array_unshift( $values, $wpdb->prefix . 'capabilities' );
+        $query_result = $wpdb->get_results( $wpdb->prepare( $query, $values ), ARRAY_A ); //phpcs:ignore.
+
         $wholesale_user_ids = array();
 
         foreach ( $query_result as $result ) {

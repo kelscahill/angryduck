@@ -3,7 +3,7 @@ import { Button, Dropdown, Icon } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { chevronDown } from '@wordpress/icons';
 import { getNoneSelectedShipmentItems, normalizeShipments } from 'utils';
-import { ShipmentItem } from 'types';
+import { ShipmentItem, ReturnShipmentInfo } from 'types';
 import { getShipmentTitle } from '../utils';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 
@@ -19,6 +19,10 @@ export const MoveTo = ( { isDisabled }: SplitHeaderProps ) => {
 			selections,
 			resetSelections,
 			setCurrentShipmentId,
+			isReturnShipment,
+			returnShipments,
+			setReturnShipments,
+			getShipmentType,
 		},
 		labels: { hasPurchasedLabel },
 	} = useLabelPurchaseContext();
@@ -48,13 +52,25 @@ export const MoveTo = ( { isDisabled }: SplitHeaderProps ) => {
 		 */
 		setCurrentShipmentId( '0' );
 
-		setShipments(
-			normalizeShipments( newShipments ) as Record<
-				string,
-				ShipmentItem[]
-			>
+		// Normalize shipments collection by removing empty shipments (this creates a new structure of indexes).
+		const { normalizedShipments, keyMapping } =
+			normalizeShipments( newShipments );
+
+		// Update return shipments state using the mapping from normalizeShipments
+		const newReturnShipmentsMapping: Record< string, ReturnShipmentInfo > =
+			{};
+		Object.entries( returnShipments ).forEach(
+			( [ oldKey, returnInfo ]: [ string, ReturnShipmentInfo ] ) => {
+				const newKey = keyMapping[ oldKey ];
+				if ( newKey ) {
+					newReturnShipmentsMapping[ newKey ] = returnInfo;
+				}
+			}
 		);
-		resetSelections( Object.keys( newShipments ) );
+
+		setReturnShipments( newReturnShipmentsMapping );
+		setShipments( normalizedShipments );
+		resetSelections( Object.keys( normalizedShipments ) );
 	};
 
 	return (
@@ -79,11 +95,10 @@ export const MoveTo = ( { isDisabled }: SplitHeaderProps ) => {
 			) }
 			renderContent={ ( { onClose } ) =>
 				Object.entries( shipments ).map( ( [ key ] ) => {
-					const preventMoveToShipment = hasPurchasedLabel(
-						true,
-						true,
-						key
-					);
+					const preventMoveToShipment =
+						hasPurchasedLabel( true, true, key ) ||
+						isReturnShipment( key );
+
 					return (
 						<Button
 							key={ key }
@@ -96,7 +111,8 @@ export const MoveTo = ( { isDisabled }: SplitHeaderProps ) => {
 						>
 							{ getShipmentTitle(
 								key,
-								Object.values( shipments ).length
+								Object.keys( shipments ).length,
+								getShipmentType( key )
 							) }
 						</Button>
 					);

@@ -54,7 +54,7 @@ class ShippingLabel {
 		}
 
 		do_action(
-			'enqueue_woocommerce_shipping_script',
+			'wcshipping_enqueue_script',
 			'woocommerce-shipping-analytics',
 			array(
 				'cacheExpirationInSeconds' => LabelsService::LABELS_TRANSIENT_EXPIRATION_IN_SECONDS,

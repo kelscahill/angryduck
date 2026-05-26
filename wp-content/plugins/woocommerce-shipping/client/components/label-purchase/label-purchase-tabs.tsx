@@ -1,20 +1,37 @@
-import { TabPanel } from '@wordpress/components';
-import { forwardRef } from '@wordpress/element';
+import {
+	Button,
+	Flex,
+	FlexItem,
+	Icon,
+	TabPanel,
+	__experimentalText as Text,
+	__experimentalSpacer as Spacer,
+} from '@wordpress/components';
+import {
+	forwardRef,
+	useEffect,
+	useCallback,
+	createInterpolateElement,
+} from '@wordpress/element';
 import { getSubItems } from 'utils/order-items';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { ShipmentItem } from 'types';
 import { ShipmentContent } from './shipment-content';
-import { getCurrentOrder, getCurrentOrderItems } from 'utils';
+import { getConfig, getCurrentOrder, getCurrentOrderItems } from 'utils';
 import { getShipmentTitle } from './utils';
 import { __ } from '@wordpress/i18n';
 import { check } from '@wordpress/icons';
-import { Icon } from '@wordpress/components';
+import { curvedInfo } from 'components/icons';
 
 interface LabelPurchaseTabsProps {
 	setStartSplitShipment: ( startSplitShipment: boolean ) => void;
+	ContentComponent?: React.ComponentType< { items: unknown[] } >;
 }
 export const LabelPurchaseTabs = forwardRef(
-	( { setStartSplitShipment }: LabelPurchaseTabsProps, ref ) => {
+	(
+		{ setStartSplitShipment, ContentComponent }: LabelPurchaseTabsProps,
+		ref
+	) => {
 		const orderItems = getCurrentOrderItems();
 		const order = getCurrentOrder();
 		const count = order.total_line_items_quantity;
@@ -26,19 +43,129 @@ export const LabelPurchaseTabs = forwardRef(
 				setSelection,
 				currentShipmentId,
 				setCurrentShipmentId,
+				getShipmentType,
 			},
 			packages,
 			customs: { updateCustomsItems },
 			labels: {
+				isAnyRequestInProgress,
 				hasMissingPurchase,
 				hasUnfinishedShipment,
 				isPurchasing,
 				isUpdatingStatus,
 				getShipmentsWithoutLabel,
 				hasPurchasedLabel,
+				labelStatusUpdateErrors,
+				getCurrentShipmentLabel,
 			},
+			nextDesign,
 		} = useLabelPurchaseContext();
+
 		const orderFulfilled = ! hasMissingPurchase();
+		const hasLabel = hasPurchasedLabel();
+		const selectedLabel = getCurrentShipmentLabel();
+		const orderId = getConfig().order.id;
+
+		// Navigate after purchase completion (must be in useEffect to avoid setState during render)
+		useEffect( () => {
+			if (
+				nextDesign &&
+				isAnyRequestInProgress &&
+				hasLabel &&
+				labelStatusUpdateErrors.length === 0 &&
+				window.WCShipping_Config?.navigate
+			) {
+				window.WCShipping_Config.navigate( {
+					to: '..', // Navigate up one level to the order details page
+					params: { orderId },
+					search: {
+						label: 'purchased',
+						labelId: selectedLabel?.labelId,
+					},
+				} );
+			}
+		}, [
+			nextDesign,
+			isAnyRequestInProgress,
+			hasLabel,
+			labelStatusUpdateErrors.length,
+			selectedLabel?.labelId,
+			orderId,
+		] );
+
+		const navigateToOrderDetails = useCallback( () => {
+			if ( window.WCShipping_Config?.navigate ) {
+				window.WCShipping_Config.navigate( {
+					to: '/woocommerce/orders/view/$orderId',
+					params: { orderId },
+				} );
+			} else {
+				const currentPath = window.location.pathname;
+				const baseUrl = currentPath.substring(
+					0,
+					currentPath.lastIndexOf( '/fulfill' ) > -1
+						? currentPath.lastIndexOf( '/fulfill' )
+						: currentPath.length
+				);
+				window.location.href = baseUrl;
+			}
+		}, [ orderId ] );
+
+		/**
+		 * Show "already fulfilled" message only when no request is in progress.
+		 * This prevents the message from flashing briefly while navigation is pending
+		 * after a successful purchase.
+		 */
+		if ( orderFulfilled && nextDesign && ! isAnyRequestInProgress ) {
+			return (
+				<Flex
+					direction="column"
+					gap={ 0 }
+					align="center"
+					justify="center"
+				>
+					<Icon icon={ curvedInfo } size={ 40 } />
+					<Spacer margin={ 6 } />
+					<FlexItem>
+						<Text weight={ 500 }>
+							{ __(
+								'This order has been fulfilled',
+								'woocommerce-shipping'
+							) }
+						</Text>
+					</FlexItem>
+					<FlexItem>
+						<Flex direction="column" align="center" gap={ 0 }>
+							<div style={ { textAlign: 'center' } }>
+								<Text variant="muted" as="div">
+									{ createInterpolateElement(
+										__(
+											"A shipping label can't be created for an order<br/> that's already been fulfilled.",
+											'woocommerce-shipping'
+										),
+										{
+											br: <br />,
+										}
+									) }
+								</Text>
+							</div>
+						</Flex>
+					</FlexItem>
+					<Spacer margin={ 6 } />
+					<FlexItem>
+						<Button
+							variant="secondary"
+							onClick={ navigateToOrderDetails }
+						>
+							{ __(
+								'Back to the order details',
+								'woocommerce-shipping'
+							) }
+						</Button>
+					</FlexItem>
+				</Flex>
+			);
+		}
 
 		const tabs = () => {
 			let extraTabs: { name: string; title: string }[] = [];
@@ -74,13 +201,15 @@ export const LabelPurchaseTabs = forwardRef(
 					name,
 					title: getShipmentTitle(
 						name,
-						Object.keys( shipments ).length
+						Object.keys( shipments ).length,
+						getShipmentType( `${ name }` )
 					),
 					icon: (
 						<>
 							{ getShipmentTitle(
 								name,
-								Object.keys( shipments ).length
+								Object.keys( shipments ).length,
+								getShipmentType( `${ name }` )
 							) }
 							{ hasPurchasedLabel( true, true, name ) && (
 								<Icon icon={ check } />
@@ -93,6 +222,10 @@ export const LabelPurchaseTabs = forwardRef(
 			];
 		};
 
+		/**
+		 * Create shipment for extra label.
+		 * This function is creating or initiating the shipment data for the first time when "Add Shipment" button is clicked.
+		 */
 		const createShipmentForExtraLabel = async () => {
 			const newShipmentId = Object.keys( shipments ).length;
 			const newShipment = orderItems.map( ( orderItem ) => ( {
@@ -104,6 +237,7 @@ export const LabelPurchaseTabs = forwardRef(
 				[ newShipmentId ]: newShipment,
 			};
 
+			// The first initiation data when "Add Shipment" button is clicked.
 			setShipments( updatedShipments );
 			setSelection( {
 				...selections,
@@ -118,8 +252,15 @@ export const LabelPurchaseTabs = forwardRef(
 
 			updateCustomsItems();
 		};
+		if ( nextDesign && ContentComponent ) {
+			return (
+				<ContentComponent items={ shipments[ currentShipmentId ] } />
+			);
+		}
+
 		return (
 			<TabPanel
+				key={ currentShipmentId }
 				ref={ ref }
 				selectOnMove={ true }
 				className="shipment-tabs"

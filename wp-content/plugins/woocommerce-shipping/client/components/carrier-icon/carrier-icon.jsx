@@ -47,11 +47,18 @@ export const CarrierIcon = ( {
 			style={ {
 				width: dimensions,
 				maxWidth: dimensions,
-				background: `url(${
+				backgroundImage: `url(${
 					carrierLogos[ carrier.toLowerCase() ]
-				}) no-repeat ${ positionX } ${ positionY }`,
+				})`,
+				backgroundRepeat: 'no-repeat',
+				backgroundPositionX: `${ positionX }`,
+				backgroundPositionY: `${ positionY }`,
 				height: '100%',
 				minHeight: dimensions,
+				/**
+				 * Background properties need to be separately defined.
+				 * See: https://github.com/facebook/react/issues/5030
+				 */
 				backgroundSize: 'contain',
 			} }
 			className="carrier-icon"

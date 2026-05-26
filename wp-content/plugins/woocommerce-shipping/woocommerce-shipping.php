@@ -7,13 +7,13 @@
  * Author URI: https://woocommerce.com/
  * Text Domain: woocommerce-shipping
  * Domain Path: /languages/
- * Version: 1.8.0
+ * Version: 2.3.5
  * Requires Plugins: woocommerce
  * Requires PHP: 7.4
- * Requires at least: 6.7
- * Tested up to: 6.8.1
- * WC requires at least: 9.8
- * WC tested up to: 10.0
+ * Requires at least: 6.9
+ * Tested up to: 7.0
+ * WC requires at least: 10.6
+ * WC tested up to: 10.8
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -39,7 +39,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WCSHIPPING_VERSION', '1.8.0' ); // WRCS: DEFINED_VERSION.
+define( 'WCSHIPPING_VERSION', '2.3.5' ); // WRCS: DEFINED_VERSION.
 define( 'WCSHIPPING_PLUGIN_FILE', __FILE__ );
 define( 'WCSHIPPING_PLUGIN_DIR', __DIR__ );
 define( 'WCSHIPPING_PLUGIN_DIST_DIR', WCSHIPPING_PLUGIN_DIR . '/dist/' );
@@ -58,6 +58,22 @@ if ( ! \Automattic\WCShipping\Autoloader::init() ) {
 	return;
 }
 
+$wcshipping_wpcom_test_mode_enabled = '1' === getenv( 'WCSHIPPING_WPCOM_TEST_MODE' );
+
+$wcshipping_bootstrap_e2e_mock_enabled =
+	'1' === getenv( 'WCSHIPPING_E2E_MOCK_CONNECT' ) ||
+	$wcshipping_wpcom_test_mode_enabled ||
+	( defined( 'WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE' ) && WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE );
+
+if ( $wcshipping_bootstrap_e2e_mock_enabled ) {
+	require_once __DIR__ . '/src/Testing/WCConnectE2EConnectionShim.php';
+}
+
+$wcshipping_e2e_mock_enabled =
+	class_exists( '\Automattic\WCShipping\Testing\WCConnectE2EConnectionShim' ) &&
+	\Automattic\WCShipping\Testing\WCConnectE2EConnectionShim::is_enabled();
+
+require_once __DIR__ . '/src/Fulfillments/FulfillmentsClassResolver.php';
 require_once __DIR__ . '/classes/class-wc-connect-extension-compatibility.php';
 require_once __DIR__ . '/classes/class-wc-connect-functions.php';
 require_once __DIR__ . '/classes/class-wc-connect-jetpack.php';
@@ -67,17 +83,23 @@ require_once __DIR__ . '/classes/class-wc-connect-package-settings.php';
 
 use Automattic\WCShipping\Loader;
 
-// Check for CI environment variable to trigger test mode.
-if ( false !== getenv( 'WOOCOMMERCE_SERVICES_CI_TEST_MODE' ) ) {
+// Enable plugin test/dev mode when trusted test configuration is enabled.
+if ( $wcshipping_wpcom_test_mode_enabled || $wcshipping_e2e_mock_enabled ) {
 	if ( ! defined( 'WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE' ) ) {
 		define( 'WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE', true );
 	}
 	if ( ! defined( 'JETPACK_DEV_DEBUG' ) ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Jetpack constant.
 		define( 'JETPACK_DEV_DEBUG', true );
 	}
 }
 
 if ( ! defined( 'WC_UNIT_TESTING' ) ) {
+	// Register test hooks only when trusted test configuration is enabled.
+	if ( $wcshipping_bootstrap_e2e_mock_enabled && class_exists( '\Automattic\WCShipping\Testing\WCConnectE2EConnectionShim' ) ) {
+		\Automattic\WCShipping\Testing\WCConnectE2EConnectionShim::init();
+	}
+
 	new Automattic\WCShipping\Loader();
 }
 

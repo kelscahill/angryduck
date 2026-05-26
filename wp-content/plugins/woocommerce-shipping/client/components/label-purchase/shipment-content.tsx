@@ -37,6 +37,7 @@ import { ITEMS_SECTION } from './essential-details/constants';
 import { mainModalContentSelector } from './constants';
 import { SelectableItems } from './split-shipment/selectable-items';
 import { StaticHeader } from './split-shipment/header/static-header';
+import { ServiceStatusNotices } from 'components/service-status';
 
 interface ShipmentContentProps {
 	items: unknown[];
@@ -66,6 +67,7 @@ export const ShipmentContent = ( {
 			currentShipmentId,
 			getShipmentDestination,
 			hasVariations,
+			getCurrentShipmentIsReturn,
 		},
 		rates: { isFetching },
 		packages: { isCustomPackageTab },
@@ -187,22 +189,40 @@ export const ShipmentContent = ( {
 					direction="column"
 					expanded={ true }
 				>
-					{ isCurrentTabPurchasingExtraLabel() ? (
+					{ isCurrentTabPurchasingExtraLabel() ||
+					getCurrentShipmentIsReturn() ? (
 						<Flex
 							className="label-purchase__additional-label"
 							direction="column"
 							expanded={ true }
 						>
 							<Notice status="info" isDismissible={ false }>
-								<strong>
-									{ __(
-										'Select the items you want to include in the new shipment.',
-										'woocommerce-shipping'
-									) }
-								</strong>{ ' ' }
-								{ __(
-									'The following lists shows all the items in the current order. You can select multiple items from the list.',
-									'woocommerce-shipping'
+								{ getCurrentShipmentIsReturn() ? (
+									<>
+										<strong>
+											{ __(
+												'This is a return shipment.',
+												'woocommerce-shipping'
+											) }
+										</strong>{ ' ' }
+										{ __(
+											'You can select the products the customer wishes to return to help gauge the package criteria of the shipping label.',
+											'woocommerce-shipping'
+										) }
+									</>
+								) : (
+									<>
+										<strong>
+											{ __(
+												'Select the items you want to include in the new shipment.',
+												'woocommerce-shipping'
+											) }
+										</strong>{ ' ' }
+										{ __(
+											'The following lists shows all the items in the current order. You can select multiple items from the list.',
+											'woocommerce-shipping'
+										) }
+									</>
 								) }
 							</Notice>
 							<Flex className="selectable-items__header">
@@ -265,6 +285,7 @@ export const ShipmentContent = ( {
 						{ ! isCustomsNeeded() && <Divider margin="12" /> }
 						<Packages />
 						<Divider margin="12" />
+						<ServiceStatusNotices />
 						{ ! Boolean( availableRates ) && (
 							<Animate
 								type={ isFetching ? 'loading' : undefined }
@@ -293,7 +314,7 @@ export const ShipmentContent = ( {
 												),
 												getShipmentHazmat().isHazmat
 													? __(
-															'the selected HAZMAT category, ',
+															'the selected HAZMAT category,',
 															'woocommerce-shipping'
 													  )
 													: '',
@@ -317,7 +338,7 @@ export const ShipmentContent = ( {
 												),
 												getShipmentHazmat().isHazmat
 													? __(
-															'the selected HAZMAT category, ',
+															'the selected HAZMAT category,',
 															'woocommerce-shipping'
 													  )
 													: '',

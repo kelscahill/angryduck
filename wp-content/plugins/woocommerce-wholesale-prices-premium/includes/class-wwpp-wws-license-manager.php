@@ -156,13 +156,21 @@ class WWPP_WWS_License_Manager {
         $this->_software_key                = 'WWPP';
         $this->_priority                    = 10;
         $this->_plugin_slug                 = 'woocommerce-wholesale-prices-premium';
-        $this->_plugin_name                 = __( 'WooCommerce Wholesale Prices Premium', 'woocommerce-wholesale-prices-premium' );
         $this->_slmw_server_url             = constant( 'WWS_SLMW_SERVER_URL' );
         $this->_license_settings_url        = is_multisite() ? network_admin_url( 'admin.php?page=wws-ms-license-settings' ) : admin_url( 'admin.php?page=wws-license-settings' );
         $this->_plugin_license_settings_url = $this->_license_settings_url . '&tab=' . strtolower( $this->_software_key );
         $this->_activation_endpoint         = $this->_slmw_server_url . '/wp-json/slmw/v1/license/activate';
         $this->_check_endpoint              = $this->_slmw_server_url . '/wp-json/slmw/v1/license/check';
-        $this->_plugin_list                 = array(
+    }
+
+    /**
+     * Load Plugin Strings In Order To Make Sure These Are Loaded After 'load_plugin_textdomain' is called (This is called to avoid ' _load_textdomain_just_in_time was called <strong>incorrectly</strong>.' notice).
+     *
+     * @return void
+     */
+    public function load_plugin_strings() {
+        $this->_plugin_name     = __( 'WooCommerce Wholesale Prices Premium', 'woocommerce-wholesale-prices-premium' );
+        $this->_plugin_list     = array(
             'WWPP' => array(
                 'name' => __( 'WooCommerce Wholesale Prices Premium', 'woocommerce-wholesale-prices-premium' ),
                 'slug' => 'woocommerce-wholesale-prices-premium',
@@ -180,7 +188,7 @@ class WWPP_WWS_License_Manager {
                 'slug' => 'woocommerce-wholesale-payments',
             ),
         );
-        $this->_plugin_submenus             = array(
+        $this->_plugin_submenus = array(
             'wholesale-suite'           => array(
                 'title'    => __( 'Dashboard', 'woocommerce-wholesale-prices-premium' ),
                 'callback' => 'wholesale_dashboard',
@@ -347,8 +355,8 @@ class WWPP_WWS_License_Manager {
         }
 
         if ( isset( $_REQUEST['license_email'] ) && isset( $_REQUEST['license_key'] ) ) {
-            $activation_email = sanitize_email( trim( wp_unslash( $_REQUEST['license_email'] ) ) );
-            $license_key      = sanitize_text_field( trim( wp_unslash( $_REQUEST['license_key'] ) ) );
+            $activation_email = sanitize_email( trim( wp_unslash( $_REQUEST['license_email'] ) ) ); //phpcs:ignore
+            $license_key      = sanitize_text_field( trim( wp_unslash( $_REQUEST['license_key'] ) ) ); //phpcs:ignore
         } else {
             $activation_email = is_multisite() ? get_site_option( constant( $this->_software_key . '_OPTION_LICENSE_EMAIL' ) ) : get_option( constant( $this->_software_key . '_OPTION_LICENSE_EMAIL' ) );
             $license_key      = is_multisite() ? get_site_option( constant( $this->_software_key . '_OPTION_LICENSE_KEY' ) ) : get_option( constant( $this->_software_key . '_OPTION_LICENSE_KEY' ) );
@@ -609,7 +617,7 @@ class WWPP_WWS_License_Manager {
      * @access public
      */
     public function ajax_dismiss_license_reminder_pointer() {
-        if ( strtolower( $this->_software_key ) === $_REQUEST['software_key'] ) {
+        if ( strtolower( $this->_software_key ) === $_REQUEST['software_key'] ) { //phpcs:ignore
 
             // Check this is an AJAX operation and that user is able to manage WC settings.
             if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX || ! current_user_can( 'manage_woocommerce' ) ) {
@@ -1622,11 +1630,11 @@ class WWPP_WWS_License_Manager {
             current_user_can( 'manage_woocommerce' ) &&
             (
                 // Load style on all wholesale suite pages.
-                strpos( $screen->id, 'wholesale_page_' ) === 0 ||
+                str_starts_with( $screen->id, 'wholesale_page_' ) ||
                 'toplevel_page_wholesale-suite' === $screen->id ||
                 // Load style on other pages if the notice is not dismissed.
                 (
-                    strpos( $screen->id, 'wholesale_page_' ) !== 0 &&
+                    ! str_starts_with( $screen->id, 'wholesale_page_' ) &&
                     'no' !== $option_value
                 )
             ) && ! in_array( $screen->id, array( 'wholesale_page_wws-license-settings', 'toplevel_page_wws-ms-license-settings-network' ), true )
@@ -1810,6 +1818,8 @@ class WWPP_WWS_License_Manager {
 
         // Load license manager styles and scripts.
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_wws_license_manager_scripts' ), $this->_priority, 1 );
+
+        add_action( 'init', array( $this, 'load_plugin_strings' ), 11 );
 
         // Show license notices.
         add_action( 'wws_no_license_notice', array( $this, 'no_license_notice' ), $this->_priority, 1 );

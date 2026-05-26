@@ -22,6 +22,8 @@ function contextBasedIcon( intent: BadgeProps[ 'intent' ] = 'default' ) {
 			return published;
 		case 'warning':
 			return caution;
+		case 'warning-alt':
+			return caution;
 		case 'error':
 			return error;
 		default:
@@ -33,18 +35,27 @@ export function Badge( {
 	className,
 	intent = 'default',
 	children,
+	hideIcon = false,
+	noEllipsis = false,
 	...props
 }: BadgeProps & React.ComponentPropsWithoutRef< 'span' > ) {
 	const icon = contextBasedIcon( intent );
-	const hasIcon = !! icon;
+	const hasIcon = hideIcon ? false : !! icon;
 
 	return (
 		<span
 			className={ clsx( 'components-badge', className, {
 				[ `is-${ intent }` ]: intent,
 				'has-icon': hasIcon,
+				'woocommerce-status-badge': intent === 'warning-alt',
+				'is-actionable': intent === 'warning-alt',
 			} ) }
 			{ ...props }
+			style={ {
+				userSelect: 'none',
+				flexShrink: noEllipsis ? 0 : 1,
+				lineHeight: 'inherit',
+			} }
 		>
 			{ hasIcon && (
 				<Icon

@@ -15,12 +15,14 @@ export const FetchNotice = ( { margin = 'before' } ) => {
 			<>
 				{ margin === 'before' && <Spacer /> }
 				<Notice
-					status="error"
+					status="warning"
 					politeness="polite"
 					isDismissible={ false }
 					className="rates-fetch-error"
 				>
-					{ errors.endpoint.rates }
+					{ errorMessages.map( ( error ) => (
+						<p key={ error }>{ error }</p>
+					) ) }
 				</Notice>
 				{ margin === 'after' && <Spacer /> }
 			</>

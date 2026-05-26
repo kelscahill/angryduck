@@ -36,7 +36,8 @@ export const recordEvent = (
 
 	// Wait for DOM to be ready before recording the event.
 	domReady( () => {
-		const recordFunction = window.wcTracks.recordEvent;
+		const recordFunction =
+			window.wc?.tracks?.recordEvent ?? window.wcTracks.recordEvent;
 		recordFunction( eventName, eventProperties );
 	} );
 };

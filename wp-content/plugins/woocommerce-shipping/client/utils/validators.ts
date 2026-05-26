@@ -4,7 +4,6 @@ import {
 	createLocalErrors,
 	createValidationResult,
 	hasStates,
-	US_MILITARY_STATES,
 } from 'utils';
 import {
 	AddressValidationInput,
@@ -86,7 +85,7 @@ export const validatePostalCode = ( {
 		! /^\d{5}(?:-\d{4})?$/.test( postcode )
 	) {
 		localErrors.postcode = __(
-			'Invalid postal code format',
+			'Please provide a valid postal code.',
 			'woocommerce-shipping'
 		);
 	}
@@ -110,53 +109,95 @@ export const validateCountryAndState = ( {
 	return createValidationResult( values, errors, localErrors );
 };
 
-export const validateDestinationPhone =
-	( originCountry: string ) =>
-	( { values, errors }: AddressValidationInput ) => {
-		const localErrors = createLocalErrors();
-		const { phone, country, state } = values;
-		const shouldValidateUSPhone =
-			originCountry === country &&
-			country === 'US' &&
-			US_MILITARY_STATES.includes( state );
-
-		if ( shouldValidateUSPhone && ! phone ) {
-			localErrors.phone = __(
-				'A destination address phone number is required for this shipment.',
-				'woocommerce-shipping'
-			);
-		} else if (
-			shouldValidateUSPhone &&
-			phone.split( /\D+/g ).join( '' ).replace( /^1/, '' ).length !== 10
-		) {
-			localErrors.phone = __(
-				'Customs forms require a 10-digit phone number. ' +
-					'Please edit your phone number so it has at most 10 digits.',
-				'woocommerce-shipping'
-			);
-		}
-		return createValidationResult( values, errors, localErrors );
-	};
-
+/**
+ * Validates phone number format with enhanced security and format checking
+ * @param param0        Validation input with values and errors
+ * @param param0.values Address values containing phone number
+ * @param param0.errors Current validation errors
+ * @return Updated validation result
+ */
 export const validatePhone = ( {
 	values,
 	errors,
 }: AddressValidationInput ): AddressValidationInput => {
 	const localErrors = createLocalErrors();
 
-	const { phone } = values;
+	const { phone, country } = values;
 
-	if (
-		! phone ||
-		phone.split( /\D+/g ).join( '' ).replace( /^1/, '' ).length !== 10
-	) {
+	if ( ! phone ) {
 		localErrors.phone = __(
 			'Please provide a valid phone number.',
 			'woocommerce-shipping'
 		);
+	} else {
+		// Input sanitization: trim whitespace and validate input
+		const trimmedPhone = phone.trim();
+
+		// Security enhancement: basic format check to prevent injection
+		if ( trimmedPhone.length > 50 ) {
+			localErrors.phone = __(
+				'Please provide a valid phone number.',
+				'woocommerce-shipping'
+			);
+			return createValidationResult( values, errors, localErrors );
+		}
+
+		// Only allow digits, spaces, dashes, parentheses, dots, and plus sign
+		const allowedPattern = /^[\d\s\-\(\)\.\+]+$/;
+		if ( ! allowedPattern.test( trimmedPhone ) ) {
+			localErrors.phone = __(
+				'Please provide a valid phone number.',
+				'woocommerce-shipping'
+			);
+			return createValidationResult( values, errors, localErrors );
+		}
+
+		// Extract only digits from the phone number
+		const digitsOnly = trimmedPhone.replace( /\D/g, '' );
+
+		// Check if we have exactly 10 digits, or 11 digits starting with 1 (US country code)
+		let isValid =
+			digitsOnly.length === 10 ||
+			( digitsOnly.length === 11 && digitsOnly.startsWith( '1' ) );
+
+		// Check if we have at least 7 digits for other countries
+		if ( country.toUpperCase() !== 'US' ) {
+			isValid = digitsOnly.length >= 7;
+		}
+
+		if ( ! isValid ) {
+			localErrors.phone = __(
+				'Please provide a valid phone number.',
+				'woocommerce-shipping'
+			);
+		}
 	}
+
 	return createValidationResult( values, errors, localErrors );
 };
+
+export const validateDestinationPhone =
+	( originCountry: string ) =>
+	( { values, errors }: AddressValidationInput ) => {
+		const localErrors = createLocalErrors();
+		const { phone, country } = values;
+		const isCrossBorderDestination = originCountry !== country;
+
+		if ( ! phone ) {
+			if ( isCrossBorderDestination ) {
+				localErrors.phone = __(
+					"Phone number can't be empty for this address.",
+					'woocommerce-shipping'
+				);
+			}
+
+			return createValidationResult( values, errors, localErrors );
+		}
+
+		// Phone is optional for domestic destination shipments.
+		// If present, apply standard format validation rules.
+		return validatePhone( { values, errors } );
+	};
 
 export const validateEmail = ( {
 	values,

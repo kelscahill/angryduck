@@ -6,15 +6,15 @@
  * Update URI:           wholesalesuiteplugin.com
  * Description:          WooCommerce Extension to Provide Wholesale Product Listing Functionality
  * Author:               Rymera Web Co
- * Version:              3.0.6.1
+ * Version:              3.0.9.1
  * Author URI:           https://rymera.com.au/
  * License: GPL          v2 or later
  * Text Domain:          woocommerce-wholesale-order-form
  * Domain Path:          /languages
  * Requires at least:    5.9
- * Tested up to:         6.7
+ * Tested up to:         7.0
  * WC requires at least: 4.0
- * WC tested up to:      9.8
+ * WC tested up to:      10.6
  *
  * @package  RymeraWebCo\WWOF
  * @author   Rymera Web Co <josh@rymera.com.au>

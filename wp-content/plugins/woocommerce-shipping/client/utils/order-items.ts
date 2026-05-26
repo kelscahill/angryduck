@@ -1,6 +1,7 @@
 import { OrderItem, ShipmentItem, ShipmentSubItem } from 'types';
 
-export const hasSubItems = ( item: OrderItem ) => item.quantity > 1;
+export const hasSubItems = ( item: OrderItem | ShipmentItem ) =>
+	item.quantity > 1;
 export const getSubItemId = ( item: ShipmentItem, index: number ) =>
 	`${ item.id }-sub-${ index }`;
 export const createSubItemOfCount = ( count: number, item: ShipmentItem ) =>
@@ -15,15 +16,17 @@ export const createSubItemOfCount = ( count: number, item: ShipmentItem ) =>
 export const getSubItems = ( item: ShipmentItem ) =>
 	hasSubItems( item ) ? createSubItemOfCount( item.quantity, item ) : [];
 
-export const getSubItemIds = ( item: ShipmentItem ) =>
-	( item.subItems || getSubItems( item ) ).map( ( { id } ) => id );
+export const getSubItemIds = ( item: ShipmentItem ): string[] =>
+	( item.subItems || getSubItems( item ) ).map( ( { id } ) => `${ id }` );
 
 export const isSubItem = ( item: {
 	id: string | number;
 } ): item is ShipmentSubItem => `${ item.id }`.includes( 'sub' );
 
-export const getSelectablesCount = ( items: OrderItem[] ) =>
+export const getSelectablesCount = ( items: ( OrderItem | ShipmentItem )[] ) =>
 	items.reduce( ( acc, { quantity } ) => acc + quantity, 0 );
 
-export const getParentIdFromSubItemId = ( id: string ) =>
-	isSubItem( { id } ) ? parseInt( id.split( '-sub-' )[ 0 ], 10 ) : id;
+export const getParentIdFromSubItemId = ( id: string ): number =>
+	isSubItem( { id } )
+		? parseInt( id.split( '-sub-' )[ 0 ], 10 )
+		: Number( id );

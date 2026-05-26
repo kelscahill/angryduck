@@ -63,6 +63,8 @@ class Current_Plan {
 				'core/video',
 				'core/cover',
 				'core/audio',
+				'multistep-form',
+				'form-webhooks',
 			),
 		),
 		'personal' => array(
@@ -148,6 +150,7 @@ class Current_Plan {
 			),
 			'supports' => array(
 				'field-file', // Forms
+				'social-image-generator',
 			),
 		),
 	);

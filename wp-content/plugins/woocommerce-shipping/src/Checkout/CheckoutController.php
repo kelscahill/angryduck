@@ -11,6 +11,7 @@ namespace Automattic\WCShipping\Checkout;
 
 use Automattic\WCShipping\Connect\WC_Connect_Logger;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
+use Automattic\WCShipping\LabelPurchase\AddressNormalizationService;
 use Automattic\WCShipping\Utils;
 use WC_Order;
 
@@ -43,16 +44,30 @@ class CheckoutController {
 	private WC_Connect_Service_Settings_Store $settings_store;
 
 	/**
+	 * Address normalization service.
+	 *
+	 * @var AddressNormalizationService
+	 */
+	private AddressNormalizationService $address_normalization_service;
+
+	/**
 	 * CheckoutController constructor.
 	 *
 	 * @param WC_Connect_Logger                 $wc_connect_logger The WC_Connect_Logger instance.
 	 * @param CheckoutService                   $checkout_service Checkout service.
 	 * @param WC_Connect_Service_Settings_Store $settings_store The settings store.
+	 * @param AddressNormalizationService       $address_normalization_service Address normalization service.
 	 */
-	public function __construct( WC_Connect_Logger $wc_connect_logger, CheckoutService $checkout_service, WC_Connect_Service_Settings_Store $settings_store ) {
-		$this->checkout_service = $checkout_service;
-		$this->notifier         = new CheckoutNotifier( $wc_connect_logger->is_debug_enabled() );
-		$this->settings_store   = $settings_store;
+	public function __construct(
+		WC_Connect_Logger $wc_connect_logger,
+		CheckoutService $checkout_service,
+		WC_Connect_Service_Settings_Store $settings_store,
+		AddressNormalizationService $address_normalization_service
+	) {
+		$this->checkout_service              = $checkout_service;
+		$this->notifier                      = new CheckoutNotifier( $wc_connect_logger->is_debug_enabled() );
+		$this->settings_store                = $settings_store;
+		$this->address_normalization_service = $address_normalization_service;
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_assets' ) );
 		add_action( 'woocommerce_after_calculate_totals', array( $this, 'maybe_display_address_validation_notices' ) );
@@ -118,7 +133,6 @@ class CheckoutController {
 	 * @param int|WC_Order $order_id_or_object The order ID or WC_Order instance depending on the context.
 	 */
 	public function maybe_set_destination_normalized_order_meta( $order_id_or_object ) {
-
 		if ( ! CheckoutService::is_address_validation_enabled() ) {
 			return;
 		}
@@ -132,7 +146,7 @@ class CheckoutController {
 			return;
 		}
 
-		$this->settings_store->set_is_destination_address_normalized( $order->get_id(), true );
+		$this->address_normalization_service->set_is_destination_address_normalized( $order->get_id(), true );
 	}
 
 	/**

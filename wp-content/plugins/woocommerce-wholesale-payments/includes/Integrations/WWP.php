@@ -49,8 +49,16 @@ class WWP extends Abstract_Class {
                     'key'      => 'checkout',
                     'label'    => __( 'Checkout', 'woocommerce-wholesale-payments' ),
                     'sections' => array(
-                        'checkout_settings' => array(
+                        'checkout_settings'    => array(
                             'label' => __( 'Checkout Settings', 'woocommerce-wholesale-payments' ),
+                            'desc'  => '',
+                        ),
+                        'overdue_restrictions' => array(
+                            'label' => __( 'Overdue Restrictions', 'woocommerce-wholesale-payments' ),
+                            'desc'  => __( 'Control payment plan availability for customers with overdue invoice balances.', 'woocommerce-wholesale-payments' ),
+                        ),
+                        'credit_limit'         => array(
+                            'label' => __( 'Credit Limit', 'woocommerce-wholesale-payments' ),
                             'desc'  => '',
                         ),
                     ),
@@ -316,8 +324,11 @@ class WWP extends Abstract_Class {
         $show_auto_charge_label = get_option( 'wpay_stripe_show_auto_charge_label', 'yes' );
         $cron_schedule          = get_option( 'wpay_cron_schedule', 'daily' );
 
+        $overdue_restriction_enabled = get_option( 'wpay_overdue_restriction_enabled', 'no' );
+        $hide_overdue_settings       = 'yes' !== $overdue_restriction_enabled;
+
         $controls['wpay']['checkout'] = array(
-            'checkout_settings' => array(
+            'checkout_settings'    => array(
                 array(
                     'type'    => 'text',
                     'label'   => __( 'Payment Method Name', 'woocommerce-wholesale-payments' ),
@@ -359,7 +370,66 @@ class WWP extends Abstract_Class {
                         '15min'  => __( '15 Minutes', 'woocommerce-wholesale-payments' ),
                     ),
                 ),
+                array(
+                    'type'        => 'select',
+                    'label'       => __( 'Payment Plan Schedule Start Date', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_payment_plan_start_date',
+                    'description' => __( 'Choose the starting point for calculating payment plan installment due dates. "Order Date" uses the date the order was placed. "Completed Date" defers the schedule until the order is marked as completed.', 'woocommerce-wholesale-payments' ),
+                    'default'     => get_option( 'wpay_payment_plan_start_date', 'order_date' ),
+                    'options'     => array(
+                        'order_date'     => __( 'Order Date', 'woocommerce-wholesale-payments' ),
+                        'completed_date' => __( 'Completed Date', 'woocommerce-wholesale-payments' ),
+                    ),
+                ),
             ),
+            'overdue_restrictions' => array(
+                array(
+                    'type'        => 'switch',
+                    'label'       => __( 'Enable Overdue Restriction', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_overdue_restriction_enabled',
+                    'description' => __( 'Restrict customers with overdue balances from using payment plans.', 'woocommerce-wholesale-payments' ),
+                    'options'     => array(
+                        'yes' => __( 'Enabled', 'woocommerce-wholesale-payments' ),
+                        'no'  => __( 'Disabled', 'woocommerce-wholesale-payments' ),
+                    ),
+                    'default'     => $overdue_restriction_enabled,
+                ),
+                array(
+                    'type'        => 'select',
+                    'label'       => __( 'Restriction Action', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_overdue_restriction_action',
+                    'description' => __( 'Choose what happens when a customer with an overdue balance tries to checkout with a payment plan.', 'woocommerce-wholesale-payments' ),
+                    'default'     => get_option( 'wpay_overdue_restriction_action', 'on_hold' ),
+                    'options'     => array(
+                        'on_hold' => __( 'Allow order but set status to On Hold', 'woocommerce-wholesale-payments' ),
+                        'block'   => __( 'Block payment plan checkout', 'woocommerce-wholesale-payments' ),
+                    ),
+                    'hide'        => $hide_overdue_settings,
+                    'condition'   => array(
+                        array(
+                            'key'   => 'wpay_overdue_restriction_enabled',
+                            'value' => 'yes',
+                        ),
+                    ),
+                ),
+                array(
+                    'type'        => 'number',
+                    'label'       => __( 'Days Past Due Threshold', 'woocommerce-wholesale-payments' ),
+                    'id'          => 'wpay_overdue_days_threshold',
+                    'min'         => 0,
+                    'max'         => 365,
+                    'default'     => get_option( 'wpay_overdue_days_threshold', 0 ),
+                    'description' => __( 'Only restrict if the oldest overdue invoice is more than this many days past due. Set to 0 to restrict on any overdue balance.', 'woocommerce-wholesale-payments' ),
+                    'hide'        => $hide_overdue_settings,
+                    'condition'   => array(
+                        array(
+                            'key'   => 'wpay_overdue_restriction_enabled',
+                            'value' => 'yes',
+                        ),
+                    ),
+                ),
+            ),
+            'credit_limit'         => self::get_credit_limit_controls(),
         );
 
         return $controls;
@@ -492,6 +562,100 @@ class WWP extends Abstract_Class {
     }
 
     /**
+     * Get credit limit settings controls.
+     *
+     * @since 1.0.6
+     * @return array
+     */
+    private static function get_credit_limit_controls() {
+        $enabled  = get_option( 'wpay_credit_limit_enabled', 'no' );
+        $behavior = get_option( 'wpay_credit_limit_behavior', 'block' );
+        $global   = get_option( 'wpay_credit_limit_global_amount', '' );
+
+        $hide_sub_controls = 'yes' !== $enabled;
+
+        $controls = array(
+            array(
+                'type'        => 'switch',
+                'label'       => __( 'Enable Credit Limit', 'woocommerce-wholesale-payments' ),
+                'id'          => 'wpay_credit_limit_enabled',
+                'default'     => $enabled,
+                'options'     => array(
+                    'yes' => __( 'Enabled', 'woocommerce-wholesale-payments' ),
+                    'no'  => __( 'Disabled', 'woocommerce-wholesale-payments' ),
+                ),
+                'description' => __( 'When enabled, customers who reach their credit limit will be restricted from using payment plans.', 'woocommerce-wholesale-payments' ),
+            ),
+            array(
+                'type'        => 'number',
+                'label'       => __( 'Global Credit Limit', 'woocommerce-wholesale-payments' ),
+                'id'          => 'wpay_credit_limit_global_amount',
+                'min'         => 0,
+                'default'     => $global,
+                'description' => __( 'Maximum outstanding balance allowed before restrictions apply. Leave blank for no global limit.', 'woocommerce-wholesale-payments' ),
+                'hide'        => $hide_sub_controls,
+                'condition'   => array(
+                    array(
+                        'key'   => 'wpay_credit_limit_enabled',
+                        'value' => 'yes',
+                    ),
+                ),
+            ),
+            array(
+                'type'        => 'select',
+                'label'       => __( 'Enforcement Behavior', 'woocommerce-wholesale-payments' ),
+                'id'          => 'wpay_credit_limit_behavior',
+                'default'     => $behavior,
+                'options'     => array(
+                    'block'   => __( 'Block checkout (hide payment method)', 'woocommerce-wholesale-payments' ),
+                    'on_hold' => __( 'Allow checkout but place order on hold', 'woocommerce-wholesale-payments' ),
+                ),
+                'description' => __( 'How to handle orders when the customer exceeds their credit limit.', 'woocommerce-wholesale-payments' ),
+                'hide'        => $hide_sub_controls,
+                'condition'   => array(
+                    array(
+                        'key'   => 'wpay_credit_limit_enabled',
+                        'value' => 'yes',
+                    ),
+                ),
+            ),
+        );
+
+        // Add per-role credit limit controls dynamically.
+        global $wc_wholesale_prices;
+        if ( isset( $wc_wholesale_prices->wwp_wholesale_roles ) ) {
+            $roles = $wc_wholesale_prices->wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+            if ( ! empty( $roles ) ) {
+                foreach ( $roles as $role_slug => $role_data ) {
+                    $role_limit = get_option( "wpay_credit_limit_role_{$role_slug}", '' );
+                    $controls[] = array(
+                        'type'        => 'number',
+                        /* translators: %s = wholesale role name */
+                        'label'       => sprintf( __( 'Credit Limit — %s', 'woocommerce-wholesale-payments' ), $role_data['roleName'] ),
+                        'id'          => "wpay_credit_limit_role_{$role_slug}",
+                        'min'         => 0,
+                        'default'     => $role_limit,
+                        'description' => sprintf(
+                            /* translators: %s = wholesale role name */
+                            __( 'Credit limit for the %s role. Leave blank to use the global limit.', 'woocommerce-wholesale-payments' ),
+                            $role_data['roleName']
+                        ),
+                        'hide'        => $hide_sub_controls,
+                        'condition'   => array(
+                            array(
+                                'key'   => 'wpay_credit_limit_enabled',
+                                'value' => 'yes',
+                            ),
+                        ),
+                    );
+                }
+            }
+        }
+
+        return $controls;
+    }
+
+    /**
      * Run the integration.
      */
     public function run() {
@@ -507,5 +671,28 @@ class WWP extends Abstract_Class {
         // Add email reminder actions.
         add_action( 'wwp_trigger_schedule_email_reminders', array( $this, 'schedule_email_reminders' ), 10, 1 );
         add_action( 'wwp_trigger_view_scheduled_actions', array( $this, 'view_scheduled_actions' ), 10, 1 );
+
+        // Register allowed trigger actions for WWP REST API validation.
+        add_filter( 'wwp_allowed_trigger_actions', array( $this, 'register_allowed_trigger_actions' ) );
+    }
+
+    /**
+     * Register allowed trigger actions for WWP REST API validation.
+     *
+     * @since 1.5.1
+     *
+     * @param array $actions Existing allowed trigger actions.
+     * @return array Modified allowed trigger actions.
+     */
+    public function register_allowed_trigger_actions( $actions ) {
+        $wpay_actions = array(
+            'connect_stripe_account',
+            'test_stripe_connection',
+            'reset_stripe_connection',
+            'schedule_email_reminders',
+            'view_scheduled_actions',
+        );
+
+        return array_merge( $actions, $wpay_actions );
     }
 }

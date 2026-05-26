@@ -1,0 +1,1 @@
+System.register(["./hooks-legacy.BRKQHcMP.js","./styleChecker-legacy.D3H7hEZy.js"],function(e,t){"use strict";var s,r,c;return{setters:[e=>{s=e.C,r=e.s},e=>{c=e.d}],execute:function(){e("u",()=>{const e=r(!1);return s(()=>{e.value=c()}),e})}}});

@@ -3,8 +3,12 @@
 namespace Automattic\WCShipping\Connect;
 
 use Automattic\WCShipping\Packages\PackageRepository;
-use Automattic\WCShipping\Packages\PackagesAsArraysSanitizer;
 use Automattic\WCShipping\Packages\PackageValidationException;
+use Automattic\WCShipping\Fulfillments\ShippingFulfillmentsDataStore;
+use Automattic\WCShipping\Fulfillments\FulfillmentNotificationType;
+use Automattic\WCShipping\Utils;
+use Automattic\WCShipping\Integrations\Garden;
+
 use WC_Order;
 use WC_Cache_Helper;
 use WP_Error;
@@ -42,11 +46,22 @@ class WC_Connect_Service_Settings_Store {
 
 	private PackageRepository $package_repository;
 
-	public function __construct( WC_Connect_Service_Schemas_Store $service_schemas_store, WC_Connect_API_Client $api_client, WC_Connect_Logger $logger ) {
-		$this->service_schemas_store = $service_schemas_store;
-		$this->api_client            = $api_client;
-		$this->logger                = $logger;
-		$this->package_repository    = new PackageRepository();
+	/**
+	 * @var ShippingFulfillmentsDataStore
+	 */
+	private $shipping_fulfillments_data_store;
+
+	public function __construct(
+		WC_Connect_Service_Schemas_Store $service_schemas_store,
+		WC_Connect_API_Client $api_client,
+		WC_Connect_Logger $logger,
+		ShippingFulfillmentsDataStore $shipping_fulfillments_data_store
+	) {
+		$this->service_schemas_store            = $service_schemas_store;
+		$this->api_client                       = $api_client;
+		$this->logger                           = $logger;
+		$this->package_repository               = new PackageRepository();
+		$this->shipping_fulfillments_data_store = $shipping_fulfillments_data_store;
 	}
 
 	/**
@@ -110,6 +125,18 @@ class WC_Connect_Service_Settings_Store {
 			$result['remember_last_used_shipping_date'] = true;
 		}
 
+		if ( ! isset( $result['return_to_sender_default'] ) ) {
+			$result['return_to_sender_default'] = false;
+		}
+
+		if ( ! isset( $result['scanform_enabled'] ) ) {
+			$result['scanform_enabled'] = true;
+		}
+
+		if ( Utils::is_next() ) {
+			$result['selected_payment_method_id'] = 0;
+		}
+
 		return $result;
 	}
 
@@ -123,7 +150,7 @@ class WC_Connect_Service_Settings_Store {
 	public function update_account_settings( $settings ) {
 		// simple validation for now.
 		if ( ! is_array( $settings ) ) {
-			$this->logger->log( 'Array expected but not received', __FUNCTION__ );
+			$this->logger->log( 'Array expected but not received', __METHOD__ );
 			return false;
 
 		}
@@ -149,16 +176,22 @@ class WC_Connect_Service_Settings_Store {
 			unset( $settings[ $tax_input_key ] );
 		}
 
-		// Sanitize other fields
+		// Sanitize other fields.
+		//
+		// `enabled` is intentionally NOT in this allowlist (WOOSHIP-1448): WC Shipping is a
+		// shipping-only plugin and the only supported way to turn it off is to deactivate
+		// the plugin. Any incoming `enabled` value is silently stripped here so it cannot
+		// flip the stored flag to false (e.g. from a partial settings save that omits it).
 		$allowable_post = array(
 			'email_receipts',
-			'enabled',
 			'selected_payment_method_id',
 			'use_last_package',
 			'use_last_service',
 			'checkout_address_validation',
 			'automatically_open_print_dialog',
 			'remember_last_used_shipping_date',
+			'return_to_sender_default',
+			'scanform_enabled',
 		);
 
 		$validated_settings = array();
@@ -170,12 +203,13 @@ class WC_Connect_Service_Settings_Store {
 		}
 		$validated_settings['selected_payment_method_id']       = isset( $validated_settings['selected_payment_method_id'] ) ? intval( $validated_settings['selected_payment_method_id'] ) : 0;
 		$validated_settings['email_receipts']                   = isset( $validated_settings['email_receipts'] ) && $validated_settings['email_receipts'] ? true : false;
-		$validated_settings['enabled']                          = isset( $validated_settings['enabled'] ) && $validated_settings['enabled'] ? true : false;
 		$validated_settings['use_last_package']                 = isset( $validated_settings['use_last_package'] ) && $validated_settings['use_last_package'] ? true : false;
 		$validated_settings['use_last_service']                 = isset( $validated_settings['use_last_service'] ) && $validated_settings['use_last_service'] ? true : false;
 		$validated_settings['checkout_address_validation']      = isset( $validated_settings['checkout_address_validation'] ) && $validated_settings['checkout_address_validation'] ? true : false;
 		$validated_settings['automatically_open_print_dialog']  = isset( $validated_settings['automatically_open_print_dialog'] ) && $validated_settings['automatically_open_print_dialog'] ? true : false;
 		$validated_settings['remember_last_used_shipping_date'] = isset( $validated_settings['remember_last_used_shipping_date'] ) && $validated_settings['remember_last_used_shipping_date'] ? true : false;
+		$validated_settings['return_to_sender_default']         = isset( $validated_settings['return_to_sender_default'] ) && $validated_settings['return_to_sender_default'] ? true : false;
+		$validated_settings['scanform_enabled']                 = isset( $validated_settings['scanform_enabled'] ) && $validated_settings['scanform_enabled'] ? true : false;
 		$saved = WC_Connect_Options::update_option( 'account_settings', $validated_settings );
 
 		/**
@@ -189,8 +223,12 @@ class WC_Connect_Service_Settings_Store {
 	}
 
 	public function get_selected_payment_method_id() {
-		$account_settings = $this->get_account_settings();
-		return intval( $account_settings['selected_payment_method_id'] );
+		if ( Garden::is_config_enabled() ) {
+			return Garden::get_selected_payment_method_id();
+		} else {
+			$account_settings = $this->get_account_settings();
+			return intval( $account_settings['selected_payment_method_id'] );
+		}
 	}
 
 	public function set_selected_payment_method_id( $new_payment_method_id ) {
@@ -359,8 +397,8 @@ class WC_Connect_Service_Settings_Store {
 	 * Returns labels for the specific order ID
 	 *
 	 * @param $order_id
-	 * @param bool     $use_legacy_key should the legacy key be used to retrieve the order labels, this is most useful for
-	 *     migration purposes.
+	 * @param bool $use_legacy_key should the legacy key be used to retrieve the order labels, this is most useful for
+	 * migration purposes.
 	 *
 	 * @return array
 	 */
@@ -394,8 +432,31 @@ class WC_Connect_Service_Settings_Store {
 	 * @return array updated label info
 	 */
 	public function update_label_order_meta_data( $order_id, $new_label_data ) {
+
+		if ( Utils::should_use_fulfillment_api() ) {
+			$label_as_array       = (array) $new_label_data;
+			$shipping_fulfillment = $this->shipping_fulfillments_data_store->get_by_label_id( $label_as_array['label_id'] );
+			if ( $shipping_fulfillment ) {
+				// Check if this is a refund operation
+				if ( ! empty( $label_as_array['refund'] ) ) {
+					// Set the fulfillment back to unfulfilled status after refund
+					$shipping_fulfillment->set_status( 'unfulfilled' );
+				} elseif ( $shipping_fulfillment->will_status_change( $label_as_array['label_id'], $label_as_array ) ) {
+					// Only notify customer if status is changing TO 'PURCHASED'
+					// As it's the first time the label status is changing to 'PURCHASED', we need to notify the customer with fulfillment created notification.
+					$shipping_fulfillment->set_notify_customer( FulfillmentNotificationType::CREATED );
+					$shipping_fulfillment->set_status( 'fulfilled' );
+				}
+
+				$shipping_fulfillment->update_label( $label_as_array['label_id'], $label_as_array );
+				$shipping_fulfillment->save();
+				return $shipping_fulfillment->get_label_by_id( $label_as_array['label_id'] ) ?? $label_as_array;
+			}
+			wc_get_logger()->error( 'Label not found in fulfillment' . print_r( $label_as_array, true ) );
+			return $label_as_array;
+		}
+
 		$result      = $new_label_data;
-		$order       = wc_get_order( $order_id );
 		$labels_data = $this->get_label_order_meta_data( $order_id );
 		foreach ( $labels_data as $index => $label_data ) {
 			if ( $label_data['label_id'] === $new_label_data->label_id ) {
@@ -411,8 +472,11 @@ class WC_Connect_Service_Settings_Store {
 				}
 			}
 		}
+
+		$order = wc_get_order( $order_id );
 		$order->update_meta_data( 'wcshipping_labels', $labels_data );
 		$order->save();
+
 		return $result;
 	}
 
@@ -420,7 +484,7 @@ class WC_Connect_Service_Settings_Store {
 	 * Adds new labels to the order
 	 *
 	 * @param $order_id
-	 * @param array    $new_labels - labels to be added
+	 * @param array $new_labels - labels to be added
 	 */
 	public function add_labels_to_order( $order_id, $new_labels ) {
 		$labels_data = $this->get_label_order_meta_data( $order_id );
@@ -458,7 +522,6 @@ class WC_Connect_Service_Settings_Store {
 			$order->set_billing_email( $new_address['email'] );
 		}
 
-		$order->update_meta_data( self::IS_DESTINATION_NORMALIZED_KEY, true );
 		$order->save();
 		return true;
 	}
@@ -468,20 +531,8 @@ class WC_Connect_Service_Settings_Store {
 		return is_null( $is_normalized ) ? false : $is_normalized;
 	}
 
-	public function is_destination_address_normalized( $order_id ) {
-		$order         = wc_get_order( $order_id );
-		$is_normalized = $order->get_meta( self::IS_DESTINATION_NORMALIZED_KEY, true );
-		return is_null( $is_normalized ) ? false : (bool) $is_normalized;
-	}
-
 	public function set_is_origin_address_normalized( $value ) {
 		WC_Connect_Options::update_option( self::IS_ORIGIN_NORMALIZED_KEY, $value );
-	}
-
-	public function set_is_destination_address_normalized( $order_id, $value ) {
-		$order = wc_get_order( $order_id );
-		$order->update_meta_data( self::IS_DESTINATION_NORMALIZED_KEY, $value );
-		$order->save();
 	}
 
 	protected function sort_services( $a, $b ) {
@@ -758,7 +809,7 @@ class WC_Connect_Service_Settings_Store {
 			case 'yd':
 				return __( 'yd', 'woocommerce-shipping' );
 			default:
-				$this->logger->log( 'Unexpected measurement unit: ' . $value, __FUNCTION__ );
+				$this->logger->log( 'Unexpected measurement unit: ' . $value, __METHOD__ );
 				return $value;
 		}
 	}

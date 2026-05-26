@@ -129,18 +129,27 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Roles_Controller' ) ) {
         }
 
         /**
-         * Check permission if manipulation is allowed for this user. Currently we allow all, not sure yet if we need restrictions.
+         * Check permission if manipulation is allowed for this user.
          *
          * @since 1.19
+         * @since 2.0.9 Require manage_woocommerce capability for authorization.
          * @access public
          *
          * @param WP_REST_Request $request Full details about the request.
          *
-         * @return bool
+         * @return bool|WP_Error
          */
         public function permissions_check( $request ) {
 
-            return true; // modify later on if we want to do some restrictions.
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                return new WP_Error(
+                    'rest_forbidden',
+                    __( 'Sorry, you are not allowed to access this resource.', 'woocommerce-wholesale-prices-premium' ),
+                    array( 'status' => rest_authorization_required_code() )
+                );
+            }
+
+            return true;
         }
 
         /**
@@ -202,11 +211,11 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Roles_Controller' ) ) {
 
             if ( ! empty( $role_key ) && ! isset( $wholesale_roles[ $role_key ] ) && isset( $request['role_name'] ) ) {
 
-                $wholesale_roles[ $role_key ]['roleName'] = $request['role_name'];
+                $wholesale_roles[ $role_key ]['roleName'] = sanitize_text_field( $request['role_name'] );
                 $wholesale_roles[ $role_key ]['desc']     = '';
 
                 if ( isset( $request['description'] ) ) {
-                    $wholesale_roles[ $role_key ]['desc'] = $request['description'];
+                    $wholesale_roles[ $role_key ]['desc'] = sanitize_text_field( $request['description'] );
                 }
 
                 if ( isset( $request['only_allow_wholesale_purchases'] ) && in_array( $request['only_allow_wholesale_purchases'], array( 'yes', 'no' ), true ) ) {
@@ -228,8 +237,8 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Roles_Controller' ) ) {
                 $this->register_custom_role(
                     array(
                         'roleKey'                     => $role_key,
-                        'roleName'                    => $request['role_name'],
-                        'roleDesc'                    => isset( $request['description'] ) ? $request['description'] : '',
+                        'roleName'                    => sanitize_text_field( $request['role_name'] ),
+                        'roleDesc'                    => isset( $request['description'] ) ? sanitize_text_field( $request['description'] ) : '',
                         'onlyAllowWholesalePurchases' => $wholesale_roles[ $role_key ]['onlyAllowWholesalePurchases'],
                     )
                 );
@@ -259,11 +268,11 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Roles_Controller' ) ) {
             if ( ! empty( $role_key ) && isset( $wholesale_roles[ $role_key ] ) ) {
 
                 if ( isset( $request['role_name'] ) ) {
-                    $wholesale_roles[ $role_key ]['roleName'] = $request['role_name'];
+                    $wholesale_roles[ $role_key ]['roleName'] = sanitize_text_field( $request['role_name'] );
                 }
 
                 if ( isset( $request['description'] ) ) {
-                    $wholesale_roles[ $role_key ]['desc'] = $request['description'];
+                    $wholesale_roles[ $role_key ]['desc'] = sanitize_text_field( $request['description'] );
                 }
 
                 if ( isset( $request['only_allow_wholesale_purchases'] ) && in_array( $request['only_allow_wholesale_purchases'], array( 'yes', 'no' ), true ) ) {

@@ -2,7 +2,8 @@ import { useCallback, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { getAccountSettings, hasSelectedPaymentMethod } from 'utils';
 import { getAccountSettingsPath } from 'data/routes';
-import { WCShippingConfig } from 'types';
+import { SiteSettingsRecord, WCShippingConfig } from 'types';
+import { useEntityRecord } from '@wordpress/core-data';
 
 export function useAccountState() {
 	const [ accountSettings, updateAccountSettings ] = useState(
@@ -53,11 +54,34 @@ export function useAccountState() {
 		return hasSelectedPaymentMethod( { accountSettings } );
 	};
 
+	const { record: siteSettings } = useEntityRecord< SiteSettingsRecord >(
+		'root',
+		'site',
+		undefined!
+	);
+
+	const getNextPaymentMethod = useCallback(
+		() =>
+			accountSettings.purchaseMeta?.payment_methods?.find(
+				( method ) =>
+					`${ method.payment_method_id }` ===
+					`${ siteSettings?.plan?.stored_details_id }`
+			) ?? null,
+		[ accountSettings, siteSettings ]
+	);
+
+	const getSubscriptionId = useCallback(
+		() => siteSettings?.plan?.subscription_id,
+		[ siteSettings ]
+	);
+
 	return {
 		refreshSettings,
 		accountSettings,
 		canPurchase,
 		setAccountCompleteOrder,
 		getAccountCompleteOrder,
+		getNextPaymentMethod,
+		getSubscriptionId,
 	};
 }

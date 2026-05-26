@@ -25,6 +25,7 @@ use Automattic\WooCommerce\GoogleListingsAndAds\Options\MerchantAccountState;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsInterface;
+use Automattic\WooCommerce\GoogleListingsAndAds\Options\ServiceBasedMerchantState;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\TransientsInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerInterface;
@@ -226,6 +227,15 @@ class AccountService implements ContainerAwareInterface, OptionsAwareInterface, 
 		$id                    = $this->options->get_merchant_id();
 		$wpcom_rest_api_status = $this->options->get( OptionsInterface::WPCOM_REST_API_STATUS );
 
+		/*
+		 * Since we switched to client credentials, authorization is granted by default.
+		 * Set status to 'approved' if not set. This code is preserved for future UI functionality.
+		 */
+		if ( ! $wpcom_rest_api_status ) {
+			$wpcom_rest_api_status = OAuthService::STATUS_APPROVED;
+			$this->options->update( OptionsInterface::WPCOM_REST_API_STATUS, $wpcom_rest_api_status );
+		}
+
 		// If token is revoked outside the extension. Set the status as error to force the merchant to grant access again.
 		if ( $wpcom_rest_api_status === 'approved' && ! $this->is_wpcom_api_status_healthy() ) {
 			$wpcom_rest_api_status = OAuthService::STATUS_ERROR;
@@ -281,6 +291,8 @@ class AccountService implements ContainerAwareInterface, OptionsAwareInterface, 
 		$this->container->get( TransientsInterface::class )->delete( TransientsInterface::MC_ACCOUNT_REVIEW );
 		$this->container->get( TransientsInterface::class )->delete( TransientsInterface::URL_MATCHES );
 		$this->container->get( TransientsInterface::class )->delete( TransientsInterface::MC_IS_SUBACCOUNT );
+
+		$this->container->get( ServiceBasedMerchantState::class )->reset_service_based_merchant_status();
 	}
 
 	/**
@@ -456,7 +468,6 @@ class AccountService implements ContainerAwareInterface, OptionsAwareInterface, 
 		/** @var Merchant $merchant */
 		$merchant = $this->container->get( Merchant::class );
 
-		/** @var Account $account */
 		$account     = $merchant->get_account( $merchant_id );
 		$account_url = $account->getWebsiteUrl() ?: '';
 
@@ -670,6 +681,15 @@ class AccountService implements ContainerAwareInterface, OptionsAwareInterface, 
 				$status = [ 'is_healthy' => false ];
 			} else {
 				$status = json_decode( wp_remote_retrieve_body( $integration_remote_request_response ), true ) ?? [ 'is_healthy' => false ];
+
+				/*
+				 * Since we switched from OAuth to client credentials,
+				 * WPCOM's partner token validation returns false. Inject true status until
+				 * the issue is resolved. Preserving for future UI functionality.
+				 */
+				if ( isset( $status['is_partner_token_healthy'] ) && ! $status['is_partner_token_healthy'] ) {
+					$status['is_partner_token_healthy'] = true;
+				}
 			}
 
 			$transients->set( TransientsInterface::WPCOM_API_STATUS, $status, MINUTE_IN_SECONDS * 30 );

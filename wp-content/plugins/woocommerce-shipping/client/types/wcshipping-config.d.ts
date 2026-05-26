@@ -19,6 +19,7 @@ import { PurchaseSettings } from './purchase-settings';
 import { PurchaseMeta } from './purchase-meta';
 import { ShipmentDate } from './shipment-date';
 import { Promotion } from './promotion';
+import { PackageDimensions } from './package-dimensions';
 
 export interface WCShippingConfigAccountSettings {
 	purchaseSettings: PurchaseSettings;
@@ -56,11 +57,15 @@ export interface WCShippingConfig {
 			selected_destination: SelectedDestination | '';
 			customs_information: ShipmentRecord< CustomsState > | '';
 			shipment_dates: ShipmentRecord< ShipmentDate< string > > | '';
+			package_dimensions:
+				| ShipmentRecord< Record< number, PackageDimensions > >
+				| '';
 		};
 	};
 	origin_addresses: LocationResponse[];
 	eu_countries: string[];
 	constants: Constants;
+	/** @deprecated Kept for backward compatibility. Always returns an empty structure. */
 	carrier_strategies: {
 		upsdap: {
 			origin_address: Record<
@@ -71,6 +76,23 @@ export interface WCShippingConfig {
 			>;
 		};
 	};
+	is_main_origin_in_sync_with_store?: boolean;
+	formatted_store_address?: string;
+	store_address_draft?: LocationResponse | null;
 	custom_fulfillment_summary: string;
 	promotion?: Promotion;
+	should_use_fulfillment_api: boolean;
+	scanFormEnabled?: boolean;
+	bulk_labels_enabled?: boolean;
+	/**
+	 * Maximum number of orders the bulk-labels modal will accept in a
+	 * single pass. Sourced from
+	 * `OrdersShippingContextRESTController::BATCH_SIZE_CAP` so PHP is
+	 * the single source of truth.
+	 */
+	bulk_labels_max_orders?: number;
+	mode?: 'label-purchase' | 'address-editor';
+	address?: unknown;
+	onAddressComplete?: ( address: unknown ) => void;
+	onAddressCancel?: () => void;
 }

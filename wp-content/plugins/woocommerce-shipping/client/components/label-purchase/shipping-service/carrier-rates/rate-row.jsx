@@ -3,7 +3,10 @@ import {
 	Flex,
 	FlexBlock,
 	FlexItem,
+	Card,
+	CardBody,
 } from '@wordpress/components';
+import { Badge as NextBadge } from '@wordpress/ui';
 import { dateI18n } from '@wordpress/date';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { withBoundary } from 'components/HOC';
@@ -13,7 +16,7 @@ import { PromoTooltip } from 'components/label-purchase/promo';
 import { createInterpolateElement } from '@wordpress/element';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { RowExtras } from './row-extras';
-import { applyPromo } from 'utils';
+import { applyPromo, isDeliveryDateValid } from 'utils';
 import clsx from 'clsx';
 
 export const RateRow = withBoundary(
@@ -26,6 +29,8 @@ export const RateRow = withBoundary(
 		carbonNeutralRate,
 		additionalHandlingRate,
 		saturdayDeliveryRate,
+		isCheapest,
+		isFastest,
 	} ) => {
 		const {
 			rateId,
@@ -42,6 +47,8 @@ export const RateRow = withBoundary(
 		const {
 			storeCurrency: { formatAmount },
 			rates: { getSelectedRateOptions, selectRateOption },
+			shipment: { getCurrentShipmentDate },
+			nextDesign,
 		} = useLabelPurchaseContext();
 		const extrasText = [
 			tracking && __( 'tracking', 'woocommerce-shipping' ),
@@ -66,6 +73,7 @@ export const RateRow = withBoundary(
 			rate,
 			selectedRateOptions: getSelectedRateOptions(),
 			selectRateOption,
+			nextDesign,
 		};
 
 		const isSelected =
@@ -73,9 +81,14 @@ export const RateRow = withBoundary(
 			selected?.parent?.rateId === rateId;
 
 		const promoRate = applyPromo( rate.rate, rate.promoId );
+		const shipDate = getCurrentShipmentDate()?.shippingDate;
 
 		let deliveryDateMessage;
-		if ( deliveryDateGuaranteed && deliveryDate ) {
+		if (
+			deliveryDateGuaranteed &&
+			deliveryDate &&
+			isDeliveryDateValid( deliveryDate, shipDate )
+		) {
 			deliveryDateMessage = dateI18n( 'F d', deliveryDate );
 		} else if ( deliveryDays ) {
 			deliveryDateMessage = sprintf(
@@ -139,7 +152,162 @@ export const RateRow = withBoundary(
 				  } )
 				: '';
 
-		return (
+		return nextDesign ? (
+			<Card
+				style={ {
+					borderRadius: '4px',
+					border: isSelected
+						? '2px solid var(--wpds-color-private-primary-10, #3858E9)'
+						: '1px solid var(--wpds-color-private-neutral-fixed-6, #CCC)',
+					background: isSelected
+						? 'var(--wpds-color-private-primary-2, rgba(56, 88, 233, 0.04))'
+						: 'var(--wpds-color-private-neutral-fixed-contrast, #FFF)',
+				} }
+			>
+				<CardBody style={ { padding: 0 } }>
+					<input
+						type="radio"
+						name="shipping-rate"
+						id={ rateId }
+						onChange={ setSelected( rate ) }
+						hidden
+					/>
+					<Flex
+						direction="row"
+						align="flex-start"
+						gap={ 4 }
+						as="label"
+						htmlFor={ rateId }
+						style={ {
+							padding: '24px 16px',
+							width: '100%',
+							boxSizing: 'border-box',
+							cursor: 'pointer',
+						} }
+						className={ clsx(
+							[ isSelected && 'selected' ],
+							[ rateCaveatText && 'has-rate-caveat' ]
+						) }
+					>
+						<CarrierIcon
+							carrier={ carrierId }
+							size={ nextDesign ? 'small' : 'xLarge' }
+						/>
+
+						<FlexBlock>
+							<Flex direction="column" gap={ 1 }>
+								<Flex
+									direction="row"
+									align="center"
+									justify="flex-start"
+									gap={ 2 }
+								>
+									<Text size={ 15 } weight={ 500 }>
+										{ title }
+									</Text>
+									{ isCheapest && (
+										<NextBadge intent="informational">
+											{ __(
+												'Lowest price',
+												'woocommerce-shipping'
+											) }
+										</NextBadge>
+									) }
+									{ isFastest && (
+										<NextBadge intent="informational">
+											{ __(
+												'Fastest delivery',
+												'woocommerce-shipping'
+											) }
+										</NextBadge>
+									) }
+								</Flex>
+								{ rateCaveatText && (
+									<Text
+										size={ 13 }
+										weight={ 400 }
+										variant="muted"
+									>
+										{ rateCaveatText }
+									</Text>
+								) }
+								{ ! isSelected && extrasText.length > 0 && (
+									<Text
+										size={ 13 }
+										weight={ 400 }
+										variant="muted"
+									>
+										{ sprintf(
+											// translators: %s: list of extras
+											__(
+												'Includes %s',
+												'woocommerce-shipping'
+											),
+											extrasText.join( ', ' )
+										) }
+									</Text>
+								) }
+
+								{ isSelected && (
+									<RowExtras { ...extrasProps } />
+								) }
+							</Flex>
+						</FlexBlock>
+						<FlexItem>
+							<Flex
+								direction="column"
+								justify="flex-start"
+								align="flex-end"
+								gap={ 1 }
+							>
+								{ promoRate !== rate.rate ? (
+									<>
+										<data
+											value={ promoRate }
+											aria-label="rate-price"
+										>
+											<s>{ formatAmount( rate.rate ) }</s>{ ' ' }
+											{ formatAmount( promoRate ) }
+										</data>
+										<Flex gap={ 1 }>
+											<Badge intent="success">
+												{ __(
+													'Promo applied',
+													'woocommerce-shipping'
+												) }
+											</Badge>
+											<PromoTooltip rate={ rate.rate } />
+										</Flex>
+									</>
+								) : (
+									<Text
+										value={ rate.rate }
+										size={ 15 }
+										weight={ 500 }
+									>
+										<data
+											value={ rate.rate }
+											aria-label="rate-price"
+										>
+											{ formatAmount( rate.rate ) }
+										</data>
+									</Text>
+								) }
+								{ deliveryDateMessage && (
+									<Text
+										size={ 13 }
+										weight={ 400 }
+										variant="muted"
+									>
+										<time>{ deliveryDateMessage }</time>
+									</Text>
+								) }
+							</Flex>
+						</FlexItem>
+					</Flex>
+				</CardBody>
+			</Card>
+		) : (
 			<>
 				<input
 					type="radio"

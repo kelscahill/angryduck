@@ -70,6 +70,17 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		private $wwlc_registration_form_custom_fields;
 
 		/**
+		 * Constant Data for BYTES
+		 */
+		const BYTES_PER_MB = 1000000;
+
+		/**
+		 * Constant Data for Max File Size
+		 */
+		const DEFAULT_MAX_FILE_SIZE = 10000000;
+
+
+		/**
 		 * Class Models
 		 */
 
@@ -110,17 +121,17 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		/**
 		 * Create user ajax interface.
 		 *
-		 * @param null $user_data Array of user data.
+		 * @param array $user_data Array of user data.
 		 *
 		 * @return array
 		 * @since 1.0.0
-		 * @since 1.6.2 Part of WWLC-117. Refactor code: modify parameter
+		 * @since 1.6.2 Part of WWLC-117. Refactor code: modify parameter.
+		 * @since 2.0.2 Address security issues by sanitizing and validating user data.
 		 */
-		public function wwlc_create_user( $user_data = null ) {
-
-			if ( empty( $user_data ) && wp_doing_ajax() && isset( $_POST['wwlc_register_user_nonce_field'] ) &&
-				wp_verify_nonce( $_POST['wwlc_register_user_nonce_field'], 'wwlc_register_user' ) ) {
-					$user_data = $_POST['user_data'];
+		public function wwlc_create_user( $user_data = array() ) {
+			if ( empty( $user_data ) && wp_doing_ajax() && isset( $_POST['wwlc_register_user_nonce_field'] ) && check_ajax_referer( 'wwlc_register_user', 'wwlc_register_user_nonce_field' ) ) {
+				// Sanitize and validate user data from $_POST.
+                $user_data = wwlc_sanitize_user_data( $_POST['user_data'], 'ajax' );
 			}
 
 			return $this->wwlc_user_account->wwlc_create_user( $user_data, $this->wwlc_emails );
@@ -129,19 +140,24 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		/**
 		 * Approve user ajax interface.
 		 *
-		 * @param null   $userID User ID.
-		 * @param string $page   Post page.
+		 * @param int|null $userID User ID.
+		 * @param string   $page   Post page.
 		 *
 		 * @return bool
 		 * @since 1.0.0
+		 * @since 2.0.2 - Validate and sanitize userID and page.
 		 */
 		public function wwlc_approve_user( $userID = null, $page = null ) {
 
 			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+				check_ajax_referer( 'wwlc_manage_leads', '_wpnonce' );
 
-				$userID = $_POST['userID']; // phpcs:ignore.
-				$page   = $_POST['page']; // phpcs:ignore.
+				if ( ! current_user_can( 'edit_users' ) ) {
+					wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+				}
 
+				$userID = isset( $_POST['userID'] ) ? intval( $_POST['userID'] ) : null; // phpcs:ignore.
+				$page   = isset( $_POST['page'] ) ? sanitize_text_field( $_POST['page'] ) : null; // phpcs:ignore.
 			}
 
 			if ( 'listings' === $page ) {
@@ -171,19 +187,24 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		/**
 		 * Reject user ajax interface.
 		 *
-		 * @param null   $userID User ID.
-		 * @param string $page   Post page.
+		 * @param int|null $userID User ID.
+		 * @param string   $page   Post page.
 		 *
 		 * @return bool
 		 * @since 1.0.0
+		 * @since 2.0.2 - Validate and sanitize userID and page.
 		 */
 		public function wwlc_reject_user( $userID = null, $page = null ) {
 
 			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+				check_ajax_referer( 'wwlc_manage_leads', '_wpnonce' );
 
-				$userID = $_POST['userID']; // phpcs:ignore.
-				$page   = $_POST['page']; // phpcs:ignore.
+				if ( ! current_user_can( 'edit_users' ) ) {
+					wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+				}
 
+				$userID = isset( $_POST['userID'] ) ? intval( $_POST['userID'] ) : null; // phpcs:ignore.
+				$page   = isset( $_POST['page'] ) ? sanitize_text_field( $_POST['page'] ) : null; // phpcs:ignore.
 			}
 
 			if ( 'listings' === $page ) {
@@ -213,8 +234,8 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		/**
 		 * Activate user ajax interface.
 		 *
-		 * @param null   $userID User ID.
-		 * @param string $page   Post page.
+		 * @param int|null $userID User ID.
+		 * @param string   $page   Post page.
 		 *
 		 * @return bool
 		 * @since 1.0.0
@@ -222,8 +243,14 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		public function wwlc_activate_user( $userID = null, $page = null ) {
 
 			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-				$userID = $_POST['userID']; // phpcs:ignore.
-				$page   = $_POST['page']; // phpcs:ignore.
+				check_ajax_referer( 'wwlc_manage_leads', '_wpnonce' );
+
+				if ( ! current_user_can( 'edit_users' ) ) {
+					wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+				}
+
+				$userID = isset( $_POST['userID'] ) ? intval( $_POST['userID'] ) : null; // phpcs:ignore.
+				$page   = isset( $_POST['page'] ) ? sanitize_text_field( $_POST['page'] ) : null; // phpcs:ignore.
 			}
 
 			if ( 'listings' === $page ) {
@@ -253,8 +280,8 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		/**
 		 * Deactivate user ajax interface.
 		 *
-		 * @param null   $userID User ID.
-		 * @param string $page   Post page.
+		 * @param int|null $userID User ID.
+		 * @param string   $page   Post page.
 		 *
 		 * @return bool
 		 * @since 1.0.0
@@ -262,10 +289,14 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		public function wwlc_deactivate_user( $userID = null, $page = null ) {
 
 			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+				check_ajax_referer( 'wwlc_manage_leads', '_wpnonce' );
 
-				$userID = $_POST['userID']; // phpcs:ignore.
-				$page   = $_POST['page']; // phpcs:ignore.
+				if ( ! current_user_can( 'edit_users' ) ) {
+					wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+				}
 
+				$userID = isset( $_POST['userID'] ) ? intval( $_POST['userID'] ) : null; // phpcs:ignore.
+				$page   = isset( $_POST['page'] ) ? sanitize_text_field( $_POST['page'] ) : null; // phpcs:ignore.
 			}
 
 			if ( 'listings' === $page ) {
@@ -302,6 +333,16 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		 */
 		public function wwlc_get_states( $cc = null ) {
 
+			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+				// This endpoint is shared by frontend forms (wwlc_form_nonce) and
+				// backend custom fields page (wwlc_custom_fields_nonce). Verify whichever is present.
+				$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+				if ( ! wp_verify_nonce( $nonce, 'wwlc_form_nonce' ) && ! wp_verify_nonce( $nonce, 'wwlc_custom_fields_nonce' ) ) {
+					wp_send_json_error( array( 'message' => __( 'Security check failed.', 'woocommerce-wholesale-lead-capture' ) ) );
+				}
+			}
+
 			return $this->wwlc_user_account->get_states( $cc );
 		}
 
@@ -319,26 +360,49 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/file.php';
             }
 
-			/***************************************************************************
-			 * NEEDS TO BE REVIEWED
-			 ***************************************************************************
-			 *
-			 * @todo:
-			 * - Check and verify nonce verification.
-			 */
-			$uploaded_file = $_FILES['uploaded_file']; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			$file_settings = $_REQUEST['file_settings']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$file_settings = stripslashes( $file_settings );
-			$file_settings = json_decode( $file_settings );
-			$file_settings = (array) $file_settings;
+			if ( ! check_ajax_referer( 'wwlc_file_upload_nonce', 'nonce', false ) ) {
+				header( 'Content-Type: application/json' );
+				echo wp_json_encode(
+					array(
+						'status'  => 'fail',
+						'message' => __( 'Security check failed. Please refresh the page and try again.', 'woocommerce-wholesale-lead-capture' ),
+					)
+				);
+				die();
+			}
+
+			if ( ! isset( $_FILES['uploaded_file'] ) || UPLOAD_ERR_OK !== $_FILES['uploaded_file']['error'] ) {
+				wp_send_json_error( array( 'message' => __( 'File upload failed', 'woocommerce-wholesale-lead-capture' ) ) );
+			}
+
+			if ( ! $this->wwlc_registration_form_custom_fields ) { // if the form configurations does not exist, throw error.
+				wp_send_json_error( array( 'message' => __( 'Form field configuration error', 'woocommerce-wholesale-lead-capture' ) ) );
+			}
+
+			$field_id                    = isset( $_REQUEST['field_id'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['field_id'] ) ) : '';
+			$registration_field_settings = $this->wwlc_registration_form_custom_fields->wwlc_get_custom_field_by_id( $field_id, false ) ?? array(); // this is called here to get the DB stored form settings.
+			$db_allowed_file_types       = isset( $registration_field_settings['field_allowed_filetypes'] ) && ! empty( $registration_field_settings['field_allowed_filetypes'] ) ? array_map( 'trim', explode( ',', $registration_field_settings['field_allowed_filetypes'] ) ) : array(); // db stored filetypes.
+			$db_max_allowed_file_size    = ! empty( $registration_field_settings['max_allowed_file_size'] ) ? ( (int) $registration_field_settings['max_allowed_file_size'] * self::BYTES_PER_MB ) : self::DEFAULT_MAX_FILE_SIZE;
+			$uploaded_file               = isset( $_FILES['uploaded_file'] ) ? $_FILES['uploaded_file'] : array(); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			// Use only DB-stored file settings; client-side values are not trusted.
+			$file_settings = array(
+				'allowed_file_types'    => $db_allowed_file_types,
+				'max_allowed_file_size' => $db_max_allowed_file_size,
+			);
 
 			$temp      = explode( '.', $uploaded_file['name'] );
 			$ext       = end( $temp );
 			$error_msg = '';
 
-			// Enforce restriction of allowed filetypes.
-			if ( ! in_array( $ext, $file_settings['allowed_file_types'], true ) || ! in_array( $uploaded_file['type'], get_allowed_mime_types(), true ) ) {
+			// Server-side MIME type verification using WordPress file type check.
+			$file_check    = wp_check_filetype_and_ext( $uploaded_file['tmp_name'], $uploaded_file['name'] );
+			$verified_ext  = $file_check['ext'];
+			$verified_type = $file_check['type'];
 
+			if ( ! $verified_ext || ! $verified_type ) {
+				$error_msg = __( 'The format of the file you selected is not supported', 'woocommerce-wholesale-lead-capture' );
+			} elseif ( ! in_array( $verified_ext, $file_settings['allowed_file_types'], true ) ) {
+				// Enforce restriction of allowed filetypes using verified extension.
 				$error_msg = __( 'The format of the file you selected is not supported', 'woocommerce-wholesale-lead-capture' );
 
 			} elseif ( $uploaded_file['size'] > (int) $file_settings['max_allowed_file_size'] ) {
@@ -365,12 +429,11 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
                 }
 			}
 
-			// Generate unique number and add to filename.
-			$uploaded_file['name'] = str_replace( '.' . $ext, '', $uploaded_file['name'] ) . '-' . time() . '.' . $ext;
+			// Generate unique number and add to filename using the verified extension.
+			$uploaded_file['name'] = str_replace( '.' . $ext, '', sanitize_file_name( $uploaded_file['name'] ) ) . '-' . time() . '.' . $verified_ext;
 
 			$upload_overrides = array(
 				'test_form' => false,   // Turn off to avoid 'Invalid form submission.
-			    'test_type' => false,    // Bypass mime type check so we can avoid doing upload_mimes filter.
 			);
 
 			// Set temp upload directory for wwlc file upload.
@@ -403,7 +466,7 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 
 					header( 'Content-Type: application/json' );
-					echo json_encode( $response ); // phpcs:ignore.
+					echo wp_json_encode( $response );
 					die();
 
 			} else {
@@ -422,10 +485,25 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		public function wwlc_get_allowed_file_settings( $field_id ) {
 
 			if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-				$field_id = sanitize_text_field( $_POST['field_id'] ); // phpcs:ignore.
+				$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+				if ( ! wp_verify_nonce( $nonce, 'wwlc_form_nonce' )
+					&& ! wp_verify_nonce( $nonce, 'wwlc_update_user' )
+					&& ! wp_verify_nonce( $nonce, 'wwlc_manage_leads' ) ) {
+					wp_send_json_error( array( 'message' => __( 'Security check failed.', 'woocommerce-wholesale-lead-capture' ) ), 403 );
+				}
+
+				$field_id = isset( $_POST['field_id'] ) ? sanitize_text_field( wp_unslash( $_POST['field_id'] ) ) : '';
             }
 
 			$file_field = $this->wwlc_registration_form_custom_fields->wwlc_get_custom_field_by_id( $field_id, false );
+
+			if ( empty( $file_field ) || ! isset( $file_field['field_allowed_filetypes'] ) ) {
+				if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+					wp_send_json_error( array( 'message' => __( 'Invalid file field configuration.', 'woocommerce-wholesale-lead-capture' ) ), 403 );
+				}
+				return array();
+			}
 
 			// remove spaces if there are any.
 			$allowed_file_types = str_replace( ' ', '', $file_field['field_allowed_filetypes'] );
@@ -456,6 +534,11 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 		 * @access public
 		 */
 		public function wwlc_content_custom_wp_editor_field() {
+			check_ajax_referer( 'wwlc_custom_fields_nonce', '_wpnonce' );
+
+			if ( ! current_user_can( 'manage_woocommerce' ) ) {
+				wp_die( -1, 403 );
+			}
 
 			// force wp_editor to always show first the "visual" tab.
 			add_filter(
@@ -465,7 +548,7 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
                 }
             );
 
-			$content  = isset( $_REQUEST['content'] ) ? $_REQUEST['content'] : ''; // phpcs:ignore.
+			$content  = isset( $_REQUEST['content'] ) ? wp_kses_post( wp_unslash( $_REQUEST['content'] ) ) : ''; // phpcs:ignore.
 			$settings = array(
 				'wpautop'       => true,
 				'media_buttons' => false,
@@ -489,6 +572,42 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 			\_WP_Editors::editor_js();
 
 			wp_die();
+		}
+
+		/**
+		 * AJAX handler for removing a user's uploaded file.
+		 *
+		 * @since 2.0.3.2
+		 * @access public
+		 */
+		public function wwlc_file_remove_handler() {
+			check_ajax_referer( 'wwlc_file_remove_nonce', '_wpnonce' );
+
+			if ( ! current_user_can( 'edit_users' ) ) {
+				wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ) ) );
+			}
+
+			$field_name = isset( $_POST['field_name'] ) ? sanitize_text_field( wp_unslash( $_POST['field_name'] ) ) : '';
+			$user_id    = isset( $_POST['userid'] ) ? intval( $_POST['userid'] ) : 0;
+
+			if ( empty( $field_name ) || empty( $user_id ) ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid request parameters.', 'woocommerce-wholesale-lead-capture' ) ) );
+			}
+
+			$user = get_userdata( $user_id );
+			if ( ! $user ) {
+				wp_send_json_error( array( 'message' => __( 'User not found.', 'woocommerce-wholesale-lead-capture' ) ) );
+			}
+
+			$filename = $this->wwlc_user_account->_get_user_file_name( $user_id, $field_name );
+
+			if ( ! empty( $filename ) ) {
+				$this->wwlc_user_account->_delete_user_file( $user_id, $filename );
+			}
+
+			delete_user_meta( $user_id, $field_name );
+
+			wp_send_json_success( array( 'message' => __( 'File removed successfully.', 'woocommerce-wholesale-lead-capture' ) ) );
 		}
 
 		/**
@@ -531,7 +650,6 @@ if ( ! class_exists( 'WWLC_AJAX' ) ) {
 
 			add_action( 'wp_ajax_nopriv_wwlc_file_upload_handler', array( $this, 'wwlc_file_upload_handler' ) );
 			add_action( 'wp_ajax_nopriv_wwlc_get_allowed_file_settings', array( $this, 'wwlc_get_allowed_file_settings' ) );
-			add_action( 'wp_ajax_nopriv_wwlc_file_remove_handler', array( $this, 'wwlc_file_remove_handler' ) );
 		}
 	}
 

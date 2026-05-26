@@ -108,7 +108,9 @@ jQuery(document).ready(function ($) {
           wwlcFormActions.activateFormControls($registration_form);
 
           if (RegistrationVars.wwlc_captcha_type === "v2_invisible") {
-            grecaptcha.reset();
+            grecaptcha.reset(
+              wwlcGetRecaptchaWidgetId("#wwlc-registration-form")
+            );
           }
 
           return false;
@@ -120,18 +122,58 @@ jQuery(document).ready(function ($) {
         // show loader
         $button_container.find(".wwlc-loader").show();
 
+        if (
+          RegistrationVars.wwlc_captcha_enabled &&
+          RegistrationVars.wwlc_captcha_type === "v3_score_based"
+        ) {
+          wwlcExecuteRecaptchaV3(
+            RegistrationVars.wwlc_captcha_site_key,
+            RegistrationVars.wwlc_captcha_v3_action
+          ).then(
+            function (token) {
+              wwlcRegistration.createUser(userData, token);
+            },
+            function () {
+              $button_container.find(".wwlc-loader").hide();
+              wwlcRegistration.displayError(RegistrationVars.empty_recaptcha);
+              wwlcFormActions.activateFormControls($registration_form);
+            }
+          );
+          return false;
+        }
+
         wwlcRegistration.createUser(userData);
       });
     },
 
     /**
      * Handles creating user.
+     *
+     * @param {Object} userData         Collected form data.
+     * @param {string} [recaptchaToken] Optional pre-fetched token (v3 only).
      */
-    createUser: function (userData) {
+    createUser: function (userData, recaptchaToken) {
+      // Use grecaptcha.getResponse() with the correct widget ID to get the
+      // reCAPTCHA response for the registration form. This is necessary when
+      // both login and registration forms are on the same page, as each form
+      // has its own reCAPTCHA widget with a unique widget ID.
+      // For v3, the token is passed directly and no widget exists.
+      var recaptchaResponse = "";
+      if (typeof recaptchaToken !== "undefined") {
+        recaptchaResponse = recaptchaToken;
+      } else if (
+        typeof grecaptcha !== "undefined" &&
+        $("#wwlc-registration-form").find(".g-recaptcha").length > 0
+      ) {
+        recaptchaResponse = grecaptcha.getResponse(
+          wwlcGetRecaptchaWidgetId("#wwlc-registration-form")
+        );
+      }
+
       wwlcFrontEndAjaxServices
         .createUser(
           userData,
-          $("#wwlc-registration-form").find("#g-recaptcha-response").val(),
+          recaptchaResponse,
           $("#wwlc_register_user_nonce_field").val(),
           $('input[name="_wp_http_referer"]').val()
         )
@@ -140,8 +182,8 @@ jQuery(document).ready(function ($) {
             wwlcFormActions.resetForm($registration_form);
 
             var url = $registration_form.data("redirect")
-                ? $registration_form.data("redirect")
-                : RegistrationVars.registrationThankYouPage,
+              ? $registration_form.data("redirect")
+              : RegistrationVars.registrationThankYouPage,
               form;
 
             if (data.hasOwnProperty("redirect")) url = data.redirect;
@@ -152,12 +194,12 @@ jQuery(document).ready(function ($) {
             // purpose is to display success message
             form = $(
               '<form action="' +
-                url +
-                '" method="post">' +
-                '<input type="hidden" name="inline_message" value="' +
-                data.success_message +
-                '" />' +
-                "</form>"
+              url +
+              '" method="post">' +
+              '<input type="hidden" name="inline_message" value="' +
+              data.success_message +
+              '" />' +
+              "</form>"
             );
             $("body").append(form);
             form.submit();
@@ -175,7 +217,12 @@ jQuery(document).ready(function ($) {
                 RegistrationVars.failed_registration_process_message
               );
 
-            if (data && data.error_obj.errors.existing_user_login) {
+            if (
+              data &&
+              data.error_obj &&
+              data.error_obj.errors &&
+              data.error_obj.errors.existing_user_login
+            ) {
               $registration_form
                 .find("#wwlc_username")
                 .addClass("err")
@@ -184,7 +231,12 @@ jQuery(document).ready(function ($) {
                   '<span class="inline-error">' + data.error_message + "</span>"
                 );
             }
-            if (data && data.error_obj.errors.existing_user_email) {
+            if (
+              data &&
+              data.error_obj &&
+              data.error_obj.errors &&
+              data.error_obj.errors.existing_user_email
+            ) {
               $registration_form
                 .find("#user_email")
                 .addClass("err")
@@ -195,16 +247,14 @@ jQuery(document).ready(function ($) {
             }
 
             if (
-              $("#wwlc-registration-form").find(
-                'textarea[name="g-recaptcha-response"]'
-              ).length > 0
-            )
-              grecaptcha.reset();
-
-            console.log(RegistrationVars.registration_failed_message);
-            console.log(data.error_message);
-            console.log(data);
-            console.log("----------");
+              RegistrationVars.wwlc_captcha_type !== "v3_score_based" &&
+              $("#wwlc-registration-form").find(".g-recaptcha").length > 0 &&
+              typeof grecaptcha !== "undefined"
+            ) {
+              grecaptcha.reset(
+                wwlcGetRecaptchaWidgetId("#wwlc-registration-form")
+              );
+            }
           }
 
           wwlcFormActions.activateFormControls($registration_form);
@@ -248,7 +298,7 @@ jQuery(document).ready(function ($) {
         wwlcFrontEndAjaxServices
           .getAllowedFileSettings(
             fieldID,
-            $("#wwlc_register_user_nonce_field").val()
+            Ajax.nonce
           )
           .done(function (response) {
             // Hide notice
@@ -261,24 +311,24 @@ jQuery(document).ready(function ($) {
                 .closest(".field-set")
                 .append(
                   '<div class="inline-error">' +
-                    RegistrationVars.file_format_not_supported +
-                    "</div>"
+                  RegistrationVars.file_format_not_supported +
+                  "</div>"
                 );
             } else if (selectedFile.size <= 0) {
               fileField
                 .closest(".field-set")
                 .append(
                   '<div class="inline-error">' +
-                    RegistrationVars.file_size_is_empty +
-                    "</div>"
+                  RegistrationVars.file_size_is_empty +
+                  "</div>"
                 );
             } else if (selectedFile.size > response["max_allowed_file_size"]) {
               fileField
                 .closest(".field-set")
                 .append(
                   '<div class="inline-error">' +
-                    RegistrationVars.file_size_exceeds_max_allowed +
-                    "</div>"
+                  RegistrationVars.file_size_exceeds_max_allowed +
+                  "</div>"
                 );
             } else {
               var fileData = new FormData();
@@ -292,6 +342,9 @@ jQuery(document).ready(function ($) {
               fileData.append("action", "wwlc_file_upload_handler");
               fileData.append("uploaded_file", selectedFile);
               fileData.append("file_settings", JSON.stringify(response));
+              fileData.append("nonce", wwlcObject.wwlc_file_upload_nonce);
+              fileData.append("_wpnonce", $("#wwlc_register_user_nonce_field").val());
+              fileData.append("field_id", fieldID);
 
               // Handles the file uploading
               wwlcFrontEndAjaxServices
@@ -329,12 +382,42 @@ jQuery(document).ready(function ($) {
                       .prop("disabled", false);
                   }
                 })
-                .fail(function (jqXHR, textStatus, errorThrown) {
-                  console.log("ERRORS: " + textStatus);
+                .fail(function () {
+                  form.closest(".field-set").find(".inline-error").remove();
+                  form
+                    .closest(".field-set")
+                    .append(
+                      '<span class="inline-error">' +
+                      RegistrationVars.upload_failed_message +
+                      "</span>"
+                    );
+
+                  // Reset file input field.
+                  var inputFile = form.find('input[type="file"]');
+                  inputFile.replaceWith(
+                    inputFile.val("").prop("disabled", false).clone(true)
+                  );
+                  form.find(".wwlc-loader").hide();
+                  form
+                    .closest("#wwlc-registration-form")
+                    .find("input#register")
+                    .prop("disabled", false);
                 });
             }
 
             // hide file input and loader, and show the filename placeholder
+            form.find(".wwlc-loader").hide();
+            fileField.prop("disabled", false);
+          })
+          .fail(function () {
+            form.closest(".field-set").find(".inline-error").remove();
+            form
+              .closest(".field-set")
+              .append(
+                '<span class="inline-error">' +
+                RegistrationVars.upload_failed_message +
+                "</span>"
+              );
             form.find(".wwlc-loader").hide();
             fileField.prop("disabled", false);
           });

@@ -1,6 +1,4 @@
-import { Button } from '@wordpress/components';
-
-import { FlexItem } from '@wordpress/components';
+import { Button, FlexItem } from '@wordpress/components';
 import { _n } from '@wordpress/i18n';
 import { getShipmentSummaryText } from './utils';
 import { useLabelPurchaseContext } from 'context/label-purchase';

@@ -5,16 +5,16 @@
  * Plugin URI:           https://wholesalesuiteplugin.com/woocommerce-wholesale-payments/
  * Update URI:           wholesalesuiteplugin.com
  * Description:          WooCommerce extension that lets store owners provide payment plans for orders right within their wholesale store.
- * Version:              1.0.5.2
+ * Version:              1.0.6
  * Author:               Rymera Web Co
  * Author URI:           https://rymera.com.au/
  * License: GPL          v2 or later
  * Text Domain:          woocommerce-wholesale-payments
  * Domain Path:          /languages
  * Requires at least:    5.9
- * Tested up to:         6.8
+ * Tested up to:         7.0
  * WC requires at least: 5.9
- * WC tested up to:      9.9
+ * WC tested up to:      10.6
  *
  * @package  RymeraWebCo\WPay
  * @author   Rymera Web Co <josh@rymera.com.au>
@@ -66,6 +66,14 @@ if ( ! defined( 'WPAY_ENABLE_SUBRESOURCE_INTEGRITY_CHECK' ) ) {
 
 if ( ! defined( 'WWS_SLMW_SERVER_URL' ) ) {
     define( 'WWS_SLMW_SERVER_URL', 'https://wholesalesuiteplugin.com' );
+}
+
+if ( ! defined( 'WPAY_DEBUG' ) ) {
+    /**
+     * Enable debug mode for Wholesale Payments.
+     * When enabled, console logs will be displayed in the browser.
+     */
+    define( 'WPAY_DEBUG', false );
 }
 
 /***************************************************************************

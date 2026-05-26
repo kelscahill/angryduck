@@ -227,7 +227,7 @@ class WWP_Usage {
         foreach ( $result as $option ) {
             if ( isset( $option ) && isset( $option['option_name'] ) && isset( $option['option_value'] ) ) {
                 // if option_name starts with wpay and not included in whitelist, continue.
-                if ( strpos( $option['option_name'], 'wpay_' ) === 0 && ! in_array( $option['option_name'], $wpay_settings_whitelist, true ) ) {
+                if ( str_starts_with( $option['option_name'], 'wpay_' ) && ! in_array( $option['option_name'], $wpay_settings_whitelist, true ) ) {
                     continue;
                 }
 
@@ -354,7 +354,7 @@ class WWP_Usage {
         $data['php_version']                    = phpversion();
         $data['wp_version']                     = get_bloginfo( 'version' );
         $data['wc_version']                     = WWP_Helper_Functions::get_current_woocommerce_version();
-        $data['server']                         = isset( $_SERVER['SERVER_SOFTWARE'] ) ? $_SERVER['SERVER_SOFTWARE'] : '';
+        $data['server']                         = isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '';
         $data['multisite']                      = is_multisite();
         $data['sites']                          = $count_blogs;
         $data['usercount']                      = function_exists( 'count_users' ) ? count_users() : 'Not Set';
@@ -529,7 +529,7 @@ class WWP_Usage {
 
         // Don't track anything from our domains.
         $home_url = trailingslashit( home_url() );
-        if ( strpos( $home_url, 'wholesalesuiteplugin.com' ) !== false ) {
+        if ( str_contains( $home_url, 'wholesalesuiteplugin.com' ) ) {
             return false;
         }
 
@@ -618,7 +618,7 @@ class WWP_Usage {
      */
     public function check_for_optin() {
 
-        if ( ! ( ! empty( $_REQUEST['wwp_action'] ) && 'opt_into_tracking' === $_REQUEST['wwp_action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+        if ( ! ( ! empty( $_REQUEST['wwp_action'] ) && 'opt_into_tracking' === sanitize_key( wp_unslash( $_REQUEST['wwp_action'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
             return;
         }
 
@@ -645,7 +645,7 @@ class WWP_Usage {
      */
     public function check_for_optout() {
 
-        if ( ! ( ! empty( $_REQUEST['wwp_action'] ) && 'opt_out_of_tracking' === $_REQUEST['wwp_action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+        if ( ! ( ! empty( $_REQUEST['wwp_action'] ) && 'opt_out_of_tracking' === sanitize_key( wp_unslash( $_REQUEST['wwp_action'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification
             return;
         }
 

@@ -2,7 +2,7 @@
     exit;
 }
 
-if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'upgrade-to-premium-page' ) !== false ) { // phpcs:ignore
+if ( isset( $_GET['page'] ) && str_contains( sanitize_key( wp_unslash( $_GET['page'] ) ), 'upgrade-to-premium-page' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     echo '<div id="wwp-upgrade-page" class="wwp-page wrap nosubsub">';
     echo "<table class='form-table'>";
 } ?>
@@ -233,7 +233,7 @@ if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'upgrade-to-premium-page' 
     </td>
 </tr>
 <?php
-if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'upgrade-to-premium-page' ) !== false ) { // phpcs:ignore
+if ( isset( $_GET['page'] ) && str_contains( sanitize_key( wp_unslash( $_GET['page'] ) ), 'upgrade-to-premium-page' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
     echo '</table>';
     echo '<div>';
 } ?>

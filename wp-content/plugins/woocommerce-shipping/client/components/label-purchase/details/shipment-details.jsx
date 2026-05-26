@@ -10,10 +10,11 @@ import {
 	__experimentalText as Text,
 	BaseControl,
 	Button,
+	CheckboxControl,
 	Modal,
 	Notice,
 } from '@wordpress/components';
-import { edit, help } from '@wordpress/icons';
+import { pencil as edit, help } from '@wordpress/icons';
 import { __, sprintf } from '@wordpress/i18n';
 import { dispatch, useSelect } from '@wordpress/data';
 import {
@@ -22,6 +23,7 @@ import {
 	getCurrentOrder,
 	areAddressesClose,
 	returnPurchasedLabel,
+	getPromoDiscount,
 } from 'utils';
 import { addressStore } from 'data/address';
 import { useLabelPurchaseContext } from 'context/label-purchase';
@@ -33,6 +35,8 @@ import { withBoundary } from 'components/HOC';
 import { ShipFromSelect } from './ship-from-select';
 import { ShipmentCosts } from './shipment-costs';
 import { ShippingDate } from './shipping-date';
+import { PackageDetails } from './package-details';
+import { ShippingSummary } from '../design-next/internal/shipping-summary';
 
 export const ShipmentDetails = withBoundary(
 	( { order, destinationAddress } ) => {
@@ -66,8 +70,19 @@ export const ShipmentDetails = withBoundary(
 				getShipmentPurchaseOrigin,
 				getCurrentShipmentDate,
 				setCurrentShipmentDate,
+				getCurrentShipmentIsReturn,
+				returnShipments,
+				currentShipmentId,
 			},
+			nextDesign,
 		} = useLabelPurchaseContext();
+
+		const showPackageDetails =
+			hasPurchasedLabel( false ) || getCurrentShipmentIsReturn();
+		const returnShipmentInfo =
+			getCurrentShipmentIsReturn() && returnShipments && currentShipmentId
+				? returnShipments[ currentShipmentId ]
+				: undefined;
 
 		/**
 		 * 1) We need to run the auto verification process only once but the useEffect runs on every render. So we use a ref
@@ -150,7 +165,7 @@ export const ShipmentDetails = withBoundary(
 
 		const selectedRate = getSelectedRate();
 
-		const discount = selectedRate?.rate
+		let discount = selectedRate?.rate
 			? selectedRate.rate.retailRate - selectedRate.rate.rate
 			: 0;
 
@@ -174,45 +189,64 @@ export const ShipmentDetails = withBoundary(
 					'You save %s with WooCommerce Shipping. <i/>',
 					'woocommerce-shipping'
 			  );
-		return (
-			<div className="shipment-details">
-				<Heading level={ 3 }>
-					{ __( 'Order details', 'woocommerce-shipping' ) }
-				</Heading>
 
-				<BaseControl
-					id="ship-from"
-					label={ __( 'Ship from', 'woocommerce-shipping' ) }
-					// Opting into the new styles for margin bottom
-					__nextHasNoMarginBottom={ true }
-				>
-					{ ! hasPurchasedLabel( false ) && (
-						<ShipFromSelect
-							disabled={ hasPurchasedLabel( false ) }
-						/>
-					) }
-					{ hasPurchasedLabel( false ) &&
-						getShipmentPurchaseOrigin() && (
-							<Text>
-								{ addressToString(
-									getShipmentPurchaseOrigin()
-								) }
-							</Text>
-						) }
+		const purchasedLabel = returnPurchasedLabel( currentLabel );
 
-					{ currentLabel?.isLegacy && ( // Inaccurate ship from address
-						<Text>**************************</Text>
-					) }
-				</BaseControl>
+		if ( discount ) {
+			const promoDiscount = purchasedLabel
+				? purchasedLabel.promoDiscount
+				: getPromoDiscount(
+						selectedRate.rate.rate,
+						selectedRate.rate.promoId
+				  );
 
-				<BaseControl
-					id="ship-to"
-					label={ __( 'Ship to', 'woocommerce-shipping' ) }
-					className="purchase-label__ship-to"
-					// Opting into the new styles for margin bottom
-					__nextHasNoMarginBottom={ true }
-				>
-					{ ! hasPurchasedLabel( false ) && (
+			if ( promoDiscount ) {
+				discount += promoDiscount;
+			}
+		}
+
+		const ShipFromControl = ( { label } ) => (
+			<BaseControl
+				id="ship-from"
+				label={ label }
+				// Opting into the new styles for margin bottom
+				__nextHasNoMarginBottom={ true }
+			>
+				{ ! hasPurchasedLabel( false ) && (
+					<ShipFromSelect disabled={ hasPurchasedLabel( false ) } />
+				) }
+				{ hasPurchasedLabel( false ) && getShipmentPurchaseOrigin() && (
+					<Text>
+						{ addressToString( getShipmentPurchaseOrigin() ) }
+					</Text>
+				) }
+
+				{ currentLabel?.isLegacy && ( // Inaccurate ship from address
+					<Text>**************************</Text>
+				) }
+			</BaseControl>
+		);
+
+		const isDestinationResidential =
+			destinationAddress?.residential ?? ! destinationAddress?.company;
+
+		const purchasedDestination = hasPurchasedLabel( false )
+			? getShipmentDestination()
+			: null;
+		const isPurchasedDestinationResidential =
+			purchasedDestination?.residential ??
+			! purchasedDestination?.company;
+
+		const ShipToControl = ( { label } ) => (
+			<BaseControl
+				id="ship-to"
+				label={ label }
+				className="purchase-label__ship-to"
+				// Opting into the new styles for margin bottom
+				__nextHasNoMarginBottom={ true }
+			>
+				{ ! hasPurchasedLabel( false ) && (
+					<div className="purchase-label__ship-to-value">
 						<Text display="flex">
 							<Button
 								onClick={ () => setIsAddressModalOpen( true ) }
@@ -230,11 +264,95 @@ export const ShipmentDetails = withBoundary(
 								addressType={ ADDRESS_TYPES.DESTINATION }
 							></AddressVerifiedIcon>
 						</Text>
-					) }
-					{ hasPurchasedLabel( false ) &&
-						getShipmentDestination() &&
-						addressToString( getShipmentDestination() ) }
-				</BaseControl>
+						{ ! getCurrentShipmentIsReturn() && (
+							<div className="purchase-label__residential-toggle-row">
+								<CheckboxControl
+									__nextHasNoMarginBottom
+									className="purchase-label__residential-toggle"
+									label={ __(
+										'Residential address',
+										'woocommerce-shipping'
+									) }
+									checked={ isDestinationResidential }
+									onChange={ ( checked ) => {
+										dispatch(
+											addressStore
+										).setDestinationResidential( checked );
+										updateRates();
+									} }
+								/>
+								<span className="purchase-label__residential-toggle-help">
+									<ControlledPopover
+										icon="info-outline"
+										withArrow={ false }
+										popoverOptions={ {
+											placement: 'top-end',
+											offset: 16,
+											className:
+												'purchase-label__residential-toggle-popover',
+										} }
+									>
+										{ __(
+											'Applies residential FedEx rates and services. Uncheck for commercial destinations.',
+											'woocommerce-shipping'
+										) }
+									</ControlledPopover>
+								</span>
+							</div>
+						) }
+					</div>
+				) }
+				{ purchasedDestination && (
+					<div className="purchase-label__ship-to-value">
+						{ addressToString( purchasedDestination ) }
+						{ ! getCurrentShipmentIsReturn() && (
+							<span className="purchase-label__ship-to-residential">
+								{ isPurchasedDestinationResidential
+									? __(
+											'Residential',
+											'woocommerce-shipping'
+									  )
+									: __(
+											'Commercial',
+											'woocommerce-shipping'
+									  ) }
+							</span>
+						) }
+					</div>
+				) }
+			</BaseControl>
+		);
+
+		return nextDesign ? (
+			<ShippingSummary
+				order={ order }
+				destinationAddress={ destinationAddress }
+			/>
+		) : (
+			<div className="shipment-details">
+				<Heading level={ 3 }>
+					{ __( 'Order details', 'woocommerce-shipping' ) }
+				</Heading>
+
+				{ getCurrentShipmentIsReturn() ? (
+					<>
+						<ShipToControl
+							label={ __( 'Ship from', 'woocommerce-shipping' ) }
+						/>
+						<ShipFromControl
+							label={ __( 'Return to', 'woocommerce-shipping' ) }
+						/>
+					</>
+				) : (
+					<>
+						<ShipFromControl
+							label={ __( 'Ship from', 'woocommerce-shipping' ) }
+						/>
+						<ShipToControl
+							label={ __( 'Ship to', 'woocommerce-shipping' ) }
+						/>
+					</>
+				) }
 
 				<BaseControl
 					id="no-of-items"
@@ -274,6 +392,20 @@ export const ShipmentDetails = withBoundary(
 					</Text>
 				</BaseControl>
 
+				{ showPackageDetails && (
+					<>
+						<Divider margin="4" />
+						<Heading level={ 3 }>
+							{ __( 'Package details', 'woocommerce-shipping' ) }
+						</Heading>
+						<PackageDetails
+							label={ returnPurchasedLabel( currentLabel ) }
+							returnShipmentInfo={ returnShipmentInfo }
+							currentShipmentId={ currentShipmentId }
+						/>
+					</>
+				) }
+
 				<section
 					className={ `shipment-details__costs${
 						selectedRate ?? currentLabel?.rate ? ' has-rates' : ''
@@ -284,25 +416,28 @@ export const ShipmentDetails = withBoundary(
 						{ __( 'Shipment details', 'woocommerce-shipping' ) }
 					</Heading>
 
-					{ ( ! hasPurchasedLabel( false ) ||
-						Boolean( getCurrentShipmentDate()?.shippingDate ) ) && (
-						<>
-							<ShippingDate
-								canSelectDate={
-									! hasPurchasedLabel( false ) &&
-									! isPurchasing
-								}
-								shippingDate={
-									getCurrentShipmentDate()?.shippingDate
-								}
-								setShippingDate={ setCurrentShipmentDate }
-							/>
-							<Divider margin="4" />
-						</>
-					) }
+					{ ! getCurrentShipmentIsReturn() &&
+						( ! hasPurchasedLabel( false ) ||
+							Boolean(
+								getCurrentShipmentDate()?.shippingDate
+							) ) && (
+							<>
+								<ShippingDate
+									canSelectDate={
+										! hasPurchasedLabel( false ) &&
+										! isPurchasing
+									}
+									shippingDate={
+										getCurrentShipmentDate()?.shippingDate
+									}
+									setShippingDate={ setCurrentShipmentDate }
+								/>
+								<Divider margin="4" />
+							</>
+						) }
 					<ShipmentCosts
 						selectedRate={ selectedRate }
-						label={ returnPurchasedLabel( currentLabel ) }
+						label={ purchasedLabel }
 						rateOptions={ selectedRateOptions }
 					/>
 

@@ -1,7 +1,7 @@
 import { find, flatMap, get, isEmpty, isEqual, omit, sortBy } from 'lodash';
 // @ts-ignore can't find type definitions for @woocommerce/settings
 import { getSetting } from '@woocommerce/settings';
-import { composeAddress, composeName } from 'utils';
+import { composeAddress, composeName } from '../order';
 import {
 	Destination,
 	LocationResponse,
@@ -11,6 +11,7 @@ import {
 import {
 	ACCEPTED_USPS_ORIGIN_COUNTRIES,
 	US_MILITARY_STATES,
+	US_TERRITORY_STATES,
 } from './constants';
 import { getConfig } from '../config';
 import { camelCaseKeys } from '../common';
@@ -145,16 +146,40 @@ export const hasStates = (
 
 export const getStoreOrigin = () => {
 	return {
-		country: getSetting( 'baseLocation' )?.country || 'US',
-		state: getSetting( 'baseLocation' )?.state || 'CA',
+		country: getSetting( 'baseLocation' )?.country ?? 'US',
+		state: getSetting( 'baseLocation' )?.state ?? 'CA',
 	};
+};
+
+/**
+ * US territories can be addressed either as their own country code (after
+ * address normalization) or as country "US" with the territory in the state
+ * field (when the merchant declines normalization). Collapse both encodings to
+ * a single effective country code so customs handling is consistent regardless
+ * of which form the address takes.
+ */
+const getEffectiveCustomsCountry = (
+	address: Pick< LocationResponse, 'country' | 'state' >
+): string | undefined => {
+	if (
+		address?.country === 'US' &&
+		US_TERRITORY_STATES.includes( address?.state )
+	) {
+		return address.state;
+	}
+	return address?.country;
 };
 
 export const isCustomsRequired = (
 	origin: Pick< LocationResponse, 'country' | 'state' >,
 	destination: Pick< LocationResponse, 'country' | 'state' >
 ) => {
-	if ( ! isEqual( origin.country, destination?.country ) ) {
+	if (
+		! isEqual(
+			getEffectiveCustomsCountry( origin ),
+			getEffectiveCustomsCountry( destination )
+		)
+	) {
 		return true;
 	}
 
@@ -175,10 +200,31 @@ export const isCustomsRequired = (
 	return false;
 };
 
+/**
+ * USPS enforces the customs `itemDescription` 30-char limit only on its
+ * domestic-mail label path (US + US territories + military APO/FPO/DPO, which
+ * are country `US`). True international labels go through a different path and
+ * are not subject to it. A shipment uses the domestic-mail path when both
+ * endpoints are USPS domestic-mail territories — mirrors the backend
+ * `USPSTerritories::DOMESTIC_MAIL_TERRITORIES`.
+ */
+export const isUSPSDomesticMailShipment = (
+	originCountry?: string,
+	destinationCountry?: string
+): boolean => {
+	if ( ! originCountry || ! destinationCountry ) {
+		return false;
+	}
+	return (
+		ACCEPTED_USPS_ORIGIN_COUNTRIES.includes( originCountry ) &&
+		ACCEPTED_USPS_ORIGIN_COUNTRIES.includes( destinationCountry )
+	);
+};
+
 export const getOriginAddresses = (
 	config: WCShippingConfig = getConfig()
 ) => {
-	return config.origin_addresses
+	return ( config.origin_addresses ?? [] )
 		.map( ( originalAddress ) => ( {
 			...originalAddress,
 			address: composeAddress( originalAddress ),
@@ -195,7 +241,51 @@ export const getFirstSelectableOriginAddress = (
 		( address ) => address.defaultAddress
 	);
 
-	return defaultAddress ?? originAddresses[ 0 ];
+	if ( defaultAddress ) {
+		return defaultAddress;
+	}
+
+	// Prioritize store address with ID 'store_details' as default return address
+	const storeAddress = originAddresses.find(
+		( address ) => address.id === 'store_details'
+	);
+
+	return (
+		storeAddress ??
+		( originAddresses.length > 0 ? originAddresses[ 0 ] : undefined )
+	);
+};
+
+export const getDefaultOutboundAddress = (
+	config: WCShippingConfig = getConfig()
+) => {
+	const originAddresses = getOriginAddresses( config );
+	const defaultAddress = originAddresses.find(
+		( address ) => address.defaultAddress
+	);
+
+	if ( defaultAddress ) {
+		return defaultAddress;
+	}
+
+	// Fallback to first selectable address
+	return getFirstSelectableOriginAddress( config );
+};
+
+export const getDefaultReturnAddress = (
+	config: WCShippingConfig = getConfig()
+) => {
+	const originAddresses = getOriginAddresses( config );
+	const defaultReturnAddress = originAddresses.find(
+		( address ) => address.defaultReturnAddress
+	);
+
+	if ( defaultReturnAddress ) {
+		return defaultReturnAddress;
+	}
+
+	// Fallback to first selectable address
+	return getFirstSelectableOriginAddress( config );
 };
 
 export const isOriginAddress = (

@@ -351,7 +351,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Wholesale_Role' ) ) {
                     return $wholesale_price_arr;
                 }
 
-                $post_id = ( 'variation' === $product->get_type() ) ? $product->get_parent_id() : $product_id;
+                $post_id = WWPP_Wholesale_Price_Product_Category::is_variation_type( $product ) ? $product->get_parent_id() : $product_id;
 
                 // Only show wholesale products to wholesale users.
                 $only_show_to_wholesale_users = get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' ? true : false;
@@ -363,7 +363,8 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Wholesale_Role' ) ) {
                 $disregard_role_level_discount = apply_filters( 'wwpp_disregard_role_level_discount', get_post_meta( $post_id, 'wwpp_ignore_role_level_wholesale_discount', true ) );
 
                 // Variations that has wholesale price.
-                $variations_with_wholesale_price = isset( $user_wholesale_role[0] ) ? get_post_meta( $post_id, $user_wholesale_role[0] . '_variations_with_wholesale_price' ) : array();
+                $parent_product                  = ( $post_id === $product_id ) ? $product : wc_get_product( $post_id );
+                $variations_with_wholesale_price = isset( $user_wholesale_role[0] ) && is_a( $parent_product, 'WC_Product' ) ? WWP_Helper_Functions::get_formatted_meta_data( $parent_product, $user_wholesale_role[0] . '_variations_with_wholesale_price' ) : array();
 
                 // Only Show Wholesale Products To Wholesale Customers is enabled
                 // No General Discount

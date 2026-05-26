@@ -122,13 +122,13 @@ class CartItemSchema extends ItemSchema {
 			}
 
 			// Check if thumbnail is a valid url.
-			if ( empty( $image->thumbnail ) || ! filter_var( $image->thumbnail, FILTER_VALIDATE_URL ) ) {
+			if ( empty( $image->thumbnail ) || ! wp_parse_url( $image->thumbnail, PHP_URL_HOST ) ) {
 				$logger->warning( sprintf( 'After passing through woocommerce_cart_item_images filter, image with id %s did not have a valid thumbnail property.', $image->id ) );
 				continue;
 			}
 
 			// Check if src is a valid url.
-			if ( empty( $image->src ) || ! filter_var( $image->src, FILTER_VALIDATE_URL ) ) {
+			if ( empty( $image->src ) || ! wp_parse_url( $image->src, PHP_URL_HOST ) ) {
 				$logger->warning( sprintf( 'After passing through woocommerce_cart_item_images filter, image with id %s did not have a valid src property.', $image->id ) );
 				continue;
 			}
@@ -192,6 +192,6 @@ class CartItemSchema extends ItemSchema {
 		if ( array_key_exists( '__experimental_woocommerce_blocks_hidden', $item_data_element ) ) {
 			$item_data_element['hidden'] = $item_data_element['__experimental_woocommerce_blocks_hidden'];
 		}
-		return array_map( 'wp_strip_all_tags', $item_data_element );
+		return array_map( 'wp_kses_post', $item_data_element );
 	}
 }

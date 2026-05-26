@@ -268,40 +268,59 @@ final class WWPP_Helper_Functions {
      *
      * @access public
      * @since  1.27
+     * @since  2.0.9 Read product category term ids directly from the database to bypass
+     *               the get_terms_args filter that excludes restricted categories based on
+     *               the current authenticated user's role (which gives a false negative when
+     *               an admin is checking restrictions on behalf of a wholesale role passed
+     *               as a REST API parameter).
      * @access public
      *
      * @return bool
      */
     public static function is_product_restricted_in_category( $product_id, $wholesale_role ) {
 
-        global $post;
+        global $wpdb;
 
-        $product_cat_terms                 = get_the_terms( $product_id, 'product_cat' );
         $product_cat_wholesale_role_filter = get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER );
         $has_blocked_cat                   = false;
 
-        // Wholesale role product category filter.
-        if ( ! empty( $product_cat_terms ) && ! empty( $product_cat_wholesale_role_filter ) ) {
-            $product_cat_term_ids = array();
+        if ( empty( $product_cat_wholesale_role_filter ) || ! is_array( $product_cat_wholesale_role_filter ) ) {
+            return $has_blocked_cat;
+        }
 
-            foreach ( $product_cat_terms as $pct ) {
-                $product_cat_term_ids[] = $pct->term_id;
-            }
+        // Direct DB query to fetch product_cat term ids — bypasses get_terms_args filters
+        // (e.g. WWPP_Query::filter_categories_from_woocommerce_rest_api) that may otherwise
+        // hide restricted categories from the term query and produce a false negative here.
+        $product_cat_term_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT tt.term_id
+                 FROM {$wpdb->term_relationships} tr
+                 INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+                 WHERE tr.object_id = %d AND tt.taxonomy = %s",
+                (int) $product_id,
+                'product_cat'
+            )
+        );
 
-            if ( ! empty( $wholesale_role ) ) {
-                foreach ( $product_cat_term_ids as $t_id ) {
-                    if ( array_key_exists( $t_id, $product_cat_wholesale_role_filter ) && ! in_array( $wholesale_role, $product_cat_wholesale_role_filter[ $t_id ], true ) ) {
-                        $has_blocked_cat = true;
-                        break;
-                    }
-                }
-            } else {
-                $filtered_cat_term_ids = array_keys( $product_cat_wholesale_role_filter );
-                $blocked_cat_ids       = array_intersect( $product_cat_term_ids, $filtered_cat_term_ids );
+        if ( empty( $product_cat_term_ids ) ) {
+            return $has_blocked_cat;
+        }
 
-                if ( ! empty( $blocked_cat_ids ) ) {
+        $product_cat_term_ids = array_map( 'intval', $product_cat_term_ids );
+
+        if ( ! empty( $wholesale_role ) ) {
+            foreach ( $product_cat_term_ids as $t_id ) {
+                if ( array_key_exists( $t_id, $product_cat_wholesale_role_filter ) && ! in_array( $wholesale_role, $product_cat_wholesale_role_filter[ $t_id ], true ) ) {
                     $has_blocked_cat = true;
+                    break;
                 }
+            }
+        } else {
+            $filtered_cat_term_ids = array_keys( $product_cat_wholesale_role_filter );
+            $blocked_cat_ids       = array_intersect( $product_cat_term_ids, $filtered_cat_term_ids );
+
+            if ( ! empty( $blocked_cat_ids ) ) {
+                $has_blocked_cat = true;
             }
         }
 
@@ -361,6 +380,27 @@ final class WWPP_Helper_Functions {
     }
 
     /**
+     * Ensure the current user has the required capability or send a JSON error response and halt.
+     *
+     * Intended for AJAX handlers that already verified a nonce and now need to enforce
+     * authorization before performing privileged operations. On failure, calls
+     * wp_send_json_error() which invokes wp_die() — execution never returns to the caller.
+     *
+     * @param string $capability Capability to check. Defaults to 'manage_woocommerce'.
+     *
+     * @since 2.0.9
+     * @access public
+     *
+     * @return void On success (capability check passes), returns normally.
+     *              On failure, halts execution via wp_send_json_error()/wp_die().
+     */
+    public static function require_capability_or_send_error( $capability = 'manage_woocommerce' ) {
+        if ( ! current_user_can( $capability ) ) {
+            wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+    }
+
+    /**
      * Properly calculate product prices using its wholesale price with taxing applied.
      *
      * @param int     $cart_total          Cart Totals from WWP.
@@ -412,8 +452,26 @@ final class WWPP_Helper_Functions {
                 $wholesale_price = WWP_Wholesale_Prices::get_product_wholesale_price_on_cart( WWP_Helper_Functions::wwp_get_product_id( $cart_item['data'] ), $user_wholesale_role, $cart_item, $cart_object );
             }
 
-            // If product doesn't have wholesale price, then use the retail product price.
-            $price = $wholesale_price ? $wholesale_price : wc_get_product( $product_id )->get_price();
+            /***************************************************************************
+             * Exclude retail products from wholesale subtotal calculation
+             ***************************************************************************
+             *
+             * When calculating minimum order subtotal requirements, we only want to
+             * count products with wholesale prices. Retail products should not contribute
+             * to the subtotal check. Setting the price to 0 effectively excludes them
+             * from the calculation without removing them from the cart.
+             *
+             * Note: The 0 price is only used for subtotal calculation and does not
+             * affect the actual cart item price displayed to the customer.
+             *
+             * @since 2.0.8 Fix for issue #1453
+             */
+            // Use strict empty string check since get_product_wholesale_price_on_cart() returns '' when no wholesale price exists.
+            $price = ( '' !== $wholesale_price ) ? $wholesale_price : 0;
+
+            if ( empty( $price ) ) {
+                continue;
+            }
 
             add_filter( 'wc_price', array( 'WWPP_Helper_Functions', 'return_unformatted_price' ), 10, 4 );
             $unformatted_price = $wc_wholesale_prices_premium->wwpp_wholesale_prices->get_product_shop_price_with_taxing_applied( wc_get_product( $product_id ), $price, array( 'currency' => $active_currency ), $user_wholesale_role );
@@ -505,7 +563,6 @@ final class WWPP_Helper_Functions {
         $minimum_cart_price                     = trim( get_option( 'wwpp_settings_minimum_order_price' ) );
         $minimum_requirements_conditional_logic = get_option( 'wwpp_settings_minimum_requirements_logic' );
         $notices                                = array();
-        $cart_total                             = self::calculate_cart_totals( $cart_total, $cart_object, $user_wholesale_role );
         $cart_items                             = WC()->cart->get_cart_contents_count();
         $coupon_codes                           = WC()->cart->applied_coupons;
         $acfw_add_product_quantity              = 0;

@@ -27,6 +27,48 @@ class WPML {
     }
 
     /**
+     * Get the WordPress locale for the current WPML language.
+     *
+     * When WPML's admin bar language switcher is used, `determine_locale()` still returns
+     * the site default (e.g. `en_US`). This method resolves the correct WP locale from
+     * WPML's current language so that script translations can be loaded properly.
+     *
+     * @since 3.0.2
+     * @return string|null The WP locale (e.g. `fr_FR`) or null if WPML is not active or language is default.
+     */
+    public static function get_current_locale() {
+
+        if ( ! self::is_active() ) {
+            return null;
+        }
+
+        /**
+         * Filter to get the current WPML language code.
+         *
+         * @param string|null $current_language The current language code.
+         */
+        $current_language = apply_filters( 'wpml_current_language', null );
+
+        if ( empty( $current_language ) || 'all' === $current_language ) {
+            return null;
+        }
+
+        /**
+         * Filter to get WPML's active languages.
+         *
+         * @param array|null  $languages Empty value to be filled by WPML.
+         * @param string|null $args      Optional arguments.
+         */
+        $active_languages = apply_filters( 'wpml_active_languages', null );
+
+        if ( ! empty( $active_languages[ $current_language ]['default_locale'] ) ) {
+            return $active_languages[ $current_language ]['default_locale'];
+        }
+
+        return null;
+    }
+
+    /**
      * Get field keys that can be translated.
      *
      * @param string $section Either 'form_fields' or 'form_settings'.

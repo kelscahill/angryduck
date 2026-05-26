@@ -192,10 +192,16 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                     'posts_per_page' => -1,
                     'fields'         => 'ids',
                     'meta_query'     => array(
+                        'relation' => 'OR',
                         array(
                             'key'     => WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER,
                             'value'   => array( $user_wholesale_role, 'all' ),
                             'compare' => 'IN',
+                        ),
+                        array(
+                            'key'     => $user_wholesale_role . '_wholesale_price',
+                            'value'   => 0,
+                            'compare' => '=',
                         ),
                     ),
                 );
@@ -242,7 +248,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                                 array( // WWPP-158 : Compatibility with WooCommerce Show Single Variations.
                                     'key'     => $user_wholesale_role . '_wholesale_price',
                                     'value'   => 0,
-                                    'compare' => '>',
+                                    'compare' => '>=',
                                     'type'    => 'NUMERIC',
                                 ),
                             ),
@@ -506,6 +512,26 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
         }
 
         /**
+         * Filter Woocommerce 'product_cat' taxonomy for removing restricted taxonomies from Woocommerce Categories 'Rest Api' only.
+         *
+         * @param array $args Woocommerce product args.
+         * @param array $taxonomies Woocommerce taxnomy args.
+         * @return array
+         */
+        public function filter_categories_from_woocommerce_rest_api( $args, $taxonomies ) {
+            if ( wp_is_serving_rest_request() && in_array( 'product_cat', $taxonomies, true ) && ! empty( $this->_product_cat_wholesale_role_filter ) ) {
+                $current_user_role = $this->_get_current_user_wholesale_role() ?? ''; // get the current user role.
+
+                foreach ( $this->_product_cat_wholesale_role_filter as $category_id => $role ) {
+                    if ( ! in_array( $current_user_role, $role, true ) ) { // if the current user role is not included in restricted categories user roles, then exclude the category id from the api.
+                        $args['exclude'][] = $category_id;
+                    }
+                }
+            }
+            return $args;
+        }
+
+        /**
          * Same as pre_get_posts function but only intended for WooCommerce Wholesale Order Form integration,
          * you see the WWOF uses custom query, so unlike the usual way of filter query object, we can't do that with WWOF,
          * but we can filter the query args thus achieving the same effect.
@@ -556,7 +582,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                     $serialized_filtered_term_ids = maybe_serialize( $filtered_term_ids );
 
                     // The goal here is to not repeatedly add this tax query as pre_get_posts can be called multiple times.
-                    if ( strpos( $serialized_tax_query, $serialized_filtered_term_ids ) === false ) {
+                    if ( ! str_contains( $serialized_tax_query, $serialized_filtered_term_ids ) ) {
 
                         $query_args['tax_query'][] = array(
                             'taxonomy' => 'product_cat',
@@ -633,7 +659,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                 $serialized_query_arr = maybe_serialize( $query_arr );
 
                 // Make sure we don't re add this query if it is already added.
-                if ( strpos( $serialized_query_arr, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ) === false ) {
+                if ( ! str_contains( $serialized_query_arr, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ) ) {
 
                     $query_arr['where'] .= " AND p.ID IN (
                                                     SELECT DISTINCT pt.ID
@@ -651,7 +677,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                     ! $this->_wholesale_user_have_general_role_discount( $user_wholesale_role ) ) {
 
                     // Make sure we don't re add this query if it is already added.
-                    if ( strpos( $serialized_query_arr, $user_wholesale_role . '_have_wholesale_price' ) === false ) {
+                    if ( ! str_contains( $serialized_query_arr, $user_wholesale_role . '_have_wholesale_price' ) ) {
 
                         // If there is a default general wholesale discount set for this wholesale role then all products are considered wholesale for this dude.
                         // If no mapping is present, then we only show products with wholesale prices specific for this wholesale role.
@@ -937,7 +963,8 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                 $filter_posts_per_page                      = apply_filters( 'wwpp_filter_related_products_per_page', count( $related_posts ) );
                 $related_posts_query_args['posts_per_page'] = $filter_posts_per_page;
 
-                if ( get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' ) {
+                // Only apply wholesale products filtering for wholesale users, not for guests.
+                if ( get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' && ! empty( $wholesale_role ) ) {
                     $related_posts_query_args['meta_query'] = array(
                         'relation' => 'OR',
                         array(
@@ -1141,6 +1168,19 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
          * @return WC_Product_Query
          */
         public function filter_query_loop_block_query_vars( $query, $block, $page ) { // phpcs:ignore
+            /**
+             * If specific handpicked-products or product collections are selected then just return the query params(this is for handpicked-products, product-collection block)
+             */
+            if ( isset( $query['post_type'] ) && 'product' === $query['post_type'] && isset( $query['post__in'] ) && ! empty( $query['post__in'] ) ) {
+                return $query;
+            }
+
+            /**
+             * If specific handpicked products are selected then just return the query params(this is for handpicked-products block only)
+             */
+            if ( isset( $query['post_type'] ) && 'product' === $query['post_type'] && isset( $query['post__in'] ) && ! empty( $query['post__in'] ) ) {
+                return $query;
+            }
 
             // Pass if post type is product.
             if ( isset( $query['post_type'] ) && 'product' === $query['post_type'] ) {
@@ -1201,6 +1241,8 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
             // This hook is called after the wc query variable object is created, but before the actual query is run.
             // The pre_get_posts action gives developers access to the $query object by reference (any changes you make to $query are made directly to the original object - no return value is necessary).
             add_action( 'woocommerce_product_query', array( $this, 'pre_get_posts' ), 10, 1 );
+
+            add_filter( 'get_terms_args', array( $this, 'filter_categories_from_woocommerce_rest_api' ), 10, 2 );
 
             // For WC Widgets.
             add_filter( 'woocommerce_products_widget_query_args', array( $this, 'pre_get_posts_arg' ), 10, 1 );

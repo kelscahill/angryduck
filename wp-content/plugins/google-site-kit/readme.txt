@@ -2,9 +2,9 @@
 
 Contributors:      google
 Requires at least: 5.2
-Tested up to:      6.8
+Tested up to:      7.0
 Requires PHP:      7.4
-Stable tag:        1.156.0
+Stable tag:        1.179.0
 License:           Apache License 2.0
 License URI:       https://www.apache.org/licenses/LICENSE-2.0
 Tags:              google, search-console, analytics, adsense, pagespeed-insights
@@ -34,6 +34,9 @@ Site Kit shows key metrics and insights from different Google products:
 * **AdSense:** Keep track of how much your site is earning you.
 * **PageSpeed Insights:** See how your pages perform compared to other real-world sites. Improve performance with actionable tips from PageSpeed Insights.
 * **Tag Manager:** Use Site Kit to easily set up Tag Manager- no code editing required. Then, manage your tags in Tag Manager.
+* **Sign in with Google:** Allows visitors to sign up and log in to your site with their existing Google account.
+* **Reader Revenue Manager:** Helps you grow, retain, and engage your site visitors via subscription, contribution, newsletters, surveys, and custom prompts.
+* **Ads:** Get customers and sell more with targeted traffic from Google Ads.
 
 == Installation ==
 
@@ -109,21 +112,36 @@ Please create a new topic on our [WordPress.org support forum](https://wordpress
 
 == Changelog ==
 
-= 1.156.0 =
+= 1.179.0 =
+
+**Added**
+
+* Implement Site Goals new feature modal CTA. See [#12424](https://github.com/google/site-kit-wp/issues/12424).
 
 **Enhanced**
 
-* Update the Google tag gateway for advertisers (formerly First-party mode) `measurement.php` proxy script to the latest version. See [#10952](https://github.com/google/site-kit-wp/issues/10952).
-* Correct the casing for the terms "dashboard" and "dashboard sharing" in user-facing copy. See [#10842](https://github.com/google/site-kit-wp/issues/10842).
-* Update the popup maker tracking script to reference `PUM` object from the global scope. See [#10812](https://github.com/google/site-kit-wp/issues/10812).
-* Update Analytics and AdSense notification styles. See [#10392](https://github.com/google/site-kit-wp/issues/10392).
-* Add a new “Info Banner” layout to redesign the GatheringDataNotification banner component. See [#10386](https://github.com/google/site-kit-wp/issues/10386).
-* Add a new “Warning Banner” layout and apply it to redesign the `ZeroDataNotification` component. See [#10385](https://github.com/google/site-kit-wp/issues/10385).
-* Track GA event when the Reader Revenue Manager post-level setting is changed and the post is saved in the block editor. See [#10333](https://github.com/google/site-kit-wp/issues/10333).
+* Add feature metrics reporting to Email Reports. Props dokson. See [#12627](https://github.com/google/site-kit-wp/issues/12627).
+* Add the ability to make widgets collapsible, and apply this to the Site Goals widgets. See [#12599](https://github.com/google/site-kit-wp/issues/12599).
+* Add GA event tracking for "Learn more" link clicks in the setup flow. See [#12526](https://github.com/google/site-kit-wp/issues/12526).
+* Return to the WordPress dashboard instead of the plugins page when exiting the setup flow. See [#12525](https://github.com/google/site-kit-wp/issues/12525).
+* Show an updated version of the Key Metrics section on the Settings screen in the new setup flow. See [#12524](https://github.com/google/site-kit-wp/issues/12524).
+* Prevent menu items which are not relevant to the current screen from appearing in the new setup flow. See [#12522](https://github.com/google/site-kit-wp/issues/12522).
+* Allow in-view state to be overridden for specific widget areas. See [#12520](https://github.com/google/site-kit-wp/issues/12520).
+* Add "Online store performance" and "Lead generation performance" widgets from Site Goals. See [#12513](https://github.com/google/site-kit-wp/issues/12513).
+* Add the Error snackbar component. See [#12510](https://github.com/google/site-kit-wp/issues/12510).
+* Create the Progress snackbar component. See [#12508](https://github.com/google/site-kit-wp/issues/12508).
+* Update content-only tooltips to match the new design with a smaller width and larger font size. See [#12495](https://github.com/google/site-kit-wp/issues/12495).
+* Add `service_version=v3` query parameter to the Analytics account provisioning redirect URI for the new setup flow. See [#12475](https://github.com/google/site-kit-wp/issues/12475).
+* Fix the dashboard tour for mobile viewports. See [#12463](https://github.com/google/site-kit-wp/issues/12463).
+* Update setup flow screens to remove gutters around the main content and align with the new design. See [#12457](https://github.com/google/site-kit-wp/issues/12457).
+* Update the report trigger time to allow time for data to collect. See [#12418](https://github.com/google/site-kit-wp/issues/12418).
+* Improve audience segmentation when pre-sync fails in initial setup. See [#12384](https://github.com/google/site-kit-wp/issues/12384).
+* Fix spacing bugs for Sign in with Google warning notifications for conflicting plugins. See [#11756](https://github.com/google/site-kit-wp/issues/11756).
 
 **Fixed**
 
-* Fix bug that could cause permission scope errors not to appear. See [#10920](https://github.com/google/site-kit-wp/issues/10920).
-* Update modal dialogs to restore focus to previously clicked elements when the modal dialog is closed. See [#10548](https://github.com/google/site-kit-wp/issues/10548).
+* Show the correct notification when successfully setting up the Ads module with PAX. See [#12539](https://github.com/google/site-kit-wp/issues/12539).
+* Don't block Ads setup completion on matching tag ID used by Google for Woo. See [#12529](https://github.com/google/site-kit-wp/issues/12529).
+* Improve tooltips to hide step indicators when only one step exists. See [#12476](https://github.com/google/site-kit-wp/issues/12476).
 
 [See changelog for all versions](https://raw.githubusercontent.com/google/site-kit-wp/main/changelog.txt).

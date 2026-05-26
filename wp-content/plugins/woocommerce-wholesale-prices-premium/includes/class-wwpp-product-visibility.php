@@ -143,7 +143,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
             $all_registered_wholesale_roles = $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles();
 
             if ( 'product' === $post->post_type ) {
-                $product_wholesale_role_filter = get_post_meta( $post->ID, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+                $product_wholesale_role_filter = get_post_meta( $post->ID, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ); //phpcs:ignore
 
                 if ( ! is_array( $product_wholesale_role_filter ) ) {
                     $product_wholesale_role_filter = array();
@@ -170,7 +170,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
         public function save_product_wholesale_role_visibility_filter( $post_id ) {
 
             // Check if this is an inline edit. If true then return.
-            if ( isset( $_POST['_inline_edit'] ) && wp_verify_nonce( $_POST['_inline_edit'], 'inlineeditnonce' ) ) {
+            if ( isset( $_POST['_inline_edit'] ) && wp_verify_nonce( $_POST['_inline_edit'], 'inlineeditnonce' ) ) { // phpcs:ignore
                 return;
             }
 
@@ -185,15 +185,15 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                 }
 
                 // Security check.
-                if ( isset( $_POST['wwpp_nonce_save_product_wholesale_role_visibility_filter'] ) && wp_verify_nonce( $_POST['wwpp_nonce_save_product_wholesale_role_visibility_filter'], 'wwpp_action_save_product_wholesale_role_visibility_filter' ) ) {
+                if ( isset( $_POST['wwpp_nonce_save_product_wholesale_role_visibility_filter'] ) && wp_verify_nonce( $_POST['wwpp_nonce_save_product_wholesale_role_visibility_filter'], 'wwpp_action_save_product_wholesale_role_visibility_filter' ) ) { // phpcs:ignore 
 
                     // Because we are adding post meta via add_meta_data
                     // We make sure to delete old post meta so the meta won't contains duplicate values.
                     $product->delete_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
 
-                    if ( isset( $_POST['wholesale-visibility-select'] ) && is_array( $_POST['wholesale-visibility-select'] ) && ! empty( $_POST['wholesale-visibility-select'] ) ) {
+                    if ( isset( $_POST['wholesale-visibility-select'] ) && is_array( $_POST['wholesale-visibility-select'] ) && ! empty( $_POST['wholesale-visibility-select'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
-                        foreach ( $_POST['wholesale-visibility-select'] as $wholesaleRole ) {
+                        foreach ( $_POST['wholesale-visibility-select'] as $wholesaleRole ) { // phpcs:ignore 
                             $product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $wholesaleRole );
                         }
                     } else {
@@ -201,7 +201,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                     }
                 }
 
-                if ( isset( $_POST['wwpp_nonce_save_product_wholesale_price_options'] ) && wp_verify_nonce( $_POST['wwpp_nonce_save_product_wholesale_price_options'], 'wwpp_action_save_product_wholesale_price_options' ) ) {
+                if ( isset( $_POST['wwpp_nonce_save_product_wholesale_price_options'] ) && wp_verify_nonce( $_POST['wwpp_nonce_save_product_wholesale_price_options'], 'wwpp_action_save_product_wholesale_price_options' ) ) { // phpcs:ignore
 
                     $ignore_cat_level_wp  = isset( $_POST['void-cat-level-wholesale-discount'] ) ? 'yes' : 'no';
                     $ignore_role_level_wp = isset( $_POST['void-wholesale-role-level-wholesale-discount'] ) ? 'yes' : 'no';
@@ -352,8 +352,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                                 wp_safe_redirect( $redirect_link );
                                 exit();
                             }
-                        } elseif ( empty( $wholesale_price ) ) {
-
+                        } elseif ( empty( $wholesale_price ) && 0 === strlen( (string) $wholesale_price ) ) { // redirect for single product with no wholesale price defined or set (if 0 is defined as wholesale price it will not redirect from now onwards).
                             wp_safe_redirect( $redirect_link );
                             exit();
 
@@ -390,11 +389,8 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
             if ( ! empty( $wholesale_role ) ) {
                 $restricted_cat_ids = $wc_wholesale_prices_premium->wwpp_query->_get_restricted_product_cat_ids_for_wholesale_user( $wholesale_role );
             } else {
-                // For non-wholesale users, if "Only Show Wholesale Products" is enabled, return empty array.
-                if ( 'yes' === $show_wholesale_products_to_wholesale_users ) {
-                    return array();
-                }
-
+                // For non-wholesale users, if "Only Show Wholesale Products" is enabled, we'll still show related products.
+                // This change allows guest users to see related products.
                 $restricted_categories = get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER, array() );
                 if ( ! empty( $restricted_categories ) ) {
                     foreach ( $restricted_categories as $cat_key => $restricted_cat ) {
@@ -427,11 +423,9 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                 ),
             );
 
-            if ( 'yes' === $show_wholesale_products_to_wholesale_users ) {
-                if ( empty( $wholesale_role ) ) {
-                    // Non-wholesale user should not see any products when this setting is enabled.
-                    return array();
-                } elseif ( ! $has_wholesale_discount ) {
+            // Only apply wholesale product filtering for wholesale users, not for guests or non-wholesale users.
+            if ( 'yes' === $show_wholesale_products_to_wholesale_users && ! empty( $wholesale_role ) ) {
+                if ( ! $has_wholesale_discount ) {
                     $restricted_args['meta_query'][] = array(
                         'relation' => 'OR',
                         array(
@@ -802,7 +796,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
 
             $visibility_filters = $product->get_meta( 'wwpp_product_wholesale_visibility_filter', true );
 
-            if ( '' !== $visibility_filters && false !== strpos( $visibility_filters, ',' ) ) {
+            if ( '' !== $visibility_filters && str_contains( $visibility_filters, ',' ) ) {
 
                 $visibility_filters = explode( ',', $visibility_filters );
 

@@ -136,7 +136,7 @@ class WPay_Email_Scheduler extends Abstract_Class {
                     array(
                         $order_id,
                         array(
-                            'date'   => $due_date,
+                            'date'   => date_i18n( wc_date_format(), strtotime( $due_date ) ),
                             'amount' => $amount,
                         ),
                     )
@@ -165,7 +165,7 @@ class WPay_Email_Scheduler extends Abstract_Class {
                     array(
                         $order_id,
                         array(
-                            'date'         => $due_date,
+                            'date'         => date_i18n( wc_date_format(), strtotime( $due_date ) ),
                             'amount'       => $amount,
                             'days_overdue' => $i,
                         ),
@@ -398,7 +398,7 @@ class WPay_Email_Scheduler extends Abstract_Class {
         $today         = strtotime( 'today' );
 
         $payment_data = array(
-            'date'   => $due_date,
+            'date'   => date_i18n( wc_date_format(), strtotime( $due_date ) ),
             'amount' => $amount,
             'index'  => $payment_index,
         );

@@ -101,7 +101,8 @@ abstract class WC_REST_Connect_Base_Controller extends WP_REST_Controller {
 	 */
 	public function prevent_route_caching() {
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
-			define( 'DONOTCACHEPAGE', true ); // Play nice with WP-Super-Cache
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WP-Super-Cache constant.
+			define( 'DONOTCACHEPAGE', true );
 		}
 
 		// Prevent our REST API endpoint responses from being added to browser cache

@@ -9,6 +9,8 @@ namespace RymeraWebCo\WPay\Integrations;
 
 use RymeraWebCo\WPay\Integrations\Payment_Block;
 use Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry;
+use WP_Error;
+use WP_REST_Request;
 
 /**
  * WPay_Block class.
@@ -34,7 +36,7 @@ class WPay_Block {
     /**
      * Register the custom Payment Method Type.
      *
-     * @param Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry Payment method registry.
+     * @param PaymentMethodRegistry $payment_method_registry Payment method registry.
      *
      * @since 1.0.0
      * @return void
@@ -67,24 +69,33 @@ class WPay_Block {
      * @param WP_REST_Request $request Request object.
      *
      * @since 1.0.0
-     * @return WP_REST_Response
+     * @return WP_Error|WP_REST_Response
      */
     public function wpay_rest_checkout_process_action( $request ) {
         $data = $request->get_json_params();
 
-        if ( ! isset( $data['plan_id'] ) ) {
-            return new \WP_Error( 'wpay_missing_plan_id', __( 'Missing plan ID.', 'woocommerce-wholesale-payments' ), array( 'status' => 400 ) );
+        // Handle payment method attached flag.
+        if ( isset( $data['wpay_pm_attached'] ) && true === $data['wpay_pm_attached'] ) {
+            $this->wpay_set_pm_attached_flag();
         }
 
-        // Set the selected plan in the session.
-        $this->wpay_set_data_session( $data['plan_id'] );
+        // Handle plan selection (can be sent together with wpay_pm_attached).
+        if ( isset( $data['plan_id'] ) ) {
+            $this->wpay_set_data_session( $data['plan_id'] );
+        }
 
-        $response = array(
-            'success' => true,
-            'message' => 'Checkout action processed successfully',
-        );
+        // Return success if either flag was set or plan was selected.
+        if ( isset( $data['wpay_pm_attached'] ) || isset( $data['plan_id'] ) ) {
+            $response = array(
+                'success' => true,
+                'message' => 'Checkout action processed successfully',
+            );
 
-        return rest_ensure_response( $response );
+            return rest_ensure_response( $response );
+        }
+
+        // If neither was provided, return error.
+        return new WP_Error( 'wpay_missing_data', __( 'Missing required data (plan_id or wpay_pm_attached).', 'woocommerce-wholesale-payments' ), array( 'status' => 400 ) );
     }
 
     /**
@@ -100,6 +111,44 @@ class WPay_Block {
             wc()->initialize_session();
         }
         wc()->session->set( 'wpay_selected_plan', $plan_id );
+    }
+
+    /**
+     * Set the payment method attached flag in the session.
+     *
+     * @since 1.0.0
+     * @return void
+     */
+    private function wpay_set_pm_attached_flag() {
+        if ( ! wc()->session ) {
+            wc()->initialize_session();
+        }
+        wc()->session->set( 'wpay_pm_attached', true );
+    }
+
+    /**
+     * Get the payment method attached flag from the session.
+     *
+     * @since 1.0.0
+     * @return bool
+     */
+    public static function wpay_get_pm_attached_flag() {
+        if ( ! wc()->session ) {
+            return false;
+        }
+        return (bool) wc()->session->get( 'wpay_pm_attached', false );
+    }
+
+    /**
+     * Clear the payment method attached flag from the session.
+     *
+     * @since 1.0.0
+     * @return void
+     */
+    public static function wpay_clear_pm_attached_flag() {
+        if ( wc()->session ) {
+            wc()->session->set( 'wpay_pm_attached', false );
+        }
     }
 
     /**

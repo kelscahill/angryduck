@@ -45,30 +45,64 @@ jQuery(document).ready(function($){
                         MyAccountVars.file_size_exceeds_max_allowed +
                         "</div>"
                     );
-            } else { 
+            } else {
                 var fileData = new FormData();
 
                 fileData.append( "action", "wwlc_file_upload_handler" );
                 fileData.append( "uploaded_file", selectedFile );
                 fileData.append("file_settings", JSON.stringify(response));
-                
+                fileData.append("nonce", MyAccountVars?.wwlc_file_upload_nonce);
+                fileData.append("field_id", fieldID);
+                fileData.append("_wpnonce", $('#wwlc_update_user_nonce_field').val());
+
                 wwlcFrontEndAjaxServices.uploadFile(fileData)
                     .done(function (data) {
-                        if (data.status === "success") { 
+                        if (data.status === "success") {
                             // save file name to hidden input
                             closestElement.find(
                                 'input[type="hidden"]'
                             ).val(data.file_name);
 
                             closestElement.find(".inline-error").remove();
+                        } else {
+                            closestElement.find(".inline-error").remove();
+                            closestElement.append(
+                                '<div class="inline-error">' +
+                                (data.message || MyAccountVars.upload_failed_message) +
+                                "</div>"
+                            );
+                            fileField.val('');
                         }
+
+                        closestElement.find(".wwlc-loader").hide();
+                        fileField.prop("disabled", false);
                     })
-                    .error(function ( jqXHR, textStatus, errorThrown ) {
-                        console.log("ERRORS: " + textStatus);
+                    .fail(function () {
+                        closestElement.find(".inline-error").remove();
+                        closestElement.append(
+                            '<div class="inline-error">' +
+                            MyAccountVars.upload_failed_message +
+                            "</div>"
+                        );
+                        closestElement.find(".wwlc-loader").hide();
+                        fileField.val('');
+                        fileField.prop("disabled", false);
                     });
+
+                return;
             }
 
             // hide file input and loader, and show the filename placeholder
+            closestElement.find(".wwlc-loader").hide();
+            fileField.prop("disabled", false);
+        })
+        .fail(function () {
+            closestElement.find(".inline-error").remove();
+            closestElement.append(
+                '<div class="inline-error">' +
+                MyAccountVars.upload_failed_message +
+                "</div>"
+            );
             closestElement.find(".wwlc-loader").hide();
             fileField.prop("disabled", false);
         });

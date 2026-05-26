@@ -1,7 +1,10 @@
 import { createReducer } from 'utils';
 import { ANALYTICS_FETCH_LABELS_SUCCESS } from './action-types';
-import { AnalyticsActions, AnalyticsFetchLabelsAction } from './types.d';
-import { AnalyticsState } from './types.d';
+import {
+	AnalyticsActions,
+	AnalyticsFetchLabelsAction,
+	AnalyticsState,
+} from './types.d';
 
 const defaultState: AnalyticsState = {
 	data: undefined,

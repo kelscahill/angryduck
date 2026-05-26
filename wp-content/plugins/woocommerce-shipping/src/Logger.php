@@ -66,4 +66,19 @@ class Logger {
 
 		self::$logger->debug( $message, $data );
 	}
+
+	/**
+	 * Add a warning log entry.
+	 * Always logs regardless of debug setting, as warnings indicate potential issues.
+	 *
+	 * @param string $message Message to display.
+	 * @param array  $data    Additional contextual data to pass.
+	 *
+	 * @return void
+	 */
+	public static function warning( string $message, array $data = array() ) {
+		self::init();
+
+		self::$logger->warning( $message, $data );
+	}
 }

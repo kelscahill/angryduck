@@ -78,37 +78,65 @@ if ( ! class_exists( 'WWP_Order' ) ) {
          * @since 1.3.0
          * @since 2.1.10.1 Compatibility with checkout blocks.
          *                 '_wwp_add_order_meta' deprecated, replaced with 'wwp_add_order_meta'
+         * @since 2.2.8   Hooked into pre-save checkout actions ( woocommerce_checkout_create_order and
+         *                woocommerce_store_api_checkout_update_order_from_request ) and removed the explicit
+         *                $order->save() call so WooCommerce persists the meta during its own save cycle.
+         *                Prevents a premature wc_order_stats re-sync that amplified the WWPP tax_total
+         *                race condition ( issue #869 ). The wwp_add_order_meta action now fires before
+         *                WooCommerce's initial order save; consumers must not call $order->save() inside it,
+         *                or the premature re-sync returns. The deprecated _wwp_add_order_meta action keeps
+         *                its original post-save timing and argument shape via fire_deprecated_add_order_meta_action().
          * @access public
          *
          * @param int|WC_Order $order_id_or_order_object Order id or order object.
-         *                                               If the classic checkout is being used this will contains order ID.
-         *                                               On checkout block it will contains order object.
-         * @param array        $posted_data Posted data from checkout.
          */
-        public function wwp_add_order_meta( $order_id_or_order_object, $posted_data = array() ) {
+        public function wwp_add_order_meta( $order_id_or_order_object ) {
             $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
 
             if ( ! empty( $user_wholesale_role ) ) {
                 $order = ( $order_id_or_order_object instanceof WC_Order ) ? $order_id_or_order_object : wc_get_order( $order_id_or_order_object );
 
                 $order->update_meta_data( 'wwp_wholesale_role', $user_wholesale_role[0] );
-                $order->save();
-
-                wc_do_deprecated_action(
-                    '_wwp_add_order_meta',
-                    array(
-                        $order_id_or_order_object,
-                        $posted_data,
-                        $user_wholesale_role,
-                    ),
-                    '2.1.10.1',
-                    'woocommerce_store_api_checkout_order_processed',
-                    'This action was deprecated in version 2.1.10.1, please use wwp_add_order_meta instead.'
-                );
 
                 do_action( 'wwp_add_order_meta', $order, $user_wholesale_role );
 
             }
+        }
+
+        /**
+         * Fire the deprecated _wwp_add_order_meta action on the legacy post-save checkout hooks.
+         *
+         * The main wwp_add_order_meta() handler moved to pre-save hooks in 2.2.8 to avoid a premature
+         * wc_order_stats re-sync. The deprecated _wwp_add_order_meta action must keep its original
+         * post-save timing and first-argument shape ( int order id on classic checkout, WC_Order on
+         * checkout blocks ) for backwards compatibility with third-party consumers. This handler fires
+         * the action only; it does not modify or save the order, so it does not re-introduce the
+         * woocommerce_update_order / wc_order_stats amplification fixed in issue #869.
+         *
+         * @since 2.2.8
+         * @access public
+         *
+         * @param int|WC_Order $order_id_or_order_object Order id on classic checkout, WC_Order on checkout blocks.
+         * @param array        $posted_data              Posted data from checkout ( classic only; empty on blocks ).
+         */
+        public function fire_deprecated_add_order_meta_action( $order_id_or_order_object, $posted_data = array() ) {
+            $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
+
+            if ( empty( $user_wholesale_role ) ) {
+                return;
+            }
+
+            wc_do_deprecated_action(
+                '_wwp_add_order_meta',
+                array(
+                    $order_id_or_order_object,
+                    $posted_data,
+                    $user_wholesale_role,
+                ),
+                '2.1.10.1',
+                'wwp_add_order_meta',
+                'This action was deprecated in version 2.1.10.1, please use wwp_add_order_meta instead.'
+            );
         }
 
         /**
@@ -222,11 +250,14 @@ if ( ! class_exists( 'WWP_Order' ) ) {
          * @since 1.0.0
          * @since 1.14.0   Refactor codebase and move to its own model.
          * @since 2.1.10.1 Compatibility with checkout blocks.
+         * @since 2.2.8    Hooked into pre-save checkout actions ( woocommerce_checkout_create_order and
+         *                 woocommerce_store_api_checkout_update_order_from_request ) and removed the explicit
+         *                 $current_order->save() call so WooCommerce persists the meta during its own save
+         *                 cycle. Prevents a premature wc_order_stats re-sync that amplified the WWPP
+         *                 tax_total race condition ( issue #869 ).
          * @access public
          *
          * @param int|WC_Order $order_id_or_order_object Order id or order object.
-         *                                               If the classic checkout is being used this will contains order ID.
-         *                                               On checkout block it will contains order object.
          */
         public function add_order_type_meta_to_wc_orders( $order_id_or_order_object ) {
             $all_registered_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
@@ -260,8 +291,6 @@ if ( ! class_exists( 'WWP_Order' ) ) {
                 $current_order->update_meta_data( '_wwpp_wholesale_order_type', '' );
 
             }
-
-            $current_order->save();
         }
 
         /**
@@ -291,8 +320,8 @@ if ( ! class_exists( 'WWP_Order' ) ) {
                 // Filter By Wholesale Role.
                 $wwpp_fbwr = null;
 
-                if ( isset( $_GET['wwpp_fbwr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-                    $wwpp_fbwr = $_GET['wwpp_fbwr']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                if ( isset( $_GET['wwpp_fbwr'] ) ) {  //phpcs:ignore
+                    $wwpp_fbwr = sanitize_text_field( wp_unslash( trim($_GET['wwpp_fbwr']) ) ); //phpcs:ignore
                 }
 
                 $all_registered_wholesale_roles = array( 'all_wholesale_orders' => array( 'roleName' => __( 'All Wholesale Orders', 'woocommerce-wholesale-prices' ) ) ) + $all_registered_wholesale_roles;
@@ -327,8 +356,16 @@ if ( ! class_exists( 'WWP_Order' ) ) {
             global $pagenow;
             $wholesale_filter = null;
 
-            if ( isset( $_GET['wwpp_fbwr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-                $wholesale_filter = trim( $_GET['wwpp_fbwr'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $allowed_filters = array( 'all_order_types', 'all_retail_orders', 'all_wholesale_orders' );
+            if ( isset( $_GET['wwpp_fbwr'] ) ) { //phpcs:ignore
+                $wholesale_filter = sanitize_text_field( wp_unslash( trim( $_GET['wwpp_fbwr'] ) ) ); //phpcs:ignore
+                if ( ! in_array( $wholesale_filter, $allowed_filters, true ) && ! empty( $wholesale_filter ) ) {
+                    // Validate it's a valid wholesale role if not in allowed filters.
+                    $all_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+                    if ( ! isset( $all_wholesale_roles[ $wholesale_filter ] ) ) {
+                        $wholesale_filter = null;
+                    }
+                }
             }
 
             if ( ! OrderUtil::custom_orders_table_usage_is_enabled() &&
@@ -398,8 +435,16 @@ if ( ! class_exists( 'WWP_Order' ) ) {
         public function custom_order_tables_query_args( $order_query_args ) {
             $wholesale_filter = null;
 
-            if ( isset( $_GET['wwpp_fbwr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-                $wholesale_filter = trim( $_GET['wwpp_fbwr'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $allowed_filters = array( 'all_order_types', 'all_retail_orders', 'all_wholesale_orders' );
+            if ( isset( $_GET['wwpp_fbwr'] ) ) { //phpcs:ignore
+                $wholesale_filter = sanitize_text_field( wp_unslash( trim( $_GET['wwpp_fbwr'] ) ) ); //phpcs:ignore
+                if ( ! in_array( $wholesale_filter, $allowed_filters, true ) && ! empty( $wholesale_filter ) ) {
+                    // Validate it's a valid wholesale role if not in allowed filters.
+                    $all_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+                    if ( ! isset( $all_wholesale_roles[ $wholesale_filter ] ) ) {
+                        $wholesale_filter = null;
+                    }
+                }
             }
 
             if ( ! is_null( $wholesale_filter ) ) {
@@ -450,14 +495,25 @@ if ( ! class_exists( 'WWP_Order' ) ) {
          * Execute model.
          *
          * @since 1.3.0
+         * @since 2.2.8 Moved the wwp_add_order_meta and add_order_type_meta_to_wc_orders handlers off the
+         *              post-save woocommerce_checkout_order_processed / woocommerce_store_api_checkout_order_processed
+         *              hooks onto the pre-save woocommerce_checkout_create_order and
+         *              woocommerce_store_api_checkout_update_order_from_request hooks. WooCommerce now persists
+         *              the wholesale meta during its own save cycle instead of via an explicit $order->save()
+         *              call, which avoided a premature wc_order_stats re-sync ( issue #869 ).
          * @access public
          */
         public function run() {
             // Add order meta on classic checkout.
-            add_action( 'woocommerce_checkout_order_processed', array( $this, 'wwp_add_order_meta' ), 10, 2 );
+            add_action( 'woocommerce_checkout_create_order', array( $this, 'wwp_add_order_meta' ), 10, 1 );
 
             // Add order meta on checkout blocks.
-            add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'wwp_add_order_meta' ), 10, 1 );
+            add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'wwp_add_order_meta' ), 10, 1 );
+
+            // Fire the deprecated _wwp_add_order_meta action on the legacy post-save hooks so third-party
+            // consumers keep receiving int $order_id on classic checkout and WC_Order on checkout blocks.
+            add_action( 'woocommerce_checkout_order_processed', array( $this, 'fire_deprecated_add_order_meta_action' ), 10, 2 );
+            add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'fire_deprecated_add_order_meta_action' ), 10, 1 );
 
             // Attach order item meta for new orders.
             add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'add_order_item_meta' ), 10, 4 );
@@ -471,10 +527,10 @@ if ( ! class_exists( 'WWP_Order' ) ) {
                 add_action( 'manage_woocommerce_page_wc-orders_custom_column', array( $this, 'add_orders_listing_custom_column_content' ), 10, 2 ); // WooCommerce orders tables.
 
                 // Add order type meta on classic checkout.
-                add_action( 'woocommerce_checkout_order_processed', array( $this, 'add_order_type_meta_to_wc_orders' ), 10, 1 );
+                add_action( 'woocommerce_checkout_create_order', array( $this, 'add_order_type_meta_to_wc_orders' ), 10, 1 );
 
                 // Add order type meta on checkout blocks.
-                add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'add_order_type_meta_to_wc_orders' ), 10, 1 );
+                add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'add_order_type_meta_to_wc_orders' ), 10, 1 );
 
                 add_action( 'restrict_manage_posts', array( $this, 'add_wholesale_role_order_listing_filter' ), 10, 1 ); // WordPress posts table.
                 add_action( 'woocommerce_order_list_table_restrict_manage_orders', array( $this, 'add_wholesale_role_order_listing_filter' ), 10, 2 ); // WooCommerce orders tables.

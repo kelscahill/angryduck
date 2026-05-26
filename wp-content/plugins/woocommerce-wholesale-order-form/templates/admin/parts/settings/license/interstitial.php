@@ -61,11 +61,14 @@ $wws_license_page_url = is_multisite() ? network_admin_url( 'admin.php?page=wws-
         <ul class="wws-license-interstitial-plugins-status">
             <?php if ( ! empty( $wws_license_data ) ) : ?>
                 <?php foreach ( $wws_license_data as $plugin_key => $license_data ) : ?>
+                    <?php if ( empty( License_Manager::instance()->get_plugin_name( $plugin_key ) ) ) : ?>
+                        <?php continue; ?>
+                    <?php endif; ?>
                     <li class="plugin-key plugin-key--<?php echo esc_attr( strtolower( esc_attr( $plugin_key ) ) ); ?>">
-                        <span class="plugin-name"><?php echo esc_html( License_Manager::get_plugin_name( $plugin_key ) ); ?>:</span>
+                        <span class="plugin-name"><?php echo esc_html( License_Manager::instance()->get_plugin_name( $plugin_key ) ); ?>:</span>
                         <?php if ( array_key_exists( 'license_status', $license_data ) ) : ?>
                         <span class="plugin-status text-color-<?php echo 'active' === $license_data['license_status'] ? 'green' : 'red'; ?>">
-                            <?php echo esc_html( License_Manager::get_license_status_i18n( $license_data['license_status'] ) ); ?>
+                            <?php echo esc_html( License_Manager::instance()->get_license_status_i18n( $license_data['license_status'] ) ); ?>
                         </span>
                         <?php else : ?>
                         <span class="plugin-status text-color-red">

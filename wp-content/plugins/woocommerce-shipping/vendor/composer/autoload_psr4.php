@@ -6,6 +6,10 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
+    'WooCommerce\\BoxPacker\\' => array($vendorDir . '/woocommerce/box-packer/src'),
+    'Psr\\Log\\' => array($vendorDir . '/psr/log/Psr/Log'),
+    'DVDoug\\BoxPacker\\Test\\' => array($vendorDir . '/dvdoug/boxpacker/tests/Test'),
+    'DVDoug\\BoxPacker\\' => array($vendorDir . '/dvdoug/boxpacker/src'),
     'Automattic\\WCShipping\\' => array($baseDir . '/src'),
     'Automattic\\Jetpack\\Autoloader\\' => array($vendorDir . '/automattic/jetpack-autoloader/src'),
 );

@@ -143,7 +143,7 @@ class Update_Manager extends Abstract_Update {
             ),
             apply_filters(
                 'wpay_software_product_update_data_url',
-                WWS_SLMW_SERVER_URL . '/wp-admin/admin-ajax.php?action=slmw_get_update_data'
+                WWS_SLMW_SERVER_URL . '/wp-json/slmw/v1/license/update'
             )
         );
 

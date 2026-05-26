@@ -7,6 +7,10 @@ use Jetpack_Connection_Banner;
 use Automattic\WCShipping\Utils;
 use WP_Screen;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 class WC_Connect_Nux {
 	/**
 	 * Jetpack status constants.
@@ -152,17 +156,44 @@ class WC_Connect_Nux {
 	}
 
 	public function get_jetpack_install_status() {
+		$status = self::JETPACK_CONNECTED;
+
 		if ( defined( 'JETPACK_DEV_DEBUG' ) && true === JETPACK_DEV_DEBUG ) {
 			// activated, and dev mode on
-			return self::JETPACK_DEV;
+			$status = self::JETPACK_DEV;
+		}
+		// dev mode off, check if connected.
+		elseif ( ! WC_Connect_Jetpack::is_connected() ) {
+			$status = self::JETPACK_NOT_CONNECTED;
 		}
 
-		// dev mode off, check if connected
-		if ( ! WC_Connect_Jetpack::is_connected() ) {
-			return self::JETPACK_NOT_CONNECTED;
+		/**
+		 * Filter the derived Jetpack install/connection status used by NUX checks.
+		 *
+		 * Internal hook used by WooCommerce Shipping test/bootstrap infrastructure.
+		 * It is not designed for third-party plugin integrations and may change or
+		 * be removed in future releases without notice.
+		 *
+		 * @internal
+		 *
+		 * @param string $status Calculated Jetpack status.
+		 */
+		$filtered_status = apply_filters( 'wcshipping_jetpack_install_status', $status );
+		if ( ! is_string( $filtered_status ) ) {
+			return $status;
 		}
 
-		return self::JETPACK_CONNECTED;
+		$allowed_statuses = array(
+			self::JETPACK_NOT_CONNECTED,
+			self::JETPACK_DEV,
+			self::JETPACK_CONNECTED,
+		);
+
+		if ( ! in_array( $filtered_status, $allowed_statuses, true ) ) {
+			return $status;
+		}
+
+		return $filtered_status;
 	}
 
 	public function should_display_nux_notice_on_screen( $screen ) {

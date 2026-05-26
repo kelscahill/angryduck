@@ -20,6 +20,7 @@ require_once 'includes/class-wwp-wholesale-roles-admin-page.php';
 require_once 'includes/class-wwp-import-export.php';
 require_once 'includes/class-wwp-product-visibility.php';
 require_once 'includes/class-wwp-lead-capture.php';
+require_once 'includes/class-wwp-wholesale-quotes.php';
 require_once 'includes/class-wwp-order-form.php';
 require_once 'includes/class-wwp-usage.php';
 require_once 'includes/class-wwp-about-page.php';
@@ -90,6 +91,7 @@ class WooCommerceWholeSalePrices {
     public $wwp_rest_api;
     public $wwp_product_visibility;
     public $wwp_lead_capture;
+    public $wwp_wholesale_quotes;
     public $wwp_order_form;
     public $wwp_usage;
     public $wwp_for_non_wholesale_customer;
@@ -109,7 +111,7 @@ class WooCommerceWholeSalePrices {
     public $wwp_plugin_installer;
     // phpcs:enable
 
-    const VERSION = '2.2.3';
+    const VERSION = '2.2.8';
 
     /**
      * Class Methods
@@ -169,6 +171,7 @@ class WooCommerceWholeSalePrices {
         $this->wwp_wpml_compatibility                   = WWP_WPML_Compatibility::instance();
         $this->wwp_product_visibility                   = WWP_Product_Visibility::instance( array( 'WWP_Wholesale_Roles' => $this->wwp_wholesale_roles ) );
         $this->wwp_lead_capture                         = WWP_Lead_Capture::instance();
+        $this->wwp_wholesale_quotes                     = WWP_Wholesale_Quotes::instance();
         $this->wwp_order_form                           = WWP_Order_Form::instance();
         $this->wwp_usage                                = WWP_Usage::instance();
         $this->wwp_admin_menu                           = WWP_Admin_Menu::instance( array() );
@@ -184,7 +187,7 @@ class WooCommerceWholeSalePrices {
         $this->wwp_plugin_installer                     = WWP_Plugin_Installer::instance();
 
         // REST API.
-        $this->wwp_rest_api = WWP_REST_API::instance( array() );
+        $this->wwp_rest_api = WWP_REST_API::instance();
     }
 
     /**
@@ -276,7 +279,7 @@ class WooCommerceWholeSalePrices {
      */
     public function admin_old_wholesale_settings_redirect() {
         // For wholesale prices tabs.
-        if ( strpos( $_SERVER['REQUEST_URI'], 'page=wc-settings&tab=wwp_settings' ) !== false ) {
+        if ( isset( $_SERVER['REQUEST_URI'] ) && str_contains( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 'page=wc-settings&tab=wwp_settings' ) ) {
             wp_safe_redirect( admin_url( 'admin.php?page=wholesale-settings&tab=wholesale_prices' ) );
             exit;
         }
@@ -308,6 +311,7 @@ class WooCommerceWholeSalePrices {
         $this->wwp_wpml_compatibility->run();
         $this->wwp_product_visibility->run();
         $this->wwp_lead_capture->run();
+        $this->wwp_wholesale_quotes->run();
         $this->wwp_order_form->run();
         $this->wwp_usage->run();
         $this->wwp_for_non_wholesale_customer->run();

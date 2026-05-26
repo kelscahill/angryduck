@@ -23,6 +23,19 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
         private static $_instance;
 
         /**
+         * Per-request cache for {@see WWLC_Admin_Settings::all_page_options()}.
+         *
+         * Keyed by the `$link` flag (`'options'` / `'links'`). Safe because the class
+         * is a singleton and the underlying page set does not change within a single
+         * settings-render request.
+         *
+         * @since  2.0.5
+         * @access private
+         * @var    array
+         */
+        private $page_options_cache = array();
+
+        /**
          * WWLC_Admin_Settings constructor.
          *
          * @since  2.0
@@ -280,7 +293,7 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
                     'id'          => 'wwlc_enable_admin_registration_page_view',
                     'input_label' => __( 'Allow logged-in admin and shop managers to view registration page', 'woocommerce-wholesale-lead-capture' ),
                     'multiple'    => false,
-                    'default'     => $general_registration_page,
+                    'default'     => wwlc_normalize_checkbox_value( get_option( 'wwlc_enable_admin_registration_page_view', 'no' ) ),
                 ),
                 array(
                     'type'                => 'link',
@@ -447,22 +460,93 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
          * @param bool $link Whether to return the page link or not.
          *
          * @since  2.0
+         * @since  2.0.5 When WPML is active, run get_pages() in the current admin language so
+         *               the returned page IDs match what users see and what is stored when they
+         *               save the setting. Mirror each page's label under its default-language
+         *               original's ID too, so legacy values stored against default-language IDs
+         *               also resolve to a real label. Resolve blank titles to the
+         *               default-language post via wpml_object_id, and fall back to a
+         *               "(no title — #ID)" label only as a last resort. Memoize per request to
+         *               avoid repeated work across the ~11 calls a single settings render makes.
          * @access public
          *
          * @return array
          */
         public function all_page_options( $link = false ) {
-            $allPages     = array(
+            $cacheKey = $link ? 'links' : 'options';
+            if ( isset( $this->page_options_cache[ $cacheKey ] ) ) {
+                return $this->page_options_cache[ $cacheKey ];
+            }
+
+            global $sitepress;
+
+            $allPages = array(
 				''       => __( 'Select a Page', 'woocommerce-wholesale-lead-capture' ),
 				'custom' => __( '--- Custom Link ---', 'woocommerce-wholesale-lead-capture' ),
 			);
+
+            $wpmlActive  = is_object( $sitepress );
+            $defaultLang = $wpmlActive ? $sitepress->get_default_language() : '';
+
+            // get_pages() runs in the current admin language; WPML's filter on
+            // pre_get_posts scopes the result set to that language. This keeps the
+            // returned page IDs aligned with the values WWLC stores when the admin
+            // saves a setting — fixing the case where the dropdown rendered a bare
+            // numeric ID because $allPages was keyed on default-language IDs while
+            // the saved value was a secondary-language translation ID (#411).
             $allPagesList = get_pages();
 
             if ( $allPagesList ) {
                 foreach ( $allPagesList as $page ) {
-                    $allPages[ $page->ID ] = ( $link ) ? trim( get_permalink( $page->ID ) ) : $page->post_title;
+                    if ( $link ) {
+                        $permalink             = trim( get_permalink( $page->ID ) );
+                        $allPages[ $page->ID ] = $permalink;
+                        if ( $wpmlActive ) {
+                            $defaultId = apply_filters( 'wpml_object_id', $page->ID, 'page', true, $defaultLang );
+                            if ( $defaultId && $defaultId !== $page->ID && ! isset( $allPages[ $defaultId ] ) ) {
+                                $allPages[ $defaultId ] = trim( get_permalink( $defaultId ) );
+                            }
+                        }
+                        continue;
+                    }
+
+                    $title = $page->post_title;
+
+                    // Defense-in-depth: when WPML returns a translation post whose
+                    // post_title is blank (translation stub without its own title),
+                    // read the canonical title from the default-language original
+                    // so the dropdown never shows a bare numeric ID.
+                    if ( $wpmlActive && '' === trim( (string) $title ) ) {
+                        $originalId = apply_filters( 'wpml_object_id', $page->ID, 'page', true, $defaultLang );
+                        if ( $originalId ) {
+                            $originalPost = get_post( $originalId );
+                            if ( $originalPost && '' !== trim( (string) $originalPost->post_title ) ) {
+                                $title = $originalPost->post_title;
+                            }
+                        }
+                    }
+
+                    if ( '' === trim( (string) $title ) ) {
+                        /* translators: %d: page ID */
+                        $title = sprintf( __( '(no title — #%d)', 'woocommerce-wholesale-lead-capture' ), $page->ID );
+                    }
+
+                    $allPages[ $page->ID ] = $title;
+
+                    // Also key the same label on the default-language original's ID
+                    // so legacy settings saved against the default-language page ID
+                    // (before the site was translated, or while admin was in the
+                    // default language) still find a matching dropdown option.
+                    if ( $wpmlActive ) {
+                        $defaultId = apply_filters( 'wpml_object_id', $page->ID, 'page', true, $defaultLang );
+                        if ( $defaultId && $defaultId !== $page->ID && ! isset( $allPages[ $defaultId ] ) ) {
+                            $allPages[ $defaultId ] = $title;
+                        }
+                    }
                 }
             }
+
+            $this->page_options_cache[ $cacheKey ] = $allPages;
 
             return $allPages;
         }
@@ -664,9 +748,13 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
                 'content',
                 'terms_conditions',
             );
-            if ( ! empty( $custom_fields ) ) {
+            if ( ! empty( $custom_fields ) && is_array( $custom_fields ) ) {
                 $i = count( $built_in_fields ) + 1;
                 foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+                    if ( ! is_array( $custom_field ) ) {
+                        continue;
+                    }
+
                     $field_data = array(
                         'key'           => $i,
                         'field_name'    => $custom_field['field_name'],
@@ -1289,19 +1377,20 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
             $security_option_controls = array();
 
             // Security Options - Section.
-            $security_enable_recaptcha     = get_option( 'wwlc_security_enable_recaptcha' );
-            $security_recaptcha_type       = get_option( 'wwlc_security_recaptcha_type' );
-            $security_recaptcha_type       = ! empty( $security_recaptcha_type ) ? $security_recaptcha_type : 'v2_im_not_a_robot';
-            $security_recaptcha_site_key   = get_option( 'wwlc_security_recaptcha_site_key' );
-            $security_recaptcha_secret_key = get_option( 'wwlc_security_recaptcha_secret_key' );
+            $security_enable_recaptcha             = get_option( 'wwlc_security_enable_recaptcha' );
+            $security_recaptcha_type               = get_option( 'wwlc_security_recaptcha_type' );
+            $security_recaptcha_type               = ! empty( $security_recaptcha_type ) ? $security_recaptcha_type : 'v2_im_not_a_robot';
+            $security_recaptcha_site_key           = get_option( 'wwlc_security_recaptcha_site_key' );
+            $security_recaptcha_secret_key         = get_option( 'wwlc_security_recaptcha_secret_key' );
+            $security_recaptcha_v3_score_threshold = get_option( 'wwlc_security_recaptcha_v3_score_threshold', '0.5' );
 
             $security_enable_dec = sprintf(
             // translators: %1$s link to recaptcha, %2$s </a> tag.
                 __(
-                    'If checked, this will add the recaptcha field on the registration form. You can get your Recaptcha keys by going to %1$shttps://www.google.com/recaptcha/%2$s.',
+                    'If checked, this will add the recaptcha field on the registration form. You can get your Recaptcha keys by going to %1$shttps://cloud.google.com/security/products/recaptcha%2$s.',
                     'woocommerce-wholesale-lead-capture'
                 ),
-                '<a target="_blank" href="https://www.google.com/recaptcha/"> ',
+                '<a target="_blank" href="https://cloud.google.com/security/products/recaptcha"> ',
                 '</a>',
             );
 
@@ -1322,6 +1411,7 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
                     'options'     => array(
                         'v2_im_not_a_robot' => __( 'V2 I\'m not a robot', 'woocommerce-wholesale-lead-capture' ),
                         'v2_invisible'      => __( 'V2 Invisible', 'woocommerce-wholesale-lead-capture' ),
+                        'v3_score_based'    => __( 'V3 Score-based', 'woocommerce-wholesale-lead-capture' ),
                     ),
                     'default'     => $security_recaptcha_type,
                 ),
@@ -1338,6 +1428,13 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
                     'id'          => 'wwlc_security_recaptcha_secret_key',
                     'description' => '',
                     'default'     => ( $security_recaptcha_secret_key ) ? $security_recaptcha_secret_key : '',
+                ),
+                array(
+                    'type'        => 'text',
+                    'label'       => __( 'Recaptcha v3 score threshold', 'woocommerce-wholesale-lead-capture' ),
+                    'id'          => 'wwlc_security_recaptcha_v3_score_threshold',
+                    'description' => __( 'Minimum score (0.0 – 1.0) required to pass verification when reCAPTCHA type is V3 Score-based. Lower values are more permissive; higher values are stricter. Default 0.5. Only used when reCAPTCHA type is V3 Score-based.', 'woocommerce-wholesale-lead-capture' ),
+                    'default'     => is_numeric( $security_recaptcha_v3_score_threshold ) ? $security_recaptcha_v3_score_threshold : '0.5',
                 ),
             );
 
@@ -2210,6 +2307,48 @@ if ( ! class_exists( 'WWLC_Admin_Settings' ) ) {
             // Trigger actions.
             add_action( 'wwp_trigger_force_fetch_update_data', array( $this, 'wwlc_force_fetch_update_data' ), 10, 1 );
             add_action( 'wwp_trigger_create_lead_pages', array( $this, 'wwlc_create_lead_pages' ), 10, 1 );
+
+            // Register allowed group actions for WWP REST API validation.
+            add_filter( 'wwp_allowed_group_actions', array( $this, 'register_allowed_group_actions' ) );
+
+            // Register allowed trigger actions for WWP REST API validation.
+            add_filter( 'wwp_allowed_trigger_actions', array( $this, 'register_allowed_trigger_actions' ) );
+        }
+
+        /**
+         * Register allowed group actions for WWP REST API validation.
+         *
+         * @since 2.1.1
+         *
+         * @param array $actions Existing allowed group actions.
+         * @return array Modified allowed group actions.
+         */
+        public function register_allowed_group_actions( $actions ) {
+            $wwlc_actions = array(
+                'group_registration_fields_mapping_save',
+                'group_registration_fields_mapping_edit',
+                'group_registration_fields_mapping_delete',
+                'group_registration_fields_mapping_sort',
+            );
+
+            return array_merge( $actions, $wwlc_actions );
+        }
+
+        /**
+         * Register allowed trigger actions for WWP REST API validation.
+         *
+         * @since 2.1.1
+         *
+         * @param array $actions Existing allowed trigger actions.
+         * @return array Modified allowed trigger actions.
+         */
+        public function register_allowed_trigger_actions( $actions ) {
+            $wwlc_actions = array(
+                'force_fetch_update_data',
+                'create_lead_pages',
+            );
+
+            return array_merge( $actions, $wwlc_actions );
         }
     }
 }

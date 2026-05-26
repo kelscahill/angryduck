@@ -105,8 +105,9 @@ class WC_Connect_Logger {
 	/**
 	 * Logs messages to file and error_log if WP_DEBUG
 	 *
-	 * @param string $message Message to log
-	 * @param string $context Optional context (e.g. a class or function name)
+	 * @param string $message Message to log.
+	 * @param string $context Optional context (e.g. __CLASS__ or __METHOD__).
+	 * @param bool   $force   Optional force log even if logging is disabled. Defaults to false.
 	 */
 	public function log( $message, $context = '', $force = false ) {
 		$log_message = $this->format_message( $message, $context );
@@ -115,14 +116,14 @@ class WC_Connect_Logger {
 		// have already added a check for debug mode.
 		// Description of warning: error_log() found. Debug code should not normally be used in production.
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( $log_message );
+			error_log( $log_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- error_log use for debug log formatting.
 		}
 
 		if ( ! $this->is_logging_enabled() && ! $force ) {
 			return;
 		}
 
-		$log_file = 'wc-services';
+		$log_file = 'woocommerce-shipping';
 
 		if ( ! empty( $this->feature ) ) {
 			$log_file .= '-' . $this->feature;

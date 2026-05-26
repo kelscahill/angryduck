@@ -17,6 +17,7 @@ import {
 	camelCaseKeysRecursive,
 	mapAddressForRequest,
 	normalizeSelectionKey,
+	syncPackageDimensionsToGlobalConfig,
 } from 'utils';
 import {
 	CustomsState,
@@ -56,7 +57,9 @@ export function* purchaseLabel(
 	originAddress: OriginAddress,
 	customsState: ShipmentRecord< CustomsState >,
 	userMeta: Partial< UserMeta >,
-	shipmentOptions?: RequestExtraOptions
+	shipmentOptions?: RequestExtraOptions,
+	isReturn = false,
+	parentShipmentId?: string
 ): Generator<
 	ReturnType< typeof apiFetch >,
 	LabelPurchaseSuccessAction,
@@ -67,6 +70,7 @@ export function* purchaseLabel(
 		selected_hazmat: HazmatState;
 		selected_origin: SelectedOrigin;
 		selected_destination: SelectedDestination;
+		package_dimensions?: Record< string, unknown >;
 	}
 > {
 	const origin = mapAddressForRequest( originAddress );
@@ -79,6 +83,7 @@ export function* purchaseLabel(
 		selected_hazmat,
 		selected_origin,
 		selected_destination,
+		package_dimensions,
 	} = yield apiFetch( {
 		path: getLabelPurchasePath( orderId ),
 		method: 'POST',
@@ -92,9 +97,11 @@ export function* purchaseLabel(
 			hazmat: hazmatState,
 			customs: customsState,
 			user_meta: userMeta,
-			features_supported_by_client: [ 'upsdap' ],
+			features_supported_by_client: [ 'upsdap', 'fedex' ],
 			selected_rate: selectedRate,
+			is_return: isReturn,
 			shipment_options: shipmentOptions,
+			parent_shipment_id: parentShipmentId,
 		},
 	} );
 
@@ -106,6 +113,9 @@ export function* purchaseLabel(
 		normalizeSelectionKey( selected_destination ),
 		( value ) => camelCaseKeys( value )
 	);
+
+	// Sync package dimensions to global config as side effect
+	syncPackageDimensionsToGlobalConfig( package_dimensions );
 
 	return {
 		type: LABEL_PURCHASE_SUCCESS,
@@ -119,6 +129,7 @@ export function* purchaseLabel(
 			selectedHazmat: normalizeSelectionKey( selected_hazmat ),
 			selectedOrigins,
 			selectedDestinations,
+			packageDimensions: package_dimensions,
 		},
 	};
 }

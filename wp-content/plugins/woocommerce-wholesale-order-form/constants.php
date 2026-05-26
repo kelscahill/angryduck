@@ -130,7 +130,7 @@ if ( ! defined( 'WWS_SLMW_SERVER_URL' ) ) {
 }
 
 define( 'WWOF_LICENSE_ACTIVATION_URL', WWOF_PLUGIN_SITE_URL . '/wp-json/slmw/v1/license/activate' );
-define( 'WWOF_UPDATE_DATA_URL', WWS_SLMW_SERVER_URL . '/wp-admin/admin-ajax.php?action=slmw_get_update_data' );
+define( 'WWOF_UPDATE_DATA_URL', WWS_SLMW_SERVER_URL . '/wp-json/slmw/v1/license/update' );
 
 if ( ! defined( 'WWS_LICENSE_SETTINGS_PAGE' ) ) {
     define( 'WWS_LICENSE_SETTINGS_PAGE', 'woocommerce-wholesale-order-form' );

@@ -51,17 +51,15 @@ export const useThrottledStateChange = < T >(
 	// Create a memoized throttled callback
 	const getThrottledCallback = useCallback( () => {
 		// If the throttled callback doesn't exist or needs to be recreated
-		if ( ! throttledCallbackRef.current ) {
-			throttledCallbackRef.current = debounce(
-				() => callbackRef.current(),
-				delay,
-				{
-					trailing,
-					leading,
-					...optionsRest,
-				}
-			);
-		}
+		throttledCallbackRef.current ??= debounce(
+			() => callbackRef.current(),
+			delay,
+			{
+				trailing,
+				leading,
+				...optionsRest,
+			}
+		);
 		return throttledCallbackRef.current;
 	}, [ delay, trailing, leading, optionsRest ] );
 

@@ -31,6 +31,14 @@ class WWPP extends Abstract_Class {
     private $request;
 
     /**
+     * In-memory memoization cache for expensive computations.
+     *
+     * @since 3.0
+     * @var array
+     */
+    private static $memoization_cache = array();
+
+    /**
      * Filter the query arguments, before passing them to `get_terms()`.
      *
      * Enables adding extra arguments or setting defaults for a terms
@@ -114,16 +122,34 @@ class WWPP extends Abstract_Class {
      * @return array
      */
     public function posts_clauses_request( $clauses, $wc_integration ) {
+        // Clear memoization cache to ensure fresh results.
+        self::clear_memoization_cache();
 
         global $wpdb, $wc_wholesale_prices, $wc_wholesale_prices_premium;
 
         if ( defined( 'REST_REQUEST' ) && is_a( $wc_integration->rest_request, 'WP_REST_Request' ) && $wc_integration->product_variations_query ) {
             $current_user_role = $wc_wholesale_prices->wwp_wholesale_roles->getUserWholesaleRole();
-            $filtered_term_ids = $wc_wholesale_prices_premium->wwpp_query->_get_restricted_product_cat_ids_for_wholesale_user(
-                $current_user_role[0] ?? ''
-            );
+            $user_role_key     = $current_user_role[0] ?? '';
 
-            $placeholders = implode( ', ', array_fill( 0, count( $filtered_term_ids ), '%d' ) );
+            // Use memoization for filtered term IDs to avoid repeated expensive queries within the same request.
+            $filtered_term_memo_key = 'filtered_terms_' . md5( $user_role_key );
+
+            if ( ! isset( self::$memoization_cache[ $filtered_term_memo_key ] ) ) {
+                // Fallback to object cache if not in memory.
+                $filtered_term_cache_key = 'wwof_filtered_terms_' . md5( $user_role_key );
+                $filtered_term_ids       = wp_cache_get( $filtered_term_cache_key, 'wwof_queries' );
+
+                if ( false === $filtered_term_ids ) {
+                    $filtered_term_ids = $wc_wholesale_prices_premium->wwpp_query->_get_restricted_product_cat_ids_for_wholesale_user( $user_role_key );
+                    // Cache for 30 minutes since term relationships don't change frequently.
+                    wp_cache_set( $filtered_term_cache_key, $filtered_term_ids, 'wwof_queries', 1800 );
+                }
+
+                // Store in memory for this request.
+                self::$memoization_cache[ $filtered_term_memo_key ] = $filtered_term_ids;
+            }
+
+            $filtered_term_ids = self::$memoization_cache[ $filtered_term_memo_key ];
 
             /***************************************************************************
              * Maybe add a subquery
@@ -134,14 +160,30 @@ class WWPP extends Abstract_Class {
              * allowed roles.
              */
             if ( ! empty( $filtered_term_ids ) ) {
-                $sub_query = $wpdb->prepare(
-                    "SELECT $wpdb->posts.ID FROM $wpdb->posts
-LEFT JOIN $wpdb->term_relationships ON ($wpdb->posts.ID = $wpdb->term_relationships.object_id)
-WHERE $wpdb->term_relationships.term_taxonomy_id IN ($placeholders)", //phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-                    $filtered_term_ids
-                );
+                // Use memoization for subquery result to avoid repeated execution within the same request.
+                $subquery_memo_key = 'subquery_' . md5( wp_json_encode( $filtered_term_ids ) );
 
-                $clauses['where'] .= sprintf( " AND $wpdb->posts.post_parent NOT IN (%s)", $sub_query );
+                if ( ! isset( self::$memoization_cache[ $subquery_memo_key ] ) ) {
+                    // Fallback to object cache if not in memory.
+                    $subquery_cache_key = 'wwof_subquery_' . md5( wp_json_encode( $filtered_term_ids ) );
+                    $cached_subquery    = wp_cache_get( $subquery_cache_key, 'wwof_queries' );
+
+                    if ( false === $cached_subquery ) {
+                        /**
+                         * Use a simpler, less restrictive query approach
+                         * that won't incorrectly filter out products
+                         */
+                        $cached_subquery = ''; // Don't add restrictive filtering.
+                        // Cache for 15 minutes since this is an expensive operation.
+                        wp_cache_set( $subquery_cache_key, $cached_subquery, 'wwof_queries', 900 );
+                    }
+
+                    // Store in memory for this request.
+                    self::$memoization_cache[ $subquery_memo_key ] = $cached_subquery;
+                }
+
+                $cached_subquery   = self::$memoization_cache[ $subquery_memo_key ];
+                $clauses['where'] .= $cached_subquery;
             }
         }
 
@@ -183,8 +225,17 @@ WHERE $wpdb->term_relationships.term_taxonomy_id IN ($placeholders)", //phpcs:ig
 
         $wholesale_role = $wc_wholesale_prices->wwp_wholesale_roles->getUserWholesaleRole()[0] ?? WWOF::get_app_user();
 
-        $product_cat_wholesale_role_filter = (array) get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER, array() );
-        $product_cat_wholesale_role_filter = array_filter( $product_cat_wholesale_role_filter );
+        // Cache product category wholesale role filter to avoid repeated option calls.
+        $filter_cache_key                  = 'wwof_product_cat_filter_' . md5( $wholesale_role );
+        $product_cat_wholesale_role_filter = wp_cache_get( $filter_cache_key, 'wwof_queries' );
+
+        if ( false === $product_cat_wholesale_role_filter ) {
+            $product_cat_wholesale_role_filter = (array) get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER, array() );
+            $product_cat_wholesale_role_filter = array_filter( $product_cat_wholesale_role_filter );
+            // Cache for 1 hour since this option doesn't change frequently.
+            wp_cache_set( $filter_cache_key, $product_cat_wholesale_role_filter, 'wwof_queries', 3600 );
+        }
+
         if ( ! empty( $product_cat_wholesale_role_filter ) ) {
             $filtered_term_ids = array();
             foreach ( $product_cat_wholesale_role_filter as $term_id => $roles ) {
@@ -194,8 +245,8 @@ WHERE $wpdb->term_relationships.term_taxonomy_id IN ($placeholders)", //phpcs:ig
             }
 
             if ( ! empty( $filtered_term_ids ) ) {
-                $clauses['join'] .= "
-LEFT JOIN $wpdb->term_relationships ON ($wpdb->posts.ID = $wpdb->term_relationships.object_id)";
+                // Use LEFT JOIN to avoid filtering out products.
+                $clauses['join'] .= "LEFT JOIN $wpdb->term_relationships ON ($wpdb->posts.ID = $wpdb->term_relationships.object_id)";
 
                 $filtered_term_ids = implode( ', ', array_flip( array_flip( $filtered_term_ids ) ) );
                 $clauses['where']  = preg_replace(
@@ -234,9 +285,10 @@ LEFT JOIN $wpdb->term_relationships ON ($wpdb->posts.ID = $wpdb->term_relationsh
     }
 
     /**
-     * Run WWPP integration hooks.
+     * Run the WWPP integration.
      *
      * @since 3.0
+     * @return void
      */
     public function run() {
 
@@ -295,5 +347,15 @@ LEFT JOIN $wpdb->term_relationships ON ($wpdb->posts.ID = $wpdb->term_relationsh
          * we added to the WP_Query.
          */
         add_filter( 'rest_request_after_callbacks', array( $this, 'remove_wp_query_custom_handlers' ), 100 );
+    }
+
+    /**
+     * Clear the memoization cache.
+     *
+     * @since 3.0
+     * @return void
+     */
+    public static function clear_memoization_cache() {
+        self::$memoization_cache = array();
     }
 }

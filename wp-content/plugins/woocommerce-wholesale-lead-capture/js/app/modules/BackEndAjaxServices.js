@@ -12,7 +12,7 @@ var wwlcBackEndAjaxServices = function(){
         return jQuery.ajax({
             url: ajaxurl,
             type: "POST",
-            data: { action: "wwlc_approve_user", userID: userID, page: page },
+            data: { action: "wwlc_approve_user", userID: userID, page: page, _wpnonce: UserListingVars.nonce },
             dataType: "json"
         });
 
@@ -22,7 +22,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_reject_user", userID: userID, page: page },
+                data: { action: "wwlc_reject_user", userID: userID, page: page, _wpnonce: UserListingVars.nonce },
                 dataType: "json"
             });
 
@@ -32,7 +32,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_activate_user", userID: userID, page: page },
+                data: { action: "wwlc_activate_user", userID: userID, page: page, _wpnonce: UserListingVars.nonce },
                 dataType: "json"
             });
 
@@ -42,7 +42,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_deactivate_user", userID: userID, page: page },
+                data: { action: "wwlc_deactivate_user", userID: userID, page: page, _wpnonce: UserListingVars.nonce },
                 dataType: "json"
             });
 
@@ -52,7 +52,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_create_lead_pages" },
+                data: { action: "wwlc_create_lead_pages", _wpnonce: HelpSettingsVars.create_lead_pages_nonce },
                 dataType: "json"
             });
 
@@ -117,7 +117,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_get_states", cc: cc },
+                data: { action: "wwlc_get_states", cc: cc, _wpnonce: WWLCCustomFieldsControlVars.nonce },
                 dataType: "json"
             });
 
@@ -127,7 +127,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_content_wp_editor", content: content },
+                data: { action: "wwlc_content_wp_editor", content: content, _wpnonce: WWLCCustomFieldsControlVars.nonce },
                 dataType: 'text'
             });
         },
@@ -162,7 +162,7 @@ var wwlcBackEndAjaxServices = function(){
             return jQuery.ajax({
                 url: ajaxurl,
                 type: "POST",
-                data: { action: "wwlc_file_remove_handler", field_name: fieldID, userid: userid },
+                data: { action: "wwlc_file_remove_handler", field_name: fieldID, userid: userid, _wpnonce: UserObject.wwlc_file_remove_nonce },
                 dataType: "json",
             });
         };

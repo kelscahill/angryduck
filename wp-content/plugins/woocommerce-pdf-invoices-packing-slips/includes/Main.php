@@ -1,8 +1,8 @@
 <?php
 namespace WPO\IPS;
 
-use WPO\IPS\UBL\Exceptions\FileWriteException;
 use WPO\IPS\Vendor\Dompdf\Exception as DompdfException;
+use WPO\IPS\Documents\OrderDocument;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
@@ -31,6 +31,8 @@ class Main {
 	public function __construct() {
 		add_action( 'wp_ajax_generate_wpo_wcpdf', array( $this, 'generate_document_ajax' ) );
 		add_action( 'wp_ajax_nopriv_generate_wpo_wcpdf', array( $this, 'generate_document_ajax' ) );
+		add_action( 'wp_ajax_wpo_ips_get_refund_order_ids', array( $this, 'get_refund_order_ids_ajax' ) );
+		add_action( 'wp_ajax_nopriv_wpo_ips_get_refund_order_ids', array( $this, 'get_refund_order_ids_ajax' ) );
 
 		// mark/unmark printed
 		add_action( 'wp_ajax_printed_wpo_wcpdf', array( $this, 'document_printed_ajax' ) );
@@ -70,6 +72,9 @@ class Main {
 
 		// apply header logo height
 		add_action( 'wpo_wcpdf_custom_styles', array( $this, 'set_header_logo_height' ), 9, 2 );
+
+		// set ink saving mode
+		add_filter( 'wpo_wcpdf_template_custom_styles', array( $this, 'apply_ink_saving_styles' ), 10, 2 );
 
 		// show notice of missing required directories
 		add_action( 'admin_notices', array( $this, 'no_dir_notice' ), 1 );
@@ -188,9 +193,6 @@ class Main {
 					} catch ( DompdfException $e ) {
 						wcpdf_log_error( 'DOMPDF exception: '.$e->getMessage(), 'critical', $e );
 						continue;
-					} catch ( FileWriteException $e ) {
-						wcpdf_log_error( 'UBL FileWrite exception: '.$e->getMessage(), 'critical', $e );
-						continue;
 					} catch ( \Error $e ) {
 						wcpdf_log_error( $e->getMessage(), 'critical', $e );
 						continue;
@@ -276,8 +278,8 @@ class Main {
 		return $pdf_path;
 	}
 
-	public function get_document_ubl_attachment( $document, $tmp_path ) {
-		return wpo_ips_write_ubl_file( $document, true );
+	public function get_document_xml_attachment( $document, $tmp_path ) {
+		return wpo_ips_edi_write_file( $document, true );
 	}
 
 	public function get_documents_for_email( $email_id, $order ) {
@@ -285,13 +287,23 @@ class Main {
 		$attach_documents = array();
 
 		foreach ( $documents as $document ) {
-			// Pro not activated, only attach Invoice
-			if ( ! function_exists( 'WPO_WCPDF_Pro' ) && 'invoice' !== $document->get_type() ) {
+			// Only invoice is allowed in the free version.
+			if ( ! function_exists( 'WPO_WCPDF_Pro' ) && 'packing-slip' === $document->get_type() ) {
 				continue;
-			};
+			}
 
 			foreach ( $document->output_formats as $output_format ) {
 				if ( $document->is_enabled( $output_format ) ) {
+					if (
+						'xml' === $output_format &&
+						(
+							! wpo_ips_edi_is_available()     ||
+							! wpo_ips_edi_send_attachments()
+						)
+					) {
+						continue;
+					}
+
 					$attach_documents[ $output_format ][ $document->get_type() ] = $document->get_attach_to_email_ids( $output_format );
 				}
 			}
@@ -310,9 +322,6 @@ class Main {
 				}
 
 				$extra_condition = apply_filters( 'wpo_wcpdf_custom_attachment_condition', true, $order, $email_id, $document_type, $output_format );
-				if ( 'ubl' === $output_format ) {
-					$extra_condition = apply_filters_deprecated( 'wpo_wcpdf_custom_ubl_attachment_condition', array( true, $order, $email_id, $document_type, $output_format ), '3.6.0', 'wpo_wcpdf_custom_attachment_condition' );
-				}
 
 				if ( in_array( $email_id, $attach_to_email_ids ) && $extra_condition ) {
 					$document_types[ $output_format ][] = $document_type;
@@ -325,8 +334,10 @@ class Main {
 
 	/**
 	 * Load and generate the template output with ajax
+	 *
+	 * @return void
 	 */
-	public function generate_document_ajax() {
+	public function generate_document_ajax(): void {
 		$access_type  = WPO_WCPDF()->endpoint->get_document_link_access_type();
 		$redirect_url = WPO_WCPDF()->endpoint->get_document_denied_frontend_redirect_url();
 		$request      = stripslashes_deep( $_REQUEST );
@@ -454,8 +465,15 @@ class Main {
 					break;
 				}
 
+				if ( $order instanceof \WC_Order_Refund ) { // EDI Credit Note specific
+					$parent_order = wc_get_order( $order->get_parent_id() );
+					$order_key    = $parent_order ? $parent_order->get_order_key() : '';
+				} else {
+					$order_key    = $order ? $order->get_order_key() : '';
+				}
+
 				// check if we have a valid access key only when it's not from bulk actions
-				if ( ! isset( $request['bulk'] ) && $order && ! hash_equals( $order->get_order_key(), $access_key ) ) {
+				if ( ! isset( $request['bulk'] ) && $order && ! hash_equals( $order_key, $access_key ) ) {
 					$allowed = false;
 					break;
 				}
@@ -501,8 +519,8 @@ class Main {
 				$output_format = WPO_WCPDF()->settings->get_output_format( $document, $request );
 
 				switch ( $output_format ) {
-					case 'ubl':
-						$document->output_ubl();
+					case 'xml':
+						$document->output_xml();
 						break;
 					case 'html':
 						add_filter( 'wpo_wcpdf_use_path', '__return_false' );
@@ -529,10 +547,6 @@ class Main {
 			$message = 'DOMPDF Exception: '.$e->getMessage();
 			wcpdf_log_error( $message, 'critical', $e );
 			wcpdf_output_error( $message, 'critical', $e );
-		} catch ( FileWriteException $e ) {
-			$message = 'UBL FileWrite Exception: '.$e->getMessage();
-			wcpdf_log_error( $message, 'critical', $e );
-			wcpdf_output_error( $message, 'critical', $e );
 		} catch ( \Exception $e ) {
 			$message = 'Exception: '.$e->getMessage();
 			wcpdf_log_error( $message, 'critical', $e );
@@ -546,10 +560,73 @@ class Main {
 	}
 
 	/**
+	 * AJAX handler to get refund order IDs from given order IDs
+	 *
+	 * @return void
+	 */
+	public function get_refund_order_ids_ajax(): void {
+		// Accept requests from both contexts:
+		// - bulk generate (generate_wpo_wcpdf)
+		// - cloud export (pro_cloud_storage)
+
+		$valid_nonce = check_ajax_referer( 'generate_wpo_wcpdf', 'security', false )
+			|| check_ajax_referer( 'pro_cloud_storage', 'security', false );
+
+		if ( ! $valid_nonce ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Invalid request. Nonce check failed.', 'woocommerce-pdf-invoices-packing-slips' ),
+				)
+			);
+		}
+
+		if ( empty( $_POST['order_ids'] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'No orders were provided.', 'woocommerce-pdf-invoices-packing-slips' ),
+				)
+			);
+		}
+
+		$order_ids  = array_map( 'absint', (array) $_POST['order_ids'] );
+		$refund_ids = \wpo_ips_get_refund_ids( $order_ids );
+
+		if ( empty( $refund_ids ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'No refunds found for the selected orders.', 'woocommerce-pdf-invoices-packing-slips' ),
+				)
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'refund_ids' => $refund_ids,
+			)
+		);
+	}
+
+	/**
 	 * Include template specific custom functions
 	 */
 	private function load_template_functions() {
-		$file = trailingslashit( WPO_WCPDF()->settings->get_template_path() ) . 'template-functions.php';
+		$template_path = '';
+
+		if ( isset( $_POST['action'] ) && 'wpo_wcpdf_preview' === sanitize_text_field( wp_unslash( $_POST['action'] ) ) && ! empty( $_POST['data'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			// parse form data
+			parse_str( wp_unslash( $_POST['data'] ), $form_data ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+			$form_data   = stripslashes_deep( $form_data );
+			$selected_id = sanitize_text_field( $form_data['wpo_wcpdf_settings_general']['template_path'] ?? '' );
+
+			// only allow template ids that exist in our installed templates list
+			$installed_templates = array_keys( WPO_WCPDF()->settings->get_installed_templates_list() );
+			if ( in_array( $selected_id, $installed_templates, true ) ) {
+				$template_path = $selected_id;
+			}
+		}
+
+		$file = trailingslashit( WPO_WCPDF()->settings->get_template_path( $template_path ) ) . 'template-functions.php';
 		if ( WPO_WCPDF()->file_system->exists( $file ) ) {
 			$loaded = @include_once( $file );
 			if ( $loaded === false ) {
@@ -582,8 +659,8 @@ class Main {
 			case 'dompdf':
 				$tmp_path = $tmp_base . 'dompdf';
 				break;
-			case 'ubl':
-				$tmp_path = $tmp_base . 'ubl';
+			case 'xml':
+				$tmp_path = $tmp_base . 'xml';
 				break;
 			case 'font_cache':
 			case 'fonts':
@@ -863,11 +940,11 @@ class Main {
 						// validate nonce
 						if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'hide_no_dir_notice_nonce' ) ) {
 							wcpdf_log_error( 'You do not have sufficient permissions to perform this action: wpo_wcpdf_hide_no_dir_notice' );
-							wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+							wp_safe_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
 							exit;
 						} else {
 							delete_option( 'wpo_wcpdf_no_dir_error' );
-							wp_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
+							wp_safe_redirect( 'admin.php?page=wpo_wcpdf_options_page' );
 							exit;
 						}
 					}
@@ -1051,10 +1128,16 @@ class Main {
 	}
 
 	public function html_currency_filters( $filters ) {
-		// only apply these fixes if the bundled dompdf version is used!
+		// Maybe apply currency font when previewing in admin
+		if ( isset( $_POST['action'] ) && 'wpo_wcpdf_preview' === sanitize_text_field( wp_unslash( $_POST['action'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$filters = $this->pdf_currency_filters( $filters );
+		}
+
+		// Only apply these fixes if the default PDF maker is used
 		if ( wcpdf_pdf_maker_is_default() ) {
 			$filters[] = array( 'woocommerce_currency_symbol', array( $this, 'use_currency_code' ), 10001, 2 );
 		}
+
 		return $filters;
 	}
 
@@ -1579,9 +1662,9 @@ class Main {
 				}
 
 				if ( is_callable( [ $order, 'get_edit_order_url' ] ) ) {
-					wp_redirect( $order->get_edit_order_url() );
+					wp_safe_redirect( $order->get_edit_order_url() );
 				} else {
-					wp_redirect( admin_url( 'post.php?action=edit&post=' . esc_attr( $data['order_id'] ) ) );
+					wp_safe_redirect( admin_url( 'post.php?action=edit&post=' . esc_attr( $data['order_id'] ) ) );
 				}
 			} else {
 				$error++;
@@ -1831,7 +1914,7 @@ class Main {
 		}
 	}
 
-	function handle_document_link_in_emails(): void {
+	public function handle_document_link_in_emails(): void {
 		$email_hooks = array();
 		$documents   = WPO_WCPDF()->documents->get_documents();
 
@@ -1844,11 +1927,31 @@ class Main {
 			}
 		}
 
-		$email_hooks = apply_filters( 'wpo_wcpdf_add_document_link_to_email_hooks', $email_hooks );
+		$email_hooks = array_unique( apply_filters( 'wpo_wcpdf_add_document_link_to_email_hooks', $email_hooks ) );
 
 		foreach ( $email_hooks as $email_hook ) {
-			add_action( $email_hook, array( $this, 'add_document_link_to_email' ), 10, 4 );
+			if ( 'woocommerce_email_customer_address_section' === $email_hook ) {
+				add_action( $email_hook, array( $this, 'add_document_link_to_address_section' ), 10, 4 );
+			} else {
+				add_action( $email_hook, array( $this, 'add_document_link_to_email' ), 10, 4 );
+			}
 		}
+	}
+
+	/**
+	 * Wrapper for woocommerce_email_customer_address_section hook.
+	 * Since different parameters sent to this hook, we use a wrapper for it.
+	 *
+	 * @param string $type
+	 * @param \WC_Abstract_Order $order
+	 * @param bool $sent_to_admin
+	 * @param bool $plain_text
+	 *
+	 * @return void
+	 */
+	public function add_document_link_to_address_section( string $type, \WC_Abstract_Order $order, bool $sent_to_admin, bool $plain_text ): void {
+		// Since this hook doesn’t pass the $email object, we pass null (or create a dummy if needed).
+		$this->add_document_link_to_email( $order, $sent_to_admin, $plain_text, null );
 	}
 
 	/**
@@ -1857,11 +1960,11 @@ class Main {
 	 * @param \WC_Abstract_Order $order
 	 * @param bool $sent_to_admin
 	 * @param bool $plain_text
-	 * @param \WC_Email $email
+	 * @param mixed|\WC_Email $email Some third-parties might send different values.
 	 *
 	 * @return void
 	 */
-	public function add_document_link_to_email( \WC_Abstract_Order $order, bool $sent_to_admin, bool $plain_text, \WC_Email $email ): void {
+	public function add_document_link_to_email( \WC_Abstract_Order $order, bool $sent_to_admin, bool $plain_text, $email ): void {
 		// Check if document access type is 'full'.
 		$is_full_access_type = 'full' === WPO_WCPDF()->endpoint->get_document_link_access_type();
 
@@ -1876,8 +1979,18 @@ class Main {
 		foreach ( $documents as $document ) {
 			$document_settings = WPO_WCPDF()->settings->get_document_settings( $document->get_type(), 'pdf' );
 			$selected_emails   = $document_settings['include_email_link'] ?? array();
+			$email_placement   = $document_settings['include_email_link_placement'] ?? '';
 
-			$is_allowed = in_array( $document->get_type(), $allowed_document_types, true ) && in_array( $email->id, $selected_emails, true );
+			// Skip if no email placement is set.
+			if ( empty( $email_placement ) ) {
+				continue;
+			}
+
+			$email_id   = ( $email instanceof \WC_Email ) ? $email->id : '';
+			$is_allowed =
+				in_array( $document->get_type(), $allowed_document_types, true ) &&
+				in_array( $email_id, $selected_emails, true ) &&
+				( 'woocommerce_email_' . $email_placement ) === current_filter();
 
 			if ( ! apply_filters( 'wpo_wcpdf_add_document_link_to_email_is_allowed', $is_allowed, $order, $sent_to_admin, $plain_text, $email ) ) {
 				continue;
@@ -1912,6 +2025,44 @@ class Main {
 
 			echo wp_kses_post( apply_filters( 'wpo_wcpdf_add_document_download_link_to_email', $document_link, $document, $order, $sent_to_admin, $plain_text, $email ) );
 		}
+	}
+
+	/**
+	 * Apply ink-saving styles to supported templates when the feature is enabled.
+	 *
+	 * @param string        $css
+	 * @param OrderDocument $document
+	 * @return string
+	 */
+	public function apply_ink_saving_styles( string $css, OrderDocument $document ): string {
+		$settings = WPO_WCPDF()->settings->general_settings ?? array();
+
+		$ink_saving_enabled = ! empty( $settings['template_ink_saving'] );
+		$current_template   = $settings['template_path'] ?? '';
+
+		$supported_templates = apply_filters(
+			'wpo_ips_ink_saving_supported_templates',
+			array( 'default/Simple' )
+		);
+
+		// Bail if feature is disabled or template not supported.
+		if ( ! $ink_saving_enabled || ! in_array( $current_template, $supported_templates, true ) ) {
+			return $css;
+		}
+
+		// Let templates provide their own ink-saving CSS.
+		$ink_saving_css = apply_filters(
+			'wpo_ips_ink_saving_css',
+			'',
+			$document,
+			$current_template
+		);
+
+		if ( ! empty( trim( $ink_saving_css ) ) ) {
+			$css .= "\n\n" . $ink_saving_css . "\n";
+		}
+
+		return $css;
 	}
 
 }

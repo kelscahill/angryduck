@@ -175,7 +175,7 @@
                     <div id="custom_fields_container" v-if="hasCustomFields">
                         <TypographyTitle :level="3">{{ getI18n('custom_fields' ) }}</TypographyTitle>
                         <FormItem v-for="(customField, fieldKey) in customFields" :key="fieldKey" :label="customField.label" :name="customField.name">
-                            <CustomField :field="customField" :value="lead[customField.name]" @update:value="updateCustomField(customField.name, $event)" />
+                            <CustomField :field="customField" :value="lead[customField?.name]" @update:value="updateCustomField(customField.name, $event)" />
                         </FormItem>
                     </div>
 
@@ -435,7 +435,20 @@ function deactivateUserConfirm() {
 
 const updateCustomField = (fieldName: string, value: any) => {
     // Make Vue detect this change by directly setting the property
-    if (typeof value === 'object' && value !== null) {
+    if (typeof value === 'object' && Array.isArray(value)) {
+        if (lead[fieldName]?.length === 0) { // If it's a new value or empty, initialize as array
+            lead[fieldName] = [];
+        }
+
+        const index = lead[fieldName].indexOf(value[0]);
+        if (index === -1) {
+            lead[fieldName].push(value[0]);
+        } else {
+            const data = [...lead[fieldName]];
+            data.splice(index, 1);
+            lead[fieldName] = data;
+        }
+    } else if (typeof value === 'object' && value !== null) {
         // For objects, we need to create a new reference
         lead[fieldName] = { ...value };
     } else {

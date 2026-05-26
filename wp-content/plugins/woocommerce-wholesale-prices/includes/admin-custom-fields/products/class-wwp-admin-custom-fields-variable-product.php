@@ -123,7 +123,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
          */
         public function execute_variation_custom_wholesale_bulk_actions( $bulk_action, $data, $product_id, $variations ) {
 
-            if ( strpos( $bulk_action, '_wholesale_price' ) !== false && is_array( $variations ) && isset( $data['value'] ) ) {
+            if ( str_contains( $bulk_action, '_wholesale_price' ) && is_array( $variations ) && isset( $data['value'] ) ) {
 
                 $all_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
                 $wholesale_role      = str_replace( '_wholesale_price', '', $bulk_action );
@@ -355,7 +355,6 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                                 </div>
                                 <div class="wholesale-prices-field-form-field-container">
                                     <?php
-                                    if ( empty( $WOOCS ) && empty( $woocommerce_wpml ) ) {
                                         WWP_Helper_Functions::woocommerce_wp_select(
                                             array(
                                                 'id'       => "{$role_key}_wholesale_discount_type[{$loop}]",
@@ -394,7 +393,6 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                                                 ),
                                             )
                                         );
-                                    }
 
                                     WWP_Helper_Functions::wwp_woocommerce_wp_text_input(
                                         array(
@@ -509,7 +507,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
              */
             $main_variable_product = wc_get_product( $post_id );
 
-            if ( ( ! is_null( $variation_ids ) && ! is_null( $variation_wholesale_prices ) ) || ( isset( $_POST['variable_post_id'] ) && $_POST['variable_post_id'] ) ) {
+            if ( ( ! is_null( $variation_ids ) && ! is_null( $variation_wholesale_prices ) ) || ( isset( $_POST['variable_post_id'] ) && ! empty( $_POST['variable_post_id'] ) ) ) { //phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput -- Sanitized below on assignment.
 
                 /**
                  * We delete this meta in the beginning coz we are using add_meta_data, not update_meta_data below
@@ -520,7 +518,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                     $main_variable_product->delete_meta_data( $role_key . '_variations_with_wholesale_price' );
                 }
 
-                $variable_post_id = ! is_null( $variation_ids ) ? $variation_ids : $_POST['variable_post_id'];
+                $variable_post_id = ! is_null( $variation_ids ) ? $variation_ids : array_map( 'absint', wp_unslash( $_POST['variable_post_id'] ) ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
                 $max_loop         = max( array_keys( $variable_post_id ) );
                 $thousand_sep     = get_option( 'woocommerce_price_thousand_sep' );
                 $decimal_sep      = get_option( 'woocommerce_price_decimal_sep' );
@@ -545,8 +543,8 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
 
                                 $variation_id = (int) $variable_post_id[ $i ];
 
-                                $discount_type       = isset( $_POST[ $role_key . '_wholesale_discount_type' ] ) ? $_POST[ $role_key . '_wholesale_discount_type' ] : null;
-                                $percentage_discount = isset( $_POST[ $role_key . '_wholesale_percentage_discount' ] ) ? $_POST[ $role_key . '_wholesale_percentage_discount' ] : null;
+                                $discount_type       = isset( $_POST[ $role_key . '_wholesale_discount_type' ] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST[ $role_key . '_wholesale_discount_type' ] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                $percentage_discount = isset( $_POST[ $role_key . '_wholesale_percentage_discount' ] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST[ $role_key . '_wholesale_percentage_discount' ] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing
 
                                 // Get base currency. Product base currency ( if present ) or shop base currency.
                                 // Note for the variation, note for the parent variable product.
@@ -555,14 +553,23 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                                 if ( $currency_code === $base_currency ) {
 
                                     // Base Currency.
-                                    $wholesale_prices = ! is_null( $variation_wholesale_prices ) ? $variation_wholesale_prices : ( isset( $_POST[ $role_key . '_wholesale_prices' ] ) !== false ? $_POST[ $role_key . '_wholesale_prices' ] : $_POST[ $role_key . '_wholesale_price_hidden' ] );
+                                    if ( ! is_null( $variation_wholesale_prices ) ) {
+                                        $wholesale_prices = $variation_wholesale_prices;
+                                    } elseif ( isset( $_POST[ $role_key . '_wholesale_prices' ] ) ) { //phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                        $wholesale_prices = wc_clean( wp_unslash( $_POST[ $role_key . '_wholesale_prices' ] ) ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                    } elseif ( isset( $_POST[ $role_key . '_wholesale_price_hidden' ] ) ) { //phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                        $wholesale_prices = wc_clean( wp_unslash( $_POST[ $role_key . '_wholesale_price_hidden' ] ) ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                    } else {
+                                        $wholesale_prices = array();
+                                    }
 
                                     $wholesale_price_key = $role_key . '_wholesale_price';
                                     $is_base_currency    = true;
 
                                 } else {
 
-                                    $wholesale_prices    = ! is_null( $variation_wholesale_prices ) ? $variation_wholesale_prices : $_POST[ $role_key . '_' . $currency_code . '_wholesale_prices' ];
+                                    $currency_key        = $role_key . '_' . $currency_code . '_wholesale_prices';
+                                    $wholesale_prices    = ! is_null( $variation_wholesale_prices ) ? $variation_wholesale_prices : ( isset( $_POST[ $currency_key ] ) ? wc_clean( wp_unslash( $_POST[ $currency_key ] ) ) : array() ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
                                     $wholesale_price_key = $role_key . '_' . $currency_code . '_wholesale_price';
                                     $is_base_currency    = false;
 
@@ -579,7 +586,8 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                     foreach ( $wholesale_roles as $role_key => $role ) {
 
                         $wholesale_prices = ! is_null( $variation_wholesale_prices )
-                            ? $variation_wholesale_prices : $_POST[ $role_key . '_wholesale_prices' ];
+                            ? $variation_wholesale_prices
+                            : ( isset( $_POST[ $role_key . '_wholesale_prices' ] ) ? wc_clean( wp_unslash( $_POST[ $role_key . '_wholesale_prices' ] ) ) : array() ); //phpcs:ignore WordPress.Security.NonceVerification.Missing
 
                         $wholesale_price_key = $role_key . '_wholesale_price';
 
@@ -590,8 +598,8 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                             }
 
                             $variation_id        = (int) $variable_post_id[ $i ];
-                            $discount_type       = isset( $_POST[ $role_key . '_wholesale_discount_type' ] ) ? $_POST[ $role_key . '_wholesale_discount_type' ][ $i ] : null;
-                            $percentage_discount = isset( $_POST[ $role_key . '_wholesale_percentage_discount' ] ) ? $_POST[ $role_key . '_wholesale_percentage_discount' ][ $i ] : null;
+                            $discount_type       = isset( $_POST[ $role_key . '_wholesale_discount_type' ][ $i ] ) ? sanitize_text_field( wp_unslash( $_POST[ $role_key . '_wholesale_discount_type' ][ $i ] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing
+                            $percentage_discount = isset( $_POST[ $role_key . '_wholesale_percentage_discount' ][ $i ] ) ? sanitize_text_field( wp_unslash( $_POST[ $role_key . '_wholesale_percentage_discount' ][ $i ] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing
 
                             if ( isset( $wholesale_prices[ $i ] ) ) {
                                 $this->_save_variable_product_wholesale_price( $post_id, $variation_id, $role_key, $wholesale_prices[ $i ], $wholesale_price_key, $thousand_sep, $decimal_sep, $discount_type, $percentage_discount );
@@ -647,26 +655,31 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
             $main_variable_children = $main_variable_product->get_children();
             if ( ! empty( $main_variable_children ) ) {
 
-                $wholesale_child_prices = array();
-                foreach ( $main_variable_children as $main_variable_child ) {
-                    foreach ( $wholesale_roles as $role_key => $role ) {
-                        $child_product         = wc_get_product( $main_variable_child );
-                        $child_wholesale_price = $child_product->get_meta( $role_key . '_wholesale_price' );
+                // WWPP-147 : Delete the meta that is set when setting discount on per product category level.
+                foreach ( $wholesale_roles as $role_key => $role ) {
+                    $main_variable_product->delete_meta_data( $role_key . '_have_wholesale_price_set_by_product_cat' );
+                }
 
-                        // WWPP-147 : Delete the meta that is set when setting discount on per product category level.
-                        $main_variable_product->delete_meta_data( $role_key . '_have_wholesale_price_set_by_product_cat' );
+                $wholesale_prices_per_role = WWP_Helper_Functions::get_wholesale_prices_per_role_from_variations( $main_variable_children, $wholesale_roles );
 
-                        if ( is_numeric( $child_wholesale_price ) && $child_wholesale_price > 0 ) {
-                            $wholesale_child_prices[ $role_key ] = $child_wholesale_price;
-                            do_action( 'wwp_set_have_wholesale_price_meta_prod_cat_wholesale_discount', $post_id, $role_key );
-                        }
+                // Fire action for each role that has at least one variation with a wholesale price.
+                foreach ( $wholesale_roles as $role_key => $role ) {
+                    if ( ! empty( $wholesale_prices_per_role[ $role_key ] ) ) {
+                        do_action( 'wwp_set_have_wholesale_price_meta_prod_cat_wholesale_discount', $post_id, $role_key );
                     }
                 }
 
-                if ( ! empty( $wholesale_child_prices ) ) {
-                    $main_variable_product->update_meta_data( $role_key . '_have_wholesale_price', 'yes' );
-                } else {
-                    $main_variable_product->update_meta_data( $role_key . '_have_wholesale_price', 'no' );
+                foreach ( $wholesale_roles as $role_key => $role ) {
+                    if ( ! empty( $wholesale_prices_per_role[ $role_key ] ) ) {
+                        $prices = $wholesale_prices_per_role[ $role_key ];
+                        $main_variable_product->update_meta_data( $role_key . '_have_wholesale_price', 'yes' );
+                        $main_variable_product->update_meta_data( $role_key . '_min_wholesale_price', min( $prices ) );
+                        $main_variable_product->update_meta_data( $role_key . '_max_wholesale_price', max( $prices ) );
+                    } else {
+                        $main_variable_product->update_meta_data( $role_key . '_have_wholesale_price', 'no' );
+                        $main_variable_product->delete_meta_data( $role_key . '_min_wholesale_price' );
+                        $main_variable_product->delete_meta_data( $role_key . '_max_wholesale_price' );
+                    }
                 }
             }
             // phpcs:enable WordPress.Security.NonceVerification.Missing
@@ -708,7 +721,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
              * Sanitize and properly format wholesale price.
              * (This also supports comma as decimal separator currency format).
              */
-            $wholesale_price = trim( esc_attr( $wholesale_price ) );
+            $wholesale_price = sanitize_text_field( $wholesale_price );
 
             if ( $thousand_sep ) {
                 $wholesale_price = str_replace( $thousand_sep, '', $wholesale_price );
@@ -807,6 +820,10 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Variable_Product' ) ) {
                 $registered_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
 
                 if ( $registered_wholesale_roles ) {
+
+                    if ( ! $variable_product instanceof WC_Product ) {
+                        return;
+                    }
 
                     foreach ( $registered_wholesale_roles as $role_key => $role ) {
 

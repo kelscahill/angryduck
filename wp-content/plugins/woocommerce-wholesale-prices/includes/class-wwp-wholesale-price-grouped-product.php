@@ -166,7 +166,7 @@ if ( ! class_exists( 'WWP_Wholesale_Price_Grouped_Product' ) ) {
                         if ( get_option( 'wwpp_settings_hide_original_price' ) !== 'yes' ) {
 
                             // Crush out existing prices, regular and sale.
-                            if ( strpos( $price, 'ins' ) !== false ) {
+                            if ( str_contains( $price, 'ins' ) ) {
                                 $wholesale_price_html = str_replace( 'ins', 'del', $price );
                             } else {
 
@@ -225,18 +225,26 @@ if ( ! class_exists( 'WWP_Wholesale_Price_Grouped_Product' ) ) {
 
                 if ( ! empty( $grouped_products ) ) {
 
-                    // Get all <wholesale_role>_have_wholesale_price meta from child products.
-                    $have_wholesale_prices = $wpdb->get_results(
-                        $wpdb->prepare(
-                            "SELECT DISTINCT meta_key
-                                            FROM $wpdb->postmeta
-                                            WHERE post_id IN (%s)
-                                                AND meta_key LIKE %s
-                                                AND meta_value = 'yes'",
-                            implode( ',', $grouped_products ),
-                            '%_have_wholesale_price'
-                        )
-                    );
+                    // Validate and sanitize product IDs.
+                    $parent_product_id   = $product_id; // Preserve parent product ID.
+                    $grouped_product_ids = array(); // Initialize array.
+                    foreach ( $grouped_products as $child_product_id ) {
+                        $child_product_id = absint( $child_product_id );
+                        if ( $child_product_id > 0 ) {
+                            $grouped_product_ids[] = $child_product_id;
+                        }
+                    }
+
+                    if ( empty( $grouped_product_ids ) ) {
+                        return; // No valid products.
+                    }
+
+                    // Use proper placeholders for IN clause.
+                    $placeholders = implode( ',', array_fill( 0, count( $grouped_product_ids ), '%d' ) );
+
+                    $query = $wpdb->prepare( "SELECT DISTINCT meta_key FROM {$wpdb->postmeta} WHERE post_id IN ($placeholders) AND meta_key LIKE %s AND meta_value = 'yes'", array_merge( $grouped_product_ids, array( '%_have_wholesale_price' ) ) );  //phpcs:ignore
+
+                    $have_wholesale_prices = $wpdb->get_results( $query ); //phpcs:ignore
 
                     if ( ! empty( $have_wholesale_prices ) ) {
 
@@ -246,7 +254,7 @@ if ( ! class_exists( 'WWP_Wholesale_Price_Grouped_Product' ) ) {
                             $wpdb->query(
                                 $wpdb->prepare(
                                     "INSERT INTO $wpdb->postmeta (post_id,meta_key,meta_value) VALUES (%d,%s,%s)",
-                                    $product_id,
+                                    $parent_product_id,
                                     $have_wholesale_price->meta_key,
                                     'yes'
                                 )

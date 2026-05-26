@@ -211,10 +211,12 @@ if ( ! class_exists( 'WWP_Install_ACFW' ) ) {
          */
         public function ajax_redirect_install_acfwf_plugin() {
 
+            $type = isset( $_REQUEST['type'] ) ? sanitize_key( wp_unslash( $_REQUEST['type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
             if (
-                current_user_can( 'administrator' ) && // phpcs:ignore
+                current_user_can( 'install_plugins' ) &&
                 ! WWP_Helper_Functions::is_acfwf_installed() &&
-                'install' === $_REQUEST['type'] // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                'install' === $type
             ) {
                 $url = htmlspecialchars_decode( wp_nonce_url( admin_url() . 'update.php?action=install-plugin&plugin=advanced-coupons-for-woocommerce-free', 'install-plugin_advanced-coupons-for-woocommerce-free' ) );
             } else {

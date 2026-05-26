@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
                                                             <?php if ( ! apply_filters( 'wwlc_use_woocommerce_email_footer', false ) ) : ?>
                                                                 <a style="text-decoration: none; color: #808080" href="https://wholesalesuiteplugin.com/powered-by/?utm_source=wwlc&utm_medium=email&utm_campaign=WWLCPoweredByEmailLink" target="_blank" rel="nofollow">
                                                                     <span style="font-size: 0.7em"><?php esc_html_e( 'Powered by', 'woocommerce-wholesale-lead-capture' ); ?></span>
-                                                                    <img style="width: 90px; margin-left: 2px;" src="<?php echo esc_url( WWLC_IMAGES_ROOT_URL . 'wholesale-suite-logo.png' ); ?>" alt="Wholesale Suite" />
+                                                                    <img style="width: 120px; height: auto; margin-left: 2px; vertical-align: middle;" src="<?php echo esc_url( WWLC_IMAGES_ROOT_URL . 'wholesale-suite-logo.svg' ); ?>" alt="Wholesale Suite" />
                                                                 </a>
                                                             <?php else : ?>
                                                                 <?php echo wp_kses_post( wpautop( wptexturize( apply_filters( 'wwlc_email_footer_text', get_option( 'woocommerce_email_footer_text' ) ) ) ) ); ?>

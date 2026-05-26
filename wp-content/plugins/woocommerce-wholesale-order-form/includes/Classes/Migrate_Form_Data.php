@@ -45,7 +45,6 @@ class Migrate_Form_Data extends Abstract_Class {
      */
     public function run() {
 
-        $i18n       = require WWOF_PLUGIN_DIR_PATH . 'includes/I18n/order-form.php';
         $query_args = array();
         if ( ! empty( $this->form_ids ) ) {
             $this->form_ids = array_map( 'absint', $this->form_ids );
@@ -198,8 +197,8 @@ class Migrate_Form_Data extends Abstract_Class {
             $general_settings = array(
                 'permissions'                => array(
                     'allowedUserRoles' => get_option( 'wwof_permissions_user_role_filter', array() ),
-                    'noAccessTitle'    => get_option( 'wwof_permissions_noaccess_title', $i18n['accessDenied'] ),
-                    'noAccessMessage'  => get_option( 'wwof_permissions_noaccess_message', $i18n['noAccessMessage'] ),
+                    'noAccessTitle'    => get_option( 'wwof_permissions_noaccess_title', __( 'Access Denied', 'woocommerce-wholesale-order-form' ) ),
+                    'noAccessMessage'  => get_option( 'wwof_permissions_noaccess_message', __( 'You do not have permission to view wholesale product listing.', 'woocommerce-wholesale-order-form' ) ),
                     'noAccessLoginUrl' => get_option( 'wwof_permissions_noaccess_login_url', wp_login_url() ),
                 ),
                 'hideFormTitle'              => ! empty( $settings['hide_form_title'] ) ? ( true === $settings['hide_form_title'] ? 'yes' : 'no' ) : 'no',
@@ -211,6 +210,7 @@ class Migrate_Form_Data extends Abstract_Class {
                 'simplifyAddToCartNotices'   => ! empty( $settings['simplify_add_to_cart_notices'] ) ? ( true === $settings['simplify_add_to_cart_notices'] ? 'yes' : 'no' ) : 'no',
                 'includeProducts'            => ! empty( $settings['include_products'] ) ? array_map( 'absint', $settings['include_products'] ) : array(),
                 'excludeProducts'            => ! empty( $settings['exclude_products'] ) ? array_map( 'absint', $settings['exclude_products'] ) : array(),
+                'priorityProducts'           => ! empty( $settings['priority_products'] ) ? array_map( 'absint', $settings['priority_products'] ) : array(),
                 'defaultCategory'            => ! empty( $default_category ) && ! is_wp_error( $default_category ) ? $default_category->term_id : null,
                 'includedCategories'         => $included_categories,
                 'excludedCategories'         => $excluded_categories,

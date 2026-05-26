@@ -16,6 +16,7 @@ import { recordEvent } from 'utils/tracks';
 import { mainModalContentSelector } from '../constants';
 import { PACKAGE_SECTION } from '../essential-details/constants';
 import { PromoRemainingCount } from '../promo';
+import { PackagesCard } from '../design-next/cards/packages-card';
 
 const tabViews = {
 	[ TAB_NAMES.CUSTOM_PACKAGE ]: CustomPackage,
@@ -36,6 +37,7 @@ export const Packages = () => {
 		shipment: { shipments, currentShipmentId },
 		essentialDetails: { focusArea: essentialDetailsFocusArea },
 		rates: { removeSelectedRate },
+		nextDesign,
 	} = useLabelPurchaseContext();
 
 	const selectedPackage = getSelectedPackage();
@@ -112,7 +114,9 @@ export const Packages = () => {
 		}
 	}, [ essentialDetailsFocusArea, shipments ] );
 
-	return (
+	return nextDesign ? (
+		<PackagesCard />
+	) : (
 		<>
 			<Flex className="packages-header" ref={ wrapperRef }>
 				<Heading level={ 3 }>

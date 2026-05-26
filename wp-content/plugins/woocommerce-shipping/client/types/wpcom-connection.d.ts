@@ -2,8 +2,8 @@ import { CREATE_CONNECTION, CREATING_CONNECTION_FAILED } from './action-types';
 import { WPErrorRESTResponse } from 'types';
 
 export interface WPCOMConnectionState {
-	redirectUrl: string|false;
-	error: string|false;
+	redirectUrl: string | false;
+	error: string | false;
 }
 
 export interface WPCOMConnectionCreationPayload {
@@ -24,7 +24,9 @@ export interface WPCOMConnectionActionError {
 	type: typeof CREATING_CONNECTION_FAILED;
 	payload: {
 		error: WPErrorRESTResponse;
-	}
+	};
 }
 
-export type WPCOMConnectionActions = WPCOMConnectionCreationAction | WPCOMConnectionActionError;
+export type WPCOMConnectionActions =
+	| WPCOMConnectionCreationAction
+	| WPCOMConnectionActionError;

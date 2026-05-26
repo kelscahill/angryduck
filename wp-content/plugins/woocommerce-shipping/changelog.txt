@@ -1,12 +1,161 @@
 *** WooCommerce Shipping Changelog ***
 
+= 2.3.5 - 2026-05-25 =
+* Add   - Register an initial read-only WordPress ability for WooCommerce Shipping label reports.
+* Fix   - Prevent fatal DivisionByZeroError in MigrationController when no legacy WCS&T labels exist.
+
+= 2.3.4 - 2026-05-20 =
+* Tweak - WordPress 7.0 Compatibility.
+* Fix   - Show the customs form for US territory shipments (regardless of address normalization) and validate item descriptions against the USPS 30-character limit before label purchase, preventing opaque rejections.
+
+= 2.3.3 - 2026-05-18 =
+* Tweak - WooCommerce 10.8 Compatibility.
+* Fix   - Prevent partial account-settings saves from disabling shipping label creation.
+
+= 2.3.2 - 2026-05-11 =
+* Fix   - Clear fetched rates after a failed label purchase and dismiss the top purchase error notice when the merchant requests rates again.
+
+= 2.3.1 - 2026-05-05 =
+* Fix   - Render multi-line rate fetch errors as separate paragraphs and surface them as a warning so available carrier rates remain visible.
+
+= 2.3.0 - 2026-04-27 =
+* New   - FedEx Rate Purchasing is now available! Merchants can compare and purchase FedEx labels directly from WooCommerce Shipping.
+* Fix   - Automatically split mixed domestic and international labels into separate USPS SCAN Forms.
+* Fix   - Refresh shipping rates after a label refund so re-purchase uses a new shipment ID.
+
+= 2.2.9 - 2026-04-20 =
+* Add   - Residential/commercial address toggle on the label purchase screen, used by FedEx for accurate rates and service availability.
+* Tweak - Update FedEx Terms of Service checkbox copy to reference the general Terms of Service, which now covers shipping services.
+* Fix   - Prevent fatal TypeError when completing orders with shipping labels that have no tracking number.
+
+= 2.2.8 - 2026-04-13 =
+* Tweak - WooCommerce 10.7 Compatibility.
+
+= 2.2.7 - 2026-04-09 =
+* Add   - FedEx Terms of Service acceptance checkbox before first FedEx label purchase.
+* Fix   - Shipment weight selector no longer switches to lbs when weight exceeds 16 oz and store unit is set to oz.
+* Fix   - Prevent FedEx predefined packages from leaking through the client-side cache when FedEx is not enabled for the client.
+
+= 2.2.6 - 2026-03-30 =
+* Fix   - Invalidate cached shipping rates when customs item values change to prevent stale data on Commercial Invoices.
+
+= 2.2.5 - 2026-03-23 =
+* Add   - Display service status notices in label purchase modal for carrier incidents.
+
+= 2.2.4 - 2026-03-10 =
+* Fix   - Automatically refresh shipping rates when weight or package details change after initial fetch.
+* Tweak - Add telemetry tracking for button interactions on the CIAB Shipping settings page.
+* Tweak - Update payment method notices in the label purchase panel to use the new UI component design.
+* Dev   - Add @wordpress/ui package dependency.
+* Tweak - Show what the customer paid for shipping and profit/loss per rate during label purchase.
+* Tweak - WooCommerce 10.6 Compatibility.
+
+= 2.2.3 - 2026-03-02 =
+* Fix   - Allow rate fetching for addresses that fail validation when manually approved by the merchant.
+* Fix   - Update USPS ScanForm branding to USPS® SCAN Form and add documentation link to onboarding banner.
+* Tweak - Remove USPS® SCAN Form onboarding notice banner from the orders list screen.
+* Tweak - Enable USPS® SCAN Form feature by default for new installations.
+* Dev   - Add usage tracking for the label purchase flow in the new label purchase experience.
+
+= 2.2.2 - 2026-02-24 =
+* Fix   - Allow fetching rates for unverified destination addresses (e.g. international addresses).
+
+= 2.2.1 - 2026-02-23 =
+* Fix   - Allow purchasing domestic shipping labels without a destination phone number.
+* Fix   - locutus vulnerability (CVE-2026-25521)
+
+= 2.2.0 - 2026-02-11 =
+* New   – USPS ScanForm is now available. Enable or disable the feature in Shipping settings.
+* Fix   - UPS TOS acceptance failures on Atomic/WPCloud sites due to missing or invalid user email.
+
+= 2.1.4 - 2026-02-03 =
+* Fix   - Non-US phone number validation.
+* Fix   - Add origin email address to the purchase label request.
+* Fix   - Display correct dimension units on label details after purchase.
+* Tweak - WooCommerce 10.5 compatibility.
+
+= 2.1.3 - 2026-01-28 =
+* Fix   - Prevent rate fetch API calls when destination address is unverified.
+* Fix   - Validate delivery dates against ship date for accurate display.
+* Fix   - Allow deselecting all carriers in the carrier filter.
+* Fix   - Preserve rate selection when prices fluctuate during UPS TOS acceptance flow.
+
+= 2.1.2 - 2026-01-19 =
+* Fix   - Exclude labels from trashed orders in ScanForm eligible orders query.
+* Fix   - Box weight not added to total weight when shipment weight triggers oz display.
+* Fix   - Set the shipment date to UTC.
+
+= 2.1.1 - 2026-01-12 =
+* Fix   - Wrong package weight used when purchasing UPS rates with non-signature options.
+
+= 2.1.0 - 2026-01-12 =
+* Add   - USPS ScanForm Feature.
+* Add   - Setting to enable "Return package to sender" by default for international shipments.
+* Fix   - Critical error when opening older orders with corrupted shipment data.
+* Fix   - Fatal error due to removed AccessiblePrivateMethods trait in WooCommerce 10.5.
+* Fix   - Design QA issues in the Buy Shipping Label flow including title case formatting, dimension units, items summary, and address tooltip.
+
+= 2.0.2 - 2025-12-10 =
+* Fix   - node-forge vulnerability (CVE-2025-12816)
+* Fix   - Success banner after WPCOM connection not dismissing on WooCommerce Orders page.
+* Fix   - Fix display of debug logs in the plugin status page.
+* Tweak - WordPress 6.9 and WooCommerce 10.4 compatibility.
+
+= 2.0.1 - 2025-11-17 =
+* Add   - Ability for merchants to save and use unverified addresses when validation fails.
+
+= 2.0.0 - 2025-11-11 =
+* Add   - New Return Label feature. You can now buy return labels for domestic shipments.
+
+= 1.8.11 - 2025-10-20 =
+* Fix   - Fix SchedulePickup and RefundShipment components rendering issues in purchase notice.
+
+= 1.8.10 - 2025-10-14 =
+* Fix   - Styling glitch in address suggestion modal.
+* Tweak - WooCommerce 10.3 Compatibility.
+
+= 1.8.9 - 2025-09-29 =
+* Tweak - Add packaging slip support for fulfillments without a shipping label.
+* Fix   - Show correct refund status in Analytics → Shipping Labels and fix PHP warnings.
+
+= 1.8.8 - 2025-09-10 =
+* Tweak - WooCommerce 10.2 Compatibility.
+* Fix   - Packaging slip creation for orders with multiple shipments.
+* Fix   - Broken rendering of shipment sub items in split shipment view for items with variations.
+* Fix   - Shipment item quantity changing in view after extra label is purchased.
+
+
+= 1.8.7 - 2025-09-02 =
+* Add   - Notice to show warnings generated while address verification
+
+= 1.8.6 - 2025-08-27 =
+* Fix   - Retrieval and rendering of created shipments on multi-shipment orders
+
+= 1.8.5 - 2025-08-26 =
+* Fix   - Added data models to ensure consistent formatting of shipment data.
+* Fix   - Simplify the saved shipment object on order meta data.
+
+= 1.8.4 - 2025-08-12 =
+* Fix   - Stop calling update strategies on every page.
+
+= 1.8.3 - 2025-08-04 =
+* Fix   - Printing on Android based browser doesn't work.
+* Fix   - Remove deprecated load_plugin_textdomain() call to fix WordPress.org plugin check.
+* Fix   - Address normalization invalidation after update outside of the shipping modal.
+
+= 1.8.2 - 2025-07-29 =
+* Fix   - Prevent erroneous shipment creation from labels with purchase errors.
+
+= 1.8.1 - 2025-07-22 =
+* Fix   - Prevent shipping labels from getting stuck in purchase state by adding retry limits and improving error handling.
+* Add   - Introduce new feature banners system controllable via the connect server.
+
 = 1.8.0 - 2025-07-09 =
 * Add   - Implement promotions service.
 
 = 1.7.5 - 2025-07-07 =
 * Tweak - WooCommerce 10.0 Compatibility.
 * Fix   - PHP error warning in the plugin settings page.
-
 = 1.7.4 - 2025-06-23 =
 * Fix   - Resolved the issue of duplicate shipments by ensuring refunded labels are ignored during shipment generation.
 

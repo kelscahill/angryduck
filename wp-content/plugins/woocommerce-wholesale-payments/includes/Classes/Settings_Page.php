@@ -132,6 +132,7 @@ class Settings_Page extends Admin_Page {
             self::MENU_SLUG,
             'src/apps/admin/settings/index.ts',
             array(
+                'wp-date',
                 'wp-i18n',
                 'wp-url',
                 'wp-hooks',

@@ -1,0 +1,1 @@
+System.register(["./hooks-legacy.BRKQHcMP.js"],function(e,t){"use strict";var o,s,l,r,n,u;return{setters:[e=>{o=e.d,s=e.f,l=e.o,r=e.O,n=e.N,u=e.u}],execute:function(){e("_",o({__name:"NoStyles",setup:e=>(e,t)=>(l(),s("p",null,[r("em",null,n(u(wp.i18n.__)("No available style settings.","woocommerce-wholesale-order-form")),1)]))}))}}});

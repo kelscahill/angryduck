@@ -9,12 +9,20 @@ namespace Automattic\Jetpack\Publicize;
 
 use Automattic\Jetpack\Admin_UI\Admin_Menu;
 use Automattic\Jetpack\Assets;
+use Automattic\Jetpack\Connection\Manager as Connection_Manager;
+use Automattic\Jetpack\Current_Plan;
 use Automattic\Jetpack\Publicize\Publicize_Utils as Utils;
+use Automattic\Jetpack\Status\Host;
 
 /**
  * The class to handle the Social Admin Page.
  */
 class Social_Admin_Page {
+
+	/**
+	 * Nonce action used when refreshing plan data.
+	 */
+	public const REFRESH_PLAN_NONCE_ACTION = 'jetpack_social_refresh_plan_data';
 
 	/**
 	 * The instance of the class.
@@ -48,10 +56,6 @@ class Social_Admin_Page {
 	 */
 	public function add_menu() {
 
-		if ( ! Publicize_Script_Data::has_feature_flag( 'admin-page' ) ) {
-			return;
-		}
-
 		// Remove the old Social menu item, if it exists.
 		Admin_Menu::remove_menu( 'jetpack-social' );
 
@@ -61,9 +65,21 @@ class Social_Admin_Page {
 			return;
 		}
 
+		// We don't need Jetpack connection on WP.com.
+		$needs_site_connection = ! ( new Host() )->is_wpcom_platform() && ! ( new Connection_Manager() )->is_connected();
+
+		/**
+		 * If the Jetpack Social plugin is not active,
+		 * we want to hide the menu if the site is not connected.
+		 */
+		if ( ! defined( 'JETPACK_SOCIAL_PLUGIN_DIR' ) && $needs_site_connection ) {
+			return;
+		}
+
 		$page_suffix = Admin_Menu::add_menu(
-			__( 'Jetpack Social', 'jetpack-publicize-pkg' ),
-			_x( 'Social', 'The Jetpack Social product name, without the Jetpack prefix', 'jetpack-publicize-pkg' ),
+			/** "Jetpack Social" is a product name, do not translate. */
+			'Jetpack Social',
+			'Social',
 			'publish_posts',
 			'jetpack-social',
 			array( $this, 'render' ),
@@ -77,6 +93,15 @@ class Social_Admin_Page {
 	 * Initialize the admin resources.
 	 */
 	public function admin_init() {
+		// Refresh data if coming from purchase to ensure it is up to date
+		// without making API calls on every admin page load.
+		if ( isset( $_GET['refresh_plan_data'] ) ) {
+			check_admin_referer( self::REFRESH_PLAN_NONCE_ACTION );
+			if ( apply_filters( 'jetpack_social_should_refresh_plan_data', true ) ) {
+				Current_Plan::refresh_from_wpcom();
+			}
+		}
+
 		/**
 		 * Use priority 20 to ensure that we can dequeue the old Social assets.
 		 */

@@ -100,6 +100,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
          * @since 1.0.0
          * @since 1.4.0 Refactor codebase and move to its own model.
          * @since 2.1.0 Added custom decimal place for calculation on percentage discount, added also filter so that this can be overridden based on your requirements.
+         * @since 2.2.8 Enqueue Wholesale Reports teaser assets when WWPP is inactive (#885).
          * @access public
          *
          * @param string $handle Hook suffix for the current admin page.
@@ -318,7 +319,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
             /**
              * Backend Common CSS
              */
-            if ( get_option( 'wwp_admin_notice_getting_started_show' ) === 'yes' || get_option( WWP_SHOW_INSTALL_ACFWF_NOTICE ) === 'yes' || ( isset( $_GET['tab'] ) && 'wwp_settings' === $_GET['tab'] ) ) { // phpcs:ignore
+            if ( get_option( 'wwp_admin_notice_getting_started_show' ) === 'yes' || get_option( WWP_SHOW_INSTALL_ACFWF_NOTICE ) === 'yes' || ( isset( $_GET['tab'] ) && 'wwp_settings' === sanitize_key( wp_unslash( $_GET['tab'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 wp_enqueue_style( 'wwp_backend_main_css', WWP_CSS_URL . 'wwp-back-end-main.css', array(), $file_version );
             }
 
@@ -349,6 +350,30 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
                 );
             }
 
+            if ( ! WWP_Helper_Functions::is_wpay_active() && ! WWP_Helper_Functions::is_user_wws_notification_dismissed( get_current_user_id(), 'wpay-wc-settings-banner' ) ) {
+                wp_enqueue_script( 'wwp_wpay_suggestion_install_notice', WWP_JS_URL . 'backend/wwp-show-wpay-suggestions-on-woo-settings.js', array( 'jquery' ), $this->_wwp_current_version, true );
+                $get_wpay_url = esc_url( WWP_Helper_Functions::get_utm_url( 'woocommerce-wholesale-payments', 'wwp', 'upsell', 'wcsettingsbanner' ) );
+
+                wp_localize_script(
+                    'wwp_wpay_suggestion_install_notice',
+                    'wwp_wpay_wc_settings_params',
+                    array(
+                        'nonce'          => wp_create_nonce( 'wp_wpay_toolbar_dismiss_notice' ),
+                        'dismiss_label'  => esc_attr__( 'Dismiss', 'woocommerce-wholesale-prices' ),
+                        'banner_message' => sprintf(
+                            // translators: %1$s <a> open tag, %2$s </a> close tag.
+                            __(
+                                'Want to do NET 30/60/90 Invoices for your wholesale customers? %1$sGet Wholesale Payments%2$s.',
+                                'woocommerce-wholesale-prices'
+                            ),
+                            '<a href="' . $get_wpay_url . '" target="_blank" rel="noopener noreferrer">',
+                            '</a>'
+                        ),
+                    )
+                );
+                wp_enqueue_style( 'wwp_wpay_suggestion_install_notice', WWP_CSS_URL . 'backend/wwp-show-wpay-suggestions-on-woo-settings.css', array(), $this->_wwp_current_version, 'all' );
+            }
+
             // New Settings notice. Notice shows up on every page in the backend unless the message is dismissed.
             if ( 'yes' !== get_option( 'wwp_admin_notice_new_settings_hide' ) ) {
                 wp_enqueue_script( 'wwp_new_settings_notice_js', WWP_JS_URL . 'backend/wwp-new-settings-notice.js', array( 'jquery' ), $this->_wwp_current_version, true );
@@ -366,7 +391,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
              */
             // Load script if premium add on isn't present.
             if (
-                strpos( $screen->id, 'wwpp-wholesale-roles-page' ) !== false &&
+                str_contains( $screen->id, 'wwpp-wholesale-roles-page' ) &&
                 ! WWP_Helper_Functions::is_wwpp_active()
             ) {
 
@@ -418,10 +443,21 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
              */
             // Load script if premium add on isn't present.
             if (
-                strpos( $screen->id, 'wwp-lead-capture-page' ) !== false &&
+                str_contains( $screen->id, 'wwp-lead-capture-page' ) &&
                 ! WWP_Helper_Functions::is_wwlc_active()
             ) {
                 wp_enqueue_style( 'wwp_lead_capture_page_css', WWP_CSS_URL . 'wwp-lead-capture.css', array(), $this->_wwp_current_version, 'all' );
+            }
+
+            /**
+             * Wholesale Quotes Page
+             */
+            // Load script if premium add on isn't present.
+            if (
+                str_contains( $screen->id, 'wwp-wholesale-quotes-page' ) &&
+                ! WWP_Helper_Functions::is_wwq_active()
+            ) {
+                wp_enqueue_style( 'wwp_wholesale_quotes_page_css', WWP_CSS_URL . 'wwp-wholesale-quotes.css', array(), $this->_wwp_current_version, 'all' );
             }
 
             /**
@@ -429,7 +465,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
              */
             // Load script if order form add on isn't present.
             if (
-                strpos( $screen->id, 'order-forms' ) !== false &&
+                str_contains( $screen->id, 'order-forms' ) &&
                 ! WWP_Helper_Functions::is_wwof_active()
             ) {
                 wp_enqueue_style( 'wwp_order_form_page_css', WWP_CSS_URL . 'wwp-order-form.css', array(), $this->_wwp_current_version, 'all' );
@@ -438,14 +474,14 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
             /**
              * Help Page
              */
-            if ( strpos( $screen->id, 'wws-help-page' ) !== false ) {
+            if ( str_contains( $screen->id, 'wws-help-page' ) ) {
                 wp_enqueue_style( 'wwp_help_page_css', WWP_CSS_URL . 'wwp-help-page.css', array(), $this->_wwp_current_version, 'all' );
             }
 
             /***********************************************************************************************************
              * About Page
              */
-            if ( strpos( $screen->id, 'wws-about-page' ) !== false ) {
+            if ( str_contains( $screen->id, 'wws-about-page' ) ) {
                 wp_enqueue_style( 'wwp_about_page_css', WWP_CSS_URL . 'wwp-about-page.css', array(), $this->_wwp_current_version, 'all' );
                 wp_enqueue_script( 'wwp_about_page_js', WWP_JS_URL . 'backend/wwp-about-page.js', array( 'jquery' ), $this->_wwp_current_version, true );
                 wp_localize_script(
@@ -462,7 +498,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
             /**
              * Wholesale Payments Education page.
              */
-            if ( strpos( $screen->id, 'wholesale-payments' ) !== false ) {
+            if ( str_contains( $screen->id, 'wholesale-payments' ) ) {
                 wp_enqueue_style(
                     'wwp_wholesale_payments_css',
                     WWP_CSS_URL . 'wwp-wholesale-payments-page.css',
@@ -476,7 +512,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
              * Advanced Coupons Page
              */
             // Load script if ACFW is not present. Test if Advanced Coupon plugin is not installed or if it is, check if it's not active.
-            if ( strpos( $screen->id, 'marketing_page_advanced-coupons-marketing' ) !== false &&
+            if ( str_contains( $screen->id, 'marketing_page_advanced-coupons-marketing' ) &&
                 (
                     ! WWP_Helper_Functions::is_acfwf_installed() ||
                     ( WWP_Helper_Functions::is_acfwf_installed() && ! WWP_Helper_Functions::is_acfwf_active() )
@@ -488,7 +524,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
             /**
              * Upgrade To Premium Page
              */
-            if ( strpos( $screen->id, 'upgrade-to-premium-page' ) !== false &&
+            if ( str_contains( $screen->id, 'upgrade-to-premium-page' ) &&
                 (
                     ! WWP_Helper_Functions::is_wwp_installed() ||
                     ( WWP_Helper_Functions::is_wwp_installed() && ! WWP_Helper_Functions::is_wwpp_active() )
@@ -506,11 +542,37 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
             }
 
             /**
+             * Wholesale Reports teaser landing page.
+             *
+             * Loaded only when WWPP is inactive — when WWPP is active, the
+             * 'wholesale-reports' callback redirects to WWPP's own page so the
+             * teaser screen never renders.
+             */
+            if ( 'wholesale_page_wholesale-reports' === $screen->id &&
+                ! WWP_Helper_Functions::is_wwpp_active()
+            ) {
+                wp_enqueue_style(
+                    'wwp_reports_teaser_css',
+                    WWP_CSS_URL . 'wwp-reports-teaser.css',
+                    array(),
+                    $this->_wwp_current_version,
+                    'all'
+                );
+                wp_enqueue_script(
+                    'wwp_reports_teaser_js',
+                    WWP_JS_URL . 'backend/wwp-reports-teaser.js',
+                    array(),
+                    $this->_wwp_current_version,
+                    true
+                );
+            }
+
+            /**
              * WWP Settings
              */
             if (
                 ! WWP_Helper_Functions::is_wwpp_active() &&
-                isset( $_GET['tab'] ) && 'wwp_settings' === $_GET['tab'] // phpcs:ignore
+                isset( $_GET['tab'] ) && 'wwp_settings' === sanitize_key( wp_unslash( $_GET['tab'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             ) {
 
                 // Queue up stuff that is used on all tabs.
@@ -523,8 +585,8 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
                 wp_enqueue_style( 'wwp-free-training-guide-css', WWP_CSS_URL . 'backend/wwp-free-training-guide.css', array(), $this->_wwp_current_version, 'all' );
 
                 // Handle each section of the settings (General, Price, Tax, Upgrade).
-                if ( isset( $_GET['section'] ) && '' !== $_GET['section'] ) { // phpcs:ignore
-                    switch ( $_GET['section'] ) { // phpcs:ignore
+                if ( isset( $_GET['section'] ) && '' !== $_GET['section'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                    switch ( sanitize_key( wp_unslash( $_GET['section'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                         case 'wwpp_setting_price_section':
                             wp_enqueue_script( 'wwp-price-settings', WWP_JS_URL . 'backend/wwp-price-setting.js', array( 'select2' ), $this->_wwp_current_version, true );
                             wp_localize_script(
@@ -615,8 +677,8 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
                     // General page.
                     wp_enqueue_style( 'wwp-general-css', WWP_CSS_URL . 'wwp-general-settings.css', array(), $this->_wwp_current_version, 'all' );
                 }
-            } elseif ( isset( $_GET['section'] ) ) { // phpcs:ignore
-                switch ( $_GET['section'] ) { // phpcs:ignore
+            } elseif ( isset( $_GET['section'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                switch ( sanitize_key( wp_unslash( $_GET['section'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                     case 'wwpp_setting_price_section':
                         $this->load_wwp_prices_settings_for_non_wholesale_users_styles_and_scripts();
                         break;
@@ -962,7 +1024,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
          * @since 2.1.2
          */
         public function wchome_wws_upgrade_to_premium() {
-            if ( isset( $_GET['page'] ) && 'wchome-wws-upgrade' === $_GET['page'] ) { // phpcs:ignore
+            if ( isset( $_GET['page'] ) && 'wchome-wws-upgrade' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 wp_safe_redirect( esc_url_raw( WWP_Helper_Functions::get_utm_url( 'bundle', 'wwp', 'upsell', 'wchomeupgradelink' ) ) );
                 exit;
             }
@@ -987,7 +1049,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
          * @access public
          */
         public function load_wws_license_upsell_upgrade_to_premium_styles_and_scripts() {
-            if ( isset( $_GET['page'] ) && $_GET['page'] == 'wws-license-settings' ) { // phpcs:ignore
+            if ( isset( $_GET['page'] ) && 'wws-license-settings' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                 wp_enqueue_style( 'wws-wwp-license-upsell-upgrade-css', WWP_CSS_URL . 'backend/wwp-license-upsell-upgrade.css', array(), $this->_wwp_current_version, 'all' );
             }
         }
@@ -1014,9 +1076,26 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
         }
 
         /**
+         * Check whether the current admin screen is a wholesale-related screen.
+         *
+         * Gates admin-bar menu injection and WPay pointer enqueueing so they
+         * only fire on screens whose id contains "wholesale".
+         *
+         * @since 2.2.8
+         *
+         * @return bool True when on a wholesale admin screen, false otherwise.
+         */
+        private function is_wholesale_admin_screen() {
+            $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+            return $screen && str_contains( $screen->id, 'wholesale' );
+        }
+
+        /**
          * Add WWP menu in admin bar
          *
          * @since 2.2.1
+         * @since 2.2.8 Extracted screen-id check into is_wholesale_admin_screen() helper.
          * @access public
          *
          * @param WP_Admin_Bar $wp_admin_bar WP_Admin_Bar instance.
@@ -1026,10 +1105,7 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
 				return;
 			}
 
-            // Get the current screen object.
-            $current_screen = get_current_screen();
-
-            if ( strpos( $current_screen->id, 'wholesale' ) !== false && ! WWP_Helper_Functions::is_wpay_active() ) {
+            if ( $this->is_wholesale_admin_screen() && ! WWP_Helper_Functions::is_wpay_active() ) {
                 $default_roles = array( 'administrator' );
                 $saved_roles   = (array) get_option( 'wwp_roles_allowed_dashboard_access', array() );
 
@@ -1074,77 +1150,99 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
         }
 
         /**
-         * Enqueue wpay pointer
+         * Enqueue wpay pointer scripts and styles.
          *
          * @since 2.1.3
+         * @since 2.2.8 Enqueue external JS file with localized nonce and gate by wholesale admin screens.
+         *
          * @access public
          */
         public function enqueue_wpay_pointer() {
-            if ( ! WWP_Helper_Functions::is_wpay_active() && $this->load_wwp_pointer() ) {
-                wp_enqueue_script( 'wp-pointer' );
-			    wp_enqueue_style( 'wp-pointer' );
-
-                wp_enqueue_style( 'wwp_admin_pointer_css', WWP_CSS_URL . 'wwp-admin-pointer.css', array(), $this->_wwp_current_version, 'all' );
+            if ( ! $this->is_wholesale_admin_screen() ) {
+                return;
             }
+
+            if ( WWP_Helper_Functions::is_wpay_active() || ! $this->load_wwp_pointer() ) {
+                return;
+            }
+
+            wp_enqueue_script( 'wp-pointer' );
+            wp_enqueue_style( 'wp-pointer' );
+
+            wp_enqueue_style( 'wwp_admin_pointer_css', WWP_CSS_URL . 'wwp-admin-pointer.css', array(), $this->_wwp_current_version, 'all' );
+
+            wp_enqueue_script( 'wwp_wpay_pointer_js', WWP_JS_URL . 'backend/wwp-wpay-pointer.js', array( 'jquery', 'wp-pointer', 'wp-i18n' ), $this->_wwp_current_version, true );
+            wp_localize_script(
+                'wwp_wpay_pointer_js',
+                'wwp_wpay_pointer_params',
+                array(
+                    'nonce'            => wp_create_nonce( 'wp_wpay_toolbar_dismiss_notice' ),
+                    'title'            => esc_html__( 'Setup Wholesale Payments (Recommended)', 'woocommerce-wholesale-prices' ),
+                    'description'      => esc_html__( 'Use Wholesale Suite Wholesale Payments plugin to create NET 30, 60, or any other invoice payment plan you can think of for your wholesale customers.', 'woocommerce-wholesale-prices' ),
+                    'features'         => array(
+                        esc_html__( 'Turn WooCommerce orders into Stripe Invoices with NET payment terms', 'woocommerce-wholesale-prices' ),
+                        esc_html__( 'Add a new "Wholesale Invoice" gateway', 'woocommerce-wholesale-prices' ),
+                        esc_html__( 'Restrict to certain wholesale roles or even certain customers only', 'woocommerce-wholesale-prices' ),
+                        esc_html__( 'Create any kind of delayed payment plan (eg. NET 30, NET 60, % deposits, ...)', 'woocommerce-wholesale-prices' ),
+                        esc_html__( 'Expert worldwide support', 'woocommerce-wholesale-prices' ),
+                    ),
+                    'learn_more_url'   => esc_url( WWP_Helper_Functions::get_utm_url( 'woocommerce-wholesale-payments', 'wwp', 'upsell', 'upgradepagewpaylearnmore' ) ),
+                    'learn_more_label' => esc_html__( 'Get Wholesale Payments', 'woocommerce-wholesale-prices' ),
+                )
+            );
         }
 
         /**
-         * Load script for wpay pointer
+         * Save a dismissed notification key to user meta.
          *
-         * @since 2.1.3
-         * @access public
+         * Appends the given key to the user's `_wws_notifications_close` meta array
+         * so the notification does not reappear.
+         *
+         * @since 2.2.8
+         * @access private
+         *
+         * @param int    $user_id    The user ID.
+         * @param string $notice_key The notification key to dismiss.
          */
-        public function load_wpay_pointer() {
-            // Check if wpay is not active.
-            if ( ! WWP_Helper_Functions::is_wpay_active() && $this->load_wwp_pointer() ) {
-                ?>
-                <script>
-                    jQuery(document).ready(function ($) {
-                        const wpayToolBarHTML = '<h3><?php esc_html_e( 'Setup Wholesale Payments (Recommended)', 'woocommerce-wholesale-prices' ); ?></h3><p><?php esc_html_e( 'Use Wholesale Suite Wholesale Payments plugin to create NET 30, 60, or any other invoice payment plan you can think of for your wholesale customers.', 'woocommerce-wholesale-prices' ); ?></p><ul><li> <?php echo esc_html__( 'Turn WooCommerce orders into Stripe Invoices with NET payment terms', 'woocommerce-wholesale-prices' ); ?> </li><li><?php echo esc_html__( 'Add a new "Wholesale Invoice" gateway', 'woocommerce-wholesale-prices' ); ?> </li><li><?php echo esc_html__( 'Restrict to certain wholesale roles or even certain customers only', 'woocommerce-wholesale-prices' ); ?></li><li><?php echo esc_html__( 'Create any kind of delayed payment plan (eg. NET 30, NET 60, % deposits, ...)', 'woocommerce-wholesale-prices' ); ?></li><li><?php echo esc_html__( 'Expert worldwide support', 'woocommerce-wholesale-prices' ); ?></li></ul><a href="<?php echo esc_url( WWP_Helper_Functions::get_utm_url( 'woocommerce-wholesale-payments', 'wwp', 'upsell', 'upgradepagewpaylearnmore' ) ); ?>" target="_blank" class="button button-primary"><span><?php echo esc_html__( 'Get Wholesale Payments' ); ?></span></a>';
+        private function save_dismissed_notification( $user_id, $notice_key ) {
+            $userdata   = get_user_meta( $user_id, '_wws_notifications_close', true );
+            $userdata   = empty( $userdata ) || ! is_array( $userdata ) ? array() : $userdata;
+            $userdata[] = $notice_key;
 
-                        $('#wp-admin-bar-wpay_toolbar').pointer({
-                            "content": wpayToolBarHTML,
-                            "buttons": function (event, t) {
-                                var redirectUrl = '<?php echo( admin_url( 'admin-ajax.php?action=wpay_toolbar_dismiss_notice&nkey=wpay-menu-bar-button&nonce=' . wp_create_nonce( 'wp_wpay_toolbar_dismiss_notice' ) . '&redirect=' . basename( $_SERVER['REQUEST_URI'] ) ) ); //phpcs:ignore ?>';
-                                var button = $('<a class="close" href="' + redirectUrl + '"></a>').text(wp.i18n.__('Dismiss Forever'));
-
-                                return button.on('click.pointer', function (e) {
-                                    e.preventDefault();
-                                    jQuery('#wp-admin-bar-wpay_toolbar').remove();
-                                    window.location.href = redirectUrl;
-                                    t.element.pointer('close');
-                                });
-                            },
-                            "position": {"edge": "top", "align": "center"},
-                            "pointerClass": "wpay-bar-tooltip",
-                            "pointerWidth": 350,
-                        }).pointer('open');
-                    });
-                </script>
-                <?php
-            }
+            update_user_meta( $user_id, '_wws_notifications_close', array_values( array_unique( $userdata ) ) );
         }
 
         /**
-         * Dismiss admin notice
+         * Dismiss admin notice via AJAX.
+         *
+         * Saves the notification key to user meta so the notice does not reappear.
          *
          * @since 2.1.3
+         * @since 2.2.8 Converted to proper AJAX JSON response instead of redirect. Added capability check and allowlisted keys.
+         *
          * @access public
          */
         public function ajax_dismiss_admin_notice() {
-            $notice_key = isset( $_REQUEST['nkey'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['nkey'] ) ) : ''; // phpcs:ignore
+            if ( ! WWP_Helper_Functions::verify_ajax_nonce( 'wp_wpay_toolbar_dismiss_notice' ) ) {
+                wp_send_json_error( array( 'message' => __( 'Invalid nonce.', 'woocommerce-wholesale-prices' ) ) );
+                return;
+            }
 
-			if ( defined( 'DOING_AJAX' ) && DOING_AJAX && current_user_can( 'manage_options' ) && $notice_key && isset( $_REQUEST['nonce'] ) && false !== check_ajax_referer( 'wp_wpay_toolbar_dismiss_notice', 'nonce', false ) ) {
-				$userdata   = get_user_meta( get_current_user_id(), '_wws_notifications_close', true );
-				$userdata   = empty( $userdata ) && ! is_array( $userdata ) ? array() : $userdata;
-				$userdata[] = $notice_key;
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'woocommerce-wholesale-prices' ) ) );
+                return;
+            }
 
-				update_user_meta( get_current_user_id(), '_wws_notifications_close', array_values( array_unique( $userdata ) ) );
-			}
-			$redirect     = isset( $_REQUEST['redirect'] ) ? esc_url_raw( wp_unslash( $_REQUEST['redirect'] ) ) : null;
-			$redirect_url = $redirect && strpos( $redirect, '.php' ) ? admin_url( $redirect ) : null;
-			wp_safe_redirect( $redirect_url ?? admin_url( 'admin.php?page=wholesale-suite' ) );
-			exit;
+            $allowed_keys = array( 'wpay-menu-bar-button', 'wpay-wc-settings-banner' );
+            $notice_key   = isset( $_POST['nkey'] ) ? sanitize_text_field( wp_unslash( $_POST['nkey'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_ajax_nonce() above.
+            if ( ! in_array( $notice_key, $allowed_keys, true ) ) {
+                wp_send_json_error( array( 'message' => __( 'Invalid notice key.', 'woocommerce-wholesale-prices' ) ) );
+                return;
+            }
+
+            $this->save_dismissed_notification( get_current_user_id(), $notice_key );
+
+            wp_send_json_success();
         }
 
         /**
@@ -1172,7 +1270,6 @@ if ( ! class_exists( 'WWP_Script_Loader' ) ) {
             add_action( 'admin_enqueue_scripts', array( $this, 'load_wws_license_upsell_upgrade_to_premium_styles_and_scripts' ), 10 );
             add_action( 'admin_bar_menu', array( $this, 'add_wwp_menu_in_admin_bar' ), 99 );
             add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_wpay_pointer' ), 10 );
-            add_action( 'admin_print_footer_scripts', array( $this, 'load_wpay_pointer' ), 10 );
             add_action( 'wp_ajax_wpay_toolbar_dismiss_notice', array( $this, 'ajax_dismiss_admin_notice' ) );
 
             register_activation_hook( WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'woocommerce-wholesale-prices' . DIRECTORY_SEPARATOR . 'woocommerce-wholesale-prices.bootstrap.php', array( $this, 'wwp_activate' ) );

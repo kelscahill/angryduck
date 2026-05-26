@@ -10,14 +10,12 @@
 namespace Automattic\WCShipping\Checkout;
 
 use Automattic\WCShipping\Connect\WC_Connect_Options;
-use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
 use Automattic\WCShipping\LabelPurchase\AddressNormalizationService;
 use Automattic\WCShipping\Logger;
 use Automattic\WCShipping\StoreApi\StoreApiExtendSchema;
 use Automattic\WCShipping\Utilities\AddressUtils;
 use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
 use Automattic\WooCommerce\StoreApi\Utilities\CartController;
-use Automattic\WooCommerce\StoreApi\Utilities\ValidationUtils;
 use WC_Cart;
 use WC_Customer;
 use WP_Error;
@@ -28,6 +26,12 @@ defined( 'ABSPATH' ) || exit;
  * Class CheckoutService
  */
 class CheckoutService {
+	/**
+	 * The session variable key for destination address normalization status.
+	 *
+	 * @var string
+	 */
+	const IS_DESTINATION_NORMALIZED_VAR = 'wcshipping_is_destination_normalized';
 
 	/**
 	 * The address normalization service.
@@ -37,21 +41,12 @@ class CheckoutService {
 	private AddressNormalizationService $address_normalization_service;
 
 	/**
-	 * The settings store.
-	 *
-	 * @var WC_Connect_Service_Settings_Store
-	 */
-	private WC_Connect_Service_Settings_Store $settings_store;
-
-	/**
 	 * CheckoutService constructor.
 	 *
-	 * @param AddressNormalizationService       $address_normalization_service The address normalization service.
-	 * @param WC_Connect_Service_Settings_Store $settings_store The settings store.
+	 * @param AddressNormalizationService $address_normalization_service The address normalization service.
 	 */
-	public function __construct( AddressNormalizationService $address_normalization_service, WC_Connect_Service_Settings_Store $settings_store ) {
+	public function __construct( AddressNormalizationService $address_normalization_service ) {
 		$this->address_normalization_service = $address_normalization_service;
-		$this->settings_store                = $settings_store;
 	}
 
 	/**
@@ -261,7 +256,7 @@ class CheckoutService {
 			return;
 		}
 
-		WC()->session->set( $this->settings_store::IS_DESTINATION_NORMALIZED_KEY, $value );
+		WC()->session->set( self::IS_DESTINATION_NORMALIZED_VAR, $value );
 	}
 
 	/**
@@ -274,7 +269,7 @@ class CheckoutService {
 			return false;
 		}
 
-		return WC()->session->get( $this->settings_store::IS_DESTINATION_NORMALIZED_KEY ) ?? false;
+		return WC()->session->get( self::IS_DESTINATION_NORMALIZED_VAR ) ?? false;
 	}
 
 	/**

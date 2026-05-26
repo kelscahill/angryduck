@@ -160,7 +160,10 @@ export const OriginAddressList = () => {
 											)
 										}
 										disabled={
-											address.defaultAddress ||
+											Boolean( address.defaultAddress ) ||
+											Boolean(
+												address.defaultReturnAddress
+											) ||
 											addresses.length === 1
 										}
 									>
@@ -169,7 +172,10 @@ export const OriginAddressList = () => {
 											'woocommerce-shipping'
 										) }
 									</Button>
-									{ ( address.defaultAddress ||
+									{ ( Boolean( address.defaultAddress ) ||
+										Boolean(
+											address.defaultReturnAddress
+										) ||
 										addresses.length === 1 ) && (
 										<div className="origin-address-list-item__action-tooltip">
 											<ControlledPopover
@@ -178,7 +184,7 @@ export const OriginAddressList = () => {
 											>
 												<span className="tooltip-content">
 													{ __(
-														'The default origin address cannot be deleted.',
+														'Default addresses cannot be deleted.',
 														'woocommerce-shipping'
 													) }
 												</span>
@@ -186,6 +192,7 @@ export const OriginAddressList = () => {
 										</div>
 									) }
 									{ ! address.defaultAddress &&
+										! address.defaultReturnAddress &&
 										addresses.length !== 1 && (
 											<div className="origin-address-list-item__action-spacer">
 												&nbsp;

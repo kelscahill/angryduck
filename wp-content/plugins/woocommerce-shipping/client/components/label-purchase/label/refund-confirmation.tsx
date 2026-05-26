@@ -1,11 +1,13 @@
 import React from 'react';
 import { useState } from '@wordpress/element';
 import { dateI18n } from '@wordpress/date';
+import { dispatch } from '@wordpress/data';
 import { __, sprintf } from '@wordpress/i18n';
 import { ConfirmModal } from 'components/confirm-modal';
 import { Notice } from '@wordpress/components';
 import { getRefundDuration } from 'utils';
 import { useLabelPurchaseContext } from 'context/label-purchase';
+import { labelPurchaseStore } from 'data/label-purchase';
 
 interface RefundConfirmationProps {
 	close: () => void;
@@ -19,7 +21,7 @@ export const RefundConfirmation = ( { close }: RefundConfirmationProps ) => {
 			refundLabel,
 			isRefunding,
 		},
-		rates: { removeSelectedRate },
+		rates: { removeSelectedRate, setErrors },
 		shipment: { resetShipmentAndSelection },
 		storeCurrency: { formatAmount },
 	} = useLabelPurchaseContext();
@@ -32,6 +34,11 @@ export const RefundConfirmation = ( { close }: RefundConfirmationProps ) => {
 		try {
 			await refundLabel();
 			removeSelectedRate();
+			// Drop cached rates so the next purchase doesn't reuse the
+			// shipment_id baked into the pre-refund rate objects, which
+			// Connect rejects as a re-purchase attempt.
+			dispatch( labelPurchaseStore ).ratesReset();
+			setErrors( ( prev ) => ( { ...prev, endpoint: null } ) );
 			if ( ! hasMissingPurchase() ) {
 				resetShipmentAndSelection();
 			}

@@ -9,7 +9,6 @@ import {
 	Rate,
 	RequestAddress,
 	ShipmentRecord,
-	UPSDAPStrategy,
 	SelectedRates,
 } from 'types';
 import { getPreparedDestination } from '../address/selectors';
@@ -37,9 +36,6 @@ export interface LabelPurchaseState extends object {
 	order?: {
 		status?: string;
 		error?: string;
-	};
-	carrierStrategies: {
-		upsdap: UPSDAPStrategy;
 	};
 	selectedRateOptions: ShipmentRecord< RateExtraOptions >;
 }

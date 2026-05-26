@@ -10,6 +10,8 @@
 namespace Automattic\WCShipping;
 
 use Automattic\WCShipping\Connect\WC_Connect_Jetpack;
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
+use Automattic\WCShipping\Connect\WC_Connect_Options;
 
 /**
  * Automattic\WCShipping utils class.
@@ -96,6 +98,24 @@ class Utils {
 	}
 
 	/**
+	 * Filter out dev-only dependencies that are injected by build tools during HMR
+	 * but are not registered as WordPress script handles.
+	 *
+	 * @param array $dependencies The dependencies array from an asset.php file.
+	 * @return array Filtered dependencies.
+	 */
+	public static function filter_dev_dependencies( array $dependencies ): array {
+		return array_values(
+			array_filter(
+				$dependencies,
+				static function ( $dep ) {
+					return 'wp-react-refresh-runtime' !== $dep;
+				}
+			)
+		);
+	}
+
+	/**
 	 * Get the plugin directory path.
 	 * This is a helper function to get the plugin directory path for either the main plugin or the WooCommerce plugin.
 	 *
@@ -154,5 +174,70 @@ class Utils {
 		}
 
 		return self::get_wcshipping_version();
+	}
+
+	/**
+	 * Whether to use the fulfillment API.
+	 * This checks a database option and can be filtered.
+	 *
+	 * @return bool
+	 */
+	public static function should_use_fulfillment_api(): bool {
+		$use_fulfillment_api = WC_Connect_Options::get_option( 'use_fulfillment_api' );
+		return apply_filters( 'wcshipping_should_use_fulfillment_api', (bool) $use_fulfillment_api );
+	}
+
+	/**
+	 * Get the base tracking URL for a carrier based on their ID.
+	 *
+	 * @param string $carrier_id Carrier ID (e.g., 'ups', 'usps', 'fedex', 'dhlexpress').
+	 * @return string The base tracking URL (without tracking number), or empty string if carrier is unknown.
+	 */
+	public static function get_carrier_tracking_url( string $carrier_id ): string {
+		$tracking_urls = array(
+			'ups'        => 'https://www.ups.com/track?loc=en_US&tracknum=',
+			'upsdap'     => 'https://www.ups.com/track?loc=en_US&tracknum=',
+			'usps'       => 'https://tools.usps.com/go/TrackConfirmAction.action?tLabels=',
+			'fedex'      => 'https://www.fedex.com/apps/fedextrack/?action=track&tracknumbers=',
+			'dhlexpress' => 'https://www.dhl.com/en/express/tracking.html?brand=DHL&AWB=',
+		);
+
+		return $tracking_urls[ $carrier_id ] ?? '';
+	}
+
+	/**
+	 * Get the complete tracking URL for a shipment.
+	 *
+	 * @param string $carrier_id Carrier ID (e.g., 'ups', 'usps', 'fedex', 'dhlexpress').
+	 * @param string $tracking_number The tracking number.
+	 * @return string The complete tracking URL, or empty string if carrier is unknown.
+	 */
+	public static function get_tracking_url( string $carrier_id, string $tracking_number ): string {
+		$base_url = self::get_carrier_tracking_url( $carrier_id );
+
+		if ( empty( $base_url ) ) {
+			return '';
+		}
+
+		return $base_url . $tracking_number;
+	}
+
+	/**
+	 * Checks if we're on an orders screen (HPOS or Classic), including list and edit pages.
+	 *
+	 * @return bool True if on orders screen, false otherwise.
+	 */
+	public static function is_orders_screen(): bool {
+		$screen = get_current_screen();
+
+		if ( ! $screen ) {
+			return false;
+		}
+
+		return in_array( $screen->id, array( 'woocommerce_page_wc-orders', 'edit-shop_order', 'shop_order' ), true );
+	}
+
+	public static function is_next(): bool {
+		return defined( 'NEXT_ADMIN_PLUGIN_DIR' );
 	}
 }

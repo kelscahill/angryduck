@@ -320,7 +320,7 @@ class WWOF {
             'appUser'        => $app_user,
             'userFavourites' => self::get_favourite_products(),
             'wholesaleRoles' => array_keys( $wholesale_roles ),
-            'i18n'           => require WWOF_PLUGIN_DIR_PATH . 'includes/I18n/order-form.php',
+            'myAccountUrl'   => esc_url( wc_get_page_permalink( 'myaccount' ) ),
         );
 
         $constant_properties = array_merge(
@@ -355,6 +355,7 @@ class WWOF {
                     'attributes',
                     'backorders',
                     'categories',
+                    'tags',
                     'default_attributes',
                     'id',
                     'images',
@@ -372,11 +373,14 @@ class WWOF {
                     'product_variations',
                     'short_description',
                     'sku',
+                    'global_unique_id',
                     'stock_quantity',
                     'stock_status',
                     'type',
                     'variations',
                     'wholesale_data',
+                    'weight',
+                    'dimensions',
                 ),
                 'thirdPartyPlugins' => array(),
             )

@@ -10,4 +10,5 @@ export const BLANK_ORIGIN_ADDRESS = {
 	postcode: '',
 	country: '',
 	defaultAddress: true,
+	defaultReturnAddress: false,
 };

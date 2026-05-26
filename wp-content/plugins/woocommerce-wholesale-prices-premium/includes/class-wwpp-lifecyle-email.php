@@ -1082,15 +1082,13 @@ if ( ! class_exists( 'WWPP_Lifecycle_EMAIL' ) ) {
          * @return void
          */
         public function wwpp_event_schedule() {
-            if ( ! wp_next_scheduled( 'wwpp_daily_event' ) ) {
-                // Schedule the event to run daily at 00:00 (midnight).
-                wp_schedule_event( strtotime( 'midnight' ), 'daily', 'wwpp_daily_event' );
+            if ( ! as_next_scheduled_action( 'wwpp_daily_event' ) ) {
+                as_schedule_recurring_action( strtotime( 'midnight' ), DAY_IN_SECONDS, 'wwpp_daily_event' ); // run daily.
             }
 
-            if ( ! wp_next_scheduled( 'wwpp_monthly_event' ) ) {
-                // Schedule the event on the first of the next month at 00:00.
+            if ( ! as_next_scheduled_action( 'wwpp_monthly_event' ) ) {
                 $first_day_next_month = strtotime( 'last day of this month 23:59:59' );
-                wp_schedule_event( $first_day_next_month, 'monthly', 'wwpp_monthly_event' );
+                as_schedule_recurring_action( $first_day_next_month, MONTH_IN_SECONDS, 'wwpp_monthly_event' ); // run monthly.
             }
         }
 
@@ -1125,14 +1123,12 @@ if ( ! class_exists( 'WWPP_Lifecycle_EMAIL' ) ) {
          * @return void
          */
         public function wwpp_clear_event() {
-            $daily_timestamp = wp_next_scheduled( 'wwpp_daily_event' );
-            if ( $daily_timestamp ) {
-                wp_unschedule_event( $daily_timestamp, 'wwpp_daily_event' );
+            if ( as_next_scheduled_action( 'wwpp_monthly_event' ) ) {
+                as_unschedule_all_actions( 'wwpp_monthly_event' );
             }
 
-            $monthly_timestamp = wp_next_scheduled( 'wwpp_monthly_event' );
-            if ( $monthly_timestamp ) {
-                wp_unschedule_event( $monthly_timestamp, 'wwpp_monthly_event' );
+            if ( as_next_scheduled_action( 'wwpp_daily_event' ) ) {
+                as_unschedule_all_actions( 'wwpp_daily_event' );
             }
         }
 
@@ -1257,7 +1253,7 @@ if ( ! class_exists( 'WWPP_Lifecycle_EMAIL' ) ) {
         public function run() {
             // Schedule event.
             add_filter( 'cron_schedules', array( $this, 'cron_schedules' ) );
-            add_action( 'wp', array( $this, 'wwpp_event_schedule' ) );
+            add_action( 'init', array( $this, 'wwpp_event_schedule' ) );
             add_action( 'wwpp_daily_event', array( $this, 'daily_event' ) );
             add_action( 'wwpp_monthly_event', array( $this, 'monthly_event' ) );
 

@@ -137,4 +137,20 @@
         </div>
     </div>
 
+    <!-- SaveTo Wishlist Lite for WooCommerce -->
+    <div class="row-container two-columns">
+        <div class="left-box">
+            <div class="desc">
+                <div class="page-title"><img id="save-to-wishlist-lite-for-woocommerce-logo" src="<?php echo esc_url( WWP_Helper_Functions::get_wp_org_plugin_icon_url( 'saveto-wishlist-lite-for-woocommerce' ) ); ?>" alt="<?php esc_attr_e( 'SaveTo Wishlist Lite for WooCommerce', 'woocommerce-wholesale-prices' ); ?>" width="36" />&nbsp;<?php esc_html_e( 'SaveTo Wishlist Lite for WooCommerce (Free Plugin)', 'woocommerce-wholesale-prices' ); ?></div>
+                <p><?php esc_html_e( 'A simple, powerful WooCommerce wishlist plugin to help customers save products they love and buy later.', 'woocommerce-wholesale-prices' ); ?></p>
+            </div>
+            <div class="save-to-wishlist-lite-for-woocommerce-installed check-installed">
+                <span><strong><?php esc_html_e( 'Status:', 'woocommerce-wholesale-prices' ); ?></strong>&nbsp;<span class="save-to-wishlist-lite-for-woocommerce-status-text"><?php echo WWP_Helper_Functions::is_save_to_wish_list_for_woocommerce_installed() ? esc_html_e( 'Installed', 'woocommerce-wholesale-prices' ) : esc_html_e( 'Not installed', 'woocommerce-wholesale-prices' ); ?></span></span>
+                <?php if ( ! WWP_Helper_Functions::is_save_to_wish_list_for_woocommerce_installed() ) { ?>
+                <a href="#" data-plugin-slug="saveto-wishlist-lite-for-woocommerce" class="button-green wwp-plugin-install"><?php esc_html_e( 'Install Plugin', 'woocommerce-wholesale-prices' ); ?></a>
+                <?php } ?>
+            </div>
+        </div>
+    </div>
+
 </div>

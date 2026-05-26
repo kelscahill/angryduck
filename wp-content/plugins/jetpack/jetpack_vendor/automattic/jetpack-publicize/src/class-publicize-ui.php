@@ -170,7 +170,7 @@ class Publicize_UI {
 
 		Assets::register_script(
 			'jetpack-social-classic-editor-options',
-			'../build/classic-editor-connections.js',
+			'../build/classic-editor.js',
 			__FILE__,
 			array(
 				'in_footer'  => true,
@@ -189,19 +189,20 @@ class Publicize_UI {
 					'refreshConnections'          => '/wpcom/v2/publicize/connections?test_connections=1',
 					'isReshareSupported'          => Current_Plan::supports( 'republicize' ),
 					'siteType'                    => $site_type,
-				)
+				),
+				JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
 			),
 			'before'
 		);
 
 		$default_prefix = $this->publicize->default_prefix;
-		$default_prefix = preg_replace( '/%([0-9])\$s/', "' + %\\1\$s + '", esc_js( $default_prefix ) );
+		$default_prefix = preg_replace( '/%([0-9])\$s/', '" + %\\1$s + "', wp_json_encode( (string) $default_prefix, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) );
 
 		$default_message = $this->publicize->default_message;
-		$default_message = preg_replace( '/%([0-9])\$s/', "' + %\\1\$s + '", esc_js( $default_message ) );
+		$default_message = preg_replace( '/%([0-9])\$s/', '" + %\\1$s + "', wp_json_encode( (string) $default_message, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) );
 
 		$default_suffix = $this->publicize->default_suffix;
-		$default_suffix = preg_replace( '/%([0-9])\$s/', "' + %\\1\$s + '", esc_js( $default_suffix ) );
+		$default_suffix = preg_replace( '/%([0-9])\$s/', '" + %\\1$s + "', wp_json_encode( (string) $default_suffix, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) );
 
 		$max_length = defined( 'JETPACK_PUBLICIZE_TWITTER_LENGTH' ) ? JETPACK_PUBLICIZE_TWITTER_LENGTH : 280;
 		$max_length = $max_length - 24; // t.co link, space.
@@ -237,7 +238,7 @@ jQuery( function($) {
 	postTitle.on( 'keyup', function( e ) {
 		var url = $( '#sample-permalink' ).text();
 		<?php // phpcs:ignore ?>
-		var defaultMessage = $.trim( '<?php printf( $default_prefix, 'url' ); printf( $default_message, 'e.currentTarget.value', 'url' ); printf( $default_suffix, 'url' ); ?>' )
+		var defaultMessage = $.trim( <?php printf( $default_prefix, 'url' ); ?> + <?php printf( $default_message, 'e.currentTarget.value', 'url' ); ?> + <?php printf( $default_suffix, 'url' ); ?> )
 			.replace( /<[^>]+>/g,'');
 
 		wpasTitle.attr( 'placeholder', defaultMessage );
@@ -328,6 +329,16 @@ jQuery( function($) {
 			fakebox = '<input id="wpas-submit-' + service + '" type="hidden" value="1" name="wpas[submit][' + service + ']" />';
 		$( '#add-publicize-check' ).append( fakebox );
 	} );
+
+	// X Developer Policy forbids posting the same content to more than one
+	// X account. Only one X checkbox may be checked at a time; turning one
+	// on unchecks the others.
+	$( document ).on( 'change', '.wpas-submit-x', function() {
+		if ( ! this.checked ) {
+			return;
+		}
+		$( '.wpas-submit-x' ).not( this ).prop( 'checked', false );
+	} );
 } );
 </script>
 
@@ -399,6 +410,9 @@ jQuery( function($) {
 .publicize__notice-warning .dashicons {
 	font-size: 16px;
 	text-decoration: none;
+}
+.publicize-placeholders-help {
+	margin: 0.5rem 0 1rem;
 }
 </style>
 		<?php
@@ -569,14 +583,36 @@ jQuery( function($) {
 
 		$is_post_published = 'publish' === get_post_status( $post->ID );
 
+		$templates_enabled = Current_Plan::supports( 'social-message-templates' );
+
+		$placeholders = $this->get_message_placeholders();
+
 		?>
 
 			</ul>
 
 			<?php if ( ! $is_social_note ) : ?>
 				<label for="wpas-title"><?php esc_html_e( 'Custom Message:', 'jetpack-publicize-pkg' ); ?></label>
-				<span id="wpas-title-counter" class="alignright hide-if-no-js">0</span>
+				<?php if ( ! $templates_enabled ) : ?>
+					<span id="wpas-title-counter" class="alignright hide-if-no-js">0</span>
+				<?php endif; ?>
 				<textarea name="wpas_title" id="wpas-title"><?php echo esc_textarea( $title ); ?></textarea>
+				<?php if ( $templates_enabled ) : ?>
+					<details class="publicize-placeholders-help">
+						<summary><?php esc_html_e( 'Available placeholders', 'jetpack-publicize-pkg' ); ?></summary>
+						<p>
+							<?php esc_html_e( 'Use placeholders to automatically insert post details.', 'jetpack-publicize-pkg' ); ?>
+						</p>
+						<ul>
+							<?php foreach ( $placeholders as $placeholder ) : ?>
+								<li>
+									<code><?php echo esc_html( $placeholder['token'] ); ?></code>
+									&mdash; <?php echo esc_html( $placeholder['description'] ); ?>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					</details>
+				<?php endif; ?>
 				<a href="#" class="hide-if-no-js button" id="publicize-form-hide"><?php esc_html_e( 'OK', 'jetpack-publicize-pkg' ); ?></a>
 				<input type="hidden" name="wpas[0]" value="1" />
 			<?php endif; ?>
@@ -593,5 +629,65 @@ jQuery( function($) {
 		<?php
 
 		return ob_get_clean();
+	}
+
+	/**
+	 * Get the list of placeholders supported in custom Publicize messages.
+	 *
+	 * TODO: SOCIAL-471 — replace this hardcoded list with a fetch from WPCOM.
+	 *
+	 * @return array<int, array{token: string, description: string}>
+	 */
+	private function get_message_placeholders() {
+		return array(
+			array(
+				'token'       => '{title}',
+				'description' => __( 'Post title', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{excerpt}',
+				'description' => __( 'Post excerpt', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{content}',
+				'description' => __( 'Full post content', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{url}',
+				'description' => __( 'Permalink to the post', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{short_url}',
+				'description' => __( 'Short URL of the post', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{tags}',
+				'description' => __( 'Post tags as hashtags', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{categories}',
+				'description' => __( 'Post categories', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{author}',
+				'description' => __( 'Author display name', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{date}',
+				'description' => __( 'Publication date', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{site_name}',
+				'description' => __( 'Site title', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{site_url}',
+				'description' => __( 'Site URL', 'jetpack-publicize-pkg' ),
+			),
+			array(
+				'token'       => '{meta:<key>}',
+				'description' => __( 'Custom field value', 'jetpack-publicize-pkg' ),
+			),
+		);
 	}
 }

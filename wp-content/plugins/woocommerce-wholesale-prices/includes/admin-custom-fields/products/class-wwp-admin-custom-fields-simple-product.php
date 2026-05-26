@@ -158,6 +158,31 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
                 <div style="clear: both; float: none; display: block;"></div>
             </div>
 
+            <?php if ( is_plugin_active( 'woocommerce-wholesale-prices-premium/woocommerce-wholesale-prices-premium.bootstrap.php' ) ) : ?>
+                <div class="quick_edit_wholesale_prices" style="float: none; clear: both; display: block;">
+                    <div style="height: 1px;"></div><!--To Prevent Heading From Bumping Up-->
+                    <h4><?php esc_html_e( 'Wholesale Sale Price', 'woocommerce-wholesale-prices' ); ?></h4>
+                    <?php
+
+                        foreach ( $all_wholesale_roles as $roleKey => $role ) {
+
+                            $currency_symbol = get_woocommerce_currency_symbol();
+                            if ( array_key_exists( 'currency_symbol', $role ) && ! empty( $role['currency_symbol'] ) ) {
+                                $currency_symbol = $role['currency_symbol'];
+                            }
+
+                            /* translators: %1$s: wholesale role name, %2$s: currency symbol */
+                            $field_title = sprintf( __( '%1$s Price (%2$s)', 'woocommerce-wholesale-prices' ), $role['roleName'], $currency_symbol );
+                            $field_name  = $roleKey . '_wholesale_sale_price';
+
+                            $this->_add_wholesale_price_fields_on_quick_edit_screen( $field_title, $field_name );
+
+                        }
+                    ?>
+                    <div style="clear: both; float: none; display: block;"></div>
+                </div>
+            <?php endif; ?>
+
             <?php
             do_action( 'wwp_after_quick_edit_wholesale_price_fields', $all_wholesale_roles );
         }
@@ -201,7 +226,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
             $product_type          = WWP_Helper_Functions::wwp_get_product_type( $product );
             $allowed_product_types = apply_filters( 'wwp_quick_edit_allowed_product_types', array( 'simple', 'external' ), 'wholesale_price_fields' );
 
-            if ( in_array( $product_type, $allowed_product_types, true ) && wp_verify_nonce( $_REQUEST['woocommerce_quick_edit_nonce'], 'woocommerce_quick_edit_nonce' ) ) {
+            if ( in_array( $product_type, $allowed_product_types, true ) && wp_verify_nonce( $_REQUEST['woocommerce_quick_edit_nonce'], 'woocommerce_quick_edit_nonce' ) ) { //phpcs:ignore
 
                 $aelia_currency_switcher_active = WWP_ACS_Integration_Helper::aelia_currency_switcher_active();
                 $thousand_sep                   = get_option( 'woocommerce_price_thousand_sep' );
@@ -248,6 +273,27 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
                             $has_wholesale_price_key = $roleKey . '_have_wholesale_price';
                             $this->_save_wholesale_price_fields( 'simple', $post_id, $roleKey, $wholesale_price_key, $has_wholesale_price_key, $thousand_sep, $decimal_sep );
 
+                        }
+                    }
+
+                    if ( is_plugin_active( 'woocommerce-wholesale-prices-premium/woocommerce-wholesale-prices-premium.bootstrap.php' ) ) {
+                        // save wholesale_sale_price in post meta of product.
+                        foreach ( $all_wholesale_roles as $roleKey => $role ) {
+
+                            $wholesale_price_key             = $roleKey . '_wholesale_price';
+                            $wholesale_sale_price_key        = $roleKey . '_wholesale_sale_price';
+                            $wholesale_price                 = isset( $_REQUEST[ $wholesale_price_key ] ) ? sanitize_text_field( wp_unslash( $_REQUEST[ $wholesale_price_key ] ) ) : ''; //phpcs:ignore
+                            $wholesale_sale_price            = isset( $_REQUEST[ $wholesale_sale_price_key ] ) ? sanitize_text_field( wp_unslash( $_REQUEST[ $wholesale_sale_price_key ] ) ) : ''; //phpcs:ignore
+                            $check_wholesale_price_existence = isset( $_REQUEST[ $wholesale_price_key ] ) && ! empty( $_REQUEST[ $wholesale_price_key ] ) ? true : false; //phpcs:ignore
+
+                            if ( ! $check_wholesale_price_existence ) { // if corresponding wholesale price is empty, set wholesale sale price to empty as well.
+                                $product->update_meta_data( $wholesale_sale_price_key, '' );
+                                $product->save();
+                            } elseif ( isset( $_REQUEST[ $wholesale_sale_price_key ] ) && $check_wholesale_price_existence && $wholesale_price > $wholesale_sale_price ) { // if wholesale price exist and wholesale sale price also exist and wholesale price should be greater than wholesale sale price, set the wholesale sale price.
+                                $product = wc_get_product( $post_id );
+                                $product->update_meta_data( $wholesale_sale_price_key, $wholesale_sale_price );
+                                $product->save();
+                            }
                         }
                     }
                 }
@@ -326,6 +372,12 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
                             <div id="<?php echo esc_attr( $roleKey ); ?>_wholesale_price" class="whole_price"><?php echo esc_attr( wc_format_localized_price( $product->get_meta( $roleKey . '_wholesale_price', true ) ) ); ?></div>
 
                         <?php
+                        }
+                        // for wholesale sale prices data.
+                        foreach ( $all_wholesale_roles as $roleKey => $role ) {
+                            ?>
+                                <div id="<?php echo esc_attr( $roleKey ); ?>_wholesale_sale_price" class="whole_sale_price"><?php echo esc_attr( wc_format_localized_price( $product->get_meta( $roleKey . '_wholesale_sale_price', true ) ) ); ?></div>
+                            <?php
                         }
                     }
                     ?>
@@ -561,7 +613,6 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
                             </div>
                             <div class="wholesale-prices-field-form-field-container">
                                 <?php
-                                if ( empty( $WOOCS ) && empty( $woocommerce_wpml ) ) {
                                     woocommerce_wp_select(
                                         array(
 											'id'          => $role_key . '_wholesale_discount_type',
@@ -596,7 +647,6 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
 											),
                                         )
                                     );
-                                }
 
                                 woocommerce_wp_text_input(
                                     array(
@@ -691,7 +741,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
             $aelia_currency_switcher_active = WWP_ACS_Integration_Helper::aelia_currency_switcher_active();
 
             // Check the nonce.
-            if ( empty( $_POST['woocommerce_meta_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['woocommerce_meta_nonce'] ), 'woocommerce_save_data' ) ) {
+            if ( empty( $_POST['woocommerce_meta_nonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['woocommerce_meta_nonce'] ), 'woocommerce_save_data' ) ) { //phpcs:ignore
                 return;
             }
 
@@ -765,9 +815,9 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
              * Sanitize and properly format wholesale price.
              * (This also supports comma as decimal separator currency format).
              */
-            $wholesale_discount_type = isset( $_POST[ $has_wholesale_discount_key ] ) ? trim( esc_attr( $_POST[ $has_wholesale_discount_key ] ) ) : '';
+            $wholesale_discount_type = isset( $_POST[ $has_wholesale_discount_key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $has_wholesale_discount_key ] ) ) : ( ! empty( $product->get_meta( $role_key . '_wholesale_percentage_discount', true ) ) ? 'percentage' : '' ); //phpcs:ignore
 
-            $wholesale_price = trim( esc_attr( $_POST[ $wholesale_price_key ] ) );
+            $wholesale_price = sanitize_text_field( wp_unslash( $_POST[ $wholesale_price_key ] ) ); //phpcs:ignore
 
             if ( $thousand_sep ) {
                 $wholesale_price = str_replace( $thousand_sep, '', $wholesale_price );
@@ -793,7 +843,7 @@ if ( ! class_exists( 'WWP_Admin_Custom_Fields_Simple_Product' ) ) {
             $product->update_meta_data( $wholesale_price_key, $wholesale_price );
 
             if ( 'percentage' === $wholesale_discount_type ) {
-                $wholesale_discount = trim( esc_attr( $_POST[ $role_key . '_wholesale_percentage_discount' ] ) );
+                $wholesale_discount = sanitize_text_field( wp_unslash( isset( $_POST[ $role_key . '_wholesale_percentage_discount' ] ) ? $_POST[ $role_key . '_wholesale_percentage_discount' ] : ( ! empty( $product->get_meta( $role_key . '_wholesale_percentage_discount', true ) ) ? $product->get_meta( $role_key . '_wholesale_percentage_discount', true ) : '' ) ) ); //phpcs:ignore
 
                 if ( $decimal_sep ) {
                     $wholesale_discount = str_replace( $decimal_sep, '.', $wholesale_discount );

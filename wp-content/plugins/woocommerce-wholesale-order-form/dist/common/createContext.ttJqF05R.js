@@ -1,0 +1,1 @@
+import{i as o,a2 as s,A as t,b as e,p as n}from"./hooks.C8Kwl4hr.js";function r(r){const a=Symbol("contextKey");return{useProvide:(o,r)=>{const c=e({});return n(a,c),s(()=>{t(c,o,r||{})}),c},useInject:()=>o(a,r)||{}}}export{r as c};

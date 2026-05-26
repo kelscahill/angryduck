@@ -42,6 +42,14 @@ class WWPP_Wholesale_Prices {
      */
     private $_wwpp_tax;
 
+
+    /**
+     * Calculate the cart total before it's needed .
+     *
+     * @var int
+     */
+    public $preload_calculate_cart_total = 0;
+
     /*
     |--------------------------------------------------------------------------
     | Class Methods
@@ -465,7 +473,7 @@ class WWPP_Wholesale_Prices {
 
                     } elseif ( 'percent-price' === $map['price_type'] ) {
 
-                        $price = wc_format_decimal( $wholesale_price - ( ( $map['wholesale_price'] / 100 ) * $wholesale_price ), '' );
+                        $price = wc_format_decimal( $wholesale_price - ( ( (float) $map['wholesale_price'] / 100 ) * $wholesale_price ), '' );
                         $price = WWP_Helper_Functions::wwp_formatted_price( $price );
                         $save  = wc_format_decimal( $map['wholesale_price'], '' ) . '%';
 
@@ -868,7 +876,7 @@ class WWPP_Wholesale_Prices {
                 }
 
                 // Check if price suffix contain including tax tag {price_including_tax}.
-                if ( strpos( $wc_price_suffix, '{price_including_tax}' ) !== false ) {
+                if ( str_contains( $wc_price_suffix, '{price_including_tax}' ) ) {
 
                     // Get formatted wholesale price with tax.
                     $wholesale_price_incl_tax = WWP_Helper_Functions::wwp_formatted_price(
@@ -886,7 +894,7 @@ class WWPP_Wholesale_Prices {
                 }
 
                 // Check if price suffix contain excluding tax tag {price_excluding_tax}.
-                if ( strpos( $wc_price_suffix, '{price_excluding_tax}' ) !== false ) {
+                if ( str_contains( $wc_price_suffix, '{price_excluding_tax}' ) ) {
 
                     // Get formatted wholesale price without tax.
                     $wholesale_price_excl_tax = WWP_Helper_Functions::wwp_formatted_price(
@@ -1081,7 +1089,7 @@ class WWPP_Wholesale_Prices {
             $wholesale_suffix_for_regular_price = $price_suffix_option;
             $has_match                          = false;
 
-            if ( strpos( $wholesale_suffix_for_regular_price, '{price_including_tax}' ) !== false ) {
+            if ( str_contains( $wholesale_suffix_for_regular_price, '{price_including_tax}' ) ) {
 
                 $product_price_incl_tax             = WWP_Helper_Functions::wwp_formatted_price(
                     WWP_Helper_Functions::wwp_get_price_including_tax(
@@ -1097,7 +1105,7 @@ class WWPP_Wholesale_Prices {
 
             }
 
-            if ( strpos( $wholesale_suffix_for_regular_price, '{price_excluding_tax}' ) !== false ) {
+            if ( str_contains( $wholesale_suffix_for_regular_price, '{price_excluding_tax}' ) ) {
 
                 $product_price_excl_tax             = WWP_Helper_Functions::wwp_formatted_price(
                     WWP_Helper_Functions::wwp_get_price_excluding_tax(
@@ -1616,12 +1624,12 @@ class WWPP_Wholesale_Prices {
         $saved_amount_text = get_option( 'wwpp_settings_show_saving_amount_text' );
 
         // Check if setting value contain including tax tag {saved_amount}.
-        if ( strpos( $saved_amount_text, '{saved_amount}' ) !== false ) {
+        if ( str_contains( $saved_amount_text, '{saved_amount}' ) ) {
             $saved_amount_text = str_replace( '{saved_amount}', '<strong>' . wc_price( $saved_amount, array() ) . '</strong>', $saved_amount_text );
         }
 
         // Check if setting value contain excluding tax tag {saved_percentage}.
-        if ( strpos( $saved_amount_text, '{saved_percentage}' ) !== false ) {
+        if ( str_contains( $saved_amount_text, '{saved_percentage}' ) ) {
             $saved_amount_text = str_replace( '{saved_percentage}', '<strong>' . $saved_percentage . '%</strong>', $saved_amount_text );
         }
 
@@ -1955,7 +1963,7 @@ class WWPP_Wholesale_Prices {
                                 break;
                         }
 
-                        if ( strpos( $wc_price_suffix, '{price_including_tax}' ) === false && strpos( $wc_price_suffix, '{price_excluding_tax}' ) === false ) {
+                        if ( ! str_contains( $wc_price_suffix, '{price_including_tax}' ) && ! str_contains( $wc_price_suffix, '{price_excluding_tax}' ) ) {
                             $wsprice = ! empty( $max_wholesale_price_without_taxing ) ? $max_wholesale_price_without_taxing : null;
 
                             if ( ! $return_wholesale_price_only ) {
@@ -2201,6 +2209,7 @@ class WWPP_Wholesale_Prices {
      */
     public function filter_woocommerce_cart_item_price( $price_html, $cart_item, $cart_item_key ) { // phpcs:ignore.
         global $woocommerce;
+        global $wc_wholesale_prices;
 
         $user_wholesale_role = $this->_get_current_user_wholesale_role();
 
@@ -2242,7 +2251,7 @@ class WWPP_Wholesale_Prices {
             }
 
             // Get min conditions to apply wholesale price in cart level.
-            $apply_wholesale_price_cart_level = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $woocommerce->cart->get_cart_total(), $woocommerce->cart, array( $user_wholesale_role ) );
+            $apply_wholesale_price_cart_level = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $this->preload_calculate_cart_total, $woocommerce->cart, array( $user_wholesale_role ) );
 
             if ( true !== $apply_wholesale_price_cart_level ) {
                 $did_not_meet = true;
@@ -2266,15 +2275,18 @@ class WWPP_Wholesale_Prices {
                     // Get the container item.
                     if ( $composite_container_item_key ) {
                         $composite_container_item = WC()->cart->cart_contents[ $composite_container_item_key ];
-                    }
 
-                    $product_id       = $cart_item['product_id'];
-                    $component_id     = $cart_item['composite_item'];
-                    $component_option = $composite_container_item['data']->get_component_option( $component_id, $product_id );
+                        $product_id   = $cart_item['product_id'];
+                        $component_id = $cart_item['composite_item'];
 
-                    // Check if the component is priced individually.
-                    if ( $component_option && false === $component_option->is_priced_individually() ) {
-                        $did_not_meet = false;
+                        if ( isset( $composite_container_item['data'] ) && method_exists( $composite_container_item['data'], 'get_component_option' ) ) {
+                            $component_option = $composite_container_item['data']->get_component_option( $component_id, $product_id );
+
+                            // Check if the component is priced individually.
+                            if ( $component_option && false === $component_option->is_priced_individually() ) {
+                                $did_not_meet = false;
+                            }
+                        }
                     }
                 }
             }
@@ -2292,7 +2304,6 @@ class WWPP_Wholesale_Prices {
 
             // If conditions are not meet, apply wholesale price in product level.
             if ( $did_not_meet && ! empty( $wholesale_price ) ) {
-
                 $wholesale_price        = WWP_Helper_Functions::wwp_formatted_price( $wholesale_price );
                 $formatted_retail_price = $this->get_product_shop_price_with_taxing_applied( $product, $product_price, array( 'currency' => $active_currency ), $user_wholesale_role );
 
@@ -2330,6 +2341,24 @@ class WWPP_Wholesale_Prices {
                         <span class="wholesale_price_title">' . $wholesale_price_title_text . '</span>
                         <ins>' . $wholesale_price . '</ins>
                     </del>';
+
+                /***************************************************************************
+                 * Remove WWP filter to prevent double price filtering
+                 ***************************************************************************
+                 *
+                 * Since we're already handling the price display when minimum requirements
+                 * aren't met, we need to remove WWP's filter to prevent conflicting price
+                 * formatting.
+                 *
+                 * Note: This filter removal is scoped to the condition where minimum
+                 * requirements aren't met because WWPP is handling the price display in
+                 * this scenario. In other cases, WWP's filter should remain active.
+                 *
+                 * @since 2.0.8 Fix for issue #1453
+                 */
+                if ( isset( $wc_wholesale_prices->wwp_wholesale_prices ) && has_filter( 'woocommerce_cart_item_price', array( $wc_wholesale_prices->wwp_wholesale_prices, 'filter_product_price' ) ) ) {
+                    remove_filter( 'woocommerce_cart_item_price', array( $wc_wholesale_prices->wwp_wholesale_prices, 'filter_product_price' ), 100, 2 );
+                }
             }
         }
 
@@ -2369,7 +2398,8 @@ class WWPP_Wholesale_Prices {
         $apply_wholesale_price = true;
         if ( ! empty( $user_wholesale_role ) ) {
             $cart_object           = WC()->cart;
-            $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_object->cart_contents_total, $cart_object, $user_wholesale_role );
+            $cart_total            = WWPP_Helper_Functions::calculate_cart_totals( $cart_object->cart_contents_total, $cart_object, array( $user_wholesale_role ) );
+            $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_total, $cart_object, $user_wholesale_role );
         }
 
         /***************************************************************************
@@ -2455,6 +2485,19 @@ class WWPP_Wholesale_Prices {
     }
 
     /**
+     * Preload the calculation, because this is an expensive call
+     *
+     * @return void
+     */
+    public function wc_cart_total_calculation_preload() {
+        global $woocommerce;
+        $user_wholesale_role = $this->_get_current_user_wholesale_role();
+        if ( ! empty( $user_wholesale_role ) && is_cart() ) {
+            $this->preload_calculate_cart_total = WWPP_Helper_Functions::calculate_cart_totals( $woocommerce->cart->get_cart_total(), $woocommerce->cart, array( $user_wholesale_role ) );
+        }
+    }
+
+    /**
      * Execute model.
      *
      * @since  1.16.0
@@ -2507,5 +2550,7 @@ class WWPP_Wholesale_Prices {
         add_action( 'woocommerce_blocks_cart_block_registration', array( $this, 'cart_checkout_block_integration' ) );
         add_action( 'woocommerce_blocks_checkout_block_registration', array( $this, 'cart_checkout_block_integration' ) );
         add_action( 'woocommerce_blocks_loaded', array( $this, 'wc_cart_block_wwpp_data' ) );
+
+        add_action( 'woocommerce_before_cart', array( $this, 'wc_cart_total_calculation_preload' ), 9 );
     }
 }

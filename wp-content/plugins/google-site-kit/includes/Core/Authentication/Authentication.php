@@ -27,6 +27,8 @@ use Google\Site_Kit\Core\Util\BC_Functions;
 use Google\Site_Kit\Core\Util\URL;
 use Google\Site_Kit\Core\Util\Auto_Updates;
 use Google\Site_Kit\Core\Authentication\REST_Authentication_Controller;
+use Google\Site_Kit\Core\Tracking\Feature_Metrics_Trait;
+use Google\Site_Kit\Core\Tracking\Provides_Feature_Metrics;
 
 /**
  * Authentication Class.
@@ -35,9 +37,10 @@ use Google\Site_Kit\Core\Authentication\REST_Authentication_Controller;
  * @access private
  * @ignore
  */
-final class Authentication {
+final class Authentication implements Provides_Feature_Metrics {
 
 	use Method_Proxy_Trait;
+	use Feature_Metrics_Trait;
 
 	const ACTION_CONNECT    = 'googlesitekit_connect';
 	const ACTION_DISCONNECT = 'googlesitekit_disconnect';
@@ -153,14 +156,6 @@ final class Authentication {
 	protected $token;
 
 	/**
-	 * Owner_ID instance.
-	 *
-	 * @since 1.16.0
-	 * @var Owner_ID
-	 */
-	protected $owner_id;
-
-	/**
 	 * Has_Connected_Admins instance.
 	 *
 	 * @since 1.14.0
@@ -236,10 +231,10 @@ final class Authentication {
 	 */
 	public function __construct(
 		Context $context,
-		Options $options = null,
-		User_Options $user_options = null,
-		Transients $transients = null,
-		User_Input $user_input = null
+		?Options $options = null,
+		?User_Options $user_options = null,
+		?Transients $transients = null,
+		?User_Input $user_input = null
 	) {
 		$this->context                        = $context;
 		$this->options                        = $options ?: new Options( $this->context );
@@ -254,7 +249,6 @@ final class Authentication {
 		$this->verification_file              = new Verification_File( $this->user_options );
 		$this->profile                        = new Profile( $this->user_options );
 		$this->token                          = new Token( $this->user_options );
-		$this->owner_id                       = new Owner_ID( $this->options );
 		$this->has_connected_admins           = new Has_Connected_Admins( $this->options, $this->user_options );
 		$this->has_multiple_admins            = new Has_Multiple_Admins( $this->transients );
 		$this->connected_proxy_url            = new Connected_Proxy_URL( $this->options );
@@ -274,11 +268,12 @@ final class Authentication {
 		$this->verification_file()->register();
 		$this->verification_meta()->register();
 		$this->has_connected_admins->register();
-		$this->owner_id->register();
+		$this->has_multiple_admins->register();
 		$this->connected_proxy_url->register();
 		$this->disconnected_reason->register();
 		$this->initial_version->register();
 		$this->rest_authentication_controller->register();
+		$this->register_feature_metrics();
 
 		add_filter( 'allowed_redirect_hosts', $this->get_method_proxy( 'allowed_redirect_hosts' ) );
 		add_filter( 'googlesitekit_admin_data', $this->get_method_proxy( 'inline_js_admin_data' ) );
@@ -307,9 +302,7 @@ final class Authentication {
 				}
 
 				$this->set_connected_proxy_url();
-			},
-			10,
-			3
+			}
 		);
 
 		add_filter(
@@ -326,7 +319,6 @@ final class Authentication {
 				}
 
 				$user['connectURL']           = esc_url_raw( $this->get_connect_url() );
-				$user['hasMultipleAdmins']    = $this->has_multiple_admins->get();
 				$user['initialVersion']       = $this->initial_version->get();
 				$user['isUserInputCompleted'] = ! $this->user_input->are_settings_empty();
 				$user['verified']             = $this->verification->has();
@@ -838,7 +830,6 @@ final class Authentication {
 	 * @return array Filtered $data.
 	 */
 	private function inline_js_base_data( $data ) {
-		$data['isOwner']             = $this->owner_id->get() === get_current_user_id();
 		$data['splashURL']           = esc_url_raw( $this->context->admin_url( 'splash' ) );
 		$data['proxySetupURL']       = '';
 		$data['proxyPermissionsURL'] = '';
@@ -1140,24 +1131,57 @@ final class Authentication {
 						?>
 						<a
 							href="#"
-							onclick="clearSiteKitAppStorage()"
+							onclick="reauthenticateAndContinueSetup()"
 						><?php esc_html_e( 'Click here', 'google-site-kit' ); ?></a>
 					</p>
 					<?php
 					BC_Functions::wp_print_inline_script_tag(
 						sprintf(
 							"
-							function clearSiteKitAppStorage() {
-								if ( localStorage ) {
-									localStorage.clear();
+							function reauthenticateAndContinueSetup() {
+								const moduleSlug = getAbandonedModuleSlug();
+
+								if ( moduleSlug ) {
+									const redirect = '%3\$s&slug=' + moduleSlug;
+									document.location = '%2\$s&redirect=' + encodeURIComponent( redirect );
+								} else {
+									if ( localStorage ) {
+										localStorage.clear();
+									}
+									if ( sessionStorage ) {
+										sessionStorage.clear();
+									}
+									document.location = '%2\$s';
 								}
-								if ( sessionStorage ) {
-									sessionStorage.clear();
+							}
+
+							function getAbandonedModuleSlug() {
+								for ( const storage of [ localStorage, sessionStorage ] ) {
+									if ( ! storage ) {
+										continue;
+									}
+									const key = Object.keys( storage ).find( ( k ) =>
+										k.match( 'googlesitekit_%1\$s_.*_module_setup' )
+									);
+									if ( ! key ) {
+										continue;
+									}
+									try {
+										return JSON.parse( storage[ key ] )?.value;
+									} catch ( _ ) {}
 								}
-								document.location = '%s';
 							}
 							",
-							esc_url_raw( $this->get_connect_url() )
+							GOOGLESITEKIT_VERSION,
+							esc_url_raw( $this->get_connect_url() ),
+							esc_url_raw(
+								$this->context->admin_url(
+									'dashboard',
+									array(
+										'reAuth' => 'true',
+									)
+								)
+							)
 						)
 					);
 					return ob_get_clean();
@@ -1354,17 +1378,6 @@ final class Authentication {
 	}
 
 	/**
-	 * Helper method to return owner_id property.
-	 *
-	 * @since 1.131.0
-	 *
-	 * @return Owner_ID
-	 */
-	public function get_owner_id_instance() {
-		return $this->owner_id;
-	}
-
-	/**
 	 * Helper method to return disconnected_reason property.
 	 *
 	 * @since 1.131.0
@@ -1384,5 +1397,18 @@ final class Authentication {
 	 */
 	public function get_connected_proxy_url_instance() {
 		return $this->connected_proxy_url;
+	}
+
+	/**
+	 * Gets an array of internal feature metrics.
+	 *
+	 * @since 1.163.0
+	 *
+	 * @return array
+	 */
+	public function get_feature_metrics() {
+		return array(
+			'auto_updates_enabled' => Auto_Updates::is_sitekit_autoupdates_enabled(),
+		);
 	}
 }

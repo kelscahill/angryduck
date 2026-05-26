@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
 
 do_action( 'woocommerce_email_header', $email_heading, $email );?>
 
-<?php echo $email->get_message(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<?php echo wp_kses_post( $email->get_message() ); ?>
 
 <?php
 do_action( 'wwlc_email_footer', $email );

@@ -76,7 +76,7 @@ class Context {
 	 * @param string $main_file Absolute path to the plugin main file.
 	 * @param Input  $input Input instance.
 	 */
-	public function __construct( $main_file, Input $input = null ) {
+	public function __construct( $main_file, ?Input $input = null ) {
 		$this->main_file = $main_file;
 		$this->input     = $input ?: new Input();
 	}
@@ -257,7 +257,7 @@ class Context {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int|WP_Post $post Optional. Post ID or post object. Default is the global `$post`.
+	 * @param int|\WP_Post $post Optional. Post ID or post object. Default is the global `$post`.
 	 *
 	 * @return string|false The reference permalink URL or false if post does not exist.
 	 */
@@ -378,7 +378,7 @@ class Context {
 		if ( $exposes_support_mode ) {
 			// If recent version, we can properly detect the mode.
 			if ( $amp_plugin_version_2_or_higher ) {
-				$mode = AMP_Options_Manager::get_option( 'theme_support' );
+				$mode = AMP_Options_Manager::get_option( 'theme_support' ); // @phpstan-ignore class.notFound
 			} else {
 				$mode = AMP_Theme_Support::get_support_mode();
 			}
@@ -435,7 +435,7 @@ class Context {
 	 * @param Entity|null $entity Entity to filter reference ID for, or null.
 	 * @return Entity|null Filtered entity or null, based on $entity.
 	 */
-	private function filter_entity_reference_url( Entity $entity = null ) {
+	private function filter_entity_reference_url( ?Entity $entity = null ) {
 		if ( ! $entity ) {
 			return null;
 		}

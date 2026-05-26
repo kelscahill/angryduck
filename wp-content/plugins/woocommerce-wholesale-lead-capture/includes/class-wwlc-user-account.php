@@ -15,6 +15,34 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
     class WWLC_User_Account {
 
         /**
+         * Class Constants
+         */
+
+        /**
+         * Action label sent on the registration form for reCAPTCHA v3.
+         *
+         * @since 2.0.4.3
+         * @var string
+         */
+        const RECAPTCHA_V3_REGISTER_ACTION = 'wwlc_register';
+
+        /**
+         * Action label sent on the login form for reCAPTCHA v3.
+         *
+         * @since 2.0.4.3
+         * @var string
+         */
+        const RECAPTCHA_V3_LOGIN_ACTION = 'wwlc_login';
+
+        /**
+         * Default v3 score threshold when the option is unset, non-numeric, or out of range.
+         *
+         * @since 2.0.4.3
+         * @var string
+         */
+        const RECAPTCHA_V3_DEFAULT_THRESHOLD = '0.5';
+
+        /**
          * Class Properties
          */
 
@@ -90,11 +118,18 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
 
                 if ( ! empty( $err ) ) {
 
-                    $_POST['login_error'] = implode( ' and ', $err );
+                    $login_error = implode( ' and ', $err );
                     add_action(
                         'wwlc_before_login_form',
-                        function () {
-                            wc_print_notice( sprintf( __( '%1$s  must not be empty.', 'woocommerce-wholesale-lead-capture' ), $_POST['login_error'] ), 'error' ); //phpcs:ignore
+                        function () use ( $login_error ) {
+                            wc_print_notice(
+                                sprintf(
+                                    /* translators: %1$s: field names that are empty. */
+                                    esc_html__( '%1$s must not be empty.', 'woocommerce-wholesale-lead-capture' ),
+                                    wp_kses( $login_error, array( 'b' => array() ) )
+                                ),
+                                'error'
+                            );
                         }
                     );
 
@@ -102,23 +137,23 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
 
                     $creds                  = array();
                     $creds['user_login']    = sanitize_text_field( $_POST['wwlc_username'] );
-                    $creds['user_password'] = sanitize_text_field( $_POST['wwlc_password'] );
+                    $creds['user_password'] = wp_unslash( $_POST['wwlc_password'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Passwords must not be sanitized as sanitize_text_field() strips special characters.
                     $creds['remember']      = isset( $_POST['rememberme'] ) ? true : false;
                     $user                   = wp_signon( $creds, is_ssl() );
 
                     if ( is_wp_error( $user ) ) {
 
-                        $_POST['login_error'] = $user->get_error_message();
+                        $login_error = esc_html__( 'Invalid username or password.', 'woocommerce-wholesale-lead-capture' );
                         add_action(
                             'wwlc_before_login_form',
-                            function () {
-                                wc_print_notice( __( $_POST['login_error'] ), 'error' ); //phpcs:ignore
+                            function () use ( $login_error ) {
+                                wc_print_notice( $login_error, 'error' );
                             }
                         );
 
                     } elseif ( isset( $_POST['redirect_to'] ) && ! empty( $_POST['redirect_to'] ) ) {
 
-                        $login_redirect = apply_filters( 'wwlc_login_redirect_url', esc_url( $_POST['redirect_to'] ), $user );
+                        $login_redirect = apply_filters( 'wwlc_login_redirect_url', esc_url( sanitize_text_field( wp_unslash( $_POST['redirect_to'] ) ) ), $user );
                         wp_safe_redirect( $login_redirect, 301 );
                         exit;
 
@@ -154,11 +189,19 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Approve the user when updated in the user edit screen and not via the listing.
          * The user is considered approve once the role is changed from Unapproved into any status.
          *
-         * @param int     $userID        The user id.
-         * @param WP_user $old_user_data WP_User object.
+         * Only triggers when the current user has manage_options capability to prevent
+         * third-party plugins from inadvertently approving users via wp_update_user().
+         *
+         * @param int     $userID The user id.
+         * @param WP_User $old_user_data WP_User object.
          *
          * @since 1.6.2 WWLC-28
          * @since 2.0.0 Removed unused role.
+         * @since 2.0.3.3 Added capability check to prevent unauthorized approval.
+         * @since 2.0.5 Skip the WWLC approval flow when the admin has assigned a non-wholesale role
+         *              from the Edit User screen, so the user does not also receive wholesale_customer.
+         *              Note: the wwlc_allow_profile_update_approval filter is not consulted on this
+         *              early-return path — it only applies to WWLC-managed role transitions.
          */
         public function wwlc_profile_update( $userID, $old_user_data ) {
 
@@ -166,15 +209,61 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
             $old_role_check     = array_intersect( $old_user_data->roles, array( 'wwlc_unapproved' ) );
             $updated_role_check = array_intersect( $user->roles, array( 'wwlc_unapproved' ) );
 
-            // Only mark approve when the updated role is not equal to 'wwlc_unapproved'.
+            // Only mark approve when the updated role is not equal to 'wwlc_unapproved'
             // and the old role before the update is equal to 'wwlc_unapproved'.
             if ( ! empty( $old_role_check ) && empty( $updated_role_check ) ) {
-                $this->wwlc_approve_user(
-                    array(
-                        'userID'         => $userID,
-                        'old_user_roles' => $old_user_data->roles,
-                    )
+
+                // If any role currently assigned to the user is outside the WWLC approval
+                // set (unapproved, rejected, configured new-lead role), respect that explicit
+                // choice and skip the approval flow — otherwise wwlc_approve_user() would
+                // override it with the default new-lead role.
+                $approval_roles = array(
+                    WWLC_UNAPPROVED_ROLE,
+                    WWLC_REJECTED_ROLE,
+                    get_option( 'wwlc_general_new_lead_role', 'wholesale_customer' ),
                 );
+                foreach ( (array) $user->roles as $current_role ) {
+                    if ( $current_role && ! in_array( $current_role, $approval_roles, true ) ) {
+                        return;
+                    }
+                }
+
+                // By default, require manage_options capability or a recognized non-interactive
+                // context (WP-CLI, cron) to prevent third-party plugins from inadvertently
+                // triggering approval via wp_update_user().
+                $allow_approval = current_user_can( 'manage_options' )
+                    || wp_doing_cron()
+                    || ( defined( 'WP_CLI' ) && WP_CLI );
+
+                /**
+                 * Filters whether the profile_update hook is allowed to trigger user approval.
+                 *
+                 * Returning true allows the approval to proceed even when the current user
+                 * lacks manage_options capability (e.g. REST API with application passwords).
+                 *
+                 * @since 2.0.3.3
+                 *
+                 * @param bool $allow_approval Whether approval is allowed.
+                 * @param int  $userID         The user ID being approved.
+                 */
+                $allow_approval = apply_filters( 'wwlc_allow_profile_update_approval', $allow_approval, $userID );
+
+                if ( $allow_approval ) {
+                    $this->wwlc_approve_user(
+                        array(
+                            'userID'         => $userID,
+                            'old_user_roles' => $old_user_data->roles,
+                        )
+                    );
+                } else {
+                    wc_get_logger()->warning(
+                        sprintf(
+                            'WWLC: Blocked automatic approval of user #%d via profile_update — role changed from wwlc_unapproved but current user lacks manage_options capability.',
+                            $userID
+                        ),
+                        array( 'source' => 'woocommerce-wholesale-lead-capture' )
+                    );
+                }
             }
         }
 
@@ -194,7 +283,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
 
             if ( ( true === $always_display_notice ) || ( empty( $thankyou_page ) ) ) {
 
-                $message = apply_filters( 'wwlc_registration_success_message', isset( $_POST['inline_message'] ) ? $_POST['inline_message'] : '' ); //phpcs:ignore
+                $message = apply_filters( 'wwlc_registration_success_message', isset( $_POST['inline_message'] ) ? wp_kses_post( wp_unslash( $_POST['inline_message'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in wwlc_create_user().
                 $status  = apply_filters( 'wwlc_registration_status', 'success' );
 
                 if ( ! empty( $message ) ) {
@@ -213,15 +302,15 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          */
         private function _generate_password( $length = 16 ) {
 
-            return substr( str_shuffle( MD5( microtime() ) ), 0, $length );
+            return wp_generate_password( $length, true, false );
         }
 
         /**
          * WWLC authentication filter. It checks if user is inactive, unapproved or rejected and kick
          * there asses.
          *
-         * @param WP_User $user     WP_User object.
-         * @param string  $password String of user lead capture password.
+         * @param WP_User|WP_Error $user WP_User object or WP_Error object from previous authentication filters.
+         * @param string           $password String of user lead capture password.
          *
          * @return WP_Error|WP_User
          * @since 1.0.0
@@ -230,6 +319,11 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * @since 2.0.0 Removed wwlc_unmoderated role check.
          */
         public function wwlc_wholesale_lead_authenticate( $user, $password ) { // phpcs:ignore.
+
+            // If user is not a WP_User object (e.g., it's a WP_Error), return it as is.
+            if ( ! is_a( $user, 'WP_User' ) ) {
+                return $user;
+            }
 
             if ( is_multisite() ) {
 
@@ -252,7 +346,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 return new WP_Error( 'authentication_failed', __( 'Your account is still awaiting approval.', 'woocommerce-wholesale-lead-capture' ) );
             }
 
-            if ( in_array( WWLC_REJECTED_ROLE, $user->roles, true ) ) {
+            if ( is_array( $user->roles ) && in_array( WWLC_REJECTED_ROLE, $user->roles, true ) ) {
                 return new WP_Error( 'authentication_failed', __( '<strong>ERROR</strong>: Invalid Request', 'woocommerce-wholesale-lead-capture' ) );
             } else {
                 return $user;
@@ -263,8 +357,9 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Redirect wholesale users after successful login accordingly.
          *
          * @param string           $redirect_to The redirect destination URL.
-         * @param string           $request     The requested redirect destination URL passed as a parameter.
-         * @param WP_User|WP_Error $user        WP_User object if login was successful, WP_Error object otherwise.
+         * @param string           $request The requested redirect destination URL passed as a parameter.
+         * @param WP_User|WP_Error $user WP_User object if login was successful, WP_Error object otherwise.
+         *
          * @return mixed
          *
          * @since 1.2.0
@@ -288,16 +383,16 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Redirect wholesale user to specific page after logging out.
          *
          * @param string $logout_url The HTML-encoded logout URL.
-         * @param string $redirect   Path to redirect to on logout.
+         * @param string $redirect Path to redirect to on logout.
          *
-         * @since 1.3.3
+         * @return string
+         * @access public
          * @since 1.6.9  WWLC-175 : delete session after wholesale user logs out.
          * @since 1.6.10 WWLC-177 : added conditions before foreach to check if $all_wholesale_roles is array.
          * @since 1.8.0  Get page option url via wwlc_get_url_of_page_option function.
          *                  Updated the filter, used "logout_url" instead of "wp_logout".
          *                  This fixes the issue wehere WPML will get the english version of logout redirect page instead of the translated one.
-         * @return string
-         * @access public
+         * @since 1.3.3
          */
         public function wwlc_wholesale_lead_logout_redirect( $logout_url, $redirect ) { // phpcs:ignore.
 
@@ -315,8 +410,8 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 }
 
                 $args = array(
-                    'action'      => 'logout',
-                    'redirect_to' => apply_filters( 'wwlc_filter_logout_redirect_url', $logout_redirect_page ),
+					'action'      => 'logout',
+					'redirect_to' => apply_filters( 'wwlc_filter_logout_redirect_url', $logout_redirect_page ),
                 );
 
                 $logout_url = add_query_arg( $args, site_url( 'wp-login.php', 'login' ) );
@@ -364,7 +459,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Create New User.
          *
-         * @param null|array  $user_data       Array of user data submited form registration form.
+         * @param null|array  $user_data Array of user data submited form registration form.
          * @param WWLC_Emails $email_processor WWLC_Emails Object.
          *
          * @return bool|array
@@ -374,42 +469,67 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * @since 1.7.0 Added code to save the set custom role in the shortcode if present.
          *                Add support for WPML plugin.
          * @since 1.7.1 Removed code relating to saving/displaying passwords.
+         * @since 2.0.2 - Removed duplicate user_data assignment.
+         * @since 2.0.3 - Fixed security issue: Prevent race condition where users are temporarily created with administrator privileges.
+         * @since 2.0.4.3 - Added v3 score-based reCAPTCHA verification branch.
          */
-        public function wwlc_create_user( array $user_data = null, WWLC_Emails $email_processor ) {
+        public function wwlc_create_user( $user_data = array(), $email_processor = null ) {
 
             global $sitepress, $wp_roles;
 
             if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 
-                $user_data = $_POST['user_data']; //phpcs:ignore
+                if ( get_option( 'wwlc_security_enable_recaptcha' ) === 'yes' ) {
+                    $recaptcha_secret = get_option( 'wwlc_security_recaptcha_secret_key' );
+                    $recaptcha_token  = isset( $_POST['recaptcha_field'] ) ? sanitize_text_field( wp_unslash( $_POST['recaptcha_field'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified below.
 
-                if (
-                    get_option( 'wwlc_security_enable_recaptcha' ) === 'yes' &&
-                    get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' ) === 'v2_im_not_a_robot'
-                ) {
-                    $recaptcha_secret  = get_option( 'wwlc_security_recaptcha_secret_key' );
-                    $recaptcha_request = wp_remote_get( 'https://www.google.com/recaptcha/api/siteverify?secret=' . $recaptcha_secret . '&response=' . $_POST['recaptcha_field'] . '&remoteip=' . $_SERVER['REMOTE_ADDR'] ); //phpcs:ignore
-
-                    if ( is_wp_error( $recaptcha_request ) ) {
+                    if ( empty( $recaptcha_token ) ) {
                         $recaptcha_check = false;
                     } else {
-                        $recaptcha_response = json_decode( wp_remote_retrieve_body( $recaptcha_request ) );
-                        $recaptcha_check    = $recaptcha_response->success;
+                        $recaptcha_request = wp_remote_post(
+                            'https://www.google.com/recaptcha/api/siteverify',
+                            array(
+                                'body' => array(
+                                    'secret'   => $recaptcha_secret,
+                                    'response' => $recaptcha_token,
+                                    'remoteip' => isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '',
+                                ),
+                            )
+                        );
+
+                        if ( is_wp_error( $recaptcha_request ) ) {
+                            $recaptcha_check = false;
+                        } else {
+                            $recaptcha_type     = get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' );
+                            $recaptcha_response = json_decode( wp_remote_retrieve_body( $recaptcha_request ) );
+
+                            if ( ! is_object( $recaptcha_response ) || empty( $recaptcha_response->success ) ) {
+                                $recaptcha_check = false;
+                            } elseif ( 'v3_score_based' === $recaptcha_type ) {
+                                $threshold       = (float) get_option( 'wwlc_security_recaptcha_v3_score_threshold', self::RECAPTCHA_V3_DEFAULT_THRESHOLD );
+                                $threshold       = max( 0.0, min( 1.0, $threshold ) );
+                                $score           = isset( $recaptcha_response->score ) ? (float) $recaptcha_response->score : 0.0;
+                                $action          = isset( $recaptcha_response->action ) ? $recaptcha_response->action : '';
+                                $recaptcha_check = ( $score >= $threshold ) && ( self::RECAPTCHA_V3_REGISTER_ACTION === $action );
+                            } else {
+                                $recaptcha_check = true;
+                            }
+                        }
                     }
                 } else {
                     $recaptcha_check = true;
                 }
 
                 if ( ! isset( $_POST['wwlc_register_user_nonce_field'] ) ||
-                    ! wp_verify_nonce( $_POST['wwlc_register_user_nonce_field'], 'wwlc_register_user' ) ||
+                    ! wp_verify_nonce( sanitize_key( $_POST['wwlc_register_user_nonce_field'] ), 'wwlc_register_user' ) ||
                     true !== $recaptcha_check ) {
 
                     header( 'Content-Type: application/json' ); // specify we return json.
                     echo wp_json_encode(
                         array(
-                            'status'        => 'fail',
-                            'error_message' => apply_filters( 'wwlc_inline_notice', __( 'Security check fail', 'woocommerce-wholesale-lead-capture' ), 'fail' ),
-                        )
+							'status'        => 'fail',
+							'error_message' => apply_filters( 'wwlc_inline_notice', __( 'Security check fail', 'woocommerce-wholesale-lead-capture' ), 'fail' ),
+						)
                     );
                     die();
 
@@ -444,7 +564,17 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
             }
 
             // handles upgrade existing customer.
-            wc_do_deprecated_action( 'wwlc_action_before_create_user', array( $user_data, $email_processor, $auto_generated_password, $password ), '1.17.4', 'wwlc_action_before_create_wholesale_lead' );
+            wc_do_deprecated_action(
+                'wwlc_action_before_create_user',
+                array(
+					$user_data,
+					$email_processor,
+					$auto_generated_password,
+					$password,
+				),
+                '1.17.4',
+                'wwlc_action_before_create_wholesale_lead'
+            );
             do_action( 'wwlc_action_before_create_wholesale_lead', $user_data, $auto_generated_password, $password );
 
             // Don't create if login as customer.
@@ -452,9 +582,9 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 header( 'Content-Type: application/json' ); // specify we return json.
                 echo wp_json_encode(
                     array(
-                        'status'        => 'fail',
-                        'error_message' => apply_filters( 'wwlc_fail_user_login', __( 'You are not allowed to register.', 'woocommerce-wholesale-lead-capture' ), 'fail' ),
-                    )
+						'status'        => 'fail',
+						'error_message' => apply_filters( 'wwlc_fail_user_login', __( 'You are not allowed to register.', 'woocommerce-wholesale-lead-capture' ), 'fail' ),
+					)
                 );
                 die();
             }
@@ -464,20 +594,21 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 unset( $user_data['meta_data'] );
             }
 
-            // $result will either be the new user id or a WP_Error object on failure
-            $result = wp_create_user( $username, $password, $user_data['user_email'] );
+            /**
+             * Prepare user data and set the correct role to prevent race condition.
+             */
+            $userdata = array(
+				'user_login' => $username,
+				'user_email' => $user_data['user_email'],
+				'user_pass'  => $password,
+				'role'       => WWLC_UNAPPROVED_ROLE,
+            );
+            $result   = wp_insert_user( $userdata );
 
             if ( ! is_wp_error( $result ) ) {
 
                 // Get new user.
                 $new_lead = new WP_User( $result );
-
-                // Remove all associated roles.
-                $currentRoles = $new_lead->roles;
-
-                foreach ( $currentRoles as $role ) {
-                    $new_lead->remove_role( $role );
-                }
 
                 // Save registration form fields.
                 $this->save_registration_form_fields( $result, $user_data, $auto_generated_password );
@@ -488,36 +619,44 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 // Transfer uploaded files from temporary folder to users wholesale folder.
                 $this->_move_user_files_to_permanent( $result );
 
-                // Process auto approve new leads.
-                $this->process_new_leads( $user_data, $new_lead, $password );
+                // Process auto approve new leads. Returns whether the user was auto-approved.
+                $auto_approved = $this->process_new_leads( $user_data, $new_lead, $password );
 
                 wc_do_deprecated_action( 'wwlc_action_after_create_user', array( $new_lead ), '1.17.4', 'wwlc_action_after_create_wholesale_lead' );
                 do_action( 'wwlc_action_after_create_wholesale_lead', $new_lead );
 
                 $all_roles = $wp_roles->get_names();
-                $lead_role = get_option( 'wwlc_general_new_lead_role' );
 
-                if ( isset( $user_data['role'] ) ) {
-                    $lead_role = $user_data['role'];
-                }
-
-                // Add user meta data.
-                if ( isset( $meta_data ) && ! empty( $meta_data ) ) {
-                    foreach ( $meta_data as $meta ) {
-                        // If meta is a string we use it as key and set a default value of 1.
-                        if ( is_string( $meta['value'] ) ) {
-                            update_user_meta( $new_lead->ID, $meta, 1 );
-                            continue;
-                        }
-
-                        $meta = (array) $meta;
-
-                        update_user_meta( $new_lead->ID, $meta['key'], maybe_serialize( $meta['value'] ) );
+                // Determine the correct role to assign during user creation.
+                $lead_role = get_option( 'wwlc_general_new_lead_role', WWLC_UNAPPROVED_ROLE );
+                if ( isset( $user_data['role'] ) && ! empty( $user_data['role'] ) ) {
+                    $requested_role = sanitize_text_field( $user_data['role'] );
+                    if ( wwlc_check_role( $requested_role ) ) {
+                        $lead_role = $requested_role;
                     }
                 }
 
-                // Display proper message for auto approve.
-                if ( get_option( 'wwlc_general_auto_approve_new_leads' ) === 'yes' && isset( $all_roles[ $lead_role ] ) ) {
+                // Add user meta data.
+                // Meta keys are already filtered by wwlc_sanitize_user_data() blocked list.
+                if ( isset( $meta_data ) && ! empty( $meta_data ) ) {
+                    foreach ( $meta_data as $meta ) {
+                        $meta = (array) $meta;
+
+                        if ( ! isset( $meta['key'] ) || ! isset( $meta['value'] ) ) {
+                            continue;
+                        }
+
+                        $meta_key   = sanitize_text_field( $meta['key'] );
+                        $meta_value = is_array( $meta['value'] )
+                                ? array_map( 'sanitize_text_field', $meta['value'] )
+                                : sanitize_text_field( $meta['value'] );
+
+                        update_user_meta( $new_lead->ID, $meta_key, $meta_value );
+                    }
+                }
+
+                // Display proper message based on actual approval outcome (not just the global setting).
+                if ( $auto_approved && isset( $all_roles[ $lead_role ] ) ) {
                     /* translators: %1$s Wholesale lead capture role */
                     $success_message = sprintf( __( 'Thank you for your registration. You are now a %1$s.', 'woocommerce-wholesale-lead-capture' ), $all_roles[ $lead_role ] );
                 } else {
@@ -525,18 +664,27 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 }
 
                 $response = array(
-                    'status'          => 'success',
-                    'success_message' => apply_filters( 'wwlc_inline_notice', $success_message, 'success' ),
-                    'user_id'         => $new_lead->ID,
+					'status'          => 'success',
+					'success_message' => apply_filters( 'wwlc_inline_notice', $success_message, 'success' ),
+					'user_id'         => $new_lead->ID,
                 );
 
             } else {
 
+                wc_get_logger()->error(
+                    sprintf( 'WWLC user creation failed: %s (Code: %s)', $result->get_error_message(), $result->get_error_code() ),
+                    array( 'source' => 'woocommerce-wholesale-lead-capture' )
+                );
+
+                $safe_codes = array( 'existing_user_login', 'existing_user_email' );
+                $user_msg   = in_array( $result->get_error_code(), $safe_codes, true )
+                        ? $result->get_error_message()
+                        : __( 'Registration could not be completed. Please try again or contact support.', 'woocommerce-wholesale-lead-capture' );
+
                 $response = array(
-                    'status'        => 'fail',
-                    'error_message' => apply_filters( 'wwlc_inline_notice', $result->get_error_message(), 'fail' ), // append inline notice.
-                    'error_obj'     => $result,
-                    'form_data'     => $user_data,
+					'status'        => 'fail',
+					'error_message' => apply_filters( 'wwlc_inline_notice', $user_msg, 'fail' ),
+					'form_data'     => $user_data,
                 );
 
             }
@@ -557,14 +705,19 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Handles saving registration fields.
          *
-         * @since 1.15
+         * @param int   $user_id User ID.
+         * @param array $user_data Registration form data.
+         * @param bool  $auto_generated_password Auto generate password.
+         *
+         * @since 2.0.3.2 Added allowlist to prevent arbitrary user meta injection.
          * @access public
          *
-         * @param int   $user_id                 User ID.
-         * @param array $user_data               Registration form data.
-         * @param bool  $auto_generated_password Auto generate password.
+         * @since 1.15
          */
         public function save_registration_form_fields( $user_id, $user_data, $auto_generated_password ) {
+
+            // Build allowlist from built-in and custom registration fields.
+            $allowed_keys = array_flip( $this->get_allowed_registration_field_keys() );
 
             // Update new user meta.
             if ( ! empty( $user_data ) ) {
@@ -572,6 +725,11 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 foreach ( $user_data as $key => $val ) {
 
                     if ( in_array( $key, array( 'user_email', 'wwlc_password', 'wwlc_password_confirm' ), true ) ) {
+                        continue;
+                    }
+
+                    // Only save fields that are in the allowlist.
+                    if ( ! isset( $allowed_keys[ $key ] ) ) {
                         continue;
                     }
 
@@ -598,12 +756,14 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Handles process new leads.
          *
-         * @since 1.17.4
-         * @access public
+         * @param array   $user_data Registration form data.
+         * @param WP_User $new_lead WP User object.
+         * @param string  $user_pass Password text.
          *
-         * @param array  $user_data  Registration form data.
-         * @param object $new_lead   WP User object.
-         * @param string $user_pass  Password text.
+         * @return bool Whether the user was auto-approved.
+         * @since 1.17.4
+         * @since 2.0.3.3 Returns bool indicating whether the user was auto-approved.
+         * @access public
          */
         public function process_new_leads( $user_data, $new_lead, $user_pass ) {
 
@@ -614,9 +774,75 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
             // Get WWLC auto approve option.
             $auto_approve = get_option( 'wwlc_general_auto_approve_new_leads' ) === 'yes' ? true : false;
 
-            // Respect WWLC auto approve is disabled via shortcode.
-            if ( isset( $user_data['wwlc_auto_approve'] ) ) {
-                $auto_approve = 'true' === $user_data['wwlc_auto_approve'] ? true : false;
+            // Get page ID from form data (for AJAX compatibility) or fallback to queried object.
+            $page_id_from_form    = isset( $user_data['wwlc_page_id'] ) ? intval( $user_data['wwlc_page_id'] ) : 0;
+            $page_id_from_context = get_queried_object_id();
+
+            // For AJAX requests, validate the form-supplied page_id is a published page
+            // containing the registration form (shortcode or Gutenberg block).
+            if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                if ( $page_id_from_form > 0 ) {
+                    if ( $this->page_has_registration_form( $page_id_from_form ) ) {
+                        $page_id = $page_id_from_form;
+                    } else {
+                        $page_id = 0;
+                        wc_get_logger()->warning(
+                            sprintf(
+                                'WWLC Security: AJAX registration claimed page_id=%d which does not contain the registration form or is not published.',
+                                $page_id_from_form
+                            ),
+                            array( 'source' => 'woocommerce-wholesale-lead-capture' )
+                        );
+                    }
+                } else {
+                    $page_id = $page_id_from_context;
+                }
+            } else {
+                // For non-AJAX requests, use context page_id and verify form page_id matches (if provided).
+                $page_id = $page_id_from_context > 0 ? $page_id_from_context : $page_id_from_form;
+
+                // Additional security: if form has page_id, it must match context (unless AJAX).
+                if ( $page_id_from_form > 0 && $page_id_from_form !== $page_id_from_context && $page_id_from_context > 0 ) {
+                    // Log potential cross-page attack attempt.
+                    wc_get_logger()->warning(
+                        sprintf(
+                            'SECURITY: Potential cross-page attack - Form page_id (%d) does not match context (%d)',
+                            $page_id_from_form,
+                            $page_id_from_context
+                        ),
+                        array( 'source' => 'woocommerce-wholesale-lead-capture' )
+                    );
+                    // Use context page_id to prevent attack.
+                    $page_id = $page_id_from_context;
+                }
+            }
+
+            // Secure nonce-based verification for auto_approve from shortcode.
+            // The auto_approve value is stored in post meta (cache-safe) and the nonce provides CSRF protection.
+            if ( isset( $user_data['wwlc_auto_approve_nonce'] ) && $page_id > 0 ) {
+                $nonce = sanitize_text_field( $user_data['wwlc_auto_approve_nonce'] );
+
+                // Verify nonce matches page context.
+                if ( wp_verify_nonce( $nonce, 'wwlc_auto_approve_' . $page_id ) ) {
+                    $stored_value = get_post_meta( $page_id, '_wwlc_shortcode_auto_approve', true );
+                    if ( '' !== $stored_value ) {
+                        $auto_approve = 'yes' === $stored_value;
+                    }
+                }
+            }
+
+            // Log unauthorized attempts (when old direct value is present but nonce is missing).
+            if ( isset( $user_data['wwlc_auto_approve'] ) && ! isset( $user_data['wwlc_auto_approve_nonce'] ) ) {
+                wc_get_logger()->warning(
+                    sprintf(
+                        'SECURITY: Unauthorized auto_approve attempt detected - IP: %s, Email: %s, Page ID: %s, Timestamp: %s',
+                        isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown',
+                        isset( $user_data['user_email'] ) ? sanitize_email( $user_data['user_email'] ) : 'unknown',
+                        get_queried_object_id(),
+                        current_time( 'mysql' )
+                    ),
+                    array( 'source' => 'woocommerce-wholesale-lead-capture' )
+                );
             }
 
             // Add unapprove role.
@@ -638,7 +864,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 // Send new wholesale lead auto approved email to admin(s).
                 $wc_emails['WWLC_Email_New_Wholesale_Lead_Auto_Approved']->trigger( $new_lead );
 
-                add_action( 'wwlc_action_auto_approve_user', $new_lead );
+                do_action( 'wwlc_action_auto_approve_user', $new_lead );
 
                 // Logs in the user automatically.
                 if ( apply_filters( 'wwlc_login_user_when_auto_approve', true, $new_lead, $user_data ) ) {
@@ -657,6 +883,8 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
             $wc_emails['WWLC_Email_Wholesale_Application_Received']->trigger( $new_lead, $user_data, $user_pass );
 
             do_action( 'wwlc_new_user_email', $new_lead->ID, $user_pass );
+
+            return $auto_approve;
         }
 
         /**
@@ -730,26 +958,30 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Save customer shipping address.
          *
-         * @param int    $user_ID The user ID.
-         * @param string $shipping_address The shipping address.
+         * @param int   $user_ID          The user ID.
+         * @param array $shipping_address Associative array of shipping address fields.
          *
          * @since 2.0.0 - Added this method to save the shipping address.
          */
         public function wwlc_save_customer_shipping_address( $user_ID, $shipping_address ) {
 
-            $same_as_billing = wc_string_to_bool( $shipping_address['same_as_billing'] );
+            if ( ! is_array( $shipping_address ) ) {
+                return;
+            }
 
-            $first_name = $same_as_billing ? get_user_meta( $user_ID, 'billing_first_name', true ) : $shipping_address['first_name'];
-            $last_name  = $same_as_billing ? get_user_meta( $user_ID, 'billing_last_name', true ) : $shipping_address['last_name'];
-            $address_1  = $same_as_billing ? get_user_meta( $user_ID, 'billing_address_1', true ) : $shipping_address['address_1'];
-            $address_2  = $same_as_billing ? get_user_meta( $user_ID, 'billing_address_2', true ) : $shipping_address['address_2'];
-            $city       = $same_as_billing ? get_user_meta( $user_ID, 'billing_city', true ) : $shipping_address['city'];
-            $postcode   = $same_as_billing ? get_user_meta( $user_ID, 'billing_postcode', true ) : $shipping_address['postcode'];
-            $country    = $same_as_billing ? get_user_meta( $user_ID, 'billing_country', true ) : $shipping_address['country'];
-            $state      = $same_as_billing ? get_user_meta( $user_ID, 'billing_state', true ) : $shipping_address['state'];
-            $company    = $same_as_billing ? get_user_meta( $user_ID, 'billing_company', true ) : $shipping_address['company'];
-            $phone      = $same_as_billing ? get_user_meta( $user_ID, 'billing_phone', true ) : $shipping_address['phone'];
-            $email      = $same_as_billing ? get_user_meta( $user_ID, 'billing_email', true ) : $shipping_address['email'];
+            $same_as_billing = wc_string_to_bool( $shipping_address['same_as_billing'] ?? 'no' );
+
+            $first_name = $same_as_billing ? get_user_meta( $user_ID, 'billing_first_name', true ) : ( $shipping_address['first_name'] ?? '' );
+            $last_name  = $same_as_billing ? get_user_meta( $user_ID, 'billing_last_name', true ) : ( $shipping_address['last_name'] ?? '' );
+            $address_1  = $same_as_billing ? get_user_meta( $user_ID, 'billing_address_1', true ) : ( $shipping_address['address_1'] ?? '' );
+            $address_2  = $same_as_billing ? get_user_meta( $user_ID, 'billing_address_2', true ) : ( $shipping_address['address_2'] ?? '' );
+            $city       = $same_as_billing ? get_user_meta( $user_ID, 'billing_city', true ) : ( $shipping_address['city'] ?? '' );
+            $postcode   = $same_as_billing ? get_user_meta( $user_ID, 'billing_postcode', true ) : ( $shipping_address['postcode'] ?? '' );
+            $country    = $same_as_billing ? get_user_meta( $user_ID, 'billing_country', true ) : ( $shipping_address['country'] ?? '' );
+            $state      = $same_as_billing ? get_user_meta( $user_ID, 'billing_state', true ) : ( $shipping_address['state'] ?? '' );
+            $company    = $same_as_billing ? get_user_meta( $user_ID, 'billing_company', true ) : ( $shipping_address['company'] ?? '' );
+            $phone      = $same_as_billing ? get_user_meta( $user_ID, 'billing_phone', true ) : ( $shipping_address['phone'] ?? '' );
+            $email      = $same_as_billing ? get_user_meta( $user_ID, 'billing_email', true ) : ( $shipping_address['email'] ?? '' );
 
             if ( ! empty( $first_name ) ) {
                 update_user_meta( $user_ID, 'shipping_first_name', $first_name );
@@ -806,7 +1038,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         public function get_states( $cc ) {
 
             $states = new WC_Countries();
-            $cc     = isset( $_POST['cc'] ) ? $_POST['cc'] : ''; //phpcs:ignore
+            $cc     = isset( $_POST['cc'] ) ? sanitize_text_field( wp_unslash( $_POST['cc'] ) ) : ''; // phpcs:ignore.
             $list   = $states->get_states( $cc );
 
             if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -816,9 +1048,9 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                     header( 'Content-Type: application/json' ); // specify we return json.
                     echo wp_json_encode(
                         array(
-                            'status' => 'success',
-                            'states' => $list,
-                        )
+							'status' => 'success',
+							'states' => $list,
+						)
                     );
                     die();
 
@@ -827,8 +1059,8 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                     header( 'Content-Type: application/json' ); // specify we return json.
                     echo wp_json_encode(
                         array(
-                            'status' => 'error',
-                        )
+							'status' => 'error',
+						)
                     );
                     die();
 
@@ -848,6 +1080,9 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * @since 1.7.0 Add WPML support.
          * @since 1.7.1 Removed code relating to displaying passwords.
          * @since 2.0.0 Update logic to remove unused roles. Added support for custom roles.
+         * @since 2.0.2 Address security issue with role assignment.
+         * checking if the role is valid and assign the default role if not.
+         * @since 2.0.3.3 Added defense-in-depth role escalation protection.
          */
         public function wwlc_approve_user( $user_data ) {
 
@@ -887,8 +1122,12 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 }
 
                 if ( isset( $user_data['role'] ) ) {
-                    $new_user_role = $user_data['role'];
+                    $new_user_role = $this->maybe_assign_role( $user_data['role'] );
                 }
+
+                // Defense-in-depth: validate the final role through sanitize_custom_role()
+                // to ensure no code path can assign a privileged role (e.g. administrator).
+                $new_user_role = $this->_validate_and_sanitize_role( $new_user_role, $user->ID, 'approval' );
 
                 $this->_remove_all_roles( $user );
 
@@ -914,18 +1153,40 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 return true;
 
             }
+
+            return false;
+        }
+
+        /**
+         * Check if the requested role is valid. If not, assign the default role.
+         *
+         * @param string $role The requested role.
+         *
+         * @return string The assigned role.
+         * @since 2.0.2 - Added check to assign the default role if the requested role is not valid.
+         */
+        public function maybe_assign_role( $role ) {
+
+            $role = sanitize_text_field( $role );
+
+            if ( wwlc_check_role( $role ) ) {
+                return $role;
+            }
+
+            return get_option( 'wwlc_general_new_lead_role', WWLC_UNAPPROVED_ROLE );
         }
 
         /**
          * Set user as rejected.
          *
-         * @since 1.0.0
-         * @since 1.7.0 Add WPML support.
+         * @param array $user_data Array of user data.
+         *
+         * @return bool
          * @since 1.17.5 Automatically remove user after rejection.
          * @since 2.0.0 Update logic to remove unused roles.
          *
-         * @param array $user_data Array of user data.
-         * @return bool
+         * @since 1.0.0
+         * @since 1.7.0 Add WPML support.
          */
         public function wwlc_reject_user( $user_data ) {
 
@@ -990,11 +1251,11 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Activate user.
          *
+         * @param array $user_data Array of user data.
+         *
+         * @return bool
          * @since 1.0.0
          * @since 2.0.0 Update logic to remove unused roles.
-         *
-         * @param array $user_data Array of user data.
-         * @return bool
          */
         public function wwlc_activate_user( $user_data ) {
 
@@ -1012,6 +1273,10 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
 
             // default to customer if new approved lead role is not set.
             $new_user_role = trim( get_option( 'wwlc_general_new_lead_role', 'customer' ) );
+
+            // Defense-in-depth: validate the final role through sanitize_custom_role()
+            // to ensure no code path can assign a privileged role (e.g. administrator).
+            $new_user_role = $this->_validate_and_sanitize_role( $new_user_role, $user->ID, 'activation' );
 
             $this->_remove_all_roles( $user );
 
@@ -1033,11 +1298,13 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Deactivate user.
          *
+         * @param array $user_data Array of user data.
+         *
+         * @return bool
          * @since 1.0.0
          * @since 2.0.0 Update logic to remove unused roles.
-         *
-         * @param array $user_data Array of user data.
-         * @return bool
+         * @since 2.0.5 Destroy active session tokens so a deactivated user is logged out
+         *              of any open browser session and cannot continue placing orders.
          */
         public function wwlc_deactivate_user( $user_data ) {
 
@@ -1058,6 +1325,14 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
 
             $current_value    = get_user_meta( $user->ID, 'wwlc_is_user_active', true );
             $user_deactivated = update_user_meta( $user->ID, 'wwlc_is_user_active', 'no' );
+
+            // Force-logout the deactivated user from any active browser sessions.
+            // Runs unconditionally — a no-op on already-deactivated users with no tokens —
+            // so repeated calls remain idempotent. Only WP auth tokens are invalidated; any
+            // residual WC guest cart cookie is harmless because role-based wholesale pricing
+            // is no longer applied once the wholesale roles are removed above.
+            WP_Session_Tokens::get_instance( $user->ID )->destroy_all();
+
             do_action( 'wwlc_action_after_deactivate_user', $user );
 
             if ( $user_deactivated ) {
@@ -1073,26 +1348,65 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         }
 
         /**
+         * Validate and sanitize a proposed user role, falling back to a safe default if blocked.
+         *
+         * Uses sanitize_custom_role() to ensure no privileged role (e.g. administrator) can be
+         * assigned. If the proposed role is blocked, logs a security warning and falls back to
+         * the configured default role or 'customer'.
+         *
+         * @param string $proposed_role The role to validate.
+         * @param int    $user_id       The user ID (for logging).
+         * @param string $context       Description of the operation (e.g. 'approval', 'activation') for log messages.
+         *
+         * @return string The safe role to assign.
+         * @since 2.0.3.5
+         */
+        private function _validate_and_sanitize_role( $proposed_role, $user_id, $context ) {
+
+            if ( empty( $proposed_role ) ) {
+                return 'customer';
+            }
+
+            if ( 'customer' === $proposed_role ) {
+                return $proposed_role;
+            }
+
+            $sanitized_role = self::sanitize_custom_role( $proposed_role );
+
+            if ( $sanitized_role ) {
+                return $sanitized_role;
+            }
+
+            wc_get_logger()->warning(
+                sprintf(
+                    /* translators: 1: role slug, 2: user ID, 3: operation context (e.g. "approval", "activation"). */
+                    'WWLC Security: Blocked privileged role "%1$s" assignment for user #%2$d during %3$s. Falling back to default role.',
+                    $proposed_role,
+                    $user_id,
+                    $context
+                ),
+                array( 'source' => 'woocommerce-wholesale-lead-capture' )
+            );
+
+            // Try the configured default role as fallback before resorting to 'customer'.
+            $default_role = self::sanitize_custom_role( trim( get_option( 'wwlc_general_new_lead_role' ) ) );
+
+            return $default_role ? $default_role : 'customer';
+        }
+
+        /**
          * Remove all roles from a user.
          *
          * @param WP_User $user The user object.
          *
-         * @since 2.0.0 Added
-         *
          * @return void
+         * @since 2.0.0 Added
          */
         public function _remove_all_roles( &$user ) {
-            $roles         = (array) $user->roles;
-            $allowed_roles = array(
-                WWLC_UNAPPROVED_ROLE,
-                WWLC_REJECTED_ROLE,
-                'customer',
-                get_option( 'wwlc_general_new_lead_role', 'wholesale_customer' ),
-            );
+            $roles = (array) $user->roles;
+
             foreach ( $roles as $role ) {
-                if ( in_array( $role, $allowed_roles, true ) ) {
-                    $user->remove_role( $role );
-                }
+                $user->remove_role( $role );
             }
         }
 
@@ -1101,9 +1415,8 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          *
          * @param WP_User $user The user object.
          *
-         * @since 2.0.0 Added
-         *
          * @return void
+         * @since 2.0.0 Added
          */
         private function _add_customer_role( &$user ) {
             if ( ! in_array( 'customer', $user->roles, true ) ) {
@@ -1182,13 +1495,14 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Get total number of users with a specific role.
          *
          * @param string|array $roles The roles to check.
+         *
          * @return int
          *
          * @since 2.0.0
          */
         public function count_users_by_role( $roles = 'all' ) {
             $args = array(
-                'fields' => array( 'ID' ),
+				'fields' => array( 'ID' ),
             );
 
             if ( 'all' !== $roles ) {
@@ -1221,6 +1535,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                     if ( 'users.php' === $menu[ $key ][2] ) {
 
                         $menu[ $key ][0] .= ' <span class="awaiting-mod count-' . $unapproved_users_total . '"><span class="unapproved-count">' . $unapproved_users_total . '</span></span>'; //phpcs:ignore
+
                         return;
 
                     }
@@ -1256,14 +1571,16 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                         <p>
                             <?php
 
-                                /* translators: %1$s Total of unapproved users*/
-                                $unapproved_user_text_notice = sprintf( _n( '%1$s Pending User', '%1$s Pending Users', $unapproved_users_total, 'woocommerce-wholesale-lead-capture' ), esc_html( $unapproved_users_total ) );
-                                /* translators: %1$s Admin url */
-                                $unapproved_user_text_notice .= ' | ' . sprintf( _n( '<a href="%1$s">View Users</a>', '<a href="%1$s">View Users</a>', $unapproved_users_total, 'woocommerce-wholesale-lead-capture' ), esc_url( get_admin_url( null, 'admin.php?page=wwlc-leads-admin-page' ) ) );
+                            /* translators: %1$s Total of unapproved users*/
+                            $unapproved_user_text_notice = sprintf( _n( '%1$s Pending User', '%1$s Pending Users', $unapproved_users_total, 'woocommerce-wholesale-lead-capture' ), esc_html( $unapproved_users_total ) );
+                            /* translators: %1$s Admin url */
+                            $unapproved_user_text_notice .= ' | ' . sprintf( _n( '<a href="%1$s">View Users</a>', '<a href="%1$s">View Users</a>', $unapproved_users_total, 'woocommerce-wholesale-lead-capture' ), esc_url( get_admin_url( null, 'admin.php?page=wwlc-leads-admin-page' ) ) );
 
-                                echo wp_kses_post( $unapproved_user_text_notice );
+                            echo wp_kses_post( $unapproved_user_text_notice );
                             ?>
-                            <a href="?wwlc_ignore_unapproved_users_notice=0" style="float: right;" id="wwlc_dismiss_unapproved_user_notice"><?php esc_html_e( 'Hide Notice', 'woocommerce-wholesale-lead-capture' ); ?></a>
+                            <a href="<?php echo esc_url( wp_nonce_url( '?wwlc_ignore_unapproved_users_notice=0', 'wwlc_dismiss_unapproved_notice', '_wwlc_nonce' ) ); ?>"
+                                style="float: right;"
+                                id="wwlc_dismiss_unapproved_user_notice"><?php esc_html_e( 'Hide Notice', 'woocommerce-wholesale-lead-capture' ); ?></a>
                         </p>
                     </div>
                     <?php
@@ -1278,14 +1595,20 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * @since 1.0.0
          */
         public function wwlc_hide_total_unapproved_users_admin_notice() {
-
-            global $current_user;
-            $user_id = $current_user->ID;
-
-            /* If user clicks to ignore the notice, add that to their user meta */
-            if ( isset( $_GET['wwlc_ignore_unapproved_users_notice'] ) && '0' == $_GET['wwlc_ignore_unapproved_users_notice'] ) { //phpcs:ignore
-                add_user_meta( $user_id, 'wwlc_ignore_unapproved_users_notice', 'true', true );
+            if ( ! isset( $_GET['wwlc_ignore_unapproved_users_notice'], $_GET['_wwlc_nonce'] ) ) {
+                return;
             }
+
+            if ( '0' !== sanitize_text_field( wp_unslash( $_GET['wwlc_ignore_unapproved_users_notice'] ) ) ) {
+                return;
+            }
+
+            if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wwlc_nonce'] ) ), 'wwlc_dismiss_unapproved_notice' ) ) {
+                return;
+            }
+
+            $user_id = get_current_user_id();
+            add_user_meta( $user_id, 'wwlc_ignore_unapproved_users_notice', 'true', true );
         }
 
         /**
@@ -1294,14 +1617,20 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * @since 1.3.1
          */
         public function wwlc_hide_important_proper_user_management_notice() {
-
-            global $current_user;
-            $user_id = $current_user->ID;
-
-            /* If user clicks to ignore the notice, add that to their user meta */
-            if ( isset( $_GET['wwlc_dismiss_important_user_management_notice'] ) && '0' == $_GET['wwlc_dismiss_important_user_management_notice'] ) { //phpcs:ignore
-                add_user_meta( $user_id, 'wwlc_dismiss_important_user_management_notice', 'true', true );
+            if ( ! isset( $_GET['wwlc_dismiss_important_user_management_notice'], $_GET['_wwlc_nonce'] ) ) {
+                return;
             }
+
+            if ( '0' !== sanitize_text_field( wp_unslash( $_GET['wwlc_dismiss_important_user_management_notice'] ) ) ) {
+                return;
+            }
+
+            if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wwlc_nonce'] ) ), 'wwlc_dismiss_mgmt_notice' ) ) {
+                return;
+            }
+
+            $user_id = get_current_user_id();
+            add_user_meta( $user_id, 'wwlc_dismiss_important_user_management_notice', 'true', true );
         }
 
         /**
@@ -1330,6 +1659,9 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 wp_mkdir_p( $user_wholesale_dir );
             }
 
+            // Protect directory from direct web access.
+            wwlc_protect_upload_directory( $upload_dir['basedir'] . '/wholesale-customers' );
+
             foreach ( $file_fields as $field ) {
 
                 $file_name = get_user_meta( $userID, $field['name'], true );
@@ -1350,7 +1682,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Delete file from their respective wholesale folder.
          * This should be run after the user has been updated.
          *
-         * @param int    $userID   The user ID.
+         * @param int    $userID The user ID.
          * @param string $filename The file name.
          *
          * @since 1.17.5
@@ -1374,7 +1706,7 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         /**
          * Get file.
          *
-         * @param int $userID  The user ID.
+         * @param int $userID The user ID.
          * @param int $fieldid The field id.
          *
          * @since 1.17.5
@@ -1391,8 +1723,8 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Fix an issue when an admin is updating a users password, it will send an email to the user even if its still in unapprove status.
          * Ticket: WWLC-112
          *
-         * @param bool  $send      Whether to send the email.
-         * @param array $user      The original user array.
+         * @param bool  $send Whether to send the email.
+         * @param array $user The original user array.
          * @param array $user_data The updated user array.
          *
          * @return bool
@@ -1412,12 +1744,94 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
         }
 
         /**
+         * Block password reset for unapproved and rejected wholesale users.
+         *
+         * Prevents unapproved users from bypassing login restrictions via the
+         * password reset flow, which would otherwise automatically log them in
+         * after resetting their password.
+         *
+         * @param bool $allow   Whether to allow the password reset.
+         * @param int  $user_id The ID of the user requesting the password reset.
+         *
+         * @return bool|WP_Error False or WP_Error to block, true to allow.
+         * @since 2.0.4
+         */
+        public function wwlc_block_unapproved_password_reset( $allow, $user_id ) {
+
+            $user = get_user_by( 'id', $user_id );
+
+            if ( ! $user instanceof WP_User || ! is_array( $user->roles ) ) {
+                return $allow;
+            }
+
+            if ( in_array( WWLC_UNAPPROVED_ROLE, $user->roles, true ) ) {
+                return new WP_Error(
+                    'wwlc_password_reset_not_allowed',
+                    __( 'Password reset is not allowed. Your account is still awaiting approval.', 'woocommerce-wholesale-lead-capture' )
+                );
+            }
+
+            if ( in_array( WWLC_REJECTED_ROLE, $user->roles, true ) ) {
+                return new WP_Error(
+                    'wwlc_password_reset_not_allowed',
+                    __( 'Password reset is not allowed for this account.', 'woocommerce-wholesale-lead-capture' )
+                );
+            }
+
+            return $allow;
+        }
+
+        /**
+         * Get the list of allowed registration field keys.
+         *
+         * Builds an allowlist from built-in registration fields and admin-configured
+         * custom fields. Used to prevent arbitrary user meta injection during registration.
+         *
+         * @return array List of allowed field key strings.
+         * @since 2.0.3.2
+         * @access public
+         */
+        public function get_allowed_registration_field_keys() {
+            global $WWLC_REGISTRATION_FIELDS;
+
+            $allowed_keys = array();
+
+            // Add built-in registration field names.
+            if ( ! empty( $WWLC_REGISTRATION_FIELDS ) ) {
+                foreach ( $WWLC_REGISTRATION_FIELDS as $field ) {
+                    if ( isset( $field['name'] ) ) {
+                        $allowed_keys[] = $field['name'];
+                    }
+                }
+            }
+
+            // Add admin-configured custom field IDs.
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            if ( ! empty( $custom_fields ) ) {
+                $allowed_keys = array_merge( $allowed_keys, array_keys( $custom_fields ) );
+            }
+
+            // Allow internal fields that are set programmatically (not from user input).
+            $allowed_keys[] = 'wwlc_user_lang_wpml';
+
+            /**
+             * Filter the list of allowed registration field keys for user meta storage.
+             *
+             * @param array $allowed_keys The allowed field keys.
+             *
+             * @since 2.0.3.2
+             */
+            return apply_filters( 'wwlc_allowed_registration_field_keys', $allowed_keys );
+        }
+
+        /**
          * Sanitize the set custom role to make sure it is only set to allowed roles.
          *
          * @param string $custom_role Custom role to sanitize.
          *
          * @return string Sanitized custom role.
          * @since 1.7.0
+         * @since 2.0.3.2 Block roles with privileged capabilities.
          */
         public static function sanitize_custom_role( $custom_role ) {
 
@@ -1429,23 +1843,103 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
                 require_once ABSPATH . '/wp-admin/includes/user.php';
             }
 
-            $available_roles  = array_keys( get_editable_roles() );
-            $restricted_roles = apply_filters(
-                'wwlc_registration_allowed_roles',
+            $available_roles = get_editable_roles();
+
+            // Role must exist.
+            if ( ! isset( $available_roles[ $custom_role ] ) ) {
+                return '';
+            }
+
+            // Block any role that has privileged capabilities.
+            $privileged_capabilities = apply_filters(
+                'wwlc_restricted_role_capabilities',
                 array(
-                    'administrator',
-                    'editor',
-                    'author',
-                    'contributor',
-                )
+					'manage_options',
+					'manage_woocommerce',
+					'edit_users',
+					'create_users',
+					'delete_users',
+					'promote_users',
+					'install_plugins',
+					'edit_plugins',
+					'activate_plugins',
+					'edit_themes',
+					'switch_themes',
+				)
             );
 
-            // if set role is restricted or is not in the list of available roles, then return empty.
-            if ( in_array( $custom_role, $restricted_roles, true ) || ! in_array( $custom_role, $available_roles, true ) ) {
+            $role_capabilities = $available_roles[ $custom_role ]['capabilities'] ?? array();
+            foreach ( $privileged_capabilities as $cap ) {
+                if ( ! empty( $role_capabilities[ $cap ] ) ) {
+                    return '';
+                }
+            }
+
+            // Also apply an explicit blocklist for well-known privileged roles as defense-in-depth.
+            // Only roles with truly privileged capabilities are blocked here. Content roles
+            // (editor, author, contributor) are not blocked because admins may legitimately
+            // configure them as the "New Lead Role" and they lack privileged capabilities.
+            $restricted_roles = apply_filters(
+                'wwlc_registration_restricted_roles',
+                array(
+					'administrator',
+					'shop_manager',
+				)
+            );
+
+            // Deprecation bridge: support the old filter name for backwards compatibility.
+            if ( has_filter( 'wwlc_registration_allowed_roles' ) ) {
+                _deprecated_hook( 'wwlc_registration_allowed_roles', '2.0.3.2', 'wwlc_registration_restricted_roles' );
+                $restricted_roles = apply_filters( 'wwlc_registration_allowed_roles', $restricted_roles );
+            }
+
+            if ( in_array( $custom_role, $restricted_roles, true ) ) {
                 return '';
             }
 
             return $custom_role;
+        }
+
+        /**
+         * Check if a given page contains the WWLC registration form.
+         *
+         * Checks both classic shortcodes in post_content and Gutenberg blocks.
+         * Also verifies the page is published.
+         *
+         * @param int $page_id The page ID to check.
+         *
+         * @return bool Whether the page contains the registration form.
+         * @since 2.0.3.3
+         */
+        private function page_has_registration_form( $page_id ) {
+
+            $page = get_post( $page_id );
+
+            if ( ! $page || 'publish' !== $page->post_status ) {
+                return false;
+            }
+
+            // Check classic shortcode.
+            if ( has_shortcode( $page->post_content, 'wwlc_registration_form' ) ) {
+                return true;
+            }
+
+            // Check Gutenberg block (e.g. shortcode block or custom WWLC block).
+            if ( function_exists( 'has_block' ) && has_block( 'core/shortcode', $page->post_content ) ) {
+                // The core/shortcode block embeds shortcodes in its innerHTML.
+                // has_shortcode already checked raw content, but parse_blocks can reveal nested content.
+                $blocks = parse_blocks( $page->post_content );
+                foreach ( $blocks as $block ) {
+                    if ( 'core/shortcode' === $block['blockName']
+                        && ! empty( $block['innerHTML'] )
+                        && has_shortcode( $block['innerHTML'], 'wwlc_registration_form' )
+                    ) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         /**
@@ -1482,17 +1976,66 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Detects if auto login parameter is set in shortcode
          *
          * @param bool    $autologin Default value for auto login which is true if auto approve option is enabled.
-         * @param WP_User $new_lead  User Object Data.
+         * @param WP_User $new_lead User Object Data.
          * @param array   $user_data Registration form field data.
          *
+         * @return bool
          * @since 1.8.0
          * @access public
-         * @return bool
          */
         public function wwlc_auto_login_check( $autologin, $new_lead, $user_data ) {
 
-            if ( isset( $user_data['wwlc_auto_login'] ) ) {
-                return 'true' === $user_data['wwlc_auto_login'] ? true : false;
+            // Secure nonce-based verification for auto_login from shortcode.
+            // The transient stores both the boolean value and page_id to prevent cross-page attacks.
+            if ( isset( $user_data['wwlc_auto_login_nonce'] ) ) {
+                $nonce = sanitize_text_field( $user_data['wwlc_auto_login_nonce'] );
+
+                // Get page ID from form data (for AJAX compatibility) or fallback to queried object.
+                $page_id_from_form    = isset( $user_data['wwlc_page_id'] ) ? intval( $user_data['wwlc_page_id'] ) : 0;
+                $page_id_from_context = get_queried_object_id();
+
+                // For AJAX requests, use form data; for direct requests, verify they match to prevent cross-page attacks.
+                if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                    $page_id = $page_id_from_form > 0 ? $page_id_from_form : $page_id_from_context;
+                } else {
+                    // For non-AJAX requests, use context page_id and verify form page_id matches (if provided).
+                    $page_id = $page_id_from_context > 0 ? $page_id_from_context : $page_id_from_form;
+
+                    // Additional security: if form has page_id, it must match context (unless AJAX).
+                    if ( $page_id_from_form > 0 && $page_id_from_form !== $page_id_from_context && $page_id_from_context > 0 ) {
+                        // Use context page_id to prevent attack.
+                        $page_id = $page_id_from_context;
+                    }
+                }
+
+                // Verify nonce matches page context.
+                if ( $page_id > 0 && wp_verify_nonce( $nonce, 'wwlc_auto_login_' . $page_id ) ) {
+                    // Get stored data from transient (contains both value and original page_id).
+                    $stored_data = get_transient( 'wwlc_auto_login_' . $nonce );
+                    if ( false !== $stored_data && is_array( $stored_data ) ) {
+                        // Verify page_id matches to prevent cross-page attacks.
+                        if ( isset( $stored_data['page_id'] ) && $stored_data['page_id'] === $page_id ) {
+                            // Delete transient after use (single-use nonce).
+                            delete_transient( 'wwlc_auto_login_' . $nonce );
+
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Log unauthorized attempts (when old direct value is present but nonce is missing).
+            if ( isset( $user_data['wwlc_auto_login'] ) && ! isset( $user_data['wwlc_auto_login_nonce'] ) ) {
+                wc_get_logger()->warning(
+                    sprintf(
+                        'SECURITY: Unauthorized auto_login attempt detected - IP: %s, Email: %s, Page ID: %s, Timestamp: %s',
+                        isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown',
+                        isset( $user_data['user_email'] ) ? sanitize_email( $user_data['user_email'] ) : 'unknown',
+                        get_queried_object_id(),
+                        current_time( 'mysql' )
+                    ),
+                    array( 'source' => 'woocommerce-wholesale-lead-capture' )
+                );
             }
 
             return $autologin;
@@ -1502,12 +2045,12 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Redirects user properly. Triggers when loggin-in via wp-login.php and Wholesale Login Page.
          * Fix the issue when logging-in in a multisite, the user redirected to a blank page. WWLC-286
          *
+         * @param string  $redirect Redirect URL.
+         * @param WP_User $user WP_User object of the logged-in user.
+         *
          * @since 1.14
          * @since 1.17.4 Prevent redirect to shop page if wwlc login redirect setting is note set.
          * @access public
-         *
-         * @param string  $redirect Redirect URL.
-         * @param WP_User $user     WP_User object of the logged-in user.
          */
         public function wwlc_redirect_after_login( $redirect, $user ) {
 
@@ -1539,21 +2082,22 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
          * Solution was to remove the user from subsite when login shows an error message.
          * Filters whether a user should be added to a site.
          *
-         * @param bool|WP_Error $retval  True if the user should be added to the site, false
+         * @param bool|WP_Error $retval True if the user should be added to the site, false
          *                               or error object otherwise.
          * @param int           $user_id User ID.
-         * @param string        $role    User role.
+         * @param string        $role User role.
          * @param int           $blog_id Site ID.
          *
+         * @return bool
          * @since 1.14
          * @access public
-         * @return bool
          */
         public function wwlc_remove_user_from_blog( $retval, $user_id, $role, $blog_id ) { // phpcs:ignore.
 
             if ( is_multisite() ) {
 
-                $user_data = get_user_by( is_email( $_POST['username'] ) ? 'email' : 'login', $_POST['username'] ); //phpcs:ignore
+                $username  = isset( $_POST['username'] ) ? sanitize_text_field( wp_unslash( $_POST['username'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in wwlc_create_user().
+                $user_data = get_user_by( is_email( $username ) ? 'email' : 'login', $username );
 
                 if ( $user_data && ! is_user_member_of_blog( $user_data->ID, get_current_blog_id() ) ) {
                     return false;
@@ -1561,6 +2105,31 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
             }
 
             return $retval;
+        }
+
+        /**
+         * Sanitize the reCAPTCHA v3 score threshold option on save.
+         *
+         * Coerces non-numeric or out-of-range values to the default ('0.5') so a typo
+         * in either settings UI (legacy WC or React) cannot persist a value that
+         * silently disables the score gate at verification time.
+         *
+         * @param mixed $value Value submitted to update_option().
+         * @return string Sanitized threshold as a numeric string in [0.0, 1.0].
+         * @since 2.0.4.3
+         */
+        public function sanitize_recaptcha_v3_score_threshold( $value ) {
+
+            if ( ! is_numeric( $value ) ) {
+                return self::RECAPTCHA_V3_DEFAULT_THRESHOLD;
+            }
+
+            $float = (float) $value;
+            if ( $float < 0.0 || $float > 1.0 ) {
+                return self::RECAPTCHA_V3_DEFAULT_THRESHOLD;
+            }
+
+            return (string) $value;
         }
 
         /**
@@ -1583,6 +2152,10 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
             // Fixes issue when user tries to login via the My Account page from different site, wc will add the user to the subsite if user doesn't exist there.
             add_filter( 'can_add_user_to_blog', array( $this, 'wwlc_remove_user_from_blog' ), 10, 4 );
 
+            // Sanitize the v3 score threshold on save — coerce non-numeric / out-of-range values to the default
+            // so a typo in the settings UI can't silently neutralise the score gate (e.g. "abc" → (float)0.0).
+            add_filter( 'pre_update_option_wwlc_security_recaptcha_v3_score_threshold', array( $this, 'sanitize_recaptcha_v3_score_threshold' ) );
+
             // Redirect Wholesale User To Specific Page After Logging Out.
             add_filter( 'logout_url', array( $this, 'wwlc_wholesale_lead_logout_redirect' ), 10, 2 );
             add_action( 'wp_logout', array( $this, 'wwlc_clear_user_session_on_logout' ) );
@@ -1602,6 +2175,9 @@ if ( ! class_exists( 'WWLC_User_Account' ) ) {
 
             // Stop sending password change email if user is still in unapprove status.
             add_filter( 'send_password_change_email', array( $this, 'wwlc_password_change_email' ), 10, 3 );
+
+            // Block password reset for unapproved and rejected wholesale users.
+            add_filter( 'allow_password_reset', array( $this, 'wwlc_block_unapproved_password_reset' ), 10, 2 );
 
             // Handles user authentication when user logs in using wwlc login form.
             add_action( 'template_redirect', array( $this, 'wwlc_authenticate' ) );

@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit644a80e4b25560037acd97262c6185ae
+class ComposerStaticInit5cf50ab6649ec9e5d8aa1976763c0124
 {
     public static $files = array (
         '3773ef3f09c37da5478d578e32b03a4b' => __DIR__ . '/..' . '/automattic/jetpack-assets/actions.php',
@@ -12,6 +12,19 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
     );
 
     public static $prefixLengthsPsr4 = array (
+        'W' => 
+        array (
+            'WooCommerce\\BoxPacker\\' => 22,
+        ),
+        'P' => 
+        array (
+            'Psr\\Log\\' => 8,
+        ),
+        'D' => 
+        array (
+            'DVDoug\\BoxPacker\\Test\\' => 22,
+            'DVDoug\\BoxPacker\\' => 17,
+        ),
         'A' => 
         array (
             'Automattic\\WCShipping\\' => 22,
@@ -20,6 +33,22 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
     );
 
     public static $prefixDirsPsr4 = array (
+        'WooCommerce\\BoxPacker\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/woocommerce/box-packer/src',
+        ),
+        'Psr\\Log\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
+        ),
+        'DVDoug\\BoxPacker\\Test\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test',
+        ),
+        'DVDoug\\BoxPacker\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/dvdoug/boxpacker/src',
+        ),
         'Automattic\\WCShipping\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
@@ -94,12 +123,20 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Automattic\\Jetpack\\Status\\Visitor' => __DIR__ . '/..' . '/automattic/jetpack-status/src/class-visitor.php',
         'Automattic\\Jetpack\\Terms_Of_Service' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-terms-of-service.php',
         'Automattic\\Jetpack\\Tracking' => __DIR__ . '/..' . '/automattic/jetpack-connection/src/class-tracking.php',
+        'Automattic\\WCShipping\\Abilities\\Abilities' => __DIR__ . '/../..' . '/src/Abilities/Abilities.php',
+        'Automattic\\WCShipping\\Abilities\\ShippingLabelsReport' => __DIR__ . '/../..' . '/src/Abilities/ShippingLabelsReport.php',
         'Automattic\\WCShipping\\Analytics\\LabelsService' => __DIR__ . '/../..' . '/src/Analytics/LabelsService.php',
         'Automattic\\WCShipping\\Analytics\\ShippingLabel' => __DIR__ . '/../..' . '/src/Analytics/ShippingLabel.php',
         'Automattic\\WCShipping\\Analytics\\ShippingLabelRESTController' => __DIR__ . '/../..' . '/src/Analytics/ShippingLabelRESTController.php',
         'Automattic\\WCShipping\\Autoloader' => __DIR__ . '/../..' . '/src/Autoloader.php',
-        'Automattic\\WCShipping\\Carrier\\CarrierStrategyService' => __DIR__ . '/../..' . '/src/Carrier/CarrierStrategyService.php',
-        'Automattic\\WCShipping\\Carrier\\CarrierStrategyServiceInterface' => __DIR__ . '/../..' . '/src/Carrier/CarrierStrategyServiceInterface.php',
+        'Automattic\\WCShipping\\Banners\\Banners' => __DIR__ . '/../..' . '/src/Banners/Banners.php',
+        'Automattic\\WCShipping\\Banners\\BulkLabelsBanner' => __DIR__ . '/../..' . '/src/Banners/BulkLabelsBanner.php',
+        'Automattic\\WCShipping\\Bulk\\BatchableApiClient' => __DIR__ . '/../..' . '/src/Bulk/BatchableApiClient.php',
+        'Automattic\\WCShipping\\Bulk\\Models\\PrintQueueItem' => __DIR__ . '/../..' . '/src/Bulk/Models/PrintQueueItem.php',
+        'Automattic\\WCShipping\\Bulk\\PrintQueueRepository' => __DIR__ . '/../..' . '/src/Bulk/PrintQueueRepository.php',
+        'Automattic\\WCShipping\\Carrier\\FedEx\\FedExCarrierStrategyRESTController' => __DIR__ . '/../..' . '/src/Carrier/FedEx/FedExCarrierStrategyRESTController.php',
+        'Automattic\\WCShipping\\Carrier\\FedEx\\FedExCarrierStrategyService' => __DIR__ . '/../..' . '/src/Carrier/FedEx/FedExCarrierStrategyService.php',
+        'Automattic\\WCShipping\\Carrier\\FedEx\\FedExTosErrorInterceptor' => __DIR__ . '/../..' . '/src/Carrier/FedEx/FedExTosErrorInterceptor.php',
         'Automattic\\WCShipping\\Carrier\\UPSDAP\\UPSDAPCarrierStrategyRESTController' => __DIR__ . '/../..' . '/src/Carrier/UPSDAP/UPSDAPCarrierStrategyRESTController.php',
         'Automattic\\WCShipping\\Carrier\\UPSDAP\\UPSDAPCarrierStrategyService' => __DIR__ . '/../..' . '/src/Carrier/UPSDAP/UPSDAPCarrierStrategyService.php',
         'Automattic\\WCShipping\\Checkout\\CheckoutController' => __DIR__ . '/../..' . '/src/Checkout/CheckoutController.php',
@@ -108,10 +145,17 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Automattic\\WCShipping\\Checkout\\StoreNotice' => __DIR__ . '/../..' . '/src/Checkout/StoreNotice.php',
         'Automattic\\WCShipping\\Checkout\\StoreNoticeTypes' => __DIR__ . '/../..' . '/src/Checkout/StoreNoticeTypes.php',
         'Automattic\\WCShipping\\DOM\\Manipulation' => __DIR__ . '/../..' . '/src/DOM/Manipulation.php',
+        'Automattic\\WCShipping\\Emails\\WC_Admin_Return_Label_Email' => __DIR__ . '/../..' . '/src/Emails/WC_Admin_Return_Label_Email.php',
+        'Automattic\\WCShipping\\Emails\\WC_Return_Label_Email' => __DIR__ . '/../..' . '/src/Emails/WC_Return_Label_Email.php',
         'Automattic\\WCShipping\\Exceptions\\RESTRequestException' => __DIR__ . '/../..' . '/src/Exceptions/RESTRequestException.php',
         'Automattic\\WCShipping\\FeatureFlags\\FeatureFlags' => __DIR__ . '/../..' . '/src/FeatureFlags/FeatureFlags.php',
+        'Automattic\\WCShipping\\Fulfillments\\FulfillmentNotificationType' => __DIR__ . '/../..' . '/src/Fulfillments/FulfillmentNotificationType.php',
+        'Automattic\\WCShipping\\Fulfillments\\FulfillmentsService' => __DIR__ . '/../..' . '/src/Fulfillments/FulfillmentsService.php',
+        'Automattic\\WCShipping\\Fulfillments\\ShippingFulfillment' => __DIR__ . '/../..' . '/src/Fulfillments/ShippingFulfillment.php',
+        'Automattic\\WCShipping\\Fulfillments\\ShippingFulfillmentsDataStore' => __DIR__ . '/../..' . '/src/Fulfillments/ShippingFulfillmentsDataStore.php',
         'Automattic\\WCShipping\\Integrations\\AssetsRESTController' => __DIR__ . '/../..' . '/src/Integrations/AssetsRESTController.php',
         'Automattic\\WCShipping\\Integrations\\ConfigRESTController' => __DIR__ . '/../..' . '/src/Integrations/ConfigRESTController.php',
+        'Automattic\\WCShipping\\Integrations\\Garden' => __DIR__ . '/../..' . '/src/Integrations/Garden.php',
         'Automattic\\WCShipping\\Integrations\\TosRESTController' => __DIR__ . '/../..' . '/src/Integrations/TosRESTController.php',
         'Automattic\\WCShipping\\Integrations\\WCST' => __DIR__ . '/../..' . '/src/Integrations/WCST.php',
         'Automattic\\WCShipping\\Integrations\\WooCommerceBlocksIntegration' => __DIR__ . '/../..' . '/src/Integrations/WooCommerceBlocksIntegration.php',
@@ -126,6 +170,7 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Automattic\\WCShipping\\LabelPurchase\\LabelPurchaseService' => __DIR__ . '/../..' . '/src/LabelPurchase/LabelPurchaseService.php',
         'Automattic\\WCShipping\\LabelPurchase\\LabelRefundRESTController' => __DIR__ . '/../..' . '/src/LabelPurchase/LabelRefundRESTController.php',
         'Automattic\\WCShipping\\LabelPurchase\\LabelStatusController' => __DIR__ . '/../..' . '/src/LabelPurchase/LabelStatusController.php',
+        'Automattic\\WCShipping\\LabelPurchase\\OrdersShippingContextRESTController' => __DIR__ . '/../..' . '/src/LabelPurchase/OrdersShippingContextRESTController.php',
         'Automattic\\WCShipping\\LabelPurchase\\View' => __DIR__ . '/../..' . '/src/LabelPurchase/View.php',
         'Automattic\\WCShipping\\LabelPurchase\\ViewService' => __DIR__ . '/../..' . '/src/LabelPurchase/ViewService.php',
         'Automattic\\WCShipping\\LabelRate\\LabelRateRESTController' => __DIR__ . '/../..' . '/src/LabelRate/LabelRateRESTController.php',
@@ -142,6 +187,8 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Automattic\\WCShipping\\Migration\\MigrationState' => __DIR__ . '/../..' . '/src/Migration/MigrationState.php',
         'Automattic\\WCShipping\\Onboarding\\SettingsPage' => __DIR__ . '/../..' . '/src/Onboarding/SettingsPage.php',
         'Automattic\\WCShipping\\OriginAddresses\\OriginAddressService' => __DIR__ . '/../..' . '/src/OriginAddresses/OriginAddressService.php',
+        'Automattic\\WCShipping\\PackageAssignment\\PackageAssignmentRESTController' => __DIR__ . '/../..' . '/src/PackageAssignment/PackageAssignmentRESTController.php',
+        'Automattic\\WCShipping\\PackageAssignment\\PackageAssignmentService' => __DIR__ . '/../..' . '/src/PackageAssignment/PackageAssignmentService.php',
         'Automattic\\WCShipping\\Packages\\Package' => __DIR__ . '/../..' . '/src/Packages/Package.php',
         'Automattic\\WCShipping\\Packages\\PackageRepository' => __DIR__ . '/../..' . '/src/Packages/PackageRepository.php',
         'Automattic\\WCShipping\\Packages\\PackageValidationException' => __DIR__ . '/../..' . '/src/Packages/PackageValidationException.php',
@@ -149,21 +196,68 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Automattic\\WCShipping\\Packages\\PackagesRESTController' => __DIR__ . '/../..' . '/src/Packages/PackagesRESTController.php',
         'Automattic\\WCShipping\\Promo\\PromoRESTController' => __DIR__ . '/../..' . '/src/Promo/PromoRESTController.php',
         'Automattic\\WCShipping\\Promo\\PromoService' => __DIR__ . '/../..' . '/src/Promo/PromoService.php',
+        'Automattic\\WCShipping\\ScanForm\\ScanForm' => __DIR__ . '/../..' . '/src/ScanForm/ScanForm.php',
+        'Automattic\\WCShipping\\ScanForm\\ScanFormHistoryRESTController' => __DIR__ . '/../..' . '/src/ScanForm/ScanFormHistoryRESTController.php',
+        'Automattic\\WCShipping\\ScanForm\\ScanFormRESTController' => __DIR__ . '/../..' . '/src/ScanForm/ScanFormRESTController.php',
+        'Automattic\\WCShipping\\ScanForm\\ScanFormService' => __DIR__ . '/../..' . '/src/ScanForm/ScanFormService.php',
+        'Automattic\\WCShipping\\ServiceData\\ServiceSchemasFetcherService' => __DIR__ . '/../..' . '/src/ServiceData/ServiceSchemasFetcherService.php',
+        'Automattic\\WCShipping\\ServiceData\\ServiceStatusRESTController' => __DIR__ . '/../..' . '/src/ServiceData/ServiceStatusRESTController.php',
+        'Automattic\\WCShipping\\ServiceData\\ServicesErrorNotice' => __DIR__ . '/../..' . '/src/ServiceData/ServicesErrorNotice.php',
         'Automattic\\WCShipping\\Shipment\\Address' => __DIR__ . '/../..' . '/src/Shipment/Address.php',
         'Automattic\\WCShipping\\Shipment\\ShipmentFromLabelGenerator' => __DIR__ . '/../..' . '/src/Shipment/ShipmentFromLabelGenerator.php',
+        'Automattic\\WCShipping\\Shipments\\Models\\Shipment' => __DIR__ . '/../..' . '/src/Shipments/Models/Shipment.php',
+        'Automattic\\WCShipping\\Shipments\\Models\\ShipmentItem' => __DIR__ . '/../..' . '/src/Shipments/Models/ShipmentItem.php',
+        'Automattic\\WCShipping\\Shipments\\Models\\Shipments' => __DIR__ . '/../..' . '/src/Shipments/Models/Shipments.php',
+        'Automattic\\WCShipping\\Shipments\\ShipmentDataValidator' => __DIR__ . '/../..' . '/src/Shipments/ShipmentDataValidator.php',
         'Automattic\\WCShipping\\Shipments\\ShipmentsRESTController' => __DIR__ . '/../..' . '/src/Shipments/ShipmentsRESTController.php',
         'Automattic\\WCShipping\\Shipments\\ShipmentsService' => __DIR__ . '/../..' . '/src/Shipments/ShipmentsService.php',
         'Automattic\\WCShipping\\StoreApi\\AbstractStoreApiExtension' => __DIR__ . '/../..' . '/src/StoreApi/AbstractStoreApiExtension.php',
         'Automattic\\WCShipping\\StoreApi\\Extensions\\BlocksCheckoutAddressValidationExtension' => __DIR__ . '/../..' . '/src/StoreApi/Extensions/BlocksCheckoutAddressValidationExtension.php',
         'Automattic\\WCShipping\\StoreApi\\StoreApiExtendSchema' => __DIR__ . '/../..' . '/src/StoreApi/StoreApiExtendSchema.php',
         'Automattic\\WCShipping\\StoreApi\\StoreApiExtensionController' => __DIR__ . '/../..' . '/src/StoreApi/StoreApiExtensionController.php',
+        'Automattic\\WCShipping\\Testing\\E2ESeedData' => __DIR__ . '/../..' . '/src/Testing/E2ESeedData.php',
+        'Automattic\\WCShipping\\Testing\\WCConnectE2EAPIClientMock' => __DIR__ . '/../..' . '/src/Testing/WCConnectE2EAPIClientMock.php',
+        'Automattic\\WCShipping\\Testing\\WCConnectE2EConnectionShim' => __DIR__ . '/../..' . '/src/Testing/WCConnectE2EConnectionShim.php',
         'Automattic\\WCShipping\\Tracks' => __DIR__ . '/../..' . '/src/Tracks.php',
         'Automattic\\WCShipping\\Utilities\\AddressUtils' => __DIR__ . '/../..' . '/src/Utilities/AddressUtils.php',
+        'Automattic\\WCShipping\\Utilities\\BaseModel' => __DIR__ . '/../..' . '/src/Utilities/BaseModel.php',
+        'Automattic\\WCShipping\\Utilities\\USPSTerritories' => __DIR__ . '/../..' . '/src/Utilities/USPSTerritories.php',
         'Automattic\\WCShipping\\Utils' => __DIR__ . '/../..' . '/src/Utils.php',
         'Automattic\\WCShipping\\Validators' => __DIR__ . '/../..' . '/src/Validators.php',
         'Automattic\\WCShipping\\WCShippingRESTController' => __DIR__ . '/../..' . '/src/WCShippingRESTController.php',
         'Automattic\\WCShipping\\WPCOMConnection\\WPCOMConnectionRESTController' => __DIR__ . '/../..' . '/src/WPCOMConnection/WPCOMConnectionRESTController.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'DVDoug\\BoxPacker\\Box' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/Box.php',
+        'DVDoug\\BoxPacker\\BoxList' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/BoxList.php',
+        'DVDoug\\BoxPacker\\ConstrainedItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/ConstrainedItem.php',
+        'DVDoug\\BoxPacker\\ConstrainedPlacementItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/ConstrainedPlacementItem.php',
+        'DVDoug\\BoxPacker\\InfalliblePacker' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/InfalliblePacker.php',
+        'DVDoug\\BoxPacker\\Item' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/Item.php',
+        'DVDoug\\BoxPacker\\ItemList' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/ItemList.php',
+        'DVDoug\\BoxPacker\\ItemTooLargeException' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/ItemTooLargeException.php',
+        'DVDoug\\BoxPacker\\LayerPacker' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/LayerPacker.php',
+        'DVDoug\\BoxPacker\\LayerStabiliser' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/LayerStabiliser.php',
+        'DVDoug\\BoxPacker\\LimitedSupplyBox' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/LimitedSupplyBox.php',
+        'DVDoug\\BoxPacker\\NoBoxesAvailableException' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/NoBoxesAvailableException.php',
+        'DVDoug\\BoxPacker\\OrientatedItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/OrientatedItem.php',
+        'DVDoug\\BoxPacker\\OrientatedItemFactory' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/OrientatedItemFactory.php',
+        'DVDoug\\BoxPacker\\OrientatedItemSorter' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/OrientatedItemSorter.php',
+        'DVDoug\\BoxPacker\\PackedBox' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/PackedBox.php',
+        'DVDoug\\BoxPacker\\PackedBoxList' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/PackedBoxList.php',
+        'DVDoug\\BoxPacker\\PackedItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/PackedItem.php',
+        'DVDoug\\BoxPacker\\PackedItemList' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/PackedItemList.php',
+        'DVDoug\\BoxPacker\\PackedLayer' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/PackedLayer.php',
+        'DVDoug\\BoxPacker\\Packer' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/Packer.php',
+        'DVDoug\\BoxPacker\\Test\\ConstrainedPlacementByCountTestItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/ConstrainedPlacementByCountTestItem.php',
+        'DVDoug\\BoxPacker\\Test\\ConstrainedPlacementNoStackingTestItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/ConstrainedPlacementNoStackingTestItem.php',
+        'DVDoug\\BoxPacker\\Test\\ConstrainedTestItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/ConstrainedTestItem.php',
+        'DVDoug\\BoxPacker\\Test\\LimitedSupplyTestBox' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/LimitedSupplyTestBox.php',
+        'DVDoug\\BoxPacker\\Test\\THPackTestItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/THPackTestItem.php',
+        'DVDoug\\BoxPacker\\Test\\TestBox' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/TestBox.php',
+        'DVDoug\\BoxPacker\\Test\\TestItem' => __DIR__ . '/..' . '/dvdoug/boxpacker/tests/Test/TestItem.php',
+        'DVDoug\\BoxPacker\\VolumePacker' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/VolumePacker.php',
+        'DVDoug\\BoxPacker\\WeightRedistributor' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/WeightRedistributor.php',
+        'DVDoug\\BoxPacker\\WorkingVolume' => __DIR__ . '/..' . '/dvdoug/boxpacker/src/WorkingVolume.php',
         'Jetpack_IXR_Client' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-ixr-client.php',
         'Jetpack_IXR_ClientMulticall' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-ixr-clientmulticall.php',
         'Jetpack_Options' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-options.php',
@@ -171,14 +265,37 @@ class ComposerStaticInit644a80e4b25560037acd97262c6185ae
         'Jetpack_Tracks_Client' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-tracks-client.php',
         'Jetpack_Tracks_Event' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-tracks-event.php',
         'Jetpack_XMLRPC_Server' => __DIR__ . '/..' . '/automattic/jetpack-connection/legacy/class-jetpack-xmlrpc-server.php',
+        'Psr\\Log\\AbstractLogger' => __DIR__ . '/..' . '/psr/log/Psr/Log/AbstractLogger.php',
+        'Psr\\Log\\InvalidArgumentException' => __DIR__ . '/..' . '/psr/log/Psr/Log/InvalidArgumentException.php',
+        'Psr\\Log\\LogLevel' => __DIR__ . '/..' . '/psr/log/Psr/Log/LogLevel.php',
+        'Psr\\Log\\LoggerAwareInterface' => __DIR__ . '/..' . '/psr/log/Psr/Log/LoggerAwareInterface.php',
+        'Psr\\Log\\LoggerAwareTrait' => __DIR__ . '/..' . '/psr/log/Psr/Log/LoggerAwareTrait.php',
+        'Psr\\Log\\LoggerInterface' => __DIR__ . '/..' . '/psr/log/Psr/Log/LoggerInterface.php',
+        'Psr\\Log\\LoggerTrait' => __DIR__ . '/..' . '/psr/log/Psr/Log/LoggerTrait.php',
+        'Psr\\Log\\NullLogger' => __DIR__ . '/..' . '/psr/log/Psr/Log/NullLogger.php',
+        'Psr\\Log\\Test\\DummyTest' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/DummyTest.php',
+        'Psr\\Log\\Test\\LoggerInterfaceTest' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/LoggerInterfaceTest.php',
+        'Psr\\Log\\Test\\TestLogger' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/TestLogger.php',
+        'WooCommerce\\BoxPacker\\Abstract_Item' => __DIR__ . '/..' . '/woocommerce/box-packer/src/class-abstract-item.php',
+        'WooCommerce\\BoxPacker\\Abstract_Packer' => __DIR__ . '/..' . '/woocommerce/box-packer/src/class-abstract-packer.php',
+        'WooCommerce\\BoxPacker\\Box' => __DIR__ . '/..' . '/woocommerce/box-packer/src/interface-box.php',
+        'WooCommerce\\BoxPacker\\DVDoug\\Box' => __DIR__ . '/..' . '/woocommerce/box-packer/src/dvdoug/class-box.php',
+        'WooCommerce\\BoxPacker\\DVDoug\\Item' => __DIR__ . '/..' . '/woocommerce/box-packer/src/dvdoug/class-item.php',
+        'WooCommerce\\BoxPacker\\DVDoug\\Packer' => __DIR__ . '/..' . '/woocommerce/box-packer/src/dvdoug/class-packer.php',
+        'WooCommerce\\BoxPacker\\DVDoug\\Util' => __DIR__ . '/..' . '/woocommerce/box-packer/src/dvdoug/trait-util.php',
+        'WooCommerce\\BoxPacker\\Original\\Box' => __DIR__ . '/..' . '/woocommerce/box-packer/src/original/class-box.php',
+        'WooCommerce\\BoxPacker\\Original\\Item' => __DIR__ . '/..' . '/woocommerce/box-packer/src/original/class-item.php',
+        'WooCommerce\\BoxPacker\\Original\\Packer' => __DIR__ . '/..' . '/woocommerce/box-packer/src/original/class-packer.php',
+        'WooCommerce\\BoxPacker\\Package' => __DIR__ . '/..' . '/woocommerce/box-packer/src/class-package.php',
+        'WooCommerce\\BoxPacker\\WC_Boxpack' => __DIR__ . '/..' . '/woocommerce/box-packer/src/class-wc-boxpack.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit644a80e4b25560037acd97262c6185ae::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit644a80e4b25560037acd97262c6185ae::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit644a80e4b25560037acd97262c6185ae::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit5cf50ab6649ec9e5d8aa1976763c0124::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit5cf50ab6649ec9e5d8aa1976763c0124::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit5cf50ab6649ec9e5d8aa1976763c0124::$classMap;
 
         }, null, ClassLoader::class);
     }

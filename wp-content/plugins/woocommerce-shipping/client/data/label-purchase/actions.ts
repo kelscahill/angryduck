@@ -8,19 +8,25 @@ import {
 	RATES_RESET,
 	SHIPMENTS_UPDATE_FAILED,
 	SHIPMENTS_UPDATED,
+	STATE_RESET,
 } from './action-types';
 import { getRatesPath, getShipmentsPath, getWCOrdersPath } from 'data/routes';
 import { select } from '@wordpress/data';
-import { AbortedResponse, isAbortError, mapAddressForRequest } from 'utils';
+import {
+	AbortedResponse,
+	abortableApiFetch,
+	isAbortError,
+	mapAddressForRequest,
+} from 'utils';
 import { OriginAddress, RequestExtraOptions } from 'types';
 import {
 	RatesFetchedAction,
 	RatesFetchFailedAction,
 	RatesFetchAbortedAction,
 	RatesResetAction,
+	StateResetAction,
 } from './types.d';
 import { addressStore } from '../address';
-import { abortableApiFetch } from 'utils';
 
 export function* updateShipments( {
 	shipments,
@@ -61,11 +67,12 @@ export function* updateShipments( {
 }
 
 export function* getRates<
-	FetchReply = RatesFetchedAction[ 'payload' ] | AbortedResponse
+	FetchReply = RatesFetchedAction[ 'payload' ] | AbortedResponse,
 >( payload: {
 	orderId: string | number;
 	origin: OriginAddress;
 	packages: unknown[];
+	is_return?: boolean;
 	shipment_options?: RequestExtraOptions;
 } ): Generator<
 	ReturnType< typeof abortableApiFetch >,
@@ -85,7 +92,7 @@ export function* getRates<
 					destination,
 					origin: mapAddressForRequest( origin ),
 					...restOfPayload,
-					features_supported_by_client: [ 'upsdap' ],
+					features_supported_by_client: [ 'upsdap', 'fedex' ],
 				},
 			},
 			'get-rates'
@@ -145,4 +152,8 @@ export function* updateOrderStatus( {
 
 export const ratesReset = (): RatesResetAction => ( {
 	type: RATES_RESET,
+} );
+
+export const stateReset = (): StateResetAction => ( {
+	type: STATE_RESET,
 } );

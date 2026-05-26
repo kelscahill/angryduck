@@ -1,8 +1,6 @@
-import { Icon } from '@wordpress/components';
-import { external } from '@wordpress/icons';
+import { ExternalLink } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useCallback } from '@wordpress/element';
-import { Link } from '@woocommerce/components';
 import { Label } from 'types';
 import { pickupUrls } from './constants';
 
@@ -17,23 +15,21 @@ export const SchedulePickup = ( { selectedLabel }: SchedulePickupProps ) => {
 		[]
 	);
 
-	if (
-		! selectedLabel ||
-		! canScheduleRefund( selectedLabel ) ||
-		! selectedLabel.carrierId ||
-		! pickupUrls[ selectedLabel.carrierId ]
-	) {
+	// All hooks called first, then conditional logic
+	const shouldShowPickup = Boolean(
+		selectedLabel &&
+			canScheduleRefund( selectedLabel ) &&
+			selectedLabel.carrierId &&
+			pickupUrls[ selectedLabel.carrierId ]
+	);
+
+	if ( ! shouldShowPickup || ! selectedLabel ) {
 		return null;
 	}
+
 	return (
-		<Link
-			href={ pickupUrls[ selectedLabel.carrierId ] }
-			type="external"
-			target="_blank"
-			rel="noopener noreferrer"
-		>
+		<ExternalLink href={ pickupUrls[ selectedLabel.carrierId! ] }>
 			{ __( 'Schedule pickup', 'woocommerce-shipping' ) }
-			<Icon icon={ external } />
-		</Link>
+		</ExternalLink>
 	);
 };

@@ -67,6 +67,18 @@ class WWPP_Admin_Custom_Fields_Product_Category {
     }
 
     /**
+     * Send a JSON error response and halt execution when required AJAX parameters are missing.
+     *
+     * @since 2.0.9
+     * @access private
+     *
+     * @return void Calls wp_send_json_error() which invokes wp_die() and halts execution.
+     */
+    private function _send_ajax_missing_params_error() { // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore
+        wp_send_json_error( array( 'message' => __( 'Required parameters not supplied', 'woocommerce-wholesale-prices-premium' ) ) );
+    }
+
+    /**
      * Set 'have_wholesale_price' meta
      */
 
@@ -206,8 +218,8 @@ class WWPP_Admin_Custom_Fields_Product_Category {
      * @param int $taxonomy_term_id Taxonomy ID.
      */
     public function product_category_save_custom_fields( $term_id, $taxonomy_term_id ) { // phpcs:ignore
-        if ( ( isset( $_REQUEST['_wpnonce_add-tag'] ) && ! wp_verify_nonce( $_REQUEST['_wpnonce_add-tag'], 'add-tag' ) ) ||
-            ( isset( $_REQUEST['_wpnonce'] ) && ! wp_verify_nonce( $_REQUEST['_wpnonce'], 'update-tag_' . $term_id ) )
+        if ( ( isset( $_REQUEST['_wpnonce_add-tag'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce_add-tag'] ) ), 'add-tag' ) ) ||
+            ( isset( $_REQUEST['_wpnonce'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'update-tag_' . $term_id ) )
         ) {
             return;
         }
@@ -216,58 +228,62 @@ class WWPP_Admin_Custom_Fields_Product_Category {
 
             $t_id      = $term_id;
             $term_meta = get_option( "taxonomy_$t_id" );
-            $cat_keys  = array_keys( array_map( 'sanitize_text_field', $_POST['term_meta'] ) );
+            $cat_keys  = array_keys( array_map( 'sanitize_text_field', wp_unslash( $_POST['term_meta'] ) ) );
 
-            $products = WWPP_WPDB_Helper::get_products_by_category( $term_id );
+            $products_in_api = apply_filters( 'wwpp_process_category_products_in_api', false, $term_id );
 
-            foreach ( $cat_keys as $key ) {
+            if ( ! $products_in_api ) {
+                $products = WWPP_WPDB_Helper::get_products_by_category( $term_id );
 
-                if ( isset( $_POST['term_meta'][ $key ] ) ) {
+                foreach ( $cat_keys as $key ) {
 
-                    $term_meta[ $key ] = sanitize_text_field( $_POST['term_meta'][ $key ] );
-                    $wholesale_role    = str_replace( '_wholesale_discount', '', $key );
+                    if ( isset( $_POST['term_meta'][ $key ] ) ) {
 
-                    if ( ! empty( $_POST['term_meta'][ $key ] ) ) {
-                        // Has discount.
-                        foreach ( $products as $p ) {
-                            // Get product object.
-                            $product = wc_get_product( $p->ID );
+                        $term_meta[ $key ] = sanitize_text_field( wp_unslash( $_POST['term_meta'][ $key ] ) );
+                        $wholesale_role    = str_replace( '_wholesale_discount', '', $key );
 
-                            if ( 'yes' !== $product->get_meta( $wholesale_role . '_have_wholesale_price', true ) ) {
+                        if ( ! empty( $_POST['term_meta'][ $key ] ) ) {
+                            // Has discount.
+                            foreach ( $products as $p ) {
+                                // Get product object.
+                                $product = wc_get_product( $p->ID );
 
-                                // Add have wholesale price meta.
-                                $product->update_meta_data( $wholesale_role . '_have_wholesale_price', 'yes' );
+                                if ( 'yes' !== $product->get_meta( $wholesale_role . '_have_wholesale_price', true ) ) {
 
-                                // Add additional meta to indicate that have wholesale price meta was set by the category.
-                                $product->update_meta_data( $wholesale_role . '_have_wholesale_price_set_by_product_cat', 'yes' );
+                                    // Add have wholesale price meta.
+                                    $product->update_meta_data( $wholesale_role . '_have_wholesale_price', 'yes' );
 
-                                // Save product.
-                                $product->save();
+                                    // Add additional meta to indicate that have wholesale price meta was set by the category.
+                                    $product->update_meta_data( $wholesale_role . '_have_wholesale_price_set_by_product_cat', 'yes' );
+
+                                    // Save product.
+                                    $product->save();
+                                }
                             }
-                        }
-                    } else {
-                        // No discount.
-                        foreach ( $products as $p ) {
-                            // Get product object.
-                            $product = wc_get_product( $p->ID );
+                        } else {
+                            // No discount.
+                            foreach ( $products as $p ) {
+                                // Get product object.
+                                $product = wc_get_product( $p->ID );
 
-                            if ( 'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price', true ) &&
-                                'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price_set_by_product_cat', true ) ) {
+                                if ( 'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price', true ) &&
+                                    'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price_set_by_product_cat', true ) ) {
 
-                                /**
-                                 * Meaning, product have wholesale price meta that was set by the category
-                                 * Don't bother changing the meta for products that have no _have_wholesale_price_set_by_product_cat meta
-                                 * it means that those products have wholesale price set on per product level.
-                                 */
+                                    /**
+                                     * Meaning, product have wholesale price meta that was set by the category
+                                     * Don't bother changing the meta for products that have no _have_wholesale_price_set_by_product_cat meta
+                                     * it means that those products have wholesale price set on per product level.
+                                     */
 
-                                // Set have post meta to no.
-                                $product->update_meta_data( $wholesale_role . '_have_wholesale_price', 'no' );
+                                    // Set have post meta to no.
+                                    $product->update_meta_data( $wholesale_role . '_have_wholesale_price', 'no' );
 
-                                // Delete post additional post meta.
-                                $product->delete_meta_data( $wholesale_role . '_have_wholesale_price_set_by_product_cat' );
+                                    // Delete post additional post meta.
+                                    $product->delete_meta_data( $wholesale_role . '_have_wholesale_price_set_by_product_cat' );
 
-                                // Save product.
-                                $product->save();
+                                    // Save product.
+                                    $product->save();
+                                }
                             }
                         }
                     }
@@ -356,8 +372,8 @@ class WWPP_Admin_Custom_Fields_Product_Category {
      * @param int $taxonomy_term_id Taxonomy Term Id.
      */
     public function wholesale_role_filter_save_custom_fields( $term_id, $taxonomy_term_id ) { // phpcs:ignore
-        if ( ( isset( $_POST['_wpnonce_add-tag'] ) && ! wp_verify_nonce( $_POST['_wpnonce_add-tag'], 'add-tag' ) ) ||
-            ( isset( $_POST['_wpnonce'] ) && ! wp_verify_nonce( $_POST['_wpnonce'], 'update-tag_' . $term_id ) )
+        if ( ( isset( $_POST['_wpnonce_add-tag'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce_add-tag'] ) ), 'add-tag' ) ) ||
+            ( isset( $_POST['_wpnonce'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'update-tag_' . $term_id ) )
         ) {
             return;
         }
@@ -367,7 +383,7 @@ class WWPP_Admin_Custom_Fields_Product_Category {
             $product_cat_wholesale_role_filter = array();
         }
 
-        $value = isset( $_POST['wholesale_role_filter'] ) && is_array( $_POST['wholesale_role_filter'] ) ? $_POST['wholesale_role_filter'] : array();
+        $value = isset( $_POST['wholesale_role_filter'] ) && is_array( $_POST['wholesale_role_filter'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['wholesale_role_filter'] ) ) : array();
 
         if ( ! empty( $value ) ) {
             $product_cat_wholesale_role_filter[ $term_id ] = $value;
@@ -569,18 +585,32 @@ class WWPP_Admin_Custom_Fields_Product_Category {
      *
      * @since 1.11.0
      * @since 1.14.0 Refactor codebase and move to its own model.
+     * @since 2.0.9  Return WP_Error for missing parameters (non-AJAX callers).
      * @access public
      *
      * @param null|int    $term_id Term id.
      * @param null|string $enable  Value of 'yes' or 'no'.
-     * @return array Operation status.
+     * @return array|WP_Error Operation status array on success, WP_Error when required parameters are missing in non-AJAX context.
      */
     public function toggle_cat_level_quantity_based_wholesale_discount_fields( $term_id = null, $enable = null ) {
 
         if ( is_admin() && defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             check_ajax_referer( 'wwpp_toggle_cat_level_quantity_based_wholesale_discount_fields', 'nonce' );
-            $term_id = sanitize_key( $_POST['term_id'] );
-            $enable  = sanitize_text_field( $_POST['enable'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+
+            if ( ! isset( $_POST['term_id'] ) || ! isset( $_POST['enable'] ) ) {
+                $this->_send_ajax_missing_params_error();
+            }
+
+            $term_id = absint( wp_unslash( $_POST['term_id'] ) );
+            $enable  = sanitize_text_field( wp_unslash( $_POST['enable'] ) );
+        }
+
+        if ( empty( $term_id ) || null === $enable ) {
+            return new WP_Error(
+                'wwpp-missing-parameters',
+                __( 'Required parameters not supplied', 'woocommerce-wholesale-prices-premium' )
+            );
         }
 
         update_term_meta( $term_id, 'wwpp_enable_quantity_based_wholesale_discount', $enable );
@@ -608,20 +638,15 @@ class WWPP_Admin_Custom_Fields_Product_Category {
     public function toggle_cat_level_quantity_based_wholesale_discount_mode2() {
         if ( is_admin() && defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             check_ajax_referer( 'wwpp_toggle_cat_level_quantity_based_wholesale_discount_mode2', 'nonce' );
+            WWPP_Helper_Functions::require_capability_or_send_error();
 
             if ( ! isset( $_POST['term_id'] ) || ! isset( $_POST['enable'] ) ) {
-                $response = array(
-                    'status'    => '',
-                    'error_msg' => __( 'Required parameters not supplied', 'woocommerce-wholesale-prices-premium' ),
-                );
-            } else {
-                update_term_meta( sanitize_key( $_POST['term_id'] ), 'wwpp_enable_quantity_based_wholesale_discount_mode2', sanitize_text_field( $_POST['enable'] ) );
-                $response = array( 'status' => 'success' );
+                $this->_send_ajax_missing_params_error();
             }
 
-            @header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) ); // phpcs:ignore
-            echo wp_json_encode( $response );
-            wp_die();
+            update_term_meta( absint( wp_unslash( $_POST['term_id'] ) ), 'wwpp_enable_quantity_based_wholesale_discount_mode2', sanitize_text_field( wp_unslash( $_POST['enable'] ) ) );
+
+            wp_send_json_success();
         }
     }
 
@@ -639,8 +664,9 @@ class WWPP_Admin_Custom_Fields_Product_Category {
     public function save_cat_level_quantity_based_wholesale_discount_entry( $term_id = null, $data = null ) {
         if ( is_admin() && defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             check_ajax_referer( 'wwpp_save_cat_level_quantity_based_wholesale_discount_entry', 'nonce' );
-            $term_id = sanitize_key( $_POST['term_id'] );
-            $data    = array_map( 'sanitize_text_field', $_POST['data'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+            $term_id = isset( $_POST['term_id'] ) ? absint( wp_unslash( $_POST['term_id'] ) ) : null;
+            $data    = isset( $_POST['data'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['data'] ) ) : array();
         }
 
         $all_registered_wholesale_roles = $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles();
@@ -805,18 +831,32 @@ class WWPP_Admin_Custom_Fields_Product_Category {
      *
      * @since 1.11.0
      * @since 1.14.0 Refactor codebase and move to its own model.
+     * @since 2.0.9  Return WP_Error for missing parameters (non-AJAX callers).
      * @access public
      *
      * @param null|int $term_id Term id.
      * @param null|int $index   Mapping entry index.
-     * @return array Operation status.
+     * @return array|WP_Error Operation status array on success, WP_Error when required parameters are missing or the target entry does not exist.
      */
     public function delete_cat_level_quantity_based_wholesale_discount_entry( $term_id = null, $index = null ) {
 
         if ( is_admin() && defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             check_ajax_referer( 'wwpp_delete_cat_level_quantity_based_wholesale_discount_entry', 'nonce' );
-            $term_id = sanitize_key( $_POST['term_id'] );
-            $index   = sanitize_text_field( $_POST['index'] );
+            WWPP_Helper_Functions::require_capability_or_send_error();
+
+            if ( ! isset( $_POST['term_id'] ) || ! isset( $_POST['index'] ) ) {
+                $this->_send_ajax_missing_params_error();
+            }
+
+            $term_id = absint( wp_unslash( $_POST['term_id'] ) );
+            $index   = sanitize_text_field( wp_unslash( $_POST['index'] ) );
+        }
+
+        if ( empty( $term_id ) || null === $index ) {
+            return new WP_Error(
+                'wwpp-missing-parameters',
+                __( 'Required parameters not supplied', 'woocommerce-wholesale-prices-premium' )
+            );
         }
 
         $qbwd_mapping = get_term_meta( $term_id, 'wwpp_quantity_based_wholesale_discount_mapping', true );

@@ -17,11 +17,29 @@ defined( 'ABSPATH' ) || exit;
  * @var Payment_Plan[] $payment_plans
  * @var string[]       $payment_plans_style
  * @var string[]       $payment_plan_items_style
+ * @var bool           $has_overdue_balance
+ * @var string         $credit_limit_notice
  */
 ?>
 <?php if ( empty( $payment_plans ) ) : ?>
     <p><?php esc_html_e( 'No payment plans found.', 'woocommerce-wholesale-payments' ); ?></p>
 <?php else : ?>
+    <?php if ( ! empty( $has_overdue_balance ) ) : ?>
+        <div class="wpay-overdue-notice woocommerce-info">
+            <p>
+                <?php
+                // Context: Classic checkout on_hold action — informational warning about order hold.
+                // Intentionally different wording from My Account (WC.php) and blocks checkout (wpay-payment-method.js).
+                esc_html_e( 'You have an outstanding overdue balance. Your order will be placed on hold until your overdue invoices are paid.', 'woocommerce-wholesale-payments' );
+                ?>
+            </p>
+        </div>
+    <?php endif; ?>
+    <?php if ( ! empty( $credit_limit_notice ) ) : ?>
+        <div class="wpay-credit-limit-notice woocommerce-info">
+            <?php echo esc_html( $credit_limit_notice ); ?>
+        </div>
+    <?php endif; ?>
     <?php if ( WPay::get_api_mode() === 'test' ) : ?>
         <p>
             <em style="color: #bb5504;">
@@ -54,13 +72,31 @@ defined( 'ABSPATH' ) || exit;
                 ?>
             </em>
         </p>
+        <p class="wpay-auto-charge-requirements">
+            <em>
+                <?php
+                esc_html_e( 'To use auto-charge, you must have at least one saved payment method. You can add it below.', 'woocommerce-wholesale-payments' )
+                ?>
+            </em>
+        </p>
     <?php endif; ?>
+    <?php
+    $auto_charge_invoices = get_option( 'wpay_stripe_auto_charge_invoices', 'no' );
+    $overall_auto_charge  = WPay::get_overall_auto_charge_status( $payment_plans );
+    ?>
+    <div id="wpay-auto-charge-help-classic" class="wpay-auto-charge-help woocommerce-info" style="display: <?php echo ( wc_string_to_bool( $auto_charge_invoices ) ? 'block' : 'none' ); ?>" data-overall-auto-charge="<?php echo esc_attr( wc_string_to_bool( $overall_auto_charge ) ? 'true' : 'false' ); ?>">
+        <em>
+            <?php
+                esc_html_e( 'To use auto-charge, you must have at least one saved payment method. You can add it below.', 'woocommerce-wholesale-payments' )
+            ?>
+        </em>
+    </div>
     <ul style="<?php echo esc_attr( implode( "\n", $payment_plans_style ) ); ?>">
         <?php foreach ( $payment_plans as $payment_plan ) : ?>
-            <li style="<?php echo esc_attr( implode( "\n", $payment_plan_items_style ) ); ?>">
+            <li style="<?php echo esc_attr( implode( "\n", $payment_plan_items_style ) ); ?>" <?php echo 'yes' === $payment_plan->apply_auto_charge ? 'data-auto-charge="' . esc_attr( $payment_plan->apply_auto_charge ) . '"' : ''; ?>>
                 <input
                     id="wpay_plan-<?php echo esc_attr( $payment_plan->post->ID ); ?>"
-                    class="input-radio"
+                    class="input-radio <?php echo esc_attr( 'yes' === $payment_plan->apply_auto_charge ? 'wpay-auto-charge-plan' : '' ); ?>"
                     type="radio"
                     name="wpay_plan"
                     value="<?php echo esc_attr( $payment_plan->post->ID ); ?>"
@@ -72,8 +108,14 @@ defined( 'ABSPATH' ) || exit;
                             <?php esc_html_e( 'Auto Charge', 'woocommerce-wholesale-payments' ); ?>
                         </em>
                     <?php endif; ?>
-                </label> 
+
+                </label>
             </li>
         <?php endforeach; ?>
     </ul>
+    <div id="wpay-payment-element" style="display:none; margin-top: 10px;"></div>
+    <button type="button" id="wpay-save-method" class="button" style="display:none; margin-top: 10px;">
+        <?php esc_html_e( 'Save payment method', 'woocommerce-wholesale-payments' ); ?>
+    </button>
+    <p id="wpay-save-result" style="display:none; margin-top: 8px;"></p>
 <?php endif; ?>

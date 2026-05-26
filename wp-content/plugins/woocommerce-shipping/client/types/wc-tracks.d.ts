@@ -4,4 +4,4 @@ export interface WCTracks {
 		eventName: string,
 		eventProperties: Record< string, unknown >
 	) => void;
-};
+}

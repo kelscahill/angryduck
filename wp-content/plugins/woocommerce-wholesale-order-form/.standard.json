@@ -1,0 +1,40 @@
+{
+    "ignore": [
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        "coverage/**",
+        "*.min.js",
+        "vendor/**",
+        "tests/**",
+        "docs/**",
+        "static/**",
+        "bootstrap/**",
+        "bin/**",
+        "data/**",
+        "**/*.d.ts"
+    ],
+    "globals": [
+        "jQuery",
+        "$",
+        "wp",
+        "wc",
+        "ajaxurl",
+        "console",
+        "window",
+        "document",
+        "localStorage",
+        "sessionStorage",
+        "fetch",
+        "HTMLElement",
+        "Element",
+        "DOMParser",
+        "IntersectionObserver"
+    ],
+    "envs": [
+        "browser",
+        "node",
+        "es2022"
+    ],
+    "project": "./tsconfig.app.json"
+}

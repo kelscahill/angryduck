@@ -852,7 +852,7 @@ window.__vite_plugin_react_preamble_installed__ = true
              * attributes in production mode.
              */
             foreach ( $this->manifest[ $this->entry_file_path ]['css'] as $style ) {
-                if ( false !== strpos( $href, $style ) ) {
+                if ( str_contains( $href, $style ) ) {
                     $integrity = 'crossorigin="anonymous" ';
                     if ( apply_filters( 'wwpp_enable_subresource_integrity_check', ! defined( 'WWPP_ENABLE_SUBRESOURCE_INTEGRITY_CHECK' ) || WWPP_ENABLE_SUBRESOURCE_INTEGRITY_CHECK ) ) {
                         $integrity = sprintf(

@@ -1,4 +1,22 @@
-import { Destination } from 'types';
+import { Destination, OriginAddress } from 'types';
+
+/**
+ * Returns true if there are no origin addresses or every address is unverified.
+ *
+ * @param originAddresses - Array of origin addresses (e.g. from getOriginAddresses())
+ * @return true when no addresses exist or all have isVerified falsy
+ */
+export const areAllOriginsUnverified = (
+	originAddresses: OriginAddress[] | undefined | null
+): boolean =>
+	! originAddresses?.length ||
+	originAddresses.every(
+		( address ) =>
+			address.isApproved === false ||
+			( ( address.isApproved === undefined ||
+				address.isApproved === null ) &&
+				! address.isVerified )
+	);
 
 /**
  * Map of common address abbreviations to their full names.
@@ -163,4 +181,43 @@ export const areAddressesClose = (
 		isPostalCodeSimilar &&
 		isCountrySimilar
 	);
+};
+
+/**
+ * Check if only checkbox fields (defaultAddress, defaultReturnAddress) have changed
+ * and no actual address data fields have been modified.
+ *
+ * @param originalAddress The original address object
+ * @param newAddress      The new address object with potentially changed values
+ * @return boolean True if only checkbox fields changed, false otherwise
+ */
+export const hasOnlyCheckboxChanges = < T extends Record< string, unknown > >(
+	originalAddress: T,
+	newAddress: T
+): boolean => {
+	const addressFields = [
+		'name',
+		'company',
+		'address',
+		'city',
+		'state',
+		'postcode',
+		'country',
+		'email',
+		'phone',
+		'firstName',
+		'lastName',
+	];
+
+	// Check if any actual address fields have changed
+	const hasAddressFieldChanges = addressFields.some( ( field ) => {
+		const originalValue = originalAddress[ field as keyof T ];
+		const newValue = newAddress[ field as keyof T ];
+
+		// Type-agnostic comparison to handle cases like 1 vs '1'
+		// eslint-disable-next-line eqeqeq
+		return originalValue != newValue;
+	} );
+
+	return ! hasAddressFieldChanges;
 };

@@ -84,6 +84,10 @@ if ( ! class_exists( 'WWP_Duplicate_Product' ) ) {
         	$product_id      = WWP_Helper_Functions::wwp_get_product_id( $product );
             $wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
 
+			if ( 0 === (int) $duplicate_id ) {
+                return;
+            }
+
             // duplicate general meta data.
             $this->wwp_duplicate_meta( $duplicate_id, $product_id );
 
@@ -136,6 +140,10 @@ if ( ! class_exists( 'WWP_Duplicate_Product' ) ) {
          * @param int   $product_id         ID of the product to duplicate.
          */
         public function wwp_duplicate_role_based_meta( $wholesale_roles, $duplicate_id, $product_id ) {
+			if ( 0 === (int) $duplicate_id ) {
+                return;
+            }
+
             // Get product object.
             $product        = wc_get_product( $product_id );
             $wholesale_meta = apply_filters(
@@ -176,7 +184,7 @@ if ( ! class_exists( 'WWP_Duplicate_Product' ) ) {
          */
         public function wwp_duplicate_variable_product( $duplicate, $product, $duplicate_id, $product_id, $wholesale_roles ) {
 
-            if ( WWP_Helper_Functions::wwp_get_product_type( $duplicate ) !== 'variable' || WWP_Helper_Functions::wwp_get_product_type( $product ) !== 'variable' ) {
+            if ( WWP_Helper_Functions::wwp_get_product_type( $duplicate ) !== 'variable' || WWP_Helper_Functions::wwp_get_product_type( $product ) !== 'variable' || 0 === (int) $duplicate_id ) {
                 return;
             }
 
@@ -193,6 +201,10 @@ if ( ! class_exists( 'WWP_Duplicate_Product' ) ) {
             		$product_variation           = wc_get_product( $product_variation_id );
             		$duplicate_variation_id      = WWP_Helper_Functions::wwp_get_matching_variation( $duplicate, $product_variation->get_variation_attributes() );
                     $duplicate_variation_product = wc_get_product( $duplicate_variation_id );
+
+                    if ( 0 === (int) $duplicate_variation_id ) {
+                        continue;
+                    }
 
                     // duplicate general meta data.
                     $this->wwp_duplicate_meta( $duplicate_variation_id, $product_variation_id );

@@ -129,6 +129,85 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
         }
 
         /**
+         * Fix empty price_html in the AJAX variation response for category-level wholesale pricing.
+         *
+         * When a variable product has more than 30 variations, WooCommerce lazy-loads variation data
+         * via AJAX (wc-ajax=get_variation) instead of embedding it in the page HTML. In this AJAX
+         * code path, variations whose wholesale price comes solely from a category-level discount
+         * (no per-product price set) receive an empty price_html because WooCommerce's own
+         * get_price_html() returns an empty string for unpublished/unset variation prices, and
+         * WWP's wholesale_price_html_filter bails early on an empty base price.
+         *
+         * As a result, WWPP's quantity table rendering function — which appends table HTML to the
+         * existing price_html — never fires, so the table is absent from the AJAX response and
+         * therefore never shown to the wholesale user.
+         *
+         * This method hooks into woocommerce_available_variation at priority 25 (after WWP's
+         * add_wholesale_price_to_variation_data at priority 10) and, when price_html is empty,
+         * generates it by running WWP's wholesale_price_html_filter with a non-empty regular-price
+         * base. That in turn triggers the wwp_filter_wholesale_price_html filter chain, allowing
+         * WWPP's render_order_quantity_based_wholesale_discount_per_category_level_table_markup to
+         * append the quantity table markup to the response.
+         *
+         * @since 2.0.8.2
+         * @access public
+         *
+         * @param array                $data      Variation data for the AJAX response.
+         * @param WC_Product_Variable  $variable  Parent variable product.
+         * @param WC_Product_Variation $variation Variation product object.
+         * @return array Filtered variation data.
+         */
+        public function fix_variation_ajax_price_html_for_category_discount( $data, $variable, $variation ) {
+
+            // Only relevant during AJAX requests — embedded variations already carry correct price_html.
+            if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+                return $data;
+            }
+
+            // Nothing to fix if price_html is already populated.
+            if ( ! empty( $data['price_html'] ) ) {
+                return $data;
+            }
+
+            global $wc_wholesale_prices;
+
+            $user_wholesale_role = $wc_wholesale_prices->wwp_wholesale_roles->getUserWholesaleRole();
+
+            if ( empty( $user_wholesale_role ) ) {
+                return $data;
+            }
+
+            // Determine whether the wholesale price for this variation comes from the category level.
+            $price_arr = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $variation->get_id(), $user_wholesale_role );
+
+            if ( empty( $price_arr['wholesale_price'] ) || 'product_category_level' !== ( $price_arr['source'] ?? '' ) ) {
+                return $data;
+            }
+
+            // Build a non-empty base price HTML from the variation's regular price so that
+            // wholesale_price_html_filter does not bail out, and the wwp_filter_wholesale_price_html
+            // filter chain — including WWPP's quantity table renderer — can execute normally.
+            $regular_price   = $variation->get_regular_price();
+            $base_price_html = '' !== $regular_price ? wc_price( wc_get_price_to_display( $variation, array( 'price' => $regular_price ) ) ) : '';
+
+            if ( empty( $base_price_html ) ) {
+                return $data;
+            }
+
+            $wholesale_price_html = $wc_wholesale_prices->wwp_wholesale_prices->wholesale_price_html_filter(
+                $base_price_html,
+                $variation,
+                $user_wholesale_role
+            );
+
+            if ( ! empty( $wholesale_price_html ) ) {
+                $data['price_html'] = $wholesale_price_html;
+            }
+
+            return $data;
+        }
+
+        /**
          * Apply product category level wholesale discount.
          * Only applies when a product has no wholesale price set on per product level.
          * This logic came from 'class-wwpp-wholesale-prices.php' function 'applyProductCategoryWholesaleDiscount'.
@@ -154,7 +233,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
 
                 $product             = wc_get_product( $product_id );
                 $conditional_product = $product;
-                if ( 'variation' === $product->get_type() ) {
+                if ( self::is_variation_type( $product ) ) {
                     $conditional_product = wc_get_product( $product->get_parent_id() );
                 }
 
@@ -163,8 +242,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
                     return $wholesale_price_arr;
                 }
 
-                $product_type                 = $product->get_type();
-                $post_id                      = ( 'variation' === $product_type ) ? $product->get_parent_id() : $product_id;
+                $post_id                      = self::is_variation_type( $product ) ? $product->get_parent_id() : $product_id;
                 $only_show_to_wholesale_users = get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' ? true : false;
 
                 // Ignore wholesale pricing set on cat level.
@@ -253,6 +331,35 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
             }
 
             return $wholesale_price_arr;
+        }
+
+        /**
+         * Check if product type requires parent ID resolution.
+         *
+         * Variable products and subscription variations inherit settings from their
+         * parent product, so we need to resolve to the parent ID for these types.
+         *
+         * @param WC_Product $product Product object.
+         * @return bool True if product type is a variation that needs parent ID.
+         * @since 1.30.3
+         */
+        public static function is_variation_type( $product ) {
+            if ( ! is_a( $product, 'WC_Product' ) ) {
+                return false;
+            }
+
+            $variation_types = array( 'variation', 'subscription_variation' );
+
+            /**
+             * Filter variation product types that require parent ID resolution.
+             *
+             * @param array      $variation_types Array of product type strings.
+             * @param WC_Product $product         Product object.
+             * @since 1.30.3
+             */
+            $variation_types = apply_filters( 'wwpp_variation_product_types', $variation_types, $product );
+
+            return in_array( $product->get_type(), $variation_types, true );
         }
 
         /*
@@ -565,6 +672,10 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
 
             // Display qty based wholesale discount per cat level table markup.
             add_filter( 'wwp_filter_wholesale_price_html', array( $this, 'render_order_quantity_based_wholesale_discount_per_category_level_table_markup' ), 100, 7 );
+
+            // Fix empty price_html in AJAX variation responses for category-level-only pricing.
+            // Runs at priority 25, after WWP's add_wholesale_price_to_variation_data (priority 10).
+            add_filter( 'woocommerce_available_variation', array( $this, 'fix_variation_ajax_price_html_for_category_discount' ), 25, 3 );
 
             // Apply cat level wholesale discount on shop and cart.
             add_filter( 'wwp_filter_wholesale_price_shop', array( $this, 'apply_product_category_level_wholesale_discount' ), 100, 5 );

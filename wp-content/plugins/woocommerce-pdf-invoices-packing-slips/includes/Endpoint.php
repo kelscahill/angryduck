@@ -40,14 +40,17 @@ class Endpoint {
 		return $actions;
 	}
 
-	public function pretty_links_enabled() {
+	/**
+	 * Check if pretty document links is enabled.
+	 *
+	 * Pretty document links require pretty permalinks to not be set to "Plain" (empty string).
+	 *
+	 * @return bool
+	 */
+	public function pretty_links_enabled(): bool {
 		$debug_settings = get_option( 'wpo_wcpdf_settings_debug', array() );
 
-		if ( isset( $debug_settings['pretty_document_links'] ) ) {
-			return true;
-		} else {
-			return false;
-		}
+		return ! empty( $debug_settings['pretty_document_links'] ) && ! empty( get_option( 'permalink_structure' ) );
 	}
 
 	public function get_identifier() {
@@ -101,7 +104,12 @@ class Endpoint {
 				$access_key = $is_user_logged_in ? wp_create_nonce( $this->actions['generate'] ) : '';
 				break;
 			case 'full':
-				$access_key = $order->get_order_key();
+				if ( $order instanceof \WC_Order_Refund ) { // EDI Credit Note specific
+					$parent_order = wc_get_order( $order->get_parent_id() );
+					$access_key   = $parent_order ? $parent_order->get_order_key() : '';
+				} else {
+					$access_key   = $order->get_order_key();
+				}
 				break;
 		}
 

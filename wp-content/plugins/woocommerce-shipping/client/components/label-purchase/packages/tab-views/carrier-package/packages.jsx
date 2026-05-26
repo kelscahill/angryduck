@@ -112,7 +112,7 @@ export const Packages = ( {
 																{ name }
 															</Text>
 															<span>
-																{ outerDimensions ||
+																{ outerDimensions ??
 																	innerDimensions }{ ' ' }
 																{
 																	dimensionsUnit

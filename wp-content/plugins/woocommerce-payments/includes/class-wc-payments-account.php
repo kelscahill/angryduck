@@ -18,6 +18,7 @@ use WCPay\Exceptions\API_Exception;
 use WCPay\Logger;
 use WCPay\Database_Cache;
 use WCPay\MultiCurrency\Interfaces\MultiCurrencyAccountInterface;
+use WCPay\Onboarding_Experiment;
 
 /**
  * Class handling any account connection functionality
@@ -40,7 +41,17 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	const TRACKS_EVENT_ACCOUNT_CONNECT_FINISHED                 = 'wcpay_account_connect_finished';
 	const TRACKS_EVENT_KYC_REMINDER_MERCHANT_RETURNED           = 'wcpay_kyc_reminder_merchant_returned';
 	const TRACKS_EVENT_ACCOUNT_REFERRAL                         = 'wcpay_account_referral';
-	const NOX_PROFILE_OPTION_KEY                                = 'woocommerce_woopayments_nox_profile';
+	// NOX-related constants from the WooCommerce core.
+	const NOX_PROFILE_OPTION_KEY    = 'woocommerce_woopayments_nox_profile';
+	const NOX_ONBOARDING_LOCKED_KEY = 'woocommerce_woopayments_nox_onboarding_locked';
+
+	const STORE_SETUP_SYNC_ACTION = 'wcpay_store_setup_sync';
+
+	const KYC_COMPLETION_DATE_OPTION = 'wcpay_kyc_completion_date';
+
+	const KYC_SUBMITTED_DATE_OPTION = 'wcpay_kyc_submitted_date';
+
+	const POST_KYC_ACTIVATION_ELIGIBLE_TRANSIENT = 'wcpay_post_kyc_activation_eligible';
 
 	/**
 	 * Client for making requests to the WooCommerce Payments API
@@ -119,6 +130,7 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		add_action( 'admin_init', [ $this, 'maybe_redirect_from_onboarding_wizard_page' ], 15 );
 		add_action( 'admin_init', [ $this, 'maybe_redirect_from_connect_page' ], 15 );
 		add_action( 'admin_init', [ $this, 'maybe_redirect_from_overview_page' ], 15 );
+		add_action( 'admin_init', [ $this, 'maybe_redirect_from_payments_settings_to_onboarding' ], 15 );
 
 		// Add handlers for inbox notes and reminders.
 		add_action( 'woocommerce_payments_account_refreshed', [ $this, 'handle_instant_deposits_inbox_note' ] );
@@ -128,8 +140,15 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		// Add all other hooks.
 		add_filter( 'allowed_redirect_hosts', [ $this, 'allowed_redirect_hosts' ] );
 		add_action( 'jetpack_site_registered', [ $this, 'clear_cache' ] );
+		add_action( 'jetpack_site_disconnected', [ $this, 'clear_cache' ] );
 		add_action( 'updated_option', [ $this, 'possibly_update_wcpay_account_locale' ], 10, 3 );
 		add_action( 'woocommerce_woocommerce_payments_updated', [ $this, 'clear_cache' ] );
+		// Hook into the recurring store setup sync action and do the store setup sync.
+		add_action( self::STORE_SETUP_SYNC_ACTION, [ $this, 'store_setup_sync' ] );
+		// Also do a store setup sync when the client is updated to a new version.
+		add_action( 'woocommerce_woocommerce_payments_updated', [ $this, 'store_setup_sync' ] );
+
+		add_action( 'woocommerce_payments_account_refreshed', [ $this, 'maybe_record_kyc_completion_date' ] );
 	}
 
 	/**
@@ -348,39 +367,53 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		}
 
 		return [
-			'email'                 => $account['email'] ?? '',
-			'country'               => $account['country'] ?? Country_Code::UNITED_STATES,
-			'status'                => $account['status'],
-			'created'               => $account['created'] ?? '',
-			'testDrive'             => $account['is_test_drive'] ?? false,
-			'isLive'                => $account['is_live'] ?? false,
-			'paymentsEnabled'       => $account['payments_enabled'],
-			'detailsSubmitted'      => $account['details_submitted'] ?? true,
-			'deposits'              => $account['deposits'] ?? [],
-			'currentDeadline'       => $account['current_deadline'] ?? false,
-			'pastDue'               => $account['has_overdue_requirements'] ?? false,
+			'email'               => $account['email'] ?? '',
+			'country'             => $account['country'] ?? Country_Code::UNITED_STATES,
+			'status'              => $account['status'],
+			'created'             => $account['created'] ?? '',
+			'testDrive'           => $account['is_test_drive'] ?? false,
+			'isLive'              => $account['is_live'] ?? false,
+			'paymentsEnabled'     => $account['payments_enabled'],
+			'detailsSubmitted'    => $account['details_submitted'] ?? true,
+			'deposits'            => $account['deposits'] ?? [],
+			'currentDeadline'     => $account['current_deadline'] ?? false,
+			'pastDue'             => $account['has_overdue_requirements'] ?? false,
 			// Test-drive accounts don't have access to the Stripe dashboard.
-			'accountLink'           => empty( $account['is_test_drive'] ) ? $this->get_login_url() : false,
-			'hasSubmittedVatData'   => $account['has_submitted_vat_data'] ?? false,
-			'requirements'          => [
+			'accountLink'         => empty( $account['is_test_drive'] ) ? $this->get_login_url() : false,
+			'hasSubmittedVatData' => $account['has_submitted_vat_data'] ?? false,
+			'isDocumentsEnabled'  => $account['is_documents_enabled'] ?? false,
+			'communicationsEmail' => $account['communications_email'] ?? '',
+			'requirements'        => [
 				'errors' => $account['requirements']['errors'] ?? [],
 			],
-			'progressiveOnboarding' => [
-				'isEnabled'            => $account['progressive_onboarding']['is_enabled'] ?? false,
-				'isComplete'           => $account['progressive_onboarding']['is_complete'] ?? false,
-				'tpv'                  => (int) ( $account['progressive_onboarding']['tpv'] ?? 0 ),
-				'firstTransactionDate' => $account['progressive_onboarding']['first_transaction_date'] ?? null,
-			],
-			'fraudProtection'       => [
+			'fraudProtection'     => [
 				'declineOnAVSFailure' => $account['fraud_mitigation_settings']['avs_check_enabled'] ?? null,
 				'declineOnCVCFailure' => $account['fraud_mitigation_settings']['cvc_check_enabled'] ?? null,
 			],
 			// Campaigns are temporary flags that are used to enable/disable features for a limited time.
-			'campaigns'             => [
-				// The flag for the WordPress.org merchant review campaign in 2025. Eligibility is determined per-account on transact-platform-server.
-				'wporgReview2025' => $account['eligibility_wporg_review_campaign_2025'] ?? false,
+			'campaigns'           => [
+				// The flag for the payments settings review prompt (Phase 0). Eligibility is determined per-account on transact-platform-server.
+				'reviewPromptPhase0' => $account['eligibility_review_prompt_phase_0'] ?? false,
 			],
 		];
+	}
+
+	/**
+	 * Get structured account details including status, payout info, and banners for frontend display.
+	 *
+	 * @return null|array Account details array with nested status objects, or null if unavailable.
+	 */
+	public function get_account_details(): ?array {
+		$account = $this->get_cached_account_data();
+		if ( empty( $account['account_details'] ) ) {
+			return null;
+		}
+
+		$account_details = $account['account_details'];
+		$is_valid        = is_array( $account_details )
+							&& isset( $account_details['account_status'], $account_details['payout_status'] )
+							&& array_key_exists( 'banner', $account_details );
+		return $is_valid ? $account_details : null;
 	}
 
 	/**
@@ -461,6 +494,16 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	public function get_business_support_phone(): string {
 		$account = $this->get_cached_account_data();
 		return isset( $account['business_profile']['support_phone'] ) ? $account['business_profile']['support_phone'] : '';
+	}
+
+	/**
+	 * Gets the communications email.
+	 *
+	 * @return string Communications email.
+	 */
+	public function get_communications_email(): string {
+		$account = $this->get_cached_account_data();
+		return isset( $account['communications_email'] ) ? $account['communications_email'] : '';
 	}
 
 	/**
@@ -601,32 +644,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	public function get_fees(): array {
 		$account = $this->get_cached_account_data();
 		return ! empty( $account ) && isset( $account['fees'] ) ? $account['fees'] : [];
-	}
-
-	/**
-	 * Get the progressive onboarding details needed on the frontend.
-	 *
-	 * @return array Progressive Onboarding details.
-	 */
-	public function get_progressive_onboarding_details(): array {
-		$account = $this->get_cached_account_data();
-		return [
-			'isEnabled'                   => $account['progressive_onboarding']['is_enabled'] ?? false,
-			'isComplete'                  => $account['progressive_onboarding']['is_complete'] ?? false,
-			'isNewFlowEnabled'            => WC_Payments_Utils::should_use_new_onboarding_flow(),
-			'isEligibilityModalDismissed' => get_option( WC_Payments_Onboarding_Service::ONBOARDING_ELIGIBILITY_MODAL_OPTION, false ),
-		];
-	}
-
-	/**
-	 * Determine whether Progressive Onboarding is in progress for this account.
-	 *
-	 * @return boolean
-	 */
-	public function is_progressive_onboarding_in_progress(): bool {
-		$account = $this->get_cached_account_data();
-		return ( $account['progressive_onboarding']['is_enabled'] ?? false )
-			&& ! ( $account['progressive_onboarding']['is_complete'] ?? false );
 	}
 
 	/**
@@ -824,7 +841,7 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	 * @param string|null $error_message Optional error message to show in a notice.
 	 */
 	public function redirect_to_onboarding_welcome_page( $error_message = null ) {
-		$this->redirect_service->redirect_to_connect_page( $error_message );
+		$this->redirect_service->redirect_to_nox_flow();
 	}
 
 	/**
@@ -860,11 +877,10 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			return false;
 		}
 
-		// Redirect to Connect page.
-		$this->redirect_service->redirect_to_connect_page(
-			null,
+		// Redirect to NOX onboarding flow.
+		$this->redirect_service->redirect_to_nox_flow(
 			WC_Payments_Onboarding_Service::FROM_PLUGIN_ACTIVATION,
-			[ 'source' => WC_Payments_Onboarding_Service::get_source() ]
+			WC_Payments_Onboarding_Service::get_source()
 		);
 
 		return true;
@@ -895,7 +911,7 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 
 		// Return and redirect early if the code is invalid.
 		if ( empty( $referral_code ) ) {
-			$this->redirect_service->redirect_to_connect_page();
+			$this->redirect_service->redirect_to_nox_flow();
 			return;
 		}
 
@@ -908,8 +924,8 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			]
 		);
 
-		// Redirect to the connect page.
-		$this->redirect_service->redirect_to_connect_page( null, WC_Payments_Onboarding_Service::FROM_REFERRAL );
+		// Redirect to the NOX flow.
+		$this->redirect_service->redirect_to_nox_flow( WC_Payments_Onboarding_Service::FROM_REFERRAL );
 	}
 
 	/**
@@ -936,16 +952,11 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			return false;
 		}
 
-		// If everything is NOT in good working condition, redirect to Payments Connect page.
+		// If everything is NOT in good working condition, redirect to the NOX flow.
 		if ( ! $this->has_working_jetpack_connection() || ! $this->is_stripe_account_valid() ) {
-			$this->redirect_service->redirect_to_connect_page(
-				sprintf(
-				/* translators: 1: WooPayments. */
-					__( 'Please <b>complete your %1$s setup</b> to process transactions.', 'woocommerce-payments' ),
-					'WooPayments'
-				),
+			$this->redirect_service->redirect_to_nox_flow(
 				WC_Payments_Onboarding_Service::FROM_WCADMIN_PAYMENTS_SETTINGS,
-				[ 'source' => WC_Payments_Onboarding_Service::SOURCE_WCADMIN_SETTINGS_PAGE ]
+				WC_Payments_Onboarding_Service::SOURCE_WCADMIN_SETTINGS_PAGE
 			);
 			return true;
 		}
@@ -998,14 +1009,10 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 				);
 			}
 
-			$this->redirect_service->redirect_to_connect_page(
-				sprintf(
-				/* translators: %s: WooPayments */
-					__( 'Please connect to WordPress.com to start using %s.', 'woocommerce-payments' ),
-					'WooPayments'
-				),
+			// Redirect to the NOX flow.
+			$this->redirect_service->redirect_to_nox_flow(
 				WC_Payments_Onboarding_Service::FROM_ONBOARDING_WIZARD,
-				[ 'source' => $onboarding_source ]
+				$onboarding_source
 			);
 			return true;
 		}
@@ -1025,10 +1032,10 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 
 		// Merchants with an invalid Stripe account, need to go to the Stripe KYC, not our onboarding wizard.
 		if ( ! $this->is_stripe_account_valid() ) {
-			$this->redirect_service->redirect_to_connect_page(
-				null,
+			// Redirect to the NOX flow to continue the Stripe KYC onboarding.
+			$this->redirect_service->redirect_to_nox_flow(
 				WC_Payments_Onboarding_Service::FROM_ONBOARDING_WIZARD,
-				[ 'source' => $onboarding_source ]
+				$onboarding_source
 			);
 			return true;
 		}
@@ -1097,6 +1104,12 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		// Determine from where the merchant was directed to the Connect page.
 		$from = WC_Payments_Onboarding_Service::get_from();
 
+		// Accelerated-onboarding experiment: route task-list clicks straight into the
+		// WooPayments onboarding modal for merchants who have not yet completed KYC.
+		if ( $this->maybe_accelerate_onboarding( $from ) ) {
+			return true;
+		}
+
 		// If the user came from the core Payments task list item or the WC Payments Settings NOX in-context flow,
 		// skip the Connect page and go directly to the Jetpack connection flow and/or onboarding wizard.
 		if ( in_array(
@@ -1125,6 +1138,79 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	}
 
 	/**
+	 * Redirects the WooCommerce Settings > Payments page to the WooPayments onboarding
+	 * modal when a merchant arrives from the core Payments task list and has not yet
+	 * completed KYC, gated by the accelerated-onboarding experiment.
+	 *
+	 * In current WC Admin, clicking "Set up payments" in the task list lands the merchant
+	 * on `?page=wc-settings&tab=checkout&from=WCADMIN_PAYMENT_TASK` (the providers list)
+	 * rather than on `/payments/connect`, so this is the URL that actually needs to be
+	 * intercepted for the experiment to engage.
+	 *
+	 * @return bool True if a redirection happened, false otherwise.
+	 */
+	public function maybe_redirect_from_payments_settings_to_onboarding(): bool {
+		if ( wp_doing_ajax() || ! current_user_can( 'manage_woocommerce' ) ) {
+			return false;
+		}
+
+		$params = [
+			'page' => 'wc-settings',
+			'tab'  => 'checkout',
+		];
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( count( $params ) !== count( array_intersect_assoc( $_GET, $params ) ) ) {
+			return false;
+		}
+
+		// A specific gateway section — or a deep-link path like /woopayments/onboarding — is
+		// already being handled by its own renderer; don't override those.
+		if ( ! empty( $_GET['section'] ) || ! empty( $_GET['path'] ) ) {
+			return false;
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		$from = WC_Payments_Onboarding_Service::get_from();
+
+		return $this->maybe_accelerate_onboarding( $from );
+	}
+
+	/**
+	 * Shared experiment branch for accelerated onboarding. Redirects qualifying merchants
+	 * (task-list origin + KYC incomplete + treatment variation) into the WooPayments
+	 * onboarding modal.
+	 *
+	 * Shared by maybe_redirect_from_connect_page() (legacy `/payments/connect` landing) and
+	 * maybe_redirect_from_payments_settings_to_onboarding() (modern task-click landing).
+	 *
+	 * @param string $from Resolved onboarding origin.
+	 * @return bool True when a treatment redirect was issued, false otherwise.
+	 */
+	private function maybe_accelerate_onboarding( string $from ): bool {
+		if ( WC_Payments_Onboarding_Service::FROM_WCADMIN_PAYMENTS_TASK !== $from ) {
+			return false;
+		}
+
+		if ( $this->is_details_submitted() ) {
+			return false;
+		}
+
+		$experiment = WC_Payments::get_onboarding_experiment();
+		$variation  = $experiment->get_variation();
+
+		if ( Onboarding_Experiment::VARIATION_TREATMENT !== $variation ) {
+			return false;
+		}
+
+		$this->redirect_service->redirect_to_nox_flow(
+			WC_Payments_Onboarding_Service::FROM_WCADMIN_PAYMENTS_TASK,
+			WC_Payments_Onboarding_Service::get_source()
+		);
+		return true;
+	}
+
+	/**
 	 * Redirects overview page (payments/overview) to the connect page for stores that
 	 * don't have a working Jetpack connection or a valid connected Stripe account.
 	 *
@@ -1150,19 +1236,11 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			return false;
 		}
 
-		// If everything is NOT in good working condition, redirect to Payments Connect page.
+		// If everything is NOT in good working condition, redirect to the NOX flow to complete connection.
 		if ( ! $this->has_working_jetpack_connection() || ! $this->is_stripe_account_valid() ) {
-			$this->redirect_service->redirect_to_connect_page(
-				sprintf(
-				/* translators: 1: WooPayments. */
-					__( 'Please <b>complete your %1$s setup</b> to process transactions.', 'woocommerce-payments' ),
-					'WooPayments'
-				),
+			$this->redirect_service->redirect_to_nox_flow(
 				WC_Payments_Onboarding_Service::FROM_OVERVIEW_PAGE,
-				[
-					'test_mode' => ( ! empty( $_GET['test_mode'] ) && wc_clean( wp_unslash( $_GET['test_mode'] ) ) ) ? 'true' : false,
-					'source'    => WC_Payments_Onboarding_Service::get_source(),
-				]
+				WC_Payments_Onboarding_Service::get_source()
 			);
 			return true;
 		}
@@ -1205,11 +1283,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 				if ( $this->is_stripe_connected() && ! $this->is_details_submitted() ) {
 					$args         = $_GET;
 					$args['type'] = 'complete_kyc_link';
-
-					// Allow progressive onboarding accounts to continue onboarding without payout collection.
-					if ( $this->is_progressive_onboarding_in_progress() ) {
-						$args['is_progressive_onboarding'] = $this->is_progressive_onboarding_in_progress() ?? false;
-					}
 
 					$this->redirect_service->redirect_to_account_link( $args );
 				}
@@ -1303,7 +1376,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		if ( isset( $_GET['wcpay-connect'] ) && check_admin_referer( 'wcpay-connect' ) ) {
 			$wcpay_connect_param         = sanitize_text_field( wp_unslash( $_GET['wcpay-connect'] ) );
 			$incentive_id                = ! empty( $_GET['promo'] ) ? sanitize_text_field( wp_unslash( $_GET['promo'] ) ) : '';
-			$progressive                 = ! empty( $_GET['progressive'] ) && 'true' === $_GET['progressive'];
 			$collect_payout_requirements = ! empty( $_GET['collect_payout_requirements'] ) && 'true' === $_GET['collect_payout_requirements'];
 			$create_test_drive_account   = ! empty( $_GET['test_drive'] ) && 'true' === $_GET['test_drive'];
 			$redirect_to_settings_page   = ! empty( $_GET['redirect_to_settings_page'] ) && 'true' === $_GET['redirect_to_settings_page'];
@@ -1365,15 +1437,11 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			// Make changes to account data as instructed by action GET params.
 			// This needs to happen early because we need to make things "not OK" for the rest of the logic.
 			if ( ! empty( $_GET['wcpay-reset-account'] ) && 'true' === $_GET['wcpay-reset-account'] ) {
-				// If the account does not exist, there's nothing to reset. Redirect the merchant to the connect page with error message.
+				// If the account does not exist, there's nothing to reset. Redirect the merchant to the NOX flow where the error will be shown.
 				if ( ! $this->is_stripe_connected() ) {
-					$this->redirect_service->redirect_to_connect_page(
-						'Failed to reset the account: account does not exist.',
+					$this->redirect_service->redirect_to_nox_flow(
 						$from,
-						[
-							'wcpay-reset-account-error' => '1',
-							'source'                    => $onboarding_source,
-						]
+						$onboarding_source
 					);
 					return;
 				}
@@ -1416,22 +1484,17 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 				}
 
 				// Otherwise, when we reset the account we want to always go the Connect page. Redirect immediately!
-				$this->redirect_service->redirect_to_connect_page(
-					null,
+				$this->redirect_service->redirect_to_nox_flow(
 					WC_Payments_Onboarding_Service::FROM_RESET_ACCOUNT,
-					[ 'source' => $onboarding_source ]
+					$onboarding_source
 				);
 				return;
 			} elseif ( ! empty( $_GET['wcpay-disable-onboarding-test-mode'] ) && 'true' === $_GET['wcpay-disable-onboarding-test-mode'] ) {
-				// If the account does not exist, redirect the merchant to the connect page with error message.
+				// If the account does not exist, redirect the merchant to the NOX flow where the error will be shown.
 				if ( ! $this->is_stripe_connected() ) {
-					$this->redirect_service->redirect_to_connect_page(
-						'Failed to activate the account: account does not exist.',
+					$this->redirect_service->redirect_to_nox_flow(
 						$from,
-						[
-							'wcpay-reset-account-error' => '1',
-							'source'                    => $onboarding_source,
-						]
+						$onboarding_source
 					);
 					return;
 				}
@@ -1554,7 +1617,7 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 				return;
 			}
 
-			// Handle the specific from places that need to go to the Connect page first and start onboarding from there.
+			// Handle the specific from places that need to go to the NOX flow and start onboarding from there.
 			if (
 				in_array(
 					$from,
@@ -1577,7 +1640,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 					null, // Do not carry over the `from` value to avoid redirect loops.
 					[
 						'promo'                       => ! empty( $incentive_id ) ? $incentive_id : false,
-						'progressive'                 => $progressive ? 'true' : false,
 						'collect_payout_requirements' => $collect_payout_requirements ? 'true' : false,
 						'source'                      => $onboarding_source,
 					]
@@ -1602,7 +1664,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 					add_query_arg(
 						[
 							'promo'                       => ! empty( $incentive_id ) ? $incentive_id : false,
-							'progressive'                 => $progressive ? 'true' : false,
 							'collect_payout_requirements' => $collect_payout_requirements ? 'true' : false,
 							'test_mode'                   => $should_onboard_in_test_mode ? 'true' : false,
 							'test_drive'                  => $create_test_drive_account ? 'true' : false,
@@ -1709,7 +1770,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 					$confirmation_url = add_query_arg(
 						[
 							'promo'                       => ! empty( $incentive_id ) ? $incentive_id : false,
-							'progressive'                 => $progressive ? 'true' : false,
 							'collect_payout_requirements' => $collect_payout_requirements ? 'true' : false,
 							'test_drive'                  => $create_test_drive_account ? 'true' : false,
 							'test_mode'                   => ( ! empty( $_GET['test_mode'] ) && wc_clean( wp_unslash( $_GET['test_mode'] ) ) ) ? 'true' : false,
@@ -1739,7 +1799,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 					$wcpay_connect_param,
 					[
 						'promo'                       => ! empty( $incentive_id ) ? $incentive_id : false,
-						'progressive'                 => $progressive ? 'true' : false,
 						'collect_payout_requirements' => $collect_payout_requirements ? 'true' : false,
 						'source'                      => $onboarding_source,
 						'from'                        => WC_Payments_Onboarding_Service::FROM_STRIPE,
@@ -1848,8 +1907,9 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	public function get_provider_onboarding_page_url(): string {
 		return add_query_arg(
 			[
-				'page' => 'wc-admin',
-				'path' => '/payments/connect',
+				'page' => 'wc-settings',
+				'tab'  => 'checkout',
+				'path' => '/woopayments/onboarding',
 			],
 			admin_url( 'admin.php' )
 		);
@@ -2044,8 +2104,7 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		if ( ! in_array( $setup_mode, [ 'live', 'test', 'test_drive' ], true ) ) {
 			$setup_mode = 'live';
 		}
-		// Flags to enable progressive onboarding and collect payout requirements.
-		$progressive                 = ! empty( $_GET['progressive'] ) && 'true' === $_GET['progressive'];
+		// Flag to collect payout requirements.
 		$collect_payout_requirements = ! empty( $_GET['collect_payout_requirements'] ) && 'true' === $_GET['collect_payout_requirements'];
 
 		// Make sure the onboarding test mode DB flag is set.
@@ -2054,10 +2113,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		if ( ! $collect_payout_requirements ) {
 			// Clear onboarding related account options if this is an initial onboarding attempt.
 			WC_Payments_Onboarding_Service::clear_account_options();
-		} else {
-			// Since we assume user has already either gotten here from the eligibility modal,
-			// or has already dismissed it, we should set the modal as dismissed so it doesn't display again.
-			WC_Payments_Onboarding_Service::set_onboarding_eligibility_modal_dismissed();
 		}
 
 		/*
@@ -2110,7 +2165,6 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			WC_Payments_Utils::array_filter_recursive( $user_data ), // nosemgrep: audit.php.lang.misc.array-filter-no-callback -- output of array_filter is escaped.
 			WC_Payments_Utils::array_filter_recursive( $account_data ), // nosemgrep: audit.php.lang.misc.array-filter-no-callback -- output of array_filter is escaped.
 			WC_Payments_Onboarding_Service::get_actioned_notes(),
-			$progressive,
 			$collect_payout_requirements,
 			$this->onboarding_service->get_referral_code()
 		);
@@ -2212,6 +2266,12 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		// user might not have agreed to TOS yet.
 		update_option( '_wcpay_onboarding_stripe_connected', [ 'is_existing_stripe_account' => false ] );
 
+		// Mark this as a fresh KYC submission so the post-KYC nudge clock can use a real approval timestamp.
+		// Only set on live finalisations and never overwrite — this option distinguishes post-launch merchants from pre-existing ones.
+		if ( 'live' === $mode && ! get_option( self::KYC_SUBMITTED_DATE_OPTION ) ) {
+			update_option( self::KYC_SUBMITTED_DATE_OPTION, time(), false );
+		}
+
 		// Track account connection finish.
 		$event_properties = [
 			'mode'      => 'test' === $mode ? 'test' : 'live',
@@ -2286,6 +2346,12 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		// user might not have agreed to TOS yet.
 		update_option( '_wcpay_onboarding_stripe_connected', [ 'is_existing_stripe_account' => false ] );
 
+		// Mark this as a fresh KYC submission so the post-KYC nudge clock can use a real approval timestamp.
+		// Only set on live finalisations and never overwrite — this option distinguishes post-launch merchants from pre-existing ones.
+		if ( 'live' === $mode && ! get_option( self::KYC_SUBMITTED_DATE_OPTION ) ) {
+			update_option( self::KYC_SUBMITTED_DATE_OPTION, time(), false );
+		}
+
 		// Track account connection finish.
 		$incentive_id = ! empty( $_GET['promo'] ) ? sanitize_text_field( wp_unslash( $_GET['promo'] ) ) : '';
 		$tracks_props = [
@@ -2337,7 +2403,11 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 					// We can let the code below re-create it if the server tells us onboarding is still disabled.
 					delete_transient( self::ONBOARDING_DISABLED_TRANSIENT );
 
-					$request  = Get_Account::create();
+					$request      = Get_Account::create();
+					$store_id_key = ( class_exists( '\WC_Install' ) && defined( '\WC_Install::STORE_ID_OPTION' ) )
+						? \WC_Install::STORE_ID_OPTION
+						: 'woocommerce_store_id';
+					$request->set_woocommerce_store_id( get_option( $store_id_key, '' ) );
 					$response = $request->send();
 					$account  = $response->to_array();
 
@@ -2542,6 +2612,49 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		}
 	}
 
+	/**
+	 * Records the date a merchant's account first becomes KYC-approved and payments-enabled on live mode.
+	 * Stored once and never overwritten so the Post-KYC activation nudge clock starts from the real approval date.
+	 *
+	 * For post-launch merchants we have a `wcpay_kyc_submitted_date` set at finalize_*_connection,
+	 * which means the current observation is a fresh KYC and `time()` is accurate.
+	 * For pre-existing merchants we fall back to `account['created']` (Stripe's account creation timestamp)
+	 * so the nudge clock reflects roughly when KYC happened — imprecise but the best signal we have.
+	 *
+	 * @param array|bool $account The account data passed by woocommerce_payments_account_refreshed.
+	 *
+	 * @return void
+	 */
+	public function maybe_record_kyc_completion_date( $account ): void {
+		if ( empty( $account ) || ! is_array( $account ) ) {
+			return;
+		}
+
+		if ( empty( $account['payments_enabled'] ) || empty( $account['is_live'] ) || ! empty( $account['is_test_drive'] ) ) {
+			return;
+		}
+
+		// Preserve the original date — do not overwrite on subsequent refreshes.
+		if ( get_option( self::KYC_COMPLETION_DATE_OPTION ) ) {
+			return;
+		}
+
+		$kyc_submitted_date = (int) get_option( self::KYC_SUBMITTED_DATE_OPTION, 0 );
+		$account_created    = (int) ( $account['created'] ?? 0 );
+
+		if ( $kyc_submitted_date ) {
+			// Post-launch merchant — use the moment we observe payments_enabled flipping true.
+			$completion_date = time();
+		} elseif ( $account_created ) {
+			// Pre-existing merchant — fall back to the Stripe account creation timestamp.
+			$completion_date = $account_created;
+		} else {
+			return;
+		}
+
+		update_option( self::KYC_COMPLETION_DATE_OPTION, $completion_date, false );
+	}
+
 
 	/**
 	 * Retrieves the latest ToS agreement for the account.
@@ -2591,6 +2704,10 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 			return;
 		}
 
+		// Track that this merchant has been eligible for instant deposits.
+		// Used to show an informative notice if they later become ineligible.
+		update_option( 'wcpay_instant_deposits_previously_eligible', true );
+
 		require_once WCPAY_ABSPATH . 'includes/notes/class-wc-payments-notes-instant-deposits-eligible.php';
 		WC_Payments_Notes_Instant_Deposits_Eligible::possibly_add_note();
 		$this->maybe_add_instant_deposit_note_reminder();
@@ -2605,6 +2722,7 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 	 */
 	public function handle_loan_approved_inbox_note( $account ) {
 		require_once WCPAY_ABSPATH . 'includes/notes/class-wc-payments-notes-loan-approved.php';
+		require_once WCPAY_ABSPATH . 'includes/class-wc-payments-explicit-price-formatter.php';
 
 		// If the account cache is empty, don't try to create an inbox note.
 		if ( empty( $account ) ) {
@@ -2684,6 +2802,292 @@ class WC_Payments_Account implements MultiCurrencyAccountInterface {
 		return $account['card_testing_protection_eligible'] ?? false;
 	}
 
+	/**
+	 * Checks if the account is eligible for the review prompt (Phase 0).
+	 *
+	 * @return bool
+	 */
+	public function is_review_prompt_eligible(): bool {
+		$account = $this->get_cached_account_data();
+		return $account['eligibility_review_prompt_phase_0'] ?? false;
+	}
+
+	/**
+	 * Gather the latest store setup state and send it to the Transact Platform.
+	 *
+	 * @return void
+	 */
+	public function store_setup_sync() {
+		if ( ! $this->payments_api_client->is_server_connected() ) {
+			return;
+		}
+
+		try {
+			// This is a fire-and-forget operation, so we don't care about the result.
+			$this->payments_api_client->send_store_setup( $this->get_store_setup_details() );
+		} catch ( Throwable $e ) {
+			Logger::error( 'Failed to sync store setup state with the Transact Platform: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Gathers the current store setup details.
+	 *
+	 * This overlaps heavily with the extension settings, but it is not limited to it.
+	 *
+	 * @see WC_REST_Payments_Settings_Controller::get_settings().
+	 *
+	 * @return array Store setup details.
+	 * @throws Exception In case things are not properly initialized yet.
+	 */
+	private function get_store_setup_details(): array {
+		$gateway = WC_Payments::get_gateway();
+		// If the gateway is not available, return an empty array.
+		// This should never happen, but better safe than sorry.
+		if ( empty( $gateway ) || ! $gateway instanceof WC_Payment_Gateway_WCPay ) {
+			return [];
+		}
+
+		$gateway_form_fields = $gateway->get_form_fields();
+
+		$payment_methods_available = $gateway->get_upe_available_payment_methods();
+		$payment_methods_enabled   = $gateway->get_upe_enabled_payment_method_ids();
+		$payment_methods_disabled  = array_values( array_diff( $payment_methods_available, $payment_methods_enabled ) );
+
+		// Map enabled payment methods to capabilities.
+		// This is needed because the capabilities in the Transact Platform are named differently.
+		// E.g. 'card_payments' capability corresponds to 'card' payment method.
+		$provider_capabilities_enabled  = [];
+		$provider_capabilities_disabled = [];
+		$pm_to_capability_key_map       = $gateway->get_payment_method_capability_key_map();
+		foreach ( $payment_methods_enabled as $pm_id ) {
+			if ( isset( $pm_to_capability_key_map[ $pm_id ] ) ) {
+				$provider_capabilities_enabled[] = $pm_to_capability_key_map[ $pm_id ];
+			}
+		}
+		foreach ( $payment_methods_disabled as $pm_id ) {
+			if ( isset( $pm_to_capability_key_map[ $pm_id ] ) ) {
+				$provider_capabilities_disabled[] = $pm_to_capability_key_map[ $pm_id ];
+			}
+		}
+		$provider_capabilities_available = array_unique( array_merge( $provider_capabilities_enabled, $provider_capabilities_disabled ) );
+
+		return [
+			// The WooPayments setup details.
+			'gateway'                                     => [
+				'enabled'              => $gateway->is_enabled(),
+				'test_mode'            => WC_Payments::mode()->is_test(),
+				'test_mode_onboarding' => WC_Payments::mode()->is_test_mode_onboarding(),
+			],
+
+			// Payment methods setup.
+			'payment_methods'                             => [
+				'available'  => $payment_methods_available,
+				'enabled'    => $payment_methods_enabled,
+				'disabled'   => $payment_methods_disabled,
+				'duplicates' => $gateway->find_duplicates(),
+			],
+			// Payment methods mapped to capabilities, for flexibility with the Transact Platform.
+			// E.g. 'card_payments' capability corresponds to 'card' payment method.
+			'provider_capabilities'                       => [
+				'available' => $provider_capabilities_available,
+				'enabled'   => $provider_capabilities_enabled,
+				'disabled'  => $provider_capabilities_disabled,
+			],
+			'express_checkout_in_payment_methods_enabled' => $gateway->get_option( 'express_checkout_in_payment_methods' ),
+
+			'saved_cards_enabled'                         => $gateway->is_saved_cards_enabled(),
+			'manual_capture_enabled'                      => 'yes' === $gateway->get_option( 'manual_capture' ),
+			'debug_log_enabled'                           => 'yes' === $gateway->get_option( 'enable_logging' ),
+
+			'payment_request'                             => [
+				'enabled'              => $gateway->is_payment_request_enabled(),
+				'enabled_locations'    => $this->get_express_checkout_method_locations( $gateway, 'payment_request' ),
+				'button_type'          => $gateway->get_option( 'payment_request_button_type' ),
+				'button_size'          => $gateway->get_option( 'payment_request_button_size' ),
+				'button_theme'         => $gateway->get_option( 'payment_request_button_theme' ),
+				'button_border_radius' => $gateway->get_option( 'payment_request_button_border_radius' ),
+			],
+
+			'woopay'                                      => [
+				'enabled'                 => WC_Payments_Features::is_woopay_enabled(),
+				'enabled_locations'       => $this->get_express_checkout_method_locations( $gateway, 'woopay' ),
+				'store_logo'              => $gateway->get_option( 'platform_checkout_store_logo' ),
+				'custom_message'          => $gateway->get_option( 'platform_checkout_custom_message' ),
+				'invalid_extension_found' => (bool) get_option( 'woopay_invalid_extension_found', false ),
+			],
+
+			// WooPayments features.
+			'multi_currency_enabled'                      => WC_Payments_Features::is_customer_multi_currency_enabled(),
+			'stripe_billing_enabled'                      => WC_Payments_Features::is_stripe_billing_enabled(),
+
+			// Other WooPayments details.
+			'plugin'                                      => [
+				'version'              => defined( 'WCPAY_VERSION_NUMBER' ) ? explode( '-', WCPAY_VERSION_NUMBER, 2 )[0] : '',
+				'activation_timestamp' => get_option( 'wcpay_activation_timestamp', null ),
+			],
+
+			// Other store setup details.
+			'wp_setup'                                    => [
+				'name'           => get_bloginfo( 'name' ),
+				'url'            => home_url(),
+				'active_theme'   => $this->get_store_theme_details(),
+				'active_plugins' => $this->get_store_active_plugins(),
+				'version'        => get_bloginfo( 'version' ),
+				'locale'         => get_locale(),
+			],
+			'wc_setup'                                    => [
+				'version'                     => defined( 'WC_VERSION' ) ? explode( '-', WC_VERSION, 2 )[0] : '',
+				'store_id'                    => ( class_exists( '\WC_Install' ) && defined( '\WC_Install::STORE_ID_OPTION' ) ) ? get_option( \WC_Install::STORE_ID_OPTION, null ) : null,
+				'currency'                    => get_woocommerce_currency(),
+				'tracking_enabled'            => WC_Site_Tracking::is_tracking_enabled(),
+				'registered_payment_gateways' => $this->get_store_registered_gateway_ids(),
+				'enabled_payment_gateways'    => $this->get_store_enabled_gateway_ids(),
+				'wc_subscriptions_active'     => $gateway->is_subscriptions_plugin_active(),
+				'wc_subscriptions_version'    => $gateway->get_subscriptions_plugin_version(),
+			],
+		];
+	}
+
+	/**
+	 * Gathers the current store theme details.
+	 *
+	 * @return array Store theme details.
+	 */
+	private function get_store_theme_details(): array {
+		$theme_data = wp_get_theme();
+
+		return [
+			'name'        => $theme_data->Name, // @phpcs:ignore
+			'version'     => $theme_data->Version, // @phpcs:ignore
+			'child_theme' => is_child_theme(),
+			'wc_support'  => current_theme_supports( 'woocommerce' ),
+			'block_theme' => wp_is_block_theme(),
+		];
+	}
+
+	/**
+	 * Gathers the current store active (and valid) plugins.
+	 *
+	 * @return array Store active plugins details with each plugin slug and version.
+	 */
+	private function get_store_active_plugins(): array {
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		$all_plugins = get_plugins();
+		if ( empty( $all_plugins ) ) {
+			return [];
+		}
+
+		// Get active plugins using the PluginUtil from WC, if available.
+		$wc_plugin_util = null;
+		if ( class_exists( '\Automattic\WooCommerce\Utilities\PluginUtil' ) ) {
+			try {
+				$wc_plugin_util = wc_get_container()->get( '\Automattic\WooCommerce\Utilities\PluginUtil' );
+			} catch ( Throwable $e ) {
+				// If we can't get the PluginUtil, we won't be able to accurately get the active plugins.
+				// This is not a critical failure, so we can log it and continue.
+				Logger::error( 'Failed to get PluginUtil: ' . $e->getMessage() );
+			}
+		}
+
+		$plugins_list = [];
+
+		$active_plugin_ids = ( is_object( $wc_plugin_util ) && is_callable( [ $wc_plugin_util, 'get_all_active_valid_plugins' ] ) ) ? $wc_plugin_util->get_all_active_valid_plugins() : wp_get_active_and_valid_plugins();
+		foreach ( $active_plugin_ids as $plugin_file ) {
+			// Normalize to relative path since get_plugins() keys are relative
+			// but wp_get_active_and_valid_plugins() returns absolute paths.
+			$plugin_file = plugin_basename( $plugin_file );
+			if ( isset( $all_plugins[ $plugin_file ] ) ) {
+				$plugin_data                  = $all_plugins[ $plugin_file ];
+				$plugins_list[ $plugin_file ] = [
+					'name'     => $plugin_data['Name'],
+					'slug'     => dirname( $plugin_file ),
+					'version'  => $plugin_data['Version'],
+					'wc_aware' => ( is_object( $wc_plugin_util ) && is_callable( [ $wc_plugin_util, 'is_woocommerce_aware_plugin' ] ) ) ? $wc_plugin_util->is_woocommerce_aware_plugin( $plugin_data ) : null,
+				];
+			}
+		}
+
+		return array_values( $plugins_list );
+	}
+
+	/**
+	 * Gets the IDs of all payment gateways registered in the store.
+	 *
+	 * @return array Array of payment gateway IDs.
+	 */
+	private function get_store_registered_gateway_ids(): array {
+		$payment_gateways = WC()->payment_gateways()->payment_gateways();
+		if ( empty( $payment_gateways ) ) {
+			return [];
+		}
+
+		// Go through the gateways and get their IDs.
+		return array_unique(
+			array_values(
+				array_filter(
+					array_map(
+						function ( $gateway ) {
+							return $gateway->id ?? null;
+						},
+						$payment_gateways
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * Gets the IDs of all enabled payment gateways registered in the store.
+	 *
+	 * @return array Array of enabled payment gateway IDs.
+	 */
+	private function get_store_enabled_gateway_ids(): array {
+		$payment_gateways = WC()->payment_gateways()->payment_gateways();
+		if ( empty( $payment_gateways ) ) {
+			return [];
+		}
+
+		// Go through the gateways and get the IDs of enabled ones.
+		return array_unique(
+			array_values(
+				array_filter(
+					array_map(
+						function ( $gateway ) {
+							return ( $gateway instanceof WC_Payment_Gateway && wc_string_to_bool( $gateway->enabled ) ) ? $gateway->id : null;
+						},
+						$payment_gateways
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * Gets the locations where a specific express checkout method is enabled.
+	 *
+	 * Derives the locations from the location-centric express checkout settings.
+	 *
+	 * @param WC_Payment_Gateway_WCPay $gateway   The WCPay gateway instance.
+	 * @param string                   $method_id The method identifier (e.g., 'payment_request', 'woopay').
+	 *
+	 * @return array Array of location identifiers where the method is enabled.
+	 */
+	private function get_express_checkout_method_locations( WC_Payment_Gateway_WCPay $gateway, string $method_id ): array {
+		$locations         = [ 'product', 'cart', 'checkout' ];
+		$enabled_locations = [];
+
+		foreach ( $locations as $location ) {
+			$enabled_methods = $gateway->get_option( "express_checkout_{$location}_methods", [] );
+			if ( is_array( $enabled_methods ) && in_array( $method_id, $enabled_methods, true ) ) {
+				$enabled_locations[] = $location;
+			}
+		}
+
+		return $enabled_locations;
+	}
 
 	/**
 	 * Gets tracking info from the server and caches it.

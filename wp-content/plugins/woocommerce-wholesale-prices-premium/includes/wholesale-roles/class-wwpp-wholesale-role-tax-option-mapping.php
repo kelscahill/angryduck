@@ -92,7 +92,9 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             wp_die();
         }
 
-        $mapping            = WWPP_Helper_Functions::sanitize_array( $_POST['mapping'] ?? array() );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $mapping            = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping'] ?? array() ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $tax_option_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_TAX_OPTION_MAPPING, array() );
 
         if ( ! is_array( $tax_option_mapping ) ) {
@@ -143,7 +145,9 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             wp_die();
         }
 
-        $mapping            = WWPP_Helper_Functions::sanitize_array( $_POST['mapping'] ?? array() );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $mapping            = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping'] ?? array() ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $tax_option_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_TAX_OPTION_MAPPING, array() );
 
         if ( ! is_array( $tax_option_mapping ) ) {
@@ -192,7 +196,9 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             wp_die();
         }
 
-        $wholesale_role     = sanitize_text_field( $_POST['wholesale_role'] ?? '' );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $wholesale_role     = sanitize_text_field( wp_unslash( $_POST['wholesale_role'] ?? '' ) );
         $tax_option_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_TAX_OPTION_MAPPING, array() );
 
         if ( ! is_array( $tax_option_mapping ) ) {
@@ -267,6 +273,8 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             wp_die();
         }
 
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
         if ( ! isset( $_POST['mapping-data'] ) ) {
             echo wp_json_encode(
                 array(
@@ -286,8 +294,8 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             $mapping = array();
         }
 
-        $wholesale_role_key = isset( $_POST['mapping-data']['wholesale-role-key'] ) ? sanitize_key( $_POST['mapping-data']['wholesale-role-key'] ) : null;
-        $mode               = isset( $_POST['mapping-data']['mode'] ) ? sanitize_text_field( $_POST['mapping-data']['mode'] ) : null;
+        $wholesale_role_key = isset( $_POST['mapping-data']['wholesale-role-key'] ) ? sanitize_key( wp_unslash( $_POST['mapping-data']['wholesale-role-key'] ) ) : null;
+        $mode               = isset( $_POST['mapping-data']['mode'] ) ? sanitize_text_field( wp_unslash( $_POST['mapping-data']['mode'] ) ) : null;
 
         if ( 'add' === $mode && array_key_exists( $wholesale_role_key, $mapping ) ) {
             $response = array(
@@ -305,7 +313,7 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             unset( $_POST['mapping-data']['mode'] );
             // phpcs:enable
 
-            $mapping[ $wholesale_role_key ] = WWPP_Helper_Functions::sanitize_array( $_POST['mapping-data'] );
+            $mapping[ $wholesale_role_key ] = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping-data'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
             update_option( WWPP_OPTION_WHOLESALE_ROLE_TAX_CLASS_OPTIONS_MAPPING, $mapping, 'no' );
 
@@ -342,6 +350,8 @@ class WWPP_Wholesale_Role_Tax_Option_Mapping {
             );
             wp_die();
         }
+
+        WWPP_Helper_Functions::require_capability_or_send_error();
 
         if ( ! isset( $_POST['wholesale-role-key'] ) ) {
             echo wp_json_encode(

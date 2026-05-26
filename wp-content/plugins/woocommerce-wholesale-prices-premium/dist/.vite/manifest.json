@@ -1,6 +1,21 @@
 {
+  "src/apps/wwpp-reports/index-legacy.ts": {
+    "file": "apps/wwpp-reports/index-legacy.C8W-xG4P.js",
+    "name": "apps/wwpp-reports/index",
+    "src": "src/apps/wwpp-reports/index-legacy.ts",
+    "isEntry": true
+  },
+  "src/apps/wwpp-reports/index.ts": {
+    "file": "apps/wwpp-reports/index.5Vs_CfL6.js",
+    "name": "apps/wwpp-reports/index",
+    "src": "src/apps/wwpp-reports/index.ts",
+    "isEntry": true,
+    "css": [
+      "css/index.kJnW7gJp.css"
+    ]
+  },
   "src/blocks/woocommerce/wholesale-savings/index-legacy.tsx": {
-    "file": "blocks/woocommerce/wholesale-savings/index.tsx-legacy.B4XGR5QH.js",
+    "file": "blocks/woocommerce/wholesale-savings/index.tsx-legacy.DQIs1Ain.js",
     "name": "blocks/woocommerce/wholesale-savings/index.tsx",
     "src": "src/blocks/woocommerce/wholesale-savings/index-legacy.tsx",
     "isEntry": true,
@@ -9,51 +24,51 @@
     ]
   },
   "src/blocks/woocommerce/wholesale-savings/index.tsx": {
-    "file": "blocks/woocommerce/wholesale-savings/index.tsx.14LfTKtd.js",
+    "file": "blocks/woocommerce/wholesale-savings/index.tsx.lrp9nqNu.js",
     "name": "blocks/woocommerce/wholesale-savings/index.tsx",
     "src": "src/blocks/woocommerce/wholesale-savings/index.tsx",
     "isEntry": true,
     "css": [
-      "css/blocks/woocommerce/wholesale-savings/style.CncY7zBN.css"
+      "css/blocks/woocommerce/wholesale-savings/style.BsjiwecH.css"
     ]
   },
   "src/blocks/woocommerce/wholesale-savings/style-legacy.scss": {
-    "file": "blocks/woocommerce/wholesale-savings/style.scss-legacy.BkRteRtm.js",
+    "file": "blocks/woocommerce/wholesale-savings/style.scss-legacy.Bd3NiS9y.js",
     "name": "blocks/woocommerce/wholesale-savings/style.scss",
     "src": "src/blocks/woocommerce/wholesale-savings/style-legacy.scss",
     "isEntry": true
   },
   "src/blocks/woocommerce/wholesale-savings/style.scss": {
-    "file": "css/blocks/woocommerce/wholesale-savings/style.CncY7zBN.css",
+    "file": "css/blocks/woocommerce/wholesale-savings/style.BsjiwecH.css",
     "src": "src/blocks/woocommerce/wholesale-savings/style.scss",
     "isEntry": true
   },
   "src/vanilla/cart-checkout-block-surcharge-legacy.ts": {
-    "file": "vanilla/cart-checkout-block-surcharge-legacy.CZGJPBFC.js",
+    "file": "vanilla/cart-checkout-block-surcharge-legacy.DK1kkPes.js",
     "name": "vanilla/cart-checkout-block-surcharge",
     "src": "src/vanilla/cart-checkout-block-surcharge-legacy.ts",
     "isEntry": true
   },
   "src/vanilla/cart-checkout-block-surcharge.ts": {
-    "file": "vanilla/cart-checkout-block-surcharge.DzxfYDc9.js",
+    "file": "vanilla/cart-checkout-block-surcharge.BIK8QEyY.js",
     "name": "vanilla/cart-checkout-block-surcharge",
     "src": "src/vanilla/cart-checkout-block-surcharge.ts",
     "isEntry": true
   },
   "src/vanilla/cart-checkout-min-req-legacy.ts": {
-    "file": "vanilla/cart-checkout-min-req-legacy.DtJshdqo.js",
+    "file": "vanilla/cart-checkout-min-req-legacy.B6onLm7Y.js",
     "name": "vanilla/cart-checkout-min-req",
     "src": "src/vanilla/cart-checkout-min-req-legacy.ts",
     "isEntry": true
   },
   "src/vanilla/cart-checkout-min-req.ts": {
-    "file": "vanilla/cart-checkout-min-req.CG7ySK1E.js",
+    "file": "vanilla/cart-checkout-min-req.ChnlXRGm.js",
     "name": "vanilla/cart-checkout-min-req",
     "src": "src/vanilla/cart-checkout-min-req.ts",
     "isEntry": true
   },
   "vite/legacy-polyfills-legacy": {
-    "file": "polyfills-legacy.CGm7e2z_.js",
+    "file": "polyfills-legacy.VVu8x4fn.js",
     "name": "polyfills",
     "src": "vite/legacy-polyfills-legacy",
     "isEntry": true

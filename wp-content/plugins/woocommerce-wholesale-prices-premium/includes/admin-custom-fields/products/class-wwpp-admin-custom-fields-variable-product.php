@@ -215,7 +215,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
 
             if ( isset( $_POST['variable_post_id'] ) ) {
 
-                $variable_post_id = $_POST['variable_post_id'];
+                $variable_post_id = $_POST['variable_post_id']; //phpcs:ignore
                 $max_loop         = max( array_keys( $variable_post_id ) );
 
                 for ( $i = 0; $i <= $max_loop; $i++ ) {
@@ -235,11 +235,11 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
 
                         if ( is_array( $_POST[ WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ][ $i ] ) ) {
 
-                            foreach ( $_POST[ WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ][ $i ] as $role_key ) {
+                            foreach ( $_POST[ WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ][ $i ] as $role_key ) { //phpcs:ignore
                                 $variation_product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $role_key );
                             }
                         } else {
-                            $variation_product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $_POST[ WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ][ $i ] );
+                            $variation_product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $_POST[ WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ][ $i ] ); //phpcs:ignore
                         }
                     } else {
                         $variation_product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, 'all' );
@@ -266,7 +266,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
          * @param WC_Variation $variation_obj Variation object.
          * @return boolean Modified flag that detemines if the current varition is visible to the current user or not.
          */
-        public function filter_variation_visibility( $visible, $variation_id, $variable_id, $variation_obj ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+        public function filter_variation_visibility( $visible, $variation_id, $variable_id, $variation_obj = null ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
             return $this->filter_variation_availability( $visible, $variation_id );
         }
 
@@ -502,7 +502,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                     // Get product object.
                     $product = wc_get_product( $post_id );
 
-                    $variable_level_moq = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_minimum_order_quantity' ] ) );
+                    $variable_level_moq = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_minimum_order_quantity' ] ) ); //phpcs:ignore
 
                     if ( ! empty( $variable_level_moq ) ) {
 
@@ -544,7 +544,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                     // Get product object.
                     $product = wc_get_product( $post_id );
 
-                    $variable_level_oqs = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_order_quantity_step' ] ) );
+                    $variable_level_oqs = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_order_quantity_step' ] ) ); //phpcs:ignore
 
                     if ( ! empty( $variable_level_oqs ) ) {
 
@@ -742,7 +742,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
 
             if ( ( $variation_ids && $wholesale_moqs ) || isset( $_POST['variable_sku'] ) ) {
 
-                $variable_post_id = $variation_ids ? $variation_ids : $_POST['variable_post_id'];
+                $variable_post_id = $variation_ids ? $variation_ids : $_POST['variable_post_id']; //phpcs:ignore
                 $max_loop         = max( array_keys( $variable_post_id ) );
 
                 foreach ( $wholesale_roles as $role_key => $role ) {
@@ -751,7 +751,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                         continue;
                     }
 
-                    $wholesale_moq = $wholesale_moqs ? $wholesale_moqs : $_POST[ $role_key . '_wholesale_minimum_order_quantity' ];
+                    $wholesale_moq = $wholesale_moqs ? $wholesale_moqs : $_POST[ $role_key . '_wholesale_minimum_order_quantity' ]; //phpcs:ignore
 
                     for ( $i = 0; $i <= $max_loop; $i++ ) {
 
@@ -813,7 +813,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
 
             if ( ( $variation_ids && $wholesale_oqss ) || isset( $_POST['variable_sku'] ) ) {
 
-                $variable_post_id = $variation_ids ? $variation_ids : $_POST['variable_post_id'];
+                $variable_post_id = $variation_ids ? $variation_ids : $_POST['variable_post_id']; //phpcs:ignore
                 $max_loop         = max( array_keys( $variable_post_id ) );
 
                 foreach ( $wholesale_roles as $role_key => $role ) {
@@ -821,7 +821,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                         continue;
                     }
 
-                    $wholesale_oqs = $wholesale_oqss ? $wholesale_oqss : $_POST[ $role_key . '_wholesale_order_quantity_step' ];
+                    $wholesale_oqs = $wholesale_oqss ? $wholesale_oqss : $_POST[ $role_key . '_wholesale_order_quantity_step' ]; //phpcs:ignore
 
                     for ( $i = 0; $i <= $max_loop; $i++ ) {
 
@@ -935,7 +935,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
          * @param array  $variations  Array of variation ids.
          */
         public function execute_variations_custom_bulk_actions( $bulk_action, $data, $product_id, $variations ) {
-            if ( strpos( $bulk_action, '_wholesale_sale_price' ) !== false ) {
+            if ( str_contains( $bulk_action, '_wholesale_sale_price' ) ) {
 
                 if ( is_array( $variations ) && isset( $data['value'] ) ) {
                     $wholesale_role     = str_replace( '_wholesale_sale_price', '', $bulk_action );
@@ -967,7 +967,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                 }
             }
 
-            if ( strpos( $bulk_action, '_wholesale_min_order_qty' ) !== false ) {
+            if ( str_contains( $bulk_action, '_wholesale_min_order_qty' ) ) {
 
                 if ( is_array( $variations ) && isset( $data['value'] ) ) {
 
@@ -985,7 +985,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                 }
             }
 
-            if ( strpos( $bulk_action, '_wholesale_order_qty_step' ) !== false ) {
+            if ( str_contains( $bulk_action, '_wholesale_order_qty_step' ) ) {
 
                 if ( is_array( $variations ) && isset( $data['value'] ) ) {
 
@@ -1267,10 +1267,10 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
             $variation_product = wc_get_product( $variation_id );
 
             // phpcs:disable WordPress.Security.NonceVerification.Missing
-            $wholesale_discount_type = isset( $_POST[ "{$meta_field_key}_wholesale_discount_type" ][ $i ] ) ? trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_discount_type" ][ $i ] ) ) : '';
+            $wholesale_discount_type = isset( $_POST[ "{$meta_field_key}_wholesale_discount_type" ][ $i ] ) ? trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_discount_type" ][ $i ] ) ) : ''; //phpcs:ignore
 
-            if ( isset( $_POST[ "{$meta_field_key}_wholesale_sale_price" ][ $i ] ) && '' !== $_POST[ $meta_field_key . '_wholesale_sale_price' ][ $i ] ) {
-                $wholesale_sale_price = trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_sale_price" ][ $i ] ) );
+            if ( isset( $_POST[ "{$meta_field_key}_wholesale_sale_price" ][ $i ] ) && '' !== $_POST[ $meta_field_key . '_wholesale_sale_price' ][ $i ] ) { //phpcs:ignore
+                $wholesale_sale_price = trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_sale_price" ][ $i ] ) ); //phpcs:ignore
 
                 if ( $thousand_sep ) {
                     $wholesale_sale_price = str_replace( $thousand_sep, '', $wholesale_sale_price );
@@ -1296,7 +1296,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
             }
 
             if ( 'percentage' === $wholesale_discount_type ) {
-                $wholesale_sale_discount = trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_sale_discount" ][ $i ] ) );
+                $wholesale_sale_discount = trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_sale_discount" ][ $i ] ) ); //phpcs:ignore
 
                 if ( $decimal_sep ) {
                     $wholesale_sale_discount = str_replace( $decimal_sep, '.', $wholesale_sale_discount );
@@ -1346,7 +1346,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
 
             // Check if the product type is subscription.
             if ( WWP_Helper_Functions::is_plugin_active( 'woocommerce-subscriptions/woocommerce-subscriptions.php' ) ) {
-                $product_type = isset( $_POST['product-type'] ) ? $_POST['product-type'] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                $product_type = isset( $_POST['product-type'] ) ? $_POST['product-type'] : ''; // //phpcs:ignore
                 if ( 'variable-subscription' === $product_type ) {
                     $singup_fee_key               = $meta_field_key . '_wholesale_signup_fee';
                     $singup_fee_is_percentage_key = $meta_field_key . '_wholesale_signup_fee_discount';

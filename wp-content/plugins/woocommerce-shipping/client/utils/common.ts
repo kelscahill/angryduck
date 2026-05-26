@@ -3,7 +3,7 @@ import { CamelCaseType, ShipmentRecord } from '../types';
 
 export const camelCaseKeys = <
 	T extends object,
-	ReturnType = CamelCaseType< T >
+	ReturnType = CamelCaseType< T >,
 >(
 	obj: T
 ): ReturnType =>
@@ -13,7 +13,7 @@ export const camelCaseKeys = <
 
 export const snakeCaseKeys = <
 	T extends object,
-	ReturnType = CamelCaseType< T >
+	ReturnType = CamelCaseType< T >,
 >(
 	obj: T
 ): ReturnType =>
@@ -38,7 +38,7 @@ export const findClosestIndex = (
 	);
 
 export const renderWhenDOMReady = ( callback: () => void ) => {
-	if ( document.readyState === 'complete' ) {
+	if ( document.readyState !== 'loading' ) {
 		callback();
 	} else {
 		document.addEventListener( 'DOMContentLoaded', callback );

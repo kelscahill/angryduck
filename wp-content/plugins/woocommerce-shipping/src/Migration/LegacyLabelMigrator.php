@@ -12,7 +12,6 @@ use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
 use Automattic\WCShipping\Shipments\ShipmentsService;
 use Automattic\WooCommerce\Internal\BatchProcessing\BatchProcessingController;
 use Automattic\WooCommerce\Internal\BatchProcessing\BatchProcessorInterface;
-use Automattic\WooCommerce\Internal\Traits\AccessiblePrivateMethods;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 use Automattic\WooCommerce\Utilities\StringUtil;
 use Exception;
@@ -27,8 +26,6 @@ use WC_Order_Factory;
  * @package Automattic\WCShipping\Migration
  */
 class LegacyLabelMigrator implements BatchProcessorInterface {
-
-	use AccessiblePrivateMethods;
 
 	const LEGACY_LABEL_META_KEY     = 'wc_connect_labels';
 	const WCSHIPPING_LABEL_META_KEY = 'wcshipping_labels';
@@ -60,8 +57,6 @@ class LegacyLabelMigrator implements BatchProcessorInterface {
 
 	public function __construct( WC_Connect_Service_Settings_Store $settings_store ) {
 		$this->settings_store = $settings_store;
-
-		self::mark_method_as_accessible( 'convert_item_and_copy_label_data' );
 	}
 
 	public function get_name(): string {
@@ -130,12 +125,12 @@ class LegacyLabelMigrator implements BatchProcessorInterface {
 		// Get orders that have both legacy and WC Shipping labels
 		$orders_with_both_meta = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT %i, meta_value as legacy_value 
+				'SELECT %i, meta_value as legacy_value
 				FROM %i l
-				WHERE meta_key = %s 
+				WHERE meta_key = %s
 				AND %i IN (
-					SELECT %i 
-					FROM %i 
+					SELECT %i
+					FROM %i
 					WHERE meta_key = %s
 				)',
 				$column_name,
@@ -261,7 +256,7 @@ class LegacyLabelMigrator implements BatchProcessorInterface {
 		$remaining_size   = $size - count( $orders_with_legacy_only );
 		$orders_with_both = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT l.`' . esc_sql( $column_name ) . '`, l.meta_value as legacy_value, w.meta_value as wc_value 
+				'SELECT l.`' . esc_sql( $column_name ) . '`, l.meta_value as legacy_value, w.meta_value as wc_value
 				FROM `' . esc_sql( $table_name ) . '` l
 				INNER JOIN `' . esc_sql( $table_name ) . '` w ON l.`' . esc_sql( $column_name ) . '` = w.`' . esc_sql( $column_name ) . '`
 				WHERE l.meta_key = %s AND w.meta_key = %s
@@ -512,7 +507,10 @@ class LegacyLabelMigrator implements BatchProcessorInterface {
 		);
 	}
 
-	private function convert_item_and_copy_label_data( WC_Order $order ): void {
+	/**
+	 * @internal For internal use only.
+	 */
+	public function convert_item_and_copy_label_data( WC_Order $order ): void {
 		$labels_data                = $this->settings_store->get_label_order_meta_data( $order->get_id(), true );
 		$existing_wcshipping_labels = $order->get_meta( self::WCSHIPPING_LABEL_META_KEY, true );
 		$existing_wcshipping_labels = is_array( $existing_wcshipping_labels ) ? $existing_wcshipping_labels : array();

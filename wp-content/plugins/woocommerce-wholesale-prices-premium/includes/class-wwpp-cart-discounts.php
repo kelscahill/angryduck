@@ -66,9 +66,11 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
 
             $min_order_requirement_check = $this->min_order_requirement_check( $cart, $wholesale_role );
 
+            $cart_products = $cart->get_cart() ?? array();
             if ( ! empty( $wholesale_role ) && true === $min_order_requirement_check ) {
 
-                $quantity_discount_rule_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_SUBTOTAL_PRICE_BASED_DISCOUNT_MAPPING, array() );
+                $quantity_discount_rule_mapping         = get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_SUBTOTAL_PRICE_BASED_DISCOUNT_MAPPING, array() );
+                $apply_wholesale_products_discount_only = get_option( 'apply_discounts_to_wholesale_products_only' );
 
                 usort(
                     $quantity_discount_rule_mapping,
@@ -77,9 +79,11 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
                     }
                 );
 
-                $subtotal        = $cart->cart_contents_total;
-                $discount_amount = 0;
-                $discount_title  = '';
+                $subtotal                        = $cart->cart_contents_total;
+                $discount_amount                 = 0;
+                $discount_title                  = '';
+                $wholesale_products_price_total  = 0;
+                $wholesale_price_discount_amount = 0;
 
                 foreach ( $quantity_discount_rule_mapping as $mapping ) {
                     if ( $mapping['wholesale_role'] === $wholesale_role[0] && 0 === $discount_amount && $subtotal >= $mapping['subtotal_price'] ) {
@@ -92,12 +96,43 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
                     }
                 }
 
+                if ( $discount_amount > 0 && 'yes' === $apply_wholesale_products_discount_only ) { // if the discount amount is trigged when subtotal amount is met, then apply wholesale discounts to wholesale products only.
+                    /**
+                     * Calculate the total products price for wholesale priced products only.
+                     */
+                    foreach ( $cart_products as $cart_product ) {
+                        $product_quantity          = $cart_product['quantity'];
+                        $is_this_wholesale_product = isset( $cart_product['wwp_data']['wholesale_priced'] ) ? $cart_product['wwp_data']['wholesale_priced'] : 'no';
+                        $product                   = wc_get_product( $cart_product['product_id'] );
+                        $product_type              = $product->get_type();
+
+                        if ( wc_string_to_bool( $is_this_wholesale_product ) ) { // get the retail price for products with no wholesale price.
+                            $wholesale_price                 = WWP_Wholesale_Prices::get_product_raw_wholesale_price( 'variable' === $product_type ? $cart_product['variation_id'] : $cart_product['product_id'], $wholesale_role );
+                            $wholesale_products_price_total += (float) $wholesale_price * $product_quantity;
+                        }
+                    }
+
+                    /**
+                     * Calculate the discount amount for wholesale products, that will be deducted from subtotal(this amount will be from subtotal $wholesale_price_discount_amount variable).
+                     */
+                    foreach ( $quantity_discount_rule_mapping as $mapping ) {
+                        if ( $mapping['wholesale_role'] === $wholesale_role[0] ) {
+                            if ( 'percent-discount' === $mapping['discount_type'] ) {
+                                $wholesale_price_discount_amount = $wholesale_products_price_total * ( $mapping['discount_amount'] / 100 );
+                            } else {
+                                $wholesale_price_discount_amount = $wholesale_products_price_total - $mapping['discount_amount'];
+                            }
+                        }
+                    }
+                    $discount_amount = $wholesale_price_discount_amount; // override the default discount amount with new discount amount calculated using wholesale products price total.
+                }
+
                 if ( $discount_amount > 0 ) {
                     $subtotal_based_discount = apply_filters(
                         'wwpp_cart_subtotal_based_discount',
                         array(
-							'discount_title'  => $discount_title,
-							'discount_amount' => $discount_amount,
+                            'discount_title'  => $discount_title,
+                            'discount_amount' => $discount_amount,
                         )
                     );
                     $cart->add_fee( $subtotal_based_discount['discount_title'], -$subtotal_based_discount['discount_amount'] );
@@ -141,8 +176,8 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
                         $wp = wc_get_price_excluding_tax(
                             $cart_item['data'],
                             array(
-								'qty'   => 1,
-								'price' => $wholesale_price,
+                                'qty'   => 1,
+                                'price' => $wholesale_price,
                             )
                         );
                     } else {

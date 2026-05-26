@@ -6,13 +6,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-use Automattic\WCShipping\Carrier\CarrierStrategyService;
+use Automattic\WCShipping\Carrier\FedEx\FedExCarrierStrategyRESTController;
+use Automattic\WCShipping\Carrier\FedEx\FedExCarrierStrategyService;
+use Automattic\WCShipping\Carrier\FedEx\FedExTosErrorInterceptor;
 use Automattic\WCShipping\Carrier\UPSDAP\UPSDAPCarrierStrategyRESTController;
 use Automattic\WCShipping\Carrier\UPSDAP\UPSDAPCarrierStrategyService;
 use Automattic\WCShipping\Checkout\CheckoutController;
 use Automattic\WCShipping\Checkout\CheckoutService;
+use Automattic\WCShipping\Bulk\BatchableApiClient;
+use Automattic\WCShipping\Banners\BulkLabelsBanner;
 use Automattic\WCShipping\Connect\WC_Connect_API_Client;
-use Automattic\WCShipping\Connect\WC_Connect_API_Client_Live;
 use Automattic\WCShipping\Connect\WC_Connect_Debug_Tools;
 use Automattic\WCShipping\Connect\WC_Connect_Error_Notice;
 use Automattic\WCShipping\Connect\WC_Connect_Extension_Compatibility;
@@ -27,6 +30,9 @@ use Automattic\WCShipping\Connect\WC_Connect_Privacy;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Schemas_Store;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Schemas_Validator;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
+use Automattic\WCShipping\ScanForm\ScanFormHistoryRESTController;
+use Automattic\WCShipping\ScanForm\ScanFormService;
+use Automattic\WCShipping\ScanForm\ScanForm;
 use Automattic\WCShipping\Connect\WC_Connect_Settings_Pages;
 use Automattic\WCShipping\Connect\WC_Connect_Shipping_Label;
 use Automattic\WCShipping\Connect\WC_Connect_Account_Settings;
@@ -43,6 +49,7 @@ use Automattic\WCShipping\LabelPurchase\LabelPrintController;
 use Automattic\WCShipping\LabelPurchase\LabelPrintService;
 use Automattic\WCShipping\LabelPurchase\LabelPurchaseRESTController;
 use Automattic\WCShipping\LabelPurchase\LabelPurchaseService;
+use Automattic\WCShipping\LabelPurchase\OrdersShippingContextRESTController;
 use Automattic\WCShipping\LabelPurchase\LabelRefundRESTController;
 use Automattic\WCShipping\LabelPurchase\LabelStatusController;
 use Automattic\WCShipping\LabelPurchase\View;
@@ -52,6 +59,9 @@ use Automattic\WCShipping\LabelRate\LabelRateService;
 use Automattic\WCShipping\LabelSettings\AccountSettingsRestController;
 use Automattic\WCShipping\LabelSettings\SelfHelpRestController;
 use Automattic\WCShipping\LabelSettings\ServiceDataRefreshRestController;
+use Automattic\WCShipping\ServiceData\ServicesErrorNotice;
+use Automattic\WCShipping\ServiceData\ServiceSchemasFetcherService;
+use Automattic\WCShipping\ServiceData\ServiceStatusRESTController;
 use Automattic\WCShipping\LegacyAPIControllers\WC_REST_Connect_Account_Settings_Controller;
 use Automattic\WCShipping\LegacyAPIControllers\WC_REST_Connect_Address_Normalization_Controller;
 use Automattic\WCShipping\LegacyAPIControllers\WC_REST_Connect_Assets_Controller;
@@ -79,24 +89,33 @@ use Automattic\WCShipping\Migration\MigrationNotices;
 use Automattic\WCShipping\Migration\MigrationState;
 use Automattic\WCShipping\Onboarding\SettingsPage;
 use Automattic\WCShipping\OriginAddresses\OriginAddressService;
+use Automattic\WCShipping\PackageAssignment\PackageAssignmentRESTController;
+use Automattic\WCShipping\PackageAssignment\PackageAssignmentService;
 use Automattic\WCShipping\Packages\PackagesRESTController;
 use Automattic\WCShipping\Shipments\ShipmentsRESTController;
+use Automattic\WCShipping\ScanForm\ScanFormRESTController;
 use Automattic\WCShipping\Shipments\ShipmentsService;
 use Automattic\WCShipping\StoreApi\Extensions\BlocksCheckoutAddressValidationExtension;
 use Automattic\WCShipping\StoreApi\StoreApiExtendSchema;
 use Automattic\WCShipping\StoreApi\StoreApiExtensionController;
+use Automattic\WCShipping\Testing\WCConnectE2EAPIClientMock;
+use Automattic\WCShipping\Testing\WCConnectE2EConnectionShim;
 use Automattic\WCShipping\Utils as WCShippingUtils;
 use Automattic\WCShipping\WPCOMConnection\WPCOMConnectionRESTController;
 use Automattic\WCShipping\WCShippingRESTController;
 use Automattic\WCShipping\Analytics\ShippingLabel;
 use Automattic\WCShipping\Analytics\ShippingLabelRESTController;
 use Automattic\WCShipping\Analytics\LabelsService;
+use Automattic\WCShipping\Abilities\Abilities;
+use Automattic\WCShipping\Banners\Banners;
 use Automattic\WCShipping\LabelPurchase\EligibilityRESTController;
 use Automattic\WCShipping\Promo\PromoRESTController;
 use Automattic\WCShipping\Promo\PromoService;
+use Automattic\WCShipping\Fulfillments\FulfillmentsService;
+use Automattic\WCShipping\Fulfillments\ShippingFulfillmentsDataStore;
+use Automattic\WCShipping\RestApi\Routes\V2\Addresses\Controller as AddressesV2Controller;
 
 use Exception;
-use WC_Connect_API_Client_Local_Test_Mock;
 use WC_Data_Store;
 use WC_Logger;
 use WC_Order;
@@ -127,6 +146,11 @@ class Loader {
 	 * @var WC_Connect_Service_Schemas_Store
 	 */
 	protected $service_schemas_store;
+
+	/**
+	 * @var ServiceSchemasFetcherService
+	 */
+	protected $service_schemas_fetcher;
 
 	/**
 	 * @var WC_Connect_Service_Settings_Store
@@ -232,6 +256,11 @@ class Loader {
 	protected $nux;
 
 	/**
+	 * @var Banners
+	 */
+	protected $feature_banners;
+
+	/**
 	 * @var WC_REST_Connect_Tos_Controller
 	 */
 	protected $rest_tos_controller;
@@ -245,6 +274,16 @@ class Loader {
 	 * @var PromoService
 	 */
 	protected $promo_service;
+
+	/**
+	 * @var ?FulfillmentsService
+	 */
+	protected ?FulfillmentsService $fulfillments_service = null;
+
+	/**
+	 * @var ?LabelPurchaseService
+	 */
+	protected ?LabelPurchaseService $label_purchase_service = null;
 
 	/**
 	 * @var MigrationController
@@ -288,6 +327,11 @@ class Loader {
 	protected $wc_connect_base_url;
 
 	/**
+	 * @var AddressNormalizationService
+	 */
+	protected $address_normalization_service;
+
+	/**
 	 * @var ViewService
 	 */
 	protected $view_service;
@@ -298,9 +342,36 @@ class Loader {
 	protected CheckoutService $checkout_service;
 
 	/**
+	 * @var FedExCarrierStrategyService
+	 */
+	private $fedex_carrier_strategy_service;
+
+	/**
 	 * @var UPSDAPCarrierStrategyService
 	 */
 	protected $upsdap_carrier_strategy_service;
+
+	/**
+	 * Shipping fulfillments data store instance.
+	 *
+	 * @var ShippingFulfillmentsDataStore
+	 */
+	protected $shipping_fulfillments_data_store;
+
+	/**
+	 * Account settings instance.
+	 *
+	 * @var WC_Connect_Account_Settings
+	 */
+	protected WC_Connect_Account_Settings $account_settings;
+
+	/**
+	 * Origin address service instance.
+	 *
+	 * @var OriginAddressService
+	 */
+	protected OriginAddressService $origin_address_service;
+
 	/**
 	 * Plugin deactivation hook.
 	 */
@@ -454,8 +525,6 @@ class Loader {
 
 		add_action( 'plugins_loaded', array( $this, 'on_plugins_loaded' ) );
 		add_action( 'init', array( $this, 'jetpack_on_plugins_loaded' ), 1 );
-
-		add_action( 'after_setup_theme', array( $this, 'load_textdomain' ) );
 	}
 
 	public function get_logger() {
@@ -658,6 +727,14 @@ class Loader {
 		$this->nux = $nux;
 	}
 
+	public function set_feature_banners( Banners $feature_banners ) {
+		$this->feature_banners = $feature_banners;
+	}
+
+	public function get_feature_banners() {
+		return $this->feature_banners;
+	}
+
 	/**
 	 * Get the checkout service instance.
 	 *
@@ -676,14 +753,6 @@ class Loader {
 		$this->checkout_service = $checkout_service;
 	}
 
-	/**
-	 * Load our textdomain
-	 *
-	 * @codeCoverageIgnore
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'woocommerce-shipping', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-	}
 
 	public function on_plugins_loaded() {
 		if ( ! class_exists( 'WooCommerce' ) ) {
@@ -700,7 +769,9 @@ class Loader {
 
 		if (
 			in_array( 'woocommerce-services/woocommerce-services.php', get_option( 'active_plugins' ) )
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WCS&T filter.
 			&& ! apply_filters( 'wc_services_will_handle_coexistence_with_woo_shipping_and_woo_tax', false )
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WCS&T filter.
 			&& ! apply_filters( 'wc_services_will_disable_shipping_logic', false )
 		) {
 			// Show informative message.
@@ -714,6 +785,8 @@ class Loader {
 			// Bail, so none of our shipping code will be initiated to avoid conflicts with older versions of WCS&T.
 			return;
 		}
+
+		Abilities::init();
 
 		add_action( 'woocommerce_blocks_loaded', array( $this, 'register_blocks_integration' ) );
 		add_action( 'after_plugin_row_woocommerce-services/woocommerce-services.php', array( $this, 'add_custom_message_to_wcst_plugin_list_entry' ), 10, 2 );
@@ -765,7 +838,10 @@ class Loader {
 		add_action( 'plugin_action_links_' . plugin_basename( WCSHIPPING_PLUGIN_FILE ), array( $this, 'add_plugin_action_links' ) );
 		add_action( 'plugin_row_meta', array( $this, 'add_plugin_description_links' ), 10, 2 );
 
-		$tos_accepted = WC_Connect_Options::get_option( 'tos_accepted' );
+		$tos_accepted                        = WC_Connect_Options::get_option( 'tos_accepted' );
+		$wcshipping_e2e_mock_connect_enabled =
+			class_exists( WCConnectE2EConnectionShim::class ) &&
+			WCConnectE2EConnectionShim::is_enabled();
 
 		// Prevent presenting users with TOS they've already
 		// accepted in the core WC Setup Wizard or on WP.com.
@@ -775,6 +851,15 @@ class Loader {
 			$tos_accepted = true;
 		}
 
+		if ( ! $tos_accepted && $wcshipping_e2e_mock_connect_enabled ) {
+			WC_Connect_Options::update_option( 'tos_accepted', true );
+			$tos_accepted = true;
+		}
+
+		// Handle the dismiss action for the after-connection banner early, before set_up_nux_notices.
+		// This must happen before headers are sent so that wp_safe_redirect() can work.
+		// Using priority 9 to run before set_up_nux_notices (default priority 10).
+		add_action( 'admin_init', array( $this, 'maybe_dismiss_after_connection_banner' ), 9 );
 		add_action( 'admin_init', array( $this->nux, 'set_up_nux_notices' ) );
 		add_action( 'admin_init', array( $this, 'determine_migration_eligibility' ) );
 		add_action( 'admin_init', array( $this, 'handle_migration_form_submission' ) );
@@ -791,7 +876,7 @@ class Loader {
 		// * WooCommerce Usage Tracking is enabled.
 		Tracks::init();
 
-		add_action( 'enqueue_woocommerce_shipping_script', array( $this, 'enqueue_woocommerce_shipping_script' ), 10, 2 );
+		add_action( 'wcshipping_enqueue_script', array( $this, 'wcshipping_enqueue_script' ), 10, 2 );
 
 		if ( ( ! $is_jetpack_connected || ! $tos_accepted ) && ! $is_jetpack_dev_mode ) {
 			$this->init_onboarding_dependencies();
@@ -899,10 +984,9 @@ class Loader {
 	 * Extend WC Checkout.
 	 */
 	public function extend_checkout() {
-		$address_normalization_service = new AddressNormalizationService( $this->get_service_settings_store(), $this->api_client, $this->get_logger(), new OriginAddressService() );
-		$this->set_checkout_service( new CheckoutService( $address_normalization_service, $this->get_service_settings_store() ) );
+		$this->set_checkout_service( new CheckoutService( $this->address_normalization_service ) );
 
-		new CheckoutController( $this->get_logger(), $this->get_checkout_service(), $this->get_service_settings_store() );
+		new CheckoutController( $this->get_logger(), $this->get_checkout_service(), $this->get_service_settings_store(), $this->address_normalization_service );
 	}
 
 	/**
@@ -946,34 +1030,49 @@ class Loader {
 
 		$validator = new WC_Connect_Service_Schemas_Validator();
 
-		if ( defined( 'WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE' ) ) {
-			require_once WCSHIPPING_PLUGIN_DIR . '/classes/test-mocks/class-wc-connect-api-client-local-test-mock.php';
-			$api_client = new WC_Connect_API_Client_Local_Test_Mock( $validator, $this );
+		$wcshipping_test_mode_enabled =
+			defined( 'WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE' ) &&
+			WOOCOMMERCE_SERVICES_LOCAL_TEST_MODE;
+
+		if ( $wcshipping_test_mode_enabled ) {
+			$api_client = new WCConnectE2EAPIClientMock( $validator, $this );
 		} else {
 			require_once WCSHIPPING_PLUGIN_DIR . '/classes/class-wc-connect-api-client-live.php';
-			$api_client = new WC_Connect_API_Client_Live( $validator, $this );
+			$api_client = new BatchableApiClient( $validator, $this );
+		}
+		$this->shipping_fulfillments_data_store = new ShippingFulfillmentsDataStore();
+		$services_error_notice                  = null;
+		if ( ! defined( 'NEXT_ADMIN_PLUGIN_DIR' ) ) {
+			$services_error_notice = new ServicesErrorNotice();
+			$services_error_notice->init();
 		}
 		$schemas_store                         = new WC_Connect_Service_Schemas_Store( $api_client, $logger );
-		$settings_store                        = new WC_Connect_Service_Settings_Store( $schemas_store, $api_client, $logger );
+		$this->service_schemas_fetcher         = new ServiceSchemasFetcherService( $api_client, $schemas_store, $services_error_notice );
+		$settings_store                        = new WC_Connect_Service_Settings_Store( $schemas_store, $api_client, $logger, $this->shipping_fulfillments_data_store );
 		$payment_methods_store                 = new WC_Connect_Payment_Methods_Store( $settings_store, $api_client, $logger );
-		$account_settings                      = new WC_Connect_Account_Settings( $settings_store, $payment_methods_store );
+		$this->account_settings                = new WC_Connect_Account_Settings( $settings_store, $payment_methods_store );
 		$shipments_service                     = new ShipmentsService( $settings_store );
-		$origin_addresses_service              = new OriginAddressService();
-		$this->view_service                    = new ViewService( $account_settings, $schemas_store );
-		$this->upsdap_carrier_strategy_service = new UPSDAPCarrierStrategyService( $origin_addresses_service, $api_client );
-		$carrier_strategy_service              = new CarrierStrategyService( $this->upsdap_carrier_strategy_service );
-		$promo_service                         = new PromoService( $schemas_store, $settings_store );
-		$shipping_label                        = new View(
+		$this->origin_address_service          = new OriginAddressService();
+		$this->view_service                    = new ViewService( $this->account_settings, $schemas_store );
+		$this->upsdap_carrier_strategy_service = new UPSDAPCarrierStrategyService( $api_client );
+		$this->fedex_carrier_strategy_service  = new FedExCarrierStrategyService( $api_client );
+		FedExTosErrorInterceptor::init();
+		$promo_service                       = new PromoService( $schemas_store, $settings_store );
+		$this->address_normalization_service = new AddressNormalizationService( $settings_store, $api_client, $logger, $this->origin_address_service );
+		$this->fulfillments_service          = new FulfillmentsService( $this->shipping_fulfillments_data_store );
+		$shipping_label                      = new View(
 			$api_client,
 			$settings_store,
 			$schemas_store,
 			$payment_methods_store,
 			$shipments_service,
-			$origin_addresses_service,
+			$this->origin_address_service,
 			$this->view_service,
-			$carrier_strategy_service,
-			$account_settings,
-			$promo_service
+			$this->account_settings,
+			$promo_service,
+			$this->address_normalization_service,
+			$this->fulfillments_service,
+			$this->shipping_fulfillments_data_store
 		);
 
 		$legacy_shipping_label = new WC_Connect_Shipping_Label(
@@ -983,6 +1082,7 @@ class Loader {
 			$payment_methods_store,
 		);
 		$nux                   = new WC_Connect_Nux( $this->view_service );
+		$feature_banners       = new Banners( $schemas_store, $logger );
 		$label_rate_service    = new LabelRateService( $api_client, $logger, $settings_store );
 
 		new WC_Connect_Privacy( $settings_store, $api_client );
@@ -997,6 +1097,7 @@ class Loader {
 		$this->set_shipping_label( $shipping_label );
 		$this->set_legacy_shipping_label( $legacy_shipping_label );
 		$this->set_nux( $nux );
+		$this->set_feature_banners( $feature_banners );
 		$this->label_rate_service = $label_rate_service;
 		$this->promo_service      = $promo_service;
 
@@ -1029,30 +1130,39 @@ class Loader {
 	 * Load admin-only plugin dependencies.
 	 */
 	public function load_admin_dependencies() {
-		$schema                   = $this->get_service_schemas_store();
-		$settings                 = $this->get_service_settings_store();
-		$logger                   = $this->get_logger();
-		$payment_methods          = $this->get_payment_methods_store();
-		$carrier_strategy_service = new CarrierStrategyService( $this->upsdap_carrier_strategy_service );
+		$schema          = $this->get_service_schemas_store();
+		$settings        = $this->get_service_settings_store();
+		$logger          = $this->get_logger();
+		$payment_methods = $this->get_payment_methods_store();
 
 		require_once WCSHIPPING_PLUGIN_DIR . '/classes/class-wc-connect-debug-tools.php';
 		new WC_Connect_Debug_Tools( $this->api_client );
+
+		if ( FeatureFlags::is_scanform_enabled() ) {
+			new ScanForm();
+		}
+
+		if ( FeatureFlags::is_bulk_labels_enabled() ) {
+			new BulkLabelsBanner( $this->service_settings_store );
+		}
 
 		require_once WCSHIPPING_PLUGIN_DIR . '/classes/class-wc-connect-settings-pages.php';
 		$settings_pages = new WC_Connect_Settings_Pages(
 			$this->api_client,
 			$this->get_service_schemas_store(),
-			new OriginAddressService(),
+			$this->origin_address_service,
 			$settings,
-			$payment_methods,
-			$carrier_strategy_service
+			$payment_methods
 		);
 		$this->set_settings_pages( $settings_pages );
 		$this->set_help_view( new WC_Connect_Help_View( $schema, $settings, $logger ) );
 		add_action( 'admin_notices', array( WC_Connect_Error_Notice::instance(), 'render_notice' ) );
 		add_action( 'admin_notices', array( $this, 'render_schema_notices' ) );
-		// Queue up hooks for data migration admin messages.
-		MigrationNotices::init( $this->migration_controller );
+
+		if ( ! defined( 'NEXT_ADMIN_PLUGIN_DIR' ) ) {
+			// Queue up hooks for data migration admin messages.
+			MigrationNotices::init( $this->migration_controller );
+		}
 	}
 
 	/**
@@ -1125,16 +1235,17 @@ class Loader {
 
 		$origin_address_service = new OriginAddressService();
 		foreach ( $address_options as $option ) {
-			add_action( "update_option_{$option}", array( $origin_address_service, 'sync_origin_addresses_with_woocommerce_store_address' ), 10, 3 );
+			add_action( "update_option_{$option}", array( $origin_address_service, 'on_woocommerce_store_address_option_updated' ), 10, 3 );
 		}
 
 		add_action( 'rest_api_init', array( $this, 'rest_api_init' ) );
+		add_action( 'rest_api_init', array( $this, 'rest_api_v2_init' ) );
 		add_action( 'rest_api_init', array( $this, 'wc_api_dev_init' ), 9999 );
 		add_action(
 			'wcshipping_fetch_service_schemas',
 			array(
-				$schemas_store,
-				'fetch_service_schemas_from_connect_server',
+				$this->service_schemas_fetcher,
+				'fetch',
 			)
 		);
 		add_filter( 'woocommerce_hidden_order_itemmeta', array( $this, 'hide_wc_connect_package_meta_data' ) );
@@ -1146,6 +1257,9 @@ class Loader {
 		add_filter( 'woocommerce_get_order_address', array( $this, 'get_shipping_or_billing_phone_from_order' ), 10, 3 );
 		add_filter( 'wcshipping_shipping_service_settings', array( $this, 'shipping_service_settings' ), 10, 3 );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'add_tracking_info_to_emails' ), 10, 3 );
+		add_filter( 'woocommerce_email_classes', array( $this, 'add_return_label_email_class' ) );
+		add_action( 'wcshipping_cleanup_temp_file', array( $this, 'cleanup_temp_file' ) );
+		add_action( 'wcshipping_send_return_label_email_delayed', array( $this, 'send_return_label_email_delayed' ), 10, 2 );
 		add_action( 'admin_print_footer_scripts', array( $this, 'add_sift_js_tracker' ) );
 		// Hooks for migration processing.
 		MigrationState::init();
@@ -1162,13 +1276,11 @@ class Loader {
 	 * Queue up a service schema refresh (on shutdown) if there isn't one already.
 	 */
 	public function queue_service_schema_refresh() {
-		$schemas_store = $this->get_service_schemas_store();
-
-		if ( has_action( 'shutdown', array( $schemas_store, 'fetch_service_schemas_from_connect_server' ) ) ) {
+		if ( has_action( 'shutdown', array( $this->service_schemas_fetcher, 'fetch' ) ) ) {
 			return;
 		}
 
-		add_action( 'shutdown', array( $schemas_store, 'fetch_service_schemas_from_connect_server' ) );
+		add_action( 'shutdown', array( $this->service_schemas_fetcher, 'fetch' ) );
 	}
 
 	public function tos_rest_init() {
@@ -1308,16 +1420,15 @@ class Loader {
 
 		$rest_account_settings_controller = new AccountSettingsRestController( $settings_store, $this->payment_methods_store, $logger );
 		$rest_account_settings_controller->register_routes();
-		$origin_addresses_service = new OriginAddressService();
+		$origin_addresses_service = $this->origin_address_service;
 
-		$address_normalization_service = new AddressNormalizationService( $settings_store, $this->api_client, $logger, $origin_addresses_service );
 		( new AddressRESTController(
-			$address_normalization_service,
-			$origin_addresses_service,
-			$this->upsdap_carrier_strategy_service
+			$this->address_normalization_service,
+			$origin_addresses_service
 		) )->register_routes();
 
 		( new LabelRateRESTController( $this->label_rate_service ) )->register_routes();
+		( new OrdersShippingContextRESTController( $settings_store ) )->register_routes();
 
 		$package_settings = new WC_Connect_Package_Settings(
 			$settings_store,
@@ -1325,25 +1436,35 @@ class Loader {
 		);
 		( new PackagesRESTController( $settings_store, $package_settings ) )->register_routes();
 
-		$label_purchase_service = new LabelPurchaseService( $settings_store, $this->api_client, $this->shipping_label, $logger, $this->promo_service );
+		$shipments_service            = new ShipmentsService( $settings_store );
+		$fulfillments_service         = $this->fulfillments_service ?? new FulfillmentsService( $this->shipping_fulfillments_data_store );
+		$this->fulfillments_service   = $fulfillments_service;
+		$label_purchase_service       = new LabelPurchaseService( $settings_store, $this->api_client, $this->shipping_label, $logger, $this->promo_service, $fulfillments_service );
+		$this->label_purchase_service = $label_purchase_service;
 		( new LabelPurchaseRESTController( $label_purchase_service ) )->register_routes();
+		( new PackageAssignmentRESTController( new PackageAssignmentService( $settings_store, $this->service_schemas_store, $logger ) ) )->register_routes();
+		( new ShipmentsRESTController( $shipments_service, $this->fulfillments_service ) )->register_routes();
 
-		$shipments_service = new ShipmentsService( $settings_store );
-		( new ShipmentsRESTController( $shipments_service ) )->register_routes();
-
-		( new LabelStatusController( $label_purchase_service, $logger ) )->register_routes();
+		( new LabelStatusController( $label_purchase_service, $logger, $this->shipping_fulfillments_data_store ) )->register_routes();
 
 		( new LabelRefundRESTController( $label_purchase_service ) )->register_routes();
 
 		$label_print_service = new LabelPrintService( $this->api_client, $logger, $label_purchase_service );
-		( new LabelPrintController( $settings_store, $this->api_client, $logger, $label_print_service ) )->register_routes();
+		( new LabelPrintController(
+			$settings_store,
+			$this->api_client,
+			$logger,
+			$label_print_service,
+			$this->shipping_fulfillments_data_store
+		) )->register_routes();
 		$rest_label_preview_controller = new LabelPreviewRESTController( $label_print_service, $logger );
 		$rest_label_preview_controller->register_routes();
 
 		( new AssetsRESTController() )->register_routes();
-		( new ConfigRESTController( $this->shipping_label ) )->register_routes();
+		( new ConfigRESTController( $this->shipping_label, $this->account_settings, $this->origin_address_service ) )->register_routes();
 
 		( new UPSDAPCarrierStrategyRESTController( $this->upsdap_carrier_strategy_service ) )->register_routes();
+		( new FedExCarrierStrategyRESTController( $this->fedex_carrier_strategy_service ) )->register_routes();
 		// Ensure all shipping endpoints are not cached.
 		WCShippingRESTController::prevent_route_caching();
 
@@ -1353,6 +1474,41 @@ class Loader {
 		( new EligibilityRESTController( $this->view_service, $settings_store, $this->get_payment_methods_store() ) )->register_routes();
 
 		( new PromoRESTController( $this->promo_service ) )->register_routes();
+
+		( new ServiceStatusRESTController( $this->api_client ) )->register_routes();
+
+		if ( FeatureFlags::is_scanform_enabled() ) {
+			$scanform_service = new ScanFormService();
+
+			/**
+			 * The ScanForm is one document that can be scanned to mark all included
+			 * tracking codes as "Accepted for Shipment" by the carrier.
+			 */
+			( new ScanFormRESTController( $scanform_service, $this->api_client, $logger ) )->register_routes();
+			( new ScanFormHistoryRESTController( $scanform_service ) )->register_routes();
+		}
+	}
+
+	/**
+	 * Hook the REST API V2
+	 * Note that we cannot load our controller until this time, because prior to
+	 * rest_api_init firing, WP_REST_Controller is not yet defined
+	 */
+	public function rest_api_v2_init() {
+		if ( ! class_exists( 'WP_REST_Controller' ) ) {
+			$this->logger->debug( 'Error. WP_REST_Controller could not be found', __FUNCTION__ );
+			return;
+		}
+
+		// Load V2 controllers only if the request is for a V2 route.
+		$rest_route = $GLOBALS['wp']->query_vars['rest_route'] ?? '';
+		if ( ! str_contains( $rest_route, '/wcshipping/v2/' ) ) {
+			return;
+		}
+
+		require_once WCSHIPPING_PLUGIN_DIR . '/src/RestAPi/Routes/V2/AdbstractSchema.php';
+
+		( new AddressesV2Controller( $this->origin_address_service ) )->register_routes();
 	}
 
 	/**
@@ -1465,12 +1621,13 @@ class Loader {
 			$carrier         = $label['carrier_id'];
 			$carrier_service = $this->get_service_schemas_store()->get_service_schema_by_id( $carrier );
 			$carrier_label   = ( ! $carrier_service || empty( $carrier_service->carrier_name ) ) ? strtoupper( $carrier ) : $carrier_service->carrier_name;
-			$tracking        = $label['tracking'];
+			$tracking        = $label['tracking'] ?? null;
 			$error           = array_key_exists( 'error', $label );
 			$refunded        = array_key_exists( 'refund', $label );
+			$return          = $label['is_return'] ?? false;
 
-			// If the label has an error or is refunded, move to the next label.
-			if ( $error || $refunded ) {
+			// Skip labels with errors, refunds, returns, or no tracking number (tracking can be null/missing, which would fatal Utils::get_tracking_url()).
+			if ( $error || $refunded || $return || empty( $tracking ) ) {
 				continue;
 			}
 
@@ -1483,23 +1640,7 @@ class Loader {
 			$markup .= '<tr>';
 			$markup .= '<td class="td" scope="col">' . esc_html( $carrier_label ) . '</td>';
 
-			switch ( $carrier ) {
-				case 'fedex':
-					$tracking_url = 'https://www.fedex.com/apps/fedextrack/?action=track&tracknumbers=' . $tracking;
-					break;
-				case 'usps':
-					$tracking_url = 'https://tools.usps.com/go/TrackConfirmAction.action?tLabels=' . $tracking;
-					break;
-				case 'ups':
-					$tracking_url = 'https://www.ups.com/track?tracknum=' . $tracking;
-					break;
-				case 'upsdap':
-					$tracking_url = 'https://www.ups.com/track?tracknum=' . $tracking;
-					break;
-				case 'dhlexpress':
-					$tracking_url = 'https://www.dhl.com/en/express/tracking.html?AWB=' . $tracking . '&brand=DHL';
-					break;
-			}
+			$tracking_url = Utils::get_tracking_url( $carrier, $tracking );
 
 			$markup .= '<td class="td" scope="col">';
 			$markup .= '<a href="' . esc_url( $tracking_url ) . '" style="color: ' . esc_attr( $link_color ) . '">' . esc_html( $tracking ) . '</a>';
@@ -1548,9 +1689,9 @@ class Loader {
 		$last_fetch_result = $schemas_store->get_last_fetch_result_code();
 
 		if ( ! $schemas && '401' !== $last_fetch_result ) { // Don't retry auth failures wait for next scheduled time.
-			$schemas_store->fetch_service_schemas_from_connect_server();
+			$this->service_schemas_fetcher->fetch();
 		} elseif ( defined( 'WOOCOMMERCE_CONNECT_FREQUENT_FETCH' ) && WOOCOMMERCE_CONNECT_FREQUENT_FETCH ) {
-			$schemas_store->fetch_service_schemas_from_connect_server();
+			$this->service_schemas_fetcher->fetch();
 		} elseif ( ! wp_next_scheduled( 'wcshipping_fetch_service_schemas' ) ) {
 			wp_schedule_event( time(), 'daily', 'wcshipping_fetch_service_schemas' );
 		}
@@ -1712,6 +1853,7 @@ class Loader {
 			array(
 				'wcshipping_labels',
 				WC_Connect_Service_Settings_Store::IS_DESTINATION_NORMALIZED_KEY,
+				AddressNormalizationService::DESTINATION_NORMALIZED_HASH_KEY,
 			),
 			true
 		) ) {
@@ -1823,7 +1965,7 @@ class Loader {
 
 	/**
 	 * Enqueue entry point scripts, localized data, and stylesheets.
-	 * Remember to call Automattic\WCShipping\DOM\Manipulation::create_root_script_element before calling do_action( 'enqueue_woocommerce_shipping_script' )
+	 * Remember to call Automattic\WCShipping\DOM\Manipulation::create_root_script_element before calling do_action( 'wcshipping_enqueue_script' )
 	 * in your calling function.
 	 *
 	 * @param string $handle The name of the entry point script to enqueue.
@@ -1831,14 +1973,14 @@ class Loader {
 	 *
 	 * @return void
 	 */
-	public function enqueue_woocommerce_shipping_script( $handle, $extra_args = array() ) {
+	public function wcshipping_enqueue_script( $handle, $extra_args = array() ) {
 		$script_name         = "$handle.js";
 		$script_path         = WCSHIPPING_PLUGIN_DIST_DIR . $script_name;
 		$script_url          = Utils::get_enqueue_base_url() . $script_name;
 		$script_asset_path   = WCSHIPPING_PLUGIN_DIST_DIR . $handle . '.asset.php';
 		$script_asset        = file_exists( $script_asset_path )
 			? require $script_asset_path : array();  // nosemgrep: audit.php.lang.security.file.inclusion-arg --- This is a safe file inclusion.
-		$script_dependencies = $script_asset['dependencies'] ?? array();
+		$script_dependencies = Utils::filter_dev_dependencies( $script_asset['dependencies'] ?? array() );
 		$script_version      = $script_asset['version'] ?? Utils::get_file_version( $script_path );
 
 		// Enqueue the entry point script.
@@ -1877,6 +2019,50 @@ class Loader {
 		);
 
 		wp_set_script_translations( $handle, 'woocommerce-shipping', WCSHIPPING_PLUGIN_DIR . '/languages' );
+	}
+
+	/**
+	 * Register WCShipping plugin assets with proper HMR support.
+	 * This static method can be called externally to register
+	 * the woocommerce-shipping-plugin script with the correct URL based on whether
+	 * HMR is active or not.
+	 */
+	public static function load_shipping_dependencies() {
+		$handle            = 'woocommerce-shipping-plugin';
+		$script_asset_path = WCSHIPPING_PLUGIN_DIST_DIR . $handle . '.asset.php';
+
+		// Always read asset file from local filesystem.
+		// Webpack writes .asset.php files to disk even during HMR, so we can always read from disk.
+		$script_asset = file_exists( $script_asset_path )
+			? require $script_asset_path : array();  // nosemgrep: audit.php.lang.security.file.inclusion-arg --- This is a safe file inclusion.
+
+		$script_dependencies = Utils::filter_dev_dependencies( $script_asset['dependencies'] ?? array() );
+
+		foreach ( $script_dependencies as $key => $dependency ) {
+			if ( false === wp_script_is( $dependency, 'enqueued' ) ) {
+				wp_enqueue_script( $dependency );
+			}
+		}
+	}
+
+	/**
+	 * Enqueue the next module script and its dependencies.
+	 */
+	public static function load_next_module() {
+		$handle            = 'woocommerce-shipping-next';
+		$script_name       = "$handle.js";
+		$script_path       = WCSHIPPING_PLUGIN_DIST_DIR . 'next/' . $script_name;
+		$script_url        = Utils::get_enqueue_base_url() . 'next/' . $script_name;
+		$script_asset_path = WCSHIPPING_PLUGIN_DIST_DIR . 'next/' . $handle . '.asset.php';
+		$script_asset      = file_exists( $script_asset_path )
+		? require $script_asset_path : array();  // nosemgrep: audit.php.lang.security.file.inclusion-arg --- This is a safe file inclusion.
+		$script_version    = $script_asset['version'] ?? Utils::get_file_version( $script_path );
+		wp_enqueue_script_module(
+			$handle,
+			$script_url,
+			array(),
+			$script_version,
+		);
 	}
 
 	public function render_schema_notices() {
@@ -2051,6 +2237,59 @@ class Loader {
 	}
 
 	/**
+	 * Handle dismiss action for the after-connection banner.
+	 *
+	 * This must be called during admin_init (before headers are sent) so that
+	 * wp_safe_redirect() can work. The banner's dismiss logic in WC_Connect_Nux::show_banner_after_connection()
+	 * runs during admin_notices, but at that point headers have already been sent
+	 * and the redirect fails silently on some admin pages (e.g., WooCommerce Orders).
+	 *
+	 * @return void
+	 */
+	public function maybe_dismiss_after_connection_banner(): void {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended --- Nonce is verified below with check_admin_referer.
+		if ( ! isset( $_GET['wcshipping-nux-notice'] ) || 'dismiss' !== $_GET['wcshipping-nux-notice'] ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended --- Nonce is verified below with check_admin_referer.
+		if ( ! isset( $_GET['_wpnonce'] ) ) {
+			return;
+		}
+
+		// Verify the nonce. This will wp_die() if invalid.
+		check_admin_referer( 'wcshipping_dismiss_notice' );
+
+		// No longer need to keep track of whether the before connection banner was displayed.
+		WC_Connect_Options::delete_option( WC_Connect_Nux::SHOULD_SHOW_AFTER_CXN_BANNER );
+
+		/**
+		 * Fires when the user dismisses the setup complete banner.
+		 *
+		 * @since 1.0.0
+		 */
+		do_action( 'wcshipping_setup_complete_banner_dismissed' );
+
+		// Remove all related query args and redirect.
+		// This redirect works because we're in admin_init, before headers are sent.
+		wp_safe_redirect(
+			remove_query_arg(
+				array(
+					'_wpnonce',
+					'wcshipping-nux-notice',
+					WC_Connect_Nux::AUTH_SUCCESS_SOURCE_RETURN_PARAM,
+					WC_Connect_Nux::AUTH_SUCCESS_NONCE_RETURN_PARAM,
+				)
+			)
+		);
+		exit;
+	}
+
+	/**
 	 * Determine if the migration is eligible to run and set the migration type if needed.
 	 *
 	 * @return void
@@ -2120,5 +2359,182 @@ class Loader {
 		if ( is_admin() && current_user_can( 'manage_woocommerce' ) ) {
 			( new ShippingLabel() )->init();
 		}
+	}
+
+	/**
+	 * Add return label email class to WooCommerce email classes.
+	 *
+	 * @param array $email_classes Array of email class names.
+	 * @return array Modified array of email class names.
+	 */
+	public function add_return_label_email_class( $email_classes ) {
+		// Include the customer return label email class.
+		require_once WCSHIPPING_PLUGIN_DIR . '/src/Emails/WC_Return_Label_Email.php';
+
+		// Add the customer email class to the list of email classes.
+		$email_classes['WC_Return_Label_Email'] = new \Automattic\WCShipping\Emails\WC_Return_Label_Email();
+
+		// Include the admin return label email class.
+		require_once WCSHIPPING_PLUGIN_DIR . '/src/Emails/WC_Admin_Return_Label_Email.php';
+
+		// Add the admin email class to the list of email classes.
+		$email_classes['WC_Admin_Return_Label_Email'] = new \Automattic\WCShipping\Emails\WC_Admin_Return_Label_Email();
+
+		return $email_classes;
+	}
+
+	/**
+	 * Clean up temporary file.
+	 *
+	 * @param string $filepath Path to file to delete.
+	 */
+	public function cleanup_temp_file( $filepath ) {
+		if ( file_exists( $filepath ) ) {
+			wp_delete_file( $filepath );
+		}
+	}
+
+	/**
+	 * Send return label email with delay (for labels that were in progress).
+	 *
+	 * @param int   $order_id Order ID.
+	 * @param array $label_meta Label metadata.
+	 */
+	public function send_return_label_email_delayed( $order_id, $label_meta ) {
+		// Get fresh label data to check current status.
+		$labels = $this->service_settings_store->get_label_order_meta_data( $order_id );
+
+		if ( empty( $labels ) ) {
+			return;
+		}
+
+		// Find the matching label.
+		$current_label = null;
+		foreach ( $labels as $label ) {
+			if ( isset( $label['label_id'] ) && $label['label_id'] === $label_meta['label_id'] ) {
+				$current_label = $label;
+				break;
+			}
+		}
+
+		if ( ! $current_label ) {
+			return;
+		}
+
+		// Check if label is now ready.
+		$label_purchase_service = $this->get_label_purchase_service_instance();
+
+		if ( ! $label_purchase_service ) {
+			return;
+		}
+
+		if ( isset( $current_label['status'] ) && 'PURCHASE_IN_PROGRESS' === $current_label['status'] ) {
+			$updated_label = $current_label;
+
+			if ( ! empty( $current_label['label_id'] ) ) {
+				$status_response = $label_purchase_service->get_status( $current_label['label_id'] );
+				if ( ! is_wp_error( $status_response ) && isset( $status_response->label ) ) {
+					$maybe_updated = $label_purchase_service->update_order_label( $order_id, $status_response->label );
+					if ( is_array( $maybe_updated ) ) {
+						$updated_label = $maybe_updated;
+					}
+				}
+			}
+
+			if ( isset( $updated_label['status'] ) && 'PURCHASE_IN_PROGRESS' === $updated_label['status'] ) {
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action(
+						time() + 60, // Try again in 1 minute
+						'wcshipping_send_return_label_email_delayed',
+						array( $order_id, $updated_label ),
+						'wcshipping'
+					);
+				} else {
+					wp_schedule_single_event(
+						time() + 60,
+						'wcshipping_send_return_label_email_delayed',
+						array( $order_id, $updated_label )
+					);
+				}
+				return;
+			}
+
+			$current_label = $updated_label;
+		}
+
+		$attachments = array();
+
+		// Try to get the PDF.
+		if ( ! empty( $current_label['label_id'] ) ) {
+			$pdf_method = new \ReflectionMethod( $label_purchase_service, 'get_label_pdf_for_email' );
+			$pdf_method->setAccessible( true );
+			$pdf_attachment = $pdf_method->invoke( $label_purchase_service, $current_label['label_id'], $order_id );
+
+			if ( ! is_wp_error( $pdf_attachment ) && ! empty( $pdf_attachment ) ) {
+				$attachments[] = $pdf_attachment;
+			}
+		}
+
+		// Ensure WooCommerce emails are loaded.
+		if ( ! did_action( 'woocommerce_email' ) ) {
+			WC()->mailer();
+		}
+
+		// Check if any hooks are attached to our action.
+
+		// Trigger the email.
+		do_action( 'wcshipping_return_label_created', $order_id, $current_label, $attachments );
+
+		// Clean up attachment.
+		if ( ! empty( $attachments ) ) {
+			foreach ( $attachments as $attachment ) {
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action(
+						time() + 300,
+						'wcshipping_cleanup_temp_file',
+						array( $attachment ),
+						'wcshipping'
+					);
+				} else {
+					wp_schedule_single_event( time() + 300, 'wcshipping_cleanup_temp_file', array( $attachment ) );
+				}
+			}
+		}
+	}
+
+	/**
+	 * @return LabelPurchaseService|null
+	 */
+	private function get_label_purchase_service_instance() {
+		if ( $this->label_purchase_service instanceof LabelPurchaseService ) {
+			return $this->label_purchase_service;
+		}
+
+		if ( ! $this->service_settings_store || ! $this->api_client || ! $this->shipping_label || ! $this->logger ) {
+			return null;
+		}
+
+		$promo_service = $this->promo_service;
+		if ( ! $promo_service ) {
+			if ( ! $this->service_schemas_store ) {
+				return null;
+			}
+			$promo_service       = new PromoService( $this->service_schemas_store, $this->service_settings_store );
+			$this->promo_service = $promo_service;
+		}
+
+		$fulfillments_service       = $this->fulfillments_service ?? new FulfillmentsService();
+		$this->fulfillments_service = $fulfillments_service;
+
+		$this->label_purchase_service = new LabelPurchaseService(
+			$this->service_settings_store,
+			$this->api_client,
+			$this->shipping_label,
+			$this->logger,
+			$promo_service,
+			$fulfillments_service
+		);
+
+		return $this->label_purchase_service;
 	}
 }

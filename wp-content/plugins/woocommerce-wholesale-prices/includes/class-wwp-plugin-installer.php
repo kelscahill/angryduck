@@ -37,6 +37,7 @@ if ( ! class_exists( 'WWP_Plugin_Installer' ) ) {
 			'funnelkit-stripe-woo-payment-gateway'  => 'funnelkit-stripe-woo-payment-gateway/funnelkit-stripe-woo-payment-gateway.php',
 			'woocommerce-store-toolkit'             => 'woocommerce-store-toolkit/store-toolkit.php',
 			'woocommerce-store-exporter'            => 'woocommerce-exporter/exporter.php',
+            'saveto-wishlist-lite-for-woocommerce'  => 'saveto-wishlist-lite-for-woocommerce/saveto-wishlist-lite-for-woocommerce.php',
 		);
 
 		/**
@@ -70,6 +71,26 @@ if ( ! class_exists( 'WWP_Plugin_Installer' ) ) {
                 } else {
                     wp_send_json_success();
                 }
+            }
+        }
+
+        /**
+         * Activate plugin via ajax
+         *
+         * @return void
+         */
+        public function activate_plugin() {
+            if ( ! check_ajax_referer( 'wwp_activate_plugin', 'nonce', false ) ) {
+                wp_die();
+            }
+
+            $plugin_file = isset( $_REQUEST['plugin_file'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['plugin_file'] ) ) : '';
+            $result      = $this->_activate_plugin( $plugin_file );
+
+            if ( is_wp_error( $plugin_file ) ) {
+                wp_send_json_error( $result->get_error_message() );
+            } else {
+                wp_send_json_success();
             }
         }
 
@@ -233,6 +254,7 @@ if ( ! class_exists( 'WWP_Plugin_Installer' ) ) {
          */
         public function run() {
             add_action( 'wp_ajax_wwp_install_activate_plugin', array( $this, 'install_activate_plugin' ) );
+            add_action( 'wp_ajax_wwp_activate_plugin', array( $this, 'activate_plugin' ) );
         }
 	}
 }

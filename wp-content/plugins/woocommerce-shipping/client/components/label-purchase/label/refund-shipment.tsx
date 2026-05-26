@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useCallback, useState } from '@wordpress/element';
@@ -27,15 +26,19 @@ export const RefundShipment = ( {
 		[ setIsRefunding ]
 	);
 
+	// All hooks and computations called first, then conditional logic
 	const caveats = selectedRate?.rate.caveats ?? [];
-
-	if ( caveats.includes( 'non-refundable' ) ) {
+	const isNonRefundable = caveats.includes( 'non-refundable' );
+	// Determine what to render based on computed values
+	if ( isNonRefundable ) {
 		return <>{ __( 'Label is non-refundable', 'woocommerce-shipping' ) }</>;
 	}
 
-	if ( ! canRefundLabel( label ) ) {
+	const canRefund = canRefundLabel( label ); // eslint-disable-line
+	if ( ! canRefund ) {
 		return null;
 	}
+
 	return (
 		<>
 			{ isRefunding && (

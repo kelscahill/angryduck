@@ -16,6 +16,7 @@ spl_autoload_register(function($class) {
         'MailChimp_Service' => 'includes/class-mailchimp-woocommerce-service.php',
         'MailChimp_WooCommerce_Options' => 'includes/class-mailchimp-woocommerce-options.php',
         'MailChimp_Newsletter' => 'includes/class-mailchimp-woocommerce-newsletter.php',
+        'MailChimp_Sms_Consent' => 'includes/class-mailchimp-woocommerce-sms-consent.php',
         'MailChimp_WooCommerce_Loader' => 'includes/class-mailchimp-woocommerce-loader.php',
         'MailChimp_WooCommerce_i18n' => 'includes/class-mailchimp-woocommerce-i18n.php',
         'MailChimp_WooCommerce_Deactivator' => 'includes/class-mailchimp-woocommerce-deactivator.php',
@@ -40,6 +41,7 @@ spl_autoload_register(function($class) {
         'MailChimp_WooCommerce_PromoCode' => 'includes/api/assets/class-mailchimp-promo-code.php',
         'MailChimp_WooCommerce_PromoRule' => 'includes/api/assets/class-mailchimp-promo-rule.php',
         'MailChimp_WooCommerce_Store' => 'includes/api/assets/class-mailchimp-store.php',
+        'MailChimp_WooCommerce_SmsProgram' => 'includes/api/assets/class-mailchimp-sms-program.php',
 
         // includes/api/errors
         'MailChimp_WooCommerce_Error' => 'includes/api/errors/class-mailchimp-error.php',
@@ -91,6 +93,10 @@ spl_autoload_register(function($class) {
         'MailChimp_WooCommerce_Logs' => 'includes/api/class-mailchimp-woocommerce-logs.php',
         'MailChimp_WooCommerce_Tower' => 'includes/api/class-mailchimp-woocommerce-tower.php',
         'MailChimp_WooCommerce_Log_Viewer' => 'includes/api/class-mailchimp-woocommerce-log-viewer.php',
+        'MailChimp_WooCommerce_Enhanced_Logger' => 'includes/class-mailchimp-woocommerce-enhanced-logger.php',
+
+        // pixel tracking
+        'MailChimp_WooCommerce_Pixel_Tracking' => 'includes/tracking/class-mailchimp-woocommerce-pixel-tracking.php',
     );
 
     // if the file exists, require it
@@ -101,23 +107,377 @@ spl_autoload_register(function($class) {
 });
 
 /**
+ * Build (and cache per request) the environment-variables snapshot. This
+ * function gets called from dozens of logging / version / config sites per
+ * request — caching eliminates repeated option lookups (especially for
+ * 'mailchimp-woocommerce-sync.initial_sync' whose row may not exist, which
+ * would otherwise cost a SELECT per call).
+ *
+ * Pass $refresh = true to force a rebuild (e.g. after saving settings in an
+ * admin handler that needs to see the new value within the same request).
+ *
+ * @param bool $refresh
  * @return object
  */
-function mailchimp_environment_variables() {
-    global $wp_version;
+function mailchimp_environment_variables($refresh = false) {
+    static $cached = null;
 
+    if ($refresh) {
+        $cached = null;
+    }
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    global $wp_version;
     $o = mailchimp_get_admin_options();
 
-    return (object) array(
+    $cached = (object) array(
         'repo' => 'master',
         'environment' => 'production', // staging or production
-        'version' => '5.4',
+        'version' => '6.1',
         'php_version' => phpversion(),
         'wp_version' => (empty($wp_version) ? 'Unknown' : $wp_version),
         'wc_version' => function_exists('WC') ? WC()->version : null,
         'logging' => ($o && is_array($o) && isset($o['mailchimp_logging'])) ? $o['mailchimp_logging'] : 'standard',
+        'initial_sync' => \Mailchimp_Woocommerce_DB_Helpers::get_option("mailchimp-woocommerce-sync.initial_sync", false)
+    );
+
+    return $cached;
+}
+
+/**
+ * Option keys that are read on virtually every WP request that loads this
+ * plugin — not just admin. These are the options touched by update_db_check,
+ * update_plugin_check, mailchimp_environment_variables, and other early
+ * code paths that fire between plugins_loaded @ 12 and admin_init.
+ *
+ * This set is preloaded on plugins_loaded @ priority 1 so every subsequent
+ * read in the same request hits the in-memory cache.
+ */
+function mailchimp_preload_early_keys() {
+    return array(
+        'mailchimp-woocommerce',                                 // main options blob
+        'mailchimp_woocommerce_version',                         // version compare
+        'mailchimp-woocommerce-sync.initial_sync',               // mailchimp_environment_variables
+        'mailchimp-woocommerce_cart_table_add_index_update',     // update_db_check flag
+        'mailchimp-woocommerce_woo_currency_update',             // update_db_check flag
+        'mailchimp_woocommerce_db_mailchimp_carts',              // MailChimp_Service::wooIsRunning (fires on woocommerce_init)
     );
 }
+
+/**
+ * Runs on plugins_loaded @ 1 — earlier than the plugin's own @ 12 bootstrap.
+ * By the time update_db_check / update_plugin_check /
+ * mailchimp_environment_variables execute, their lookups are warm in the
+ * helper's per-request cache.
+ *
+ * Fires on every request (admin + public) because the early code path runs
+ * either way. Cost is one SELECT ... IN (...) per request.
+ */
+function mailchimp_preload_early() {
+    if (!class_exists('\\Mailchimp_Woocommerce_DB_Helpers')) return;
+
+    /**
+     * Filter the early preload list for very-early hooks (before admin_init).
+     *
+     * @param array $keys
+     */
+    $keys = apply_filters('mailchimp_preload_early_options', mailchimp_preload_early_keys());
+
+    if (!empty($keys)) {
+        \Mailchimp_Woocommerce_DB_Helpers::preload((array) $keys);
+    }
+}
+add_action('plugins_loaded', 'mailchimp_preload_early', 1);
+
+/**
+ * Baseline option keys that admin-only code paths read. The early set is
+ * preloaded separately on plugins_loaded @ 1; the helper dedupes, so listing
+ * them again here is harmless but unnecessary.
+ */
+function mailchimp_admin_preload_base_keys() {
+    return array(
+        'mailchimp-woocommerce-store_id',
+        'mailchimp-woocommerce-mailchimp_login_id',
+        'mailchimp-woocommerce-mailchimp_user_id',
+        'mailchimp-woocommerce-saved_user_id',
+        'mailchimp-woocommerce-account_name',
+        'mailchimp-woocommerce-comm.opt',
+        'mailchimp-woocommerce-sync.started_at',
+        'mailchimp-woocommerce-sync.completed_at',
+        'mailchimp_woocommerce_db_mailchimp_carts',
+        'mailchimp-woocommerce-SERVER_ADDR',
+        'mailchimp_woocommerce_plugin_do_activation_redirect',
+        'mailchimp-woocommerce-waiting-for-login',
+        'mailchimp-woocommerce-resource-last-updated',
+    );
+}
+
+/**
+ * Per-tab option keys on the Mailchimp settings page. The main page uses
+ * ?tab=<id> to switch between Overview/Store/Audience/Logs/Advanced, so
+ * different tabs read different option sets. Keys here are additive to the
+ * base and screen lists.
+ */
+function mailchimp_admin_preload_keys_for_tab($tab) {
+    $map = array(
+        'store_info' => array(
+            // Read by the SMS consent block on the Store tab.
+            'mailchimp-woocommerce-tower.opt',
+        ),
+        'audience' => array(
+            'mailchimp-woocommerce-cached-api-lists',
+        ),
+        'advanced' => array(
+            'mailchimp-woocommerce-tower.opt',
+            'mailchimp-woocommerce-SERVER_ADDR',
+        ),
+    );
+    return isset( $map[ $tab ] ) ? $map[ $tab ] : array();
+}
+
+/**
+ * Per-screen option keys. Add entries here (or via the filter) when a
+ * specific admin page is known to read a batch of options that aren't in the
+ * base list. Keys are additive — the base set is always included.
+ */
+function mailchimp_admin_preload_keys_for_screen($screen_id) {
+    $map = array(
+        // Main Mailchimp settings page
+        'woocommerce_page_mailchimp-woocommerce' => array(
+            'mailchimp-woocommerce-cached-api-lists',
+            'mailchimp-woocommerce-cached-api-ping-check',
+            'mailchimp-woocommerce-waiting-for-login',
+            'mailchimp-woocommerce-tower.opt',
+            'mailchimp-woocommerce-errors.store_info',
+            'mailchimp-woocommerce-validation.api.ping',
+        ),
+        // WooCommerce dashboard — reads just enough to render the plugin's widgets
+        'dashboard' => array(
+            'mailchimp-woocommerce-sync.orders.started_at',
+            'mailchimp-woocommerce-sync.orders-queueing.completed_at',
+            'mailchimp-woocommerce-sync.products.started_at',
+            'mailchimp-woocommerce-sync.products-queueing.completed_at',
+        ),
+    );
+
+    return isset($map[$screen_id]) ? $map[$screen_id] : array();
+}
+
+/**
+ * Transient keys (WITHOUT the _transient_ prefix) that the admin side reads
+ * on a typical request. Preloading these collapses N × 2 wp_options SELECTs
+ * down to one batched SELECT per request, and primes WP core's options
+ * cache so subsequent native get_transient() calls hit memory with no DB
+ * activity — even on sites without Redis.
+ *
+ * Keys that include a list_id are appended in mailchimp_preload_for_admin()
+ * once the list_id is resolvable (options cache is warm by that point).
+ */
+function mailchimp_admin_preload_transient_keys() {
+    return array(
+        'mailchimp-woocommerce-cached-api-ping-check',   // 10min TTL
+        'mailchimp-woocommerce-cached-api-account-name', // 24h TTL
+        'mailchimp-woocommerce-cached-api-lists',        // 1h TTL
+        'mailchimp_woocommerce_store_id_verified',       // 10min TTL
+    );
+}
+
+/**
+ * Is this request headed for a Mailchimp plugin admin page or one of our
+ * AJAX actions? Returns false for every other admin page (post editor,
+ * users, other plugins' settings, etc.) so we don't burn a DB query
+ * preloading options nobody on that page will read.
+ */
+function mailchimp_is_plugin_admin_context() {
+    if ( ! is_admin() ) {
+        return false;
+    }
+
+    // AJAX: only preload if the action is one of ours. Browsing other
+    // plugins' AJAX actions shouldn't pull in our options.
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        $action = '';
+        if ( isset( $_REQUEST['action'] ) && is_string( $_REQUEST['action'] ) ) {
+            $action = $_REQUEST['action'];
+        }
+        return $action !== ''
+            && ( strpos( $action, 'mailchimp' ) === 0
+              || strpos( $action, 'mc_woocommerce' ) === 0
+              || strpos( $action, 'mailchimp_woocommerce' ) === 0 );
+    }
+
+    // Regular admin requests — ?page= is set before admin_init fires.
+    if ( isset( $_GET['page'] ) && is_string( $_GET['page'] )
+        && strpos( $_GET['page'], 'mailchimp-woocommerce' ) !== false ) {
+        return true;
+    }
+
+    // Fallback via screen id (populated once admin_init has run for real
+    // menu pages, catches WooCommerce-subscreen variants).
+    if ( function_exists( 'get_current_screen' ) ) {
+        $screen = get_current_screen();
+        if ( $screen && isset( $screen->id )
+            && strpos( $screen->id, 'mailchimp-woocommerce' ) !== false ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Single entry point for warming the option cache on admin requests. Hooked
+ * on admin_init (so get_current_screen() is reliable) and safe to no-op when
+ * the helper isn't available or this isn't a Mailchimp-related admin view.
+ */
+function mailchimp_preload_for_admin() {
+    if ( ! mailchimp_is_plugin_admin_context() ) return;
+    if ( ! class_exists( '\\Mailchimp_Woocommerce_DB_Helpers' ) ) return;
+
+    $screen_id = function_exists('get_current_screen') && get_current_screen()
+        ? get_current_screen()->id
+        : null;
+
+    // ?tab= is the plugin's own sub-page routing, so we can preload keys
+    // specific to whichever tab is being rendered.
+    $tab = isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : '';
+
+    $keys = array_merge(
+        mailchimp_admin_preload_base_keys(),
+        mailchimp_admin_preload_keys_for_screen($screen_id),
+        $tab !== '' ? mailchimp_admin_preload_keys_for_tab($tab) : array()
+    );
+
+    /**
+     * Third-party / internal extension point. Filter callbacks receive the
+     * merged key list and the current screen id, can add/remove/inspect.
+     *
+     * @param array       $keys      option names to preload
+     * @param string|null $screen_id current admin screen id (may be null early in admin_init)
+     */
+    $keys = apply_filters('mailchimp_preload_options', $keys, $screen_id);
+
+    if (!empty($keys)) {
+        \Mailchimp_Woocommerce_DB_Helpers::preload((array) $keys);
+    }
+
+    // Warm transient caches in a second batched query. Adding list_id-scoped
+    // transient keys once options are warm (so mailchimp_get_list_id()
+    // doesn't trigger its own DB read).
+    $transient_keys = mailchimp_admin_preload_transient_keys();
+
+    if ( function_exists( 'mailchimp_get_list_id' ) && ( $list_id = mailchimp_get_list_id() ) ) {
+        $transient_keys[] = "mailchimp-woocommerce-gdpr-fields.{$list_id}";
+        $transient_keys[] = "mailchimp_sms_program_{$list_id}";
+        $transient_keys[] = "mailchimp_sms_status_{$list_id}";
+    }
+
+    /**
+     * Filter the admin transient preload list.
+     *
+     * @param array       $transient_keys
+     * @param string|null $screen_id
+     */
+    $transient_keys = apply_filters('mailchimp_preload_transients', $transient_keys, $screen_id);
+
+    if (!empty($transient_keys)) {
+        \Mailchimp_Woocommerce_DB_Helpers::preload_transients((array) $transient_keys);
+    }
+}
+add_action('admin_init', 'mailchimp_preload_for_admin', 1);
+
+/**
+ * Public/frontend preload. Fires on wp hook (after query parsing, before
+ * template rendering — well before wp_footer). Only the options the public
+ * side of the plugin actually reads during a page render.
+ */
+function mailchimp_preload_for_public() {
+    if (is_admin()) return;
+    if (!class_exists('\\Mailchimp_Woocommerce_DB_Helpers')) return;
+
+    $keys = array(
+        'mailchimp-woocommerce-code-snippet',
+        'mailchimp-woocommerce-script_fragment',
+    );
+
+    /**
+     * Filter the public preload list.
+     *
+     * @param array $keys
+     */
+    $keys = apply_filters('mailchimp_preload_public_options', $keys);
+
+    if (!empty($keys)) {
+        \Mailchimp_Woocommerce_DB_Helpers::preload((array) $keys);
+    }
+}
+add_action('wp', 'mailchimp_preload_for_public', 1);
+
+/**
+ * Is this REST request headed for one of our routes? Matches URI against
+ * our namespace so preloads don't fire for WooCommerce, WP core, or other
+ * plugins' REST endpoints.
+ */
+function mailchimp_is_plugin_rest_context() {
+    $uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+    if ( $uri === '' ) {
+        return false;
+    }
+    // Matches /wp-json/mailchimp-for-woocommerce/v1/... as well as
+    // ?rest_route=/mailchimp-for-woocommerce/v1/... (permalink-off sites).
+    return strpos( $uri, '/mailchimp-for-woocommerce/' ) !== false;
+}
+
+/**
+ * REST API requests (wp-json/...) don't fire admin_init, so the admin
+ * preload never runs. Scoped to our REST namespace only — other plugins'
+ * REST endpoints shouldn't trigger our preload work.
+ */
+function mailchimp_preload_for_rest() {
+    if ( ! mailchimp_is_plugin_rest_context() ) return;
+    if ( ! class_exists( '\\Mailchimp_Woocommerce_DB_Helpers' ) ) return;
+
+    $keys = array(
+        'mailchimp-woocommerce-store_id',
+        'mailchimp-woocommerce-store-id-last-verified',
+        'mailchimp-woocommerce-sync.internal_counter',
+        'mailchimp-woocommerce-sync.orders.count',
+        'mailchimp-woocommerce-sync.products.count',
+        'mailchimp-woocommerce-sync.customers.count',
+        'mailchimp-woocommerce-sync.coupons.count',
+        'mailchimp-woocommerce-sync.started_at',
+        'mailchimp-woocommerce-sync.completed_at',
+        'mailchimp-woocommerce-sync.last_loop_at',
+        'mailchimp_woocommerce_db_mailchimp_carts',
+    );
+
+    /**
+     * Filter the REST preload list.
+     *
+     * @param array $keys
+     */
+    $keys = apply_filters('mailchimp_preload_rest_options', $keys);
+
+    if (!empty($keys)) {
+        \Mailchimp_Woocommerce_DB_Helpers::preload((array) $keys);
+    }
+
+    // Transients that REST endpoints commonly read (store-id freshness,
+    // ping-check). Same rationale as the admin preload — cheap batched
+    // fetch that eliminates per-read wp_options I/O on sites without
+    // Redis.
+    $rest_transient_keys = apply_filters('mailchimp_preload_rest_transients', array(
+        'mailchimp_woocommerce_store_id_verified',
+        'mailchimp-woocommerce-cached-api-ping-check',
+    ));
+
+    if (!empty($rest_transient_keys)) {
+        \Mailchimp_Woocommerce_DB_Helpers::preload_transients((array) $rest_transient_keys);
+    }
+}
+add_action('rest_api_init', 'mailchimp_preload_for_rest', 1);
 
 /**
  * @param Mailchimp_Woocommerce_Job $job
@@ -133,6 +493,7 @@ function mailchimp_as_push( Mailchimp_Woocommerce_Job $job, $delay = 0 ) {
     $attempts = $job->get_attempts() > 0 ? ' attempt:' . $job->get_attempts() : '';
 
     if ($job->get_attempts() <= 5) {
+        $job_class = get_class($job);
 
         $args = array(
             'job' => maybe_serialize($job),
@@ -141,26 +502,32 @@ function mailchimp_as_push( Mailchimp_Woocommerce_Job $job, $delay = 0 ) {
         );
         
         $existing_actions =  function_exists('as_get_scheduled_actions') ? as_get_scheduled_actions(array(
-            'hook' => get_class($job), 
-            'status' => ActionScheduler_Store::STATUS_PENDING,  
+            'hook' => $job_class,
+            'status' => ActionScheduler_Store::STATUS_PENDING,
+            'group' => 'mc-woocommerce',
             'args' => array(
                 'obj_id' => isset($job->id) ? $job->id : null), 
-                'group' => 'mc-woocommerce'
             )
         ) : null;
 
         if (!empty($existing_actions)) {
             try {
-                as_unschedule_action(get_class($job), array('obj_id' => $job->id), 'mc-woocommerce');
+                as_unschedule_action($job_class, array('obj_id' => $job->id), 'mc-woocommerce');
 
-                // updating args after unschedule to refresh data in the jo
-                $wpdb->update(
-                    $wpdb->prefix . "mailchimp_jobs",
-                    array(
-                        'job' => maybe_serialize($job),
-                        'created_at' => gmdate('Y-m-d H:i:s', time())
-                    ),
-                    array('obj_id' => $job->id)
+                $table = $wpdb->prefix . "mailchimp_jobs";
+                $serialized_job = maybe_serialize($job);
+                $created_at = gmdate('Y-m-d H:i:s');
+
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "UPDATE $table 
+                             SET job = %s, created_at = %s 
+                             WHERE obj_id = %s AND job LIKE %s",
+                        $serialized_job,
+                        $created_at,
+                        $job->id,
+                        '%' . $job_class . '%'
+                    )
                 );
             } catch (Exception $e) {
             }
@@ -188,10 +555,6 @@ function mailchimp_as_push( Mailchimp_Woocommerce_Job $job, $delay = 0 ) {
         $action_args = array(
             'obj_id' => $job_id,
         );
-
-        if ($current_page !== false) {
-            $action_args['page'] = $current_page;
-        }
 
         // create the action to be handled in X seconds ( default time )
         $fire_at = strtotime( '+'.$delay.' seconds' );
@@ -308,6 +671,22 @@ function mailchimp_submit_subscribed_only() {
     return ! (bool) mailchimp_get_option('mailchimp_ongoing_sync_status', '1');
 }
 
+function get_woo_session($key, $default = null)
+{
+    if (!function_exists('WC')) return $default;
+
+    if (!($woo = WC()) || empty(WC()->session)) {
+        return $default;
+    }
+
+    // not really sure why this would be the case, but if there is no session we can't get it anyway.
+    if (!is_object($woo->session) || !method_exists($woo->session, 'get')) {
+        return $default;
+    }
+
+    return $woo->session->get($key, $default);
+}
+
 /**
  * @return bool
  */
@@ -327,6 +706,13 @@ function mailchimp_carts_disabled() {
  */
 function mailchimp_carts_subscribers_only() {
     return mailchimp_get_option('mailchimp_cart_tracking', 'all') === 'subscribed';
+}
+
+/**
+ * @return bool
+ */
+function mailchimp_landing_tracking_enabled() {
+    return (bool) mailchimp_get_option('mailchimp-woocommerce-enable-landing-tracking', false);
 }
 
 /**
@@ -452,32 +838,32 @@ function mailchimp_common_loopback_ips(){
 function mailchimp_get_store_id() {
     $store_id = mailchimp_get_data('store_id', false);
 
-    // if the store ID is not empty, let's check the last time the store id's have been verified correctly
-    if (!empty($store_id)) {
-        // see if we have a record of the last verification set for this job.
-        $last_verification = mailchimp_get_data('store-id-last-verified');
-        // if it's less than 300 seconds, we don't need to beat up on Mailchimp's API to do this so often.
-        // just return the store ID that was in memory.
-        if ((!empty($last_verification) && is_numeric($last_verification)) && ((time() - $last_verification) < 600)) {
-            //mailchimp_log('debug.performance', 'prevented store endpoint api call');
-            return $store_id;
-        }
+    // "Was this store_id verified against Mailchimp recently?" — tracked as a
+    // transient with a 10-minute TTL instead of a timestamp option that we
+    // manually subtract against time(). With an object cache (Redis), the
+    // read and the write are zero wp_options queries; without one, they're
+    // still lighter than the old get_option + compare + update_option dance
+    // and self-expire so there's no timestamp row accumulating stale values.
+    $verified_transient = 'mailchimp_woocommerce_store_id_verified';
+
+    if (!empty($store_id) && get_transient($verified_transient)) {
+        return $store_id;
     }
 
     $api = mailchimp_get_api();
     if (mailchimp_is_configured()) {
-        //mailchimp_log('debug.performance', 'get_store_id - calling STORE endpoint.');
         // let's retrieve the store for this domain, through the API
         $store = $api->getStoreIfAvailable($store_id);
         // if there's no store, try to fetch from mc a store related to the current domain
         if (!$store) {
-            //mailchimp_log('debug.performance', 'get_store_id - no store found - calling STORES endpoint to update site id.');
             $stores = $api->stores();
             if (!empty($stores)) {
                 //iterate thru stores, find correct store ID and save it to db
                 foreach ($stores as $mc_store) {
                     if ($mc_store->getDomain() === get_option('siteurl')) {
-                        update_option('mailchimp-woocommerce-store_id', $mc_store->getId(), 'yes');
+                        // Route through the helper so our in-process caches
+                        // and object-cache invalidations stay consistent.
+                        \Mailchimp_Woocommerce_DB_Helpers::update_option('mailchimp-woocommerce-store_id', $mc_store->getId(), 'yes');
                         $store_id = $mc_store->getId();
                     }
                 }
@@ -489,8 +875,8 @@ function mailchimp_get_store_id() {
         mailchimp_set_data('store_id', $store_id = uniqid());
     }
 
-    // tell the system the last time we verified this store ID is valid with a timestamp.
-    mailchimp_set_data('store-id-last-verified', time());
+    // Mark this store_id as verified for the next 10 minutes.
+    set_transient($verified_transient, 1, 600);
 
     return $store_id;
 }
@@ -557,6 +943,10 @@ function mailchimp_get_option($key, $default = null) {
  * @return false
  */
 function mailchimp_get_admin_options($default = array()) {
+    if (wp_using_ext_object_cache()) {
+        return \Mailchimp_Woocommerce_DB_Helpers::get_option('mailchimp-woocommerce', $default);
+    }
+
     $options = wp_cache_get('mailchimp-woocommerce-options', 'mailchimp-woocommerce');
 
     if (!$options) {
@@ -675,13 +1065,23 @@ function mailchimp_get_timezone_list() {
  * @return mixed|string|void
  */
 function mailchimp_get_timezone($humanReadable = false) {
+    // Per-request memo — the store_info template calls this multiple times
+    // per render, and each call used to hit get_option() twice for the
+    // same two core options. Static keyed by $humanReadable so both return
+    // shapes stay cached.
+    static $cache = array();
+    $key = $humanReadable ? 'human' : 'raw';
+    if ( isset( $cache[ $key ] ) ) {
+        return $cache[ $key ];
+    }
+
     // get timezone data from options
     $timezone_string = get_option( 'timezone_string' );
     $offset  = get_option( 'gmt_offset' );
-    
+
     $signal = ($offset <=> 0 ) < 0 ? "-" : "+";
     $offset = sprintf('%1s%02d:%02d', $signal, abs((int) $offset), abs(fmod($offset, 1) * 60));
-    
+
     // shows timezone name + offset in hours and minutes, or only the timezone name. If no timezone string is set, show only offset
     if (!$humanReadable && $timezone_string) {
         $timezone = $timezone_string;
@@ -695,7 +1095,8 @@ function mailchimp_get_timezone($humanReadable = false) {
     else if (!$timezone_string) {
         $timezone = $offset;
     }
-    
+
+    $cache[ $key ] = $timezone;
     return $timezone;
 }
 
@@ -709,18 +1110,45 @@ function mailchimp_get_timezone($humanReadable = false) {
  * @return array $image_sizes The image sizes
  */
 function mailchimp_woocommerce_get_all_image_sizes() {
+    // Per-request memo — image sizes are set by themes/plugins at bootstrap
+    // and don't change within a request. Previously this function ran up
+    // to 16 get_option() calls on every invocation (4 sizes × up to 4
+    // reads each, because the crop option was read twice by a
+    // `get_option(...) ? get_option(...) : false` ternary). Callers on
+    // the settings page fire this multiple times per render, so a static
+    // memo eliminates N × requests worth of duplicate work.
+    static $cached = null;
+    if ( $cached !== null ) {
+        return $cached;
+    }
+
+    // WP 5.3+ — canonical API that returns { size => [width, height, crop] }
+    // for every registered size (core + theme + plugin), already applies
+    // the intermediate_image_sizes_advanced filter, and only reads the
+    // underlying options it actually needs.
+    if ( function_exists( 'wp_get_registered_image_subsizes' ) ) {
+        $cached = wp_get_registered_image_subsizes();
+        return $cached;
+    }
+
+    // Legacy fallback for pre-5.3. Single read per option (no double-
+    // reading the crop value) and uses the default argument of
+    // get_option() to express "false when missing".
     global $_wp_additional_image_sizes;
     $image_sizes = array();
-    $default_image_sizes = get_intermediate_image_sizes();
-    foreach ($default_image_sizes as $size) {
-        $image_sizes[$size]['width'] = intval( get_option("{$size}_size_w"));
-        $image_sizes[$size]['height'] = intval( get_option("{$size}_size_h"));
-        $image_sizes[$size]['crop'] = get_option("{$size}_crop") ? get_option("{$size}_crop") : false;
+    foreach ( get_intermediate_image_sizes() as $size ) {
+        $image_sizes[ $size ] = array(
+            'width'  => (int) get_option( "{$size}_size_w" ),
+            'height' => (int) get_option( "{$size}_size_h" ),
+            'crop'   => (bool) get_option( "{$size}_crop", false ),
+        );
     }
-    if (isset($_wp_additional_image_sizes) && count($_wp_additional_image_sizes)) {
+    if ( ! empty( $_wp_additional_image_sizes ) ) {
         $image_sizes = array_merge( $image_sizes, $_wp_additional_image_sizes );
     }
-    return $image_sizes;
+
+    $cached = $image_sizes;
+    return $cached;
 }
 
 /**
@@ -788,6 +1216,20 @@ function mailchimp_debug($action, $message, $data = null) {
     if (mailchimp_environment_variables()->logging === 'debug' && function_exists('wc_get_logger')) {
         if (is_array($data) && !empty($data)) $message .= " :: ".wc_print_r($data, true);
         wc_get_logger()->debug("{$action} :: {$message}", array('source' => 'mailchimp_woocommerce'));
+    }
+}
+
+function mailchimp_enhanced_log($action, $message, $data = null) {
+    if (mailchimp_environment_variables()->logging === 'debug' && function_exists('wc_get_logger')) {
+        if (is_array($data) && !empty($data)) $message .= " :: ".wc_print_r($data, true);
+        wc_get_logger()->warning("{$action} :: {$message}", array('source' => 'mailchimp_woocommerce'));
+    }
+}
+
+function mailchimp_enhanced_error($action, $message, $data = null) {
+    if (mailchimp_environment_variables()->logging === 'debug' && function_exists('wc_get_logger')) {
+        if (is_array($data) && !empty($data)) $message .= " :: ".wc_print_r($data, true);
+        wc_get_logger()->emergency("{$action} :: {$message}", array('source' => 'mailchimp_woocommerce'));
     }
 }
 
@@ -859,7 +1301,7 @@ function mailchimp_string_contains($haystack, $needles) {
  */
 function mailchimp_get_coupons_count() {
     $posts = mailchimp_count_posts('shop_coupon');
-    unset($posts['auto-draft'], $posts['trash']);
+
     $total = 0;
     foreach ($posts as $status => $count) {
         $total += $count;
@@ -872,11 +1314,12 @@ function mailchimp_get_coupons_count() {
  */
 function mailchimp_get_product_count() {
     $posts = mailchimp_count_posts('product');
-    unset($posts['auto-draft'], $posts['trash']);
+
     $total = 0;
     foreach ($posts as $status => $count) {
         $total += $count;
     }
+
     return $total;
 }
 
@@ -934,9 +1377,6 @@ function mailchimp_count_posts($type) {
     if ($type === 'shop_order') {
         $query = "SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s";
         $posts = $wpdb->get_results( $wpdb->prepare($query, $type, 'wc-completed'));
-    } else if ($type === 'product') {
-        $query = "SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s AND post_status IN (%s, %s, %s) group BY post_status";
-        $posts = $wpdb->get_results( $wpdb->prepare($query, $type, 'private', 'publish', 'draft'));
     } else {
         $query = "SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s AND post_status = %s";
         $posts = $wpdb->get_results( $wpdb->prepare($query, $type, 'publish'));
@@ -946,6 +1386,7 @@ function mailchimp_count_posts($type) {
     foreach ($posts as $post) {
         $response[$post->post_status] = $post->num_posts;
     }
+
     return $response;
 }
 
@@ -1070,6 +1511,16 @@ function mailchimpi_refresh_connected_site_script(MailChimp_WooCommerce_Store $s
     $url = $store->getConnectedSiteScriptUrl();
     $fragment = $store->getConnectedSiteScriptFragment();
 
+    // if script data is not available from store, try connected-sites endpoint
+    if (!$url || !$fragment) {
+        $connected_site_data = $api->checkConnectedSite($store->getId());
+        
+        if ($connected_site_data && isset($connected_site_data['site_script'])) {
+            $url = isset($connected_site_data['site_script']['url']) ? $connected_site_data['site_script']['url'] : '';
+            $fragment = isset($connected_site_data['site_script']['fragment']) ? $connected_site_data['site_script']['fragment'] : '';
+        }
+    }
+
     // if it's not empty we need to set the values
     if ($url && $fragment) {
 
@@ -1154,9 +1605,13 @@ function mailchimp_get_wc_customer($email) {
  * @return mixed|null
  */
 function mailchimp_get_transient($key, $default = null) {
-    $transient = \Mailchimp_Woocommerce_DB_Helpers::get_transient("mailchimp-woocommerce.{$key}");
-
-    return empty($transient) ? $default : $transient;
+    // Native WP transients hit the object cache (Redis) directly with zero
+    // DB queries when an ext object cache is available. The prior helper
+    // path read the transient value + timeout as two separate wp_options
+    // SELECTs regardless of cache layer — that's the read overhead we're
+    // trying to eliminate.
+    $transient = get_transient("mailchimp-woocommerce.{$key}");
+    return $transient === false ? $default : $transient;
 }
 
 /**
@@ -1166,11 +1621,15 @@ function mailchimp_get_transient($key, $default = null) {
  * @return bool
  */
 function mailchimp_set_transient($key, $value, $seconds = 60) {
-    mailchimp_delete_transient($key);
-    return \Mailchimp_Woocommerce_DB_Helpers::set_transient("mailchimp-woocommerce.{$key}", array(
-        'value' => $value,
-        'expires' => time()+$seconds,
-    ), $seconds);
+    // Wrap in ['value' => ...] so legitimately-cached false values remain
+    // distinguishable from "no transient" (get_transient returns false on
+    // miss). No explicit delete-before-set — native set_transient handles
+    // the update-vs-add path internally.
+    return set_transient(
+        "mailchimp-woocommerce.{$key}",
+        array( 'value' => $value, 'expires' => time() + $seconds ),
+        (int) $seconds
+    );
 }
 
 /**
@@ -1178,7 +1637,7 @@ function mailchimp_set_transient($key, $value, $seconds = 60) {
  * @return bool
  */
 function mailchimp_delete_transient($key) {
-    return \Mailchimp_Woocommerce_DB_Helpers::delete_transient("mailchimp-woocommerce.{$key}");
+    return delete_transient("mailchimp-woocommerce.{$key}");
 }
 
 /**
@@ -1508,7 +1967,17 @@ function mailchimp_member_data_update($user_email = null, $language = null, $cal
                 $should_doi = false;
             }
 
-            $result = mailchimp_get_api()
+            $api = mailchimp_get_api();
+
+            if ($caller === 'cart') {
+                $status = mailchimp_get_subscriber_status($user_email);
+
+                if (in_array($status, ['transactional', 'subscribed', 'pending'])) {
+                    $status_if_new = $status;
+                }
+            }
+
+            $result = $api
                 ->useAutoDoi($should_doi)
                 ->update(
                     $list_id,
@@ -1559,6 +2028,223 @@ function mailchimp_member_data_update($user_email = null, $language = null, $cal
                 mailchimp_error($caller . '.member.sync.error', $e->getMessage());
             }
         }
+    }
+}
+
+
+/**
+ * Check if SMS consent is enabled for this store.
+ *
+ * Consolidates all the checks needed to determine if the SMS consent feature
+ * should be active — used by both classic and block checkout, as well as
+ * order/customer processing hooks.
+ *
+ * Three conditions must be met:
+ * 1. The store country is eligible for SMS.
+ * 2. The SMS program is active in Mailchimp (cached for 10 minutes via the API layer).
+ * 3. The merchant opted in via EITHER:
+ *    a. Classic checkout: the admin option "mailchimp_sms_consent_enabled" is toggled on.
+ *    b. Block checkout: the "usingSmsConsent" attribute is true on the SMS block.
+ *
+ * @return bool
+ */
+function mailchimp_sms_consent_enabled() {
+    if (!MailChimp_Sms_Consent::isEligibleCountry()) {
+        return false;
+    }
+
+    // The SMS program must be active in Mailchimp.
+    // isSmsProgramActive() already uses a 10-minute transient cache via getCachedSmsProgram().
+    if (!MailChimp_Sms_Consent::isSmsProgramActive()) {
+        return false;
+    }
+
+    // Classic checkout path — admin toggled the option on.
+    $options = mailchimp_get_admin_options();
+    if (!empty($options['mailchimp_sms_consent_enabled'])) {
+        return true;
+    }
+
+    // Block checkout path — check the block's "usingSmsConsent" attribute.
+    return mailchimp_sms_block_enabled_in_checkout();
+}
+
+/**
+ * Check whether the SMS consent block is present on the checkout page
+ * and has its "usingSmsConsent" attribute set to true.
+ *
+ * Parses the checkout page's post_content to read the saved block attributes,
+ * since has_block() only checks for presence, not attribute values.
+ *
+ * @return bool
+ */
+function mailchimp_sms_block_enabled_in_checkout() {
+    $blocks = mailchimp_parse_checkout_page_blocks();
+    if (empty($blocks)) return false;
+    return mailchimp_find_sms_block_attribute($blocks, 'usingSmsConsent');
+}
+
+function mailchimp_parse_checkout_page_blocks()
+{
+    if (!function_exists('parse_blocks') || !function_exists('wc_get_page_id')) {
+        return false;
+    }
+    $checkout_page_id = wc_get_page_id('checkout');
+    if (!$checkout_page_id || $checkout_page_id < 1) {
+        return false;
+    }
+
+    $checkout_post = get_post($checkout_page_id);
+    if (!$checkout_post || empty($checkout_post->post_content)) {
+        return false;
+    }
+
+    return parse_blocks($checkout_post->post_content);
+}
+
+function mailchimp_checkout_using_blocks()
+{
+    $checkout_page_id = get_option('woocommerce_checkout_page_id');
+
+    return has_block( 'woocommerce/checkout', (int) $checkout_page_id );
+}
+
+function mailchimp_find_sms_block()
+{
+    $blocks = mailchimp_parse_checkout_page_blocks();
+    foreach ($blocks as $block) {
+        if ($block['blockName'] !== 'woocommerce/mailchimp-sms-consent') {
+            continue;
+        }
+        return $block;
+    }
+    return false;
+}
+
+/**
+ * Recursively search parsed blocks for the SMS consent block
+ * and return the value of the given attribute.
+ *
+ * @param array $blocks Parsed blocks from parse_blocks().
+ * @param string $attribute The attribute key to look for.
+ * @return bool
+ */
+function mailchimp_find_sms_block_attribute($blocks, $attribute) {
+    foreach ($blocks as $block) {
+        if ($block['blockName'] === 'woocommerce/mailchimp-sms-consent') {
+            return !empty($block['attrs'][$attribute]);
+        }
+        if (!empty($block['innerBlocks'])) {
+            $result = mailchimp_find_sms_block_attribute($block['innerBlocks'], $attribute);
+            if ($result) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Sync SMS consent data to Mailchimp for a member
+ *
+ * IMPORTANT: This function respects AC8 - if a customer places an order WITHOUT
+ * checking SMS consent, we should NOT change their existing SMS subscription status.
+ * We only sync when the customer explicitly opts in.
+ *
+ * @param string|null $user_email The user's email address (can be null for email-less checkout)
+ * @param int|null $order_id The WooCommerce order ID (optional)
+ * @param int|null $user_id The WordPress user ID (optional)
+ * @param string $caller The calling context for logging
+ * @param string|null $email_status The status of user's email subscription for contact upserts.
+ * @return bool True if SMS was synced, false otherwise
+ */
+function mailchimp_member_sms_update($user_email = null, $order_id = null, $user_id = null, $caller = 'order', $email_status = null) {
+    if (!mailchimp_sms_consent_enabled()) {
+        return false;
+    }
+
+    $sms_data = null;
+
+    // Try to get SMS data from order first
+    if ($order_id) {
+        $sms_data = MailChimp_Sms_Consent::getSmsDataFromOrder($order_id);
+    }
+
+    // If no order SMS data, try from user
+    if (!$sms_data && $user_id) {
+        $sms_data = MailChimp_Sms_Consent::getSmsDataFromUser($user_id);
+    }
+
+    // If still no SMS data, try current user if logged in
+    if (!$sms_data && is_user_logged_in()) {
+        $sms_data = MailChimp_Sms_Consent::getSmsDataFromUser(get_current_user_id());
+    }
+
+    // No SMS consent data found - this is expected when customer doesn't check the box
+    // Per AC8: Do NOT change existing SMS subscription status in this case
+    if (!$sms_data || empty($sms_data['phone'])) {
+        mailchimp_debug('sms.sync', "No SMS consent data found - preserving existing status");
+        return false;
+    }
+
+    // Only sync if they explicitly opted in (AC8 compliance)
+    if (empty($sms_data['subscribed'])) {
+        mailchimp_debug('sms.sync', "SMS consent not checked - preserving existing status");
+        return false;
+    }
+
+    $list_id = mailchimp_get_list_id();
+    if (!$list_id) {
+        return false;
+    }
+
+    // Handle email-less checkout (AC10)
+    $identifier = $user_email;
+    if (empty($identifier) && $order_id) {
+        $order = wc_get_order($order_id);
+        if ($order) {
+            $identifier = $order->get_billing_email();
+        }
+    }
+
+    $transient_key = $caller . ".sms.member." . md5(($sms_data['phone'].'.'.$identifier));
+
+    // Check if we've already synced recently
+    if (mailchimp_get_transient($transient_key)) {
+        mailchimp_debug('sms.sync', "Skipping SMS sync for phone {$sms_data['phone']} - recently synced");
+        return true;
+    }
+
+    try {
+        $api = mailchimp_get_api();
+
+        mailchimp_debug('sms.sync', "Syncing SMS consent", array(
+            'email' => $identifier,
+            'phone' => $sms_data['phone'],
+            'subscribed' => $sms_data['subscribed'],
+        ));
+
+        // Sync SMS consent to Mailchimp
+        // preserve_existing = true means we won't unsubscribe someone who's already subscribed
+        $result = $api->subscribeSms($list_id, $identifier, $sms_data['phone'], $sms_data['subscribed'], true, $email_status);
+
+        mailchimp_log('sms_consent_sync', 'caller', [
+            'caller' => $caller,
+            'user_id' => $user_id,
+            'sms_data' => $sms_data,
+            'email' => $identifier,
+            'result' => $result
+        ]);
+
+        // Set transient to prevent duplicate calls
+        mailchimp_set_transient($transient_key, true, 3600);
+
+        mailchimp_log($caller . '.sms.synced', "SMS consent synced :: phone: {$sms_data['phone']}" . ($identifier ? " :: email: {$identifier}" : " (email-less)"));
+        return true;
+
+    } catch (Exception $e) {
+        mailchimp_error($caller . '.sms.sync.error', $e->getMessage() . " :: phone: {$sms_data['phone']}");
+        return false;
     }
 }
 

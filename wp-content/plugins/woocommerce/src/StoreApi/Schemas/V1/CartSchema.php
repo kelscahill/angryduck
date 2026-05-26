@@ -2,9 +2,8 @@
 namespace Automattic\WooCommerce\StoreApi\Schemas\V1;
 
 use Automattic\WooCommerce\StoreApi\SchemaController;
-use Automattic\WooCommerce\StoreApi\Utilities\CartController;
 use Automattic\WooCommerce\StoreApi\Schemas\ExtendSchema;
-use Automattic\WooCommerce\StoreApi\Utilities\LocalPickupUtils;
+use Automattic\WooCommerce\StoreApi\Utilities\CartController;
 use WC_Tax;
 
 /**
@@ -338,17 +337,38 @@ class CartSchema extends AbstractSchema {
 		// Get cart errors first so if recalculations are performed, it's reflected in the response.
 		$cart_errors = $this->get_cart_errors( $cart );
 
-		// Get shipping packages to return in the response from the cart. Always get the shipping packages if local
-		// pickup is enabled and has methods. If the address is required then regular shipping rates will be filtered
-		// out later.
-		$has_local_pickup_methods = LocalPickupUtils::is_local_pickup_enabled() && count( LocalPickupUtils::get_local_pickup_method_ids() ) > 0;
-		$shipping_packages        = $cart->has_calculated_shipping() || $has_local_pickup_methods ? $controller->get_shipping_packages() : [];
+		// Get shipping packages to return in the response from the cart.
+		$shipping_packages = $cart->has_calculated_shipping() ? $controller->get_shipping_packages() : [];
 
 		// Get visible cross sells products.
-		$cross_sells = array_filter( array_map( 'wc_get_product', $cart->get_cross_sells() ), 'wc_products_array_filter_visible' );
+		$cross_sells    = array();
+		$cross_sell_ids = $cart->get_cross_sells();
+		$image_ids      = array();
+		if ( ! empty( $cross_sell_ids ) ) {
+			// Prime caches to reduce future queries.
+			_prime_post_caches( $cross_sell_ids );
+			$cross_sells = array_values( array_filter( array_map( 'wc_get_product', $cross_sell_ids ), 'wc_products_array_filter_visible' ) );
+			/** @var \WC_Product[] $cross_sells */ // phpcs:ignore Generic.Commenting.DocComment.MissingShort
+			// Identify which images need priming.
+			$ids         = array_map( static fn( $product ) => array( (int) $product->get_image_id(), ...$product->get_gallery_image_ids() ), $cross_sells );
+			$image_ids[] = array_values( array_filter( array_merge( ...$ids ) ) );
+		}
+
+		$cart_all_items  = $cart->get_cart();
+		$cart_line_items = array_values( array_filter( $cart_all_items, static fn( $item ) => ( $item['data'] ?? null ) instanceof \WC_Product ) );
+		if ( ! empty( $cart_line_items ) ) {
+			// Identify which images need priming.
+			$ids         = array_map( static fn( $item ) => array( (int) $item['data']->get_image_id(), ...$item['data']->get_gallery_image_ids() ), $cart_line_items );
+			$image_ids[] = array_values( array_filter( array_merge( ...array_values( $ids ) ) ) );
+		}
+
+		if ( ! empty( $image_ids ) ) {
+			// Prime caches to reduce future queries.
+			_prime_post_caches( array_unique( array_merge( ...$image_ids ) ) );
+		}
 
 		return [
-			'items'                   => $this->get_item_responses_from_schema( $this->item_schema, $cart->get_cart() ),
+			'items'                   => $this->get_item_responses_from_schema( $this->item_schema, $cart_all_items ),
 			'coupons'                 => $this->get_item_responses_from_schema( $this->coupon_schema, $cart->get_applied_coupons() ),
 			'fees'                    => $this->get_item_responses_from_schema( $this->fee_schema, $cart->get_fees() ),
 			'totals'                  => (object) $this->prepare_currency_response( $this->get_totals( $cart ) ),

@@ -75,6 +75,13 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          */
         private $_wwpp_wholesale_price_wholesale_role;
 
+        /**
+         * Store All The Bundle Variable Product Variations (Memoization Is Used To Avoid Recomputation Of Variations)(Run Time Cache)
+         *
+         * @var array
+         */
+        private $_bundle_variations;
+
         /*
         |--------------------------------------------------------------------------
         | Class Methods
@@ -274,7 +281,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
             $have_wholesale_price = 'yes';
             $product              = wc_get_product( $product_id );
 
-            $curr_product_wholesale_filter = get_post_meta( $product_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+            $curr_product_wholesale_filter = get_post_meta( $product_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER ); //phpcs:ignore
             if ( ! is_array( $curr_product_wholesale_filter ) ) {
                 $curr_product_wholesale_filter = array();
             }
@@ -635,7 +642,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
             if ( ! empty( $user_wholesale_role ) ) {
 
                 $variations_wholesale_prices = null;
-                $variations                  = WWP_Helper_Functions::wwp_get_variable_product_variations( $bundled_item->product );
+                $variations                  = isset( $this->_bundle_variations[ $bundled_item->product->get_id() ] ) ? $this->_bundle_variations[ $bundled_item->product->get_id() ] : array();
 
                 foreach ( $variations as $variation ) {
 
@@ -835,7 +842,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                 $product                                        = $bundled_item->product;
                 $has_per_order_quantity_wholesale_price_mapping = false;
                 $has_per_cat_level_order_quantity_wholesale_discount_mapping = false;
-                $variations = WWP_Helper_Functions::wwp_get_variable_product_variations( $product );
+                $variations = isset( $this->_bundle_variations[ $product->get_id() ] ) ? $this->_bundle_variations[ $product->get_id() ] : array();
 
                 foreach ( $variations as $variation ) {
 
@@ -1438,7 +1445,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     $has_match                          = false;
 
                     // Check if price suffix contain including tax tag {price_including_tax}.
-                    if ( strpos( $wholesale_suffix_for_regular_price, '{price_including_tax}' ) !== false ) {
+                    if ( str_contains( $wholesale_suffix_for_regular_price, '{price_including_tax}' ) ) {
 
                         $price_min = $product->get_bundle_price_including_tax( 'min', true );
                         $price_max = $product->get_bundle_price_including_tax( 'max', true );
@@ -1456,7 +1463,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     }
 
                     // Check if price suffix contain excluding tax tag {price_excluding_tax}.
-                    if ( strpos( $wholesale_suffix_for_regular_price, '{price_excluding_tax}' ) !== false ) {
+                    if ( str_contains( $wholesale_suffix_for_regular_price, '{price_excluding_tax}' ) ) {
 
                         $price_min = $product->get_bundle_price_excluding_tax( 'min', true );
                         $price_max = $product->get_bundle_price_excluding_tax( 'max', true );
@@ -1510,7 +1517,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                 $bundled_items_has_wholesale_data = '';
                 foreach ( $bundled_items as $bundled_item ) {
                     if ( WWP_Helper_Functions::wwp_get_product_type( $bundled_item->product ) === 'variable' ) {
-                        $variations = WWP_Helper_Functions::wwp_get_variable_product_variations( $bundled_item->product );
+                        $variations = isset( $this->_bundle_variations[ $bundled_item->product->get_id() ] ) ? $this->_bundle_variations[ $bundled_item->product->get_id() ] : array();
 
                         foreach ( $variations as $variation ) {
                             if ( ! $variation['is_purchasable'] ) {
@@ -1823,7 +1830,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     foreach ( $bundled_items as $bundled_item ) {
 
                         if ( WWP_Helper_Functions::wwp_get_product_type( $bundled_item->product ) === 'variable' ) {
-                            $variations = WWP_Helper_Functions::wwp_get_variable_product_variations( $bundled_item->product );
+                            $variations = isset( $this->_bundle_variations[ $bundled_item->product->get_id() ] ) ? $this->_bundle_variations[ $bundled_item->product->get_id() ] : array();
 
                             foreach ( $variations as $variation ) {
                                 if ( ! $variation['is_purchasable'] ) {
@@ -1904,7 +1911,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                 if ( $product->contains( 'priced_individually' ) && 'yes' === $bundled_items_has_variable ) {
 
                     // Check if price suffix contain including tax tag {price_including_tax}.
-                    if ( false !== strpos( $wc_price_suffix, '{price_including_tax}' ) ) {
+                    if ( str_contains( $wc_price_suffix, '{price_including_tax}' ) ) {
                         $price_min_incl_tax = $this->get_bundle_wholesale_price_including_tax( $product, $user_wholesale_role, 'min' );
                         $price_max_incl_tax = $this->get_bundle_wholesale_price_including_tax( $product, $user_wholesale_role, 'max' );
 
@@ -1921,7 +1928,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     }
 
                     // Check if price suffix contain excluding tax tag {price_excluding_tax}.
-                    if ( strpos( $wc_price_suffix, '{price_excluding_tax}' ) !== false ) {
+                    if ( str_contains( $wc_price_suffix, '{price_excluding_tax}' ) ) {
                         $price_min_excl_tax = $this->get_bundle_wholesale_price_excluding_tax( $product, $user_wholesale_role, 'min' );
                         $price_max_excl_tax = $this->get_bundle_wholesale_price_excluding_tax( $product, $user_wholesale_role, 'max' );
 
@@ -1941,7 +1948,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
 
                 } elseif ( $product->contains( 'priced_individually' ) ) {
                     // Check if price suffix contain including tax tag {price_including_tax}.
-                    if ( strpos( $wc_price_suffix, '{price_including_tax}' ) !== false ) {
+                    if ( str_contains( $wc_price_suffix, '{price_including_tax}' ) ) {
 
                         // Get formatted wholesale price with tax.
                         $wholesale_price_incl_tax = WWP_Helper_Functions::wwp_formatted_price(
@@ -1958,7 +1965,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     }
 
                     // Check if price suffix contain excluding tax tag {price_excluding_tax}.
-                    if ( strpos( $wc_price_suffix, '{price_excluding_tax}' ) !== false ) {
+                    if ( str_contains( $wc_price_suffix, '{price_excluding_tax}' ) ) {
 
                         // Get formatted wholesale price without tax.
                         $wholesale_price_excl_tax = WWP_Helper_Functions::wwp_formatted_price(
@@ -1978,7 +1985,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     $wc_price_suffix = ' <small class="woocommerce-price-suffix wholesale-price-suffix">' . $wc_price_suffix . '</small>';
                 } else {
                     // Check if price suffix contain including tax tag {price_including_tax}.
-                    if ( strpos( $wc_price_suffix, '{price_including_tax}' ) !== false ) {
+                    if ( str_contains( $wc_price_suffix, '{price_including_tax}' ) ) {
 
                         // Get formatted wholesale price with tax.
                         $wholesale_price_incl_tax = WWP_Helper_Functions::wwp_formatted_price(
@@ -1995,7 +2002,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     }
 
                     // Check if price suffix contain excluding tax tag {price_excluding_tax}.
-                    if ( strpos( $wc_price_suffix, '{price_excluding_tax}' ) !== false ) {
+                    if ( str_contains( $wc_price_suffix, '{price_excluding_tax}' ) ) {
 
                         // Get formatted wholesale price without tax.
                         $wholesale_price_excl_tax = WWP_Helper_Functions::wwp_formatted_price(
@@ -2082,6 +2089,26 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
             }
         }
 
+        /**
+         * Use Hashmap To Store The Variations (Memoization).
+         *
+         * @return void
+         */
+        public function preload_bundle_product_variations() {
+            $user_wholesale_role = $this->_wwpp_wholesale_roles->getUserWholesaleRole();
+
+            if ( ! empty( $user_wholesale_role ) ) {
+                $product = wc_get_product( get_the_ID() );
+                if ( is_object( $product ) && 'bundle' === $product->get_type() ) {
+                    foreach ( $product->get_bundled_items() as $bundle_item ) {
+                        if ( 'variable' === $bundle_item->product->get_type() ) {
+                            $this->_bundle_variations[ $bundle_item->product->get_id() ] = WWP_Helper_Functions::wwp_get_variable_product_variations( $bundle_item->product );
+                        }
+                    }
+                }
+            }
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Execute Model
@@ -2143,6 +2170,8 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
 
                 // Apply filter to override the suffix base price for bundled items.
                 add_filter( 'wwp_wholesale_price_suffix_base_price', array( $this, 'filter_bundle_wholesale_price_suffix_base_price' ), 5, 2 );
+
+                add_action( 'woocommerce_before_main_content', array( $this, 'preload_bundle_product_variations' ) );
 
                 // Add wholesale price column to bundle product listing page.
                 add_action( 'manage_product_posts_custom_column', array( $this, 'add_wholesale_price_column_value_to_bundle_product_cpt_listing' ), 99, 2 );

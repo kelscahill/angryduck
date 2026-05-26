@@ -1,12 +1,14 @@
 <?php
 
+namespace Automattic\WCShipping\Connect;
+
 // No direct access please
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'WC_Connect_API_Client_Local_Test_Mock' ) ) {
-	require_once __DIR__ . '/../../../classes/class-wc-connect-api-client.php';
+if ( ! class_exists( WC_Connect_API_Client_Local_Test_Mock::class ) ) {
+	require_once __DIR__ . '/../class-wc-connect-api-client.php';
 
 	class WC_Connect_API_Client_Local_Test_Mock extends WC_Connect_API_Client {
 
@@ -56,7 +58,7 @@ if ( ! class_exists( 'WC_Connect_API_Client_Local_Test_Mock' ) ) {
 				return $mock_data_associative['mock_endpoints'][ $path ];
 			}
 			// Just return empty data for requests not matching mock endpoint data.
-			return new stdClass();
+			return new \stdClass();
 		}
 	}
 }

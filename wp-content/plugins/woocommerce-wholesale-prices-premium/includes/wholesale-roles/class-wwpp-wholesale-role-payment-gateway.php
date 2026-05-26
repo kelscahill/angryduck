@@ -43,6 +43,16 @@ class WWPP_Wholesale_Role_Payment_Gateway {
      */
     private $_wwpp_tax;
 
+
+    /**
+     * Current WWP version.
+     *
+     * @since 1.14.0
+     * @access private
+     * @var int
+     */
+    private $_wwpp_current_version;
+
     /**
      * Class Methods
      */
@@ -60,6 +70,7 @@ class WWPP_Wholesale_Role_Payment_Gateway {
 
         $this->_wwpp_wholesale_roles = $dependencies['WWPP_Wholesale_Roles'];
         $this->_wwpp_tax             = $dependencies['WWPP_Tax'];
+        $this->_wwpp_current_version = $dependencies['WWPP_CURRENT_VERSION'];
     }
 
     /**
@@ -516,7 +527,13 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             wp_die();
         }
 
-        $mapping      = WWPP_Helper_Functions::sanitize_array( $_POST['mapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        if ( ! isset( $_POST['mapping'] ) ) { // phpcs:ignore
+            wp_send_json_error( array( 'message' => __( 'Mapping data is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $mapping      = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping'] ) ); // phpcs:ignore
         $wrpg_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_PAYMENT_GATEWAY_MAPPING );
 
         if ( ! is_array( $wrpg_mapping ) ) {
@@ -566,7 +583,13 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             wp_die();
         }
 
-        $mapping      = WWPP_Helper_Functions::sanitize_array( $_POST['mapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        if ( ! isset( $_POST['mapping'] ) ) { // phpcs:ignore
+            wp_send_json_error( array( 'message' => __( 'Mapping data is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $mapping      = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping'] ) ); // phpcs:ignore
         $wrpg_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_PAYMENT_GATEWAY_MAPPING );
 
         if ( ! is_array( $wrpg_mapping ) ) {
@@ -616,7 +639,13 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             wp_die();
         }
 
-        $wholesale_role_key = sanitize_key( $_POST['wholesaleRoleKey'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        if ( ! isset( $_POST['wholesaleRoleKey'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Wholesale role key is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $wholesale_role_key = sanitize_key( wp_unslash( $_POST['wholesaleRoleKey'] ) );
         $wrpg_mapping       = get_option( WWPP_OPTION_WHOLESALE_ROLE_PAYMENT_GATEWAY_MAPPING );
 
         if ( ! is_array( $wrpg_mapping ) ) {
@@ -674,9 +703,15 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             wp_die();
         }
 
-        $surcharge_data = WWPP_Helper_Functions::sanitize_array( $_POST['surchargeData'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
 
-        $user_id           = isset( $_POST['user_id'] ) ? sanitize_key( $_POST['user_id'] ) : 0;
+        if ( ! isset( $_POST['surchargeData'] ) ) { // phpcs:ignore
+            wp_send_json_error( array( 'message' => __( 'Surcharge data is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $surcharge_data = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['surchargeData'] ) ); // phpcs:ignore
+
+        $user_id           = isset( $_POST['user_id'] ) ? sanitize_key( wp_unslash( $_POST['user_id'] ) ) : 0;
         $surcharge_mapping = $user_id ? get_user_meta( $user_id, 'wwpp_payment_gateway_surcharge_mapping', true ) : get_option( WWPP_OPTION_PAYMENT_GATEWAY_SURCHARGE_MAPPING );
 
         if ( ! is_array( $surcharge_mapping ) ) {
@@ -733,10 +768,20 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             wp_die();
         }
 
-        $idx            = sanitize_key( $_POST['idx'] );
-        $surcharge_data = WWPP_Helper_Functions::sanitize_array( $_POST['surchargeData'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
 
-        $user_id           = isset( $_POST['user_id'] ) ? sanitize_key( $_POST['user_id'] ) : 0;
+        if ( ! isset( $_POST['idx'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Index is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        if ( ! isset( $_POST['surchargeData'] ) ) { // phpcs:ignore
+            wp_send_json_error( array( 'message' => __( 'Surcharge data is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $idx            = sanitize_key( wp_unslash( $_POST['idx'] ) );
+        $surcharge_data = WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['surchargeData'] ) ); // phpcs:ignore
+
+        $user_id           = isset( $_POST['user_id'] ) ? sanitize_key( wp_unslash( $_POST['user_id'] ) ) : 0;
         $surcharge_mapping = $user_id ? get_user_meta( $user_id, 'wwpp_payment_gateway_surcharge_mapping', true ) : get_option( WWPP_OPTION_PAYMENT_GATEWAY_SURCHARGE_MAPPING );
 
         if ( ! is_array( $surcharge_mapping ) ) {
@@ -766,15 +811,15 @@ class WWPP_Wholesale_Role_Payment_Gateway {
     }
 
     /**
-     * Delete payment gateway surcharge of a wholesale user.
+     * Delete payment gateway surcharge for a wholesale role.
      *
      * @param null|int $idx Mapping index.
      *
-     * @since  1.14.0 Refactor codebase.
      * @since  1.16.0 Support per wholesale user payment gateway surcharge override.
      * @access public
      *
      * @since  1.3.0
+     * @since  1.14.0 Refactor codebase.
      */
     public function delete_payment_gateway_surcharge( $idx = null ) {
 
@@ -793,8 +838,14 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             wp_die();
         }
 
-        $idx               = sanitize_key( $_POST['idx'] );
-        $user_id           = isset( $_POST['user_id'] ) ? sanitize_key( $_POST['user_id'] ) : 0;
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        if ( ! isset( $_POST['idx'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Index is required', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $idx               = sanitize_key( wp_unslash( $_POST['idx'] ) );
+        $user_id           = isset( $_POST['user_id'] ) ? sanitize_key( wp_unslash( $_POST['user_id'] ) ) : 0;
         $surcharge_mapping = $user_id ? get_user_meta( $user_id, 'wwpp_payment_gateway_surcharge_mapping', true ) : get_option( WWPP_OPTION_PAYMENT_GATEWAY_SURCHARGE_MAPPING );
 
         if ( ! is_array( $surcharge_mapping ) ) {
@@ -954,6 +1005,98 @@ class WWPP_Wholesale_Role_Payment_Gateway {
     }
 
     /**
+     * Update payment method on order pay page via AJAX.
+     *
+     * @since 2.0.3
+     * @since 2.0.9 Require order ownership verification (logged-in customer match or guest order_key match) before applying surcharges.
+     * @access public
+     */
+    public function update_order_pay_payment_method() {
+
+        // Security checks.
+        if ( ! check_ajax_referer( 'wwppUpdateOrderPayPaymentMethod', 'nonce', false ) ) {
+            wp_send_json_error( array( 'message' => __( 'Security check failed', 'woocommerce-wholesale-prices-premium' ) ) );
+        }
+
+        $payment_method = isset( $_POST['payment_method'] ) ? sanitize_text_field( wp_unslash( $_POST['payment_method'] ) ) : '';
+        $order_id       = isset( $_POST['order_id'] ) ? absint( $_POST['order_id'] ) : 0;
+        $order_key      = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+
+        if ( empty( $payment_method ) || empty( $order_id ) ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid payment method or order ID', 'woocommerce-wholesale-prices-premium' ) ) );
+            return; // wp_send_json_error() calls wp_die(); return documents intent for static analysis.
+        }
+
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            wp_send_json_error( array( 'message' => __( 'Invalid order', 'woocommerce-wholesale-prices-premium' ) ) );
+            return; // wp_send_json_error() calls wp_die(); return documents intent for static analysis.
+        }
+
+        // Verify order ownership: logged-in user must own the order, or guest must provide a valid order key.
+        $current_user_id = get_current_user_id();
+        if ( $current_user_id ) {
+            if ( (int) $order->get_customer_id() !== $current_user_id && ! current_user_can( 'manage_woocommerce' ) ) {
+                wp_send_json_error( array( 'message' => __( 'You do not have permission to modify this order.', 'woocommerce-wholesale-prices-premium' ) ) );
+                return;
+            }
+        } elseif ( empty( $order_key ) || $order->get_order_key() !== $order_key ) {
+            // Guest checkout: validate order key.
+            wp_send_json_error( array( 'message' => __( 'Invalid order key.', 'woocommerce-wholesale-prices-premium' ) ) );
+            return;
+        }
+
+        // Set the chosen payment method in session.
+        if ( WC()->session ) {
+            WC()->session->set( 'chosen_payment_method', $payment_method );
+            // Set a flag to indicate that surcharges have been applied via AJAX.
+            WC()->session->set( 'wwpp_surcharges_applied', true );
+        }
+
+        // Apply surcharges based on the selected payment method.
+        $this->apply_payment_gateway_surcharge_on_order_pay();
+
+        wp_send_json_success();
+    }
+
+    /**
+     * Enqueue order pay page scripts.
+     *
+     * @since 2.0.3
+     * @access public
+     */
+    public function enqueue_order_pay_scripts() {
+
+        if ( is_wc_endpoint_url( 'order-pay' ) ) {
+            global $wp;
+
+            $order_id = absint( $wp->query_vars['order-pay'] );
+            $order    = wc_get_order( $order_id );
+
+            if ( $order ) {
+                wp_enqueue_script(
+                    'wwpp-order-pay-page',
+                    WWPP_JS_URL . 'app/wwpp-order-pay-page.js',
+                    array( 'jquery' ),
+                    $this->_wwpp_current_version,
+                    true
+                );
+
+                wp_localize_script(
+                    'wwpp-order-pay-page',
+                    'wc_checkout_params',
+                    array(
+                        'ajax_url'  => admin_url( 'admin-ajax.php' ),
+                        'order_id'  => $order_id,
+                        'order_key' => $order->get_order_key(),
+                        'update_order_pay_payment_method_nonce' => wp_create_nonce( 'wwppUpdateOrderPayPaymentMethod' ),
+                    )
+                );
+            }
+        }
+    }
+
+    /**
      * Register model ajax handlers.
      *
      * @since  1.14.0
@@ -970,6 +1113,10 @@ class WWPP_Wholesale_Role_Payment_Gateway {
         add_action( 'wp_ajax_wwppAddPaymentGatewaySurcharge', array( $this, 'add_payment_gateway_surcharge' ) );
         add_action( 'wp_ajax_wwppUpdatePaymentGatewaySurcharge', array( $this, 'update_payment_gateway_surcharge' ) );
         add_action( 'wp_ajax_wwppDeletePaymentGatewaySurcharge', array( $this, 'delete_payment_gateway_surcharge' ) );
+
+        // Order pay page payment method update.
+        add_action( 'wp_ajax_wwpp_update_order_pay_payment_method', array( $this, 'update_order_pay_payment_method' ) );
+        add_action( 'wp_ajax_nopriv_wwpp_update_order_pay_payment_method', array( $this, 'update_order_pay_payment_method' ) );
     }
 
     /**
@@ -993,8 +1140,368 @@ class WWPP_Wholesale_Role_Payment_Gateway {
         }
 
         add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_surcharge_script' ) );
+        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_order_pay_scripts' ) );
 
         add_action( 'woocommerce_checkout_init', array( $this, 'maybe_reset_selected_payment_method' ) );
         add_action( 'woocommerce_blocks_loaded', array( $this, 'wc_checkout_store_api_callback' ) );
+
+        // Clear surcharge flag on order pay page load.
+        add_action( 'woocommerce_pay_order_before_payment', array( $this, 'clear_surcharge_flag_on_order_pay' ), 1 );
+
+        // Apply surcharge on order pay page - only on initial load.
+        add_action( 'woocommerce_pay_order_before_payment', array( $this, 'apply_initial_payment_gateway_surcharge_on_order_pay' ), 10 );
+
+        // Ensure selected payment method is maintained on order pay page.
+        add_action( 'woocommerce_pay_order_before_payment', array( $this, 'ensure_selected_payment_method_on_order_pay' ), 5 );
+    }
+
+    /**
+     * Clear surcharge flag on order pay page load.
+     *
+     * @since 2.0.3
+     * @access public
+     */
+    public function clear_surcharge_flag_on_order_pay() {
+        global $wp;
+
+        // Only apply on order pay page.
+        if ( ! is_wc_endpoint_url( 'order-pay' ) ) {
+            return;
+        }
+
+        // Clear the surcharge flag on page load (not AJAX).
+        if ( WC()->session && ! wp_doing_ajax() ) {
+            WC()->session->__unset( 'wwpp_surcharges_applied' );
+        }
+    }
+
+    /**
+     * Apply initial payment gateway surcharge on order pay page (only on first load).
+     *
+     * @since 2.0.3
+     * @access public
+     */
+    public function apply_initial_payment_gateway_surcharge_on_order_pay() {
+        global $wp;
+
+        // Only apply on order pay page.
+        if ( ! is_wc_endpoint_url( 'order-pay' ) ) {
+            return;
+        }
+
+        $order_id = absint( $wp->query_vars['order-pay'] );
+        $order    = wc_get_order( $order_id );
+
+        if ( ! $order ) {
+            return;
+        }
+
+        $user_wholesale_role = $this->_wwpp_wholesale_roles->getUserWholesaleRole();
+
+        if ( empty( $user_wholesale_role ) ) {
+            return;
+        }
+
+        $payment_gateway_surcharge = $this->get_payment_gateway_surcharge();
+
+        if ( empty( $payment_gateway_surcharge ) ) {
+            return;
+        }
+
+        // Check if surcharges have already been applied via AJAX.
+        if ( WC()->session && WC()->session->get( 'wwpp_surcharges_applied' ) ) {
+            return; // Skip initial application if surcharges were applied via AJAX.
+        }
+
+        // Only apply surcharges on initial page load if no surcharges exist yet.
+        $existing_surcharges = $this->get_existing_surcharges( $order );
+
+        if ( ! empty( $existing_surcharges ) ) {
+            return; // Don't apply surcharges if they already exist.
+        }
+
+        // Get available payment gateways.
+        $available_gateways = WC()->payment_gateways->payment_gateways();
+        if ( ! is_array( $available_gateways ) ) {
+            $available_gateways = array();
+        }
+
+        if ( ! empty( $available_gateways ) ) {
+            $current_gateway = array();
+
+            // Get chosen payment method from session or default.
+            if ( isset( WC()->session->chosen_payment_method ) && isset( $available_gateways[ WC()->session->chosen_payment_method ] ) ) {
+                $current_gateway = $available_gateways[ WC()->session->chosen_payment_method ];
+            } elseif ( isset( $available_gateways[ get_option( 'woocommerce_default_gateway' ) ] ) ) {
+                $current_gateway = $available_gateways[ get_option( 'woocommerce_default_gateway' ) ];
+            }
+
+            // Only apply surcharge if the current payment method has one configured.
+            if ( ! empty( $current_gateway ) ) {
+                foreach ( $payment_gateway_surcharge as $mapping ) {
+                    if ( $mapping['wholesale_role'] == $user_wholesale_role[0] && $mapping['payment_gateway'] == $current_gateway->id ) { // phpcs:ignore
+
+                        if ( 'percentage' === $mapping['surcharge_type'] ) {
+                            $surcharge = wc_format_decimal( ( ( $order->get_subtotal() + $order->get_shipping_total() ) * $mapping['surcharge_amount'] ) / 100, '' );
+                        } else {
+                            $surcharge = $mapping['surcharge_amount'];
+
+                            /**
+                             * Make fixed price additional payment gateway surcharge feature compatible with "Aelia Currency Switcher" plugin.
+                             * No need for the percentage types as the WC total will already be in converted price.
+                             */
+                            if ( WWP_ACS_Integration_Helper::aelia_currency_switcher_active() ) {
+                                $active_currency    = get_woocommerce_currency();
+                                $shop_base_currency = get_option( 'woocommerce_currency' );
+
+                                if ( $active_currency !== $shop_base_currency ) {
+                                    $surcharge = WWP_ACS_Integration_Helper::convert( $surcharge, $active_currency, $shop_base_currency );
+                                }
+                            }
+                        }
+
+                        $taxable = ( 'yes' === $mapping['taxable'] ) ? true : false;
+
+                        // Apply Wholesale Tax Class if wholesale role/user has tax class mapping set in the setting.
+                        $tax_class = '';
+
+                        if ( $taxable ) {
+                            $tax_class = $this->_wwpp_tax->apply_proper_tax_classes( '' );
+                        }
+
+                        // Add fee to the order.
+                        $fee = new WC_Order_Item_Fee();
+                        $fee->set_name( $mapping['surcharge_title'] );
+                        $fee->set_amount( $surcharge );
+                        $fee->set_total( $surcharge );
+                        $fee->set_tax_class( $tax_class );
+                        $fee->set_tax_status( $taxable ? 'taxable' : 'none' );
+
+                        $order->add_item( $fee );
+
+                        // Only apply one surcharge per payment method.
+                        break;
+                    }
+                }
+            }
+
+            // Recalculate totals and save the order.
+            $order->calculate_totals();
+            $order->save();
+        }
+    }
+
+    /**
+     * Get existing surcharges from order.
+     *
+     * @param WC_Order $order Order object.
+     * @return array Array of existing surcharge fee names.
+     * @since 2.0.3
+     * @access private
+     */
+    private function get_existing_surcharges( $order ) {
+        $payment_gateway_surcharge = $this->get_payment_gateway_surcharge();
+
+        if ( empty( $payment_gateway_surcharge ) ) {
+            return array();
+        }
+
+        $surcharge_titles = array();
+        foreach ( $payment_gateway_surcharge as $mapping ) {
+            $surcharge_titles[] = $mapping['surcharge_title'];
+        }
+
+        $existing_surcharges = array();
+        foreach ( $order->get_fees() as $fee ) {
+            if ( in_array( $fee->get_name(), $surcharge_titles, true ) ) {
+                $existing_surcharges[] = $fee->get_name();
+            }
+        }
+
+        return $existing_surcharges;
+    }
+
+    /**
+     * Remove existing surcharges from order.
+     *
+     * @param WC_Order $order Order object.
+     * @since 2.0.3
+     * @access private
+     */
+    private function remove_existing_surcharges( $order ) {
+        $payment_gateway_surcharge = $this->get_payment_gateway_surcharge();
+
+        if ( empty( $payment_gateway_surcharge ) ) {
+            return;
+        }
+
+        $surcharge_titles = array();
+        foreach ( $payment_gateway_surcharge as $mapping ) {
+            $surcharge_titles[] = $mapping['surcharge_title'];
+        }
+
+        // Remove existing surcharge fees.
+        $fees_to_remove = array();
+        foreach ( $order->get_fees() as $fee ) {
+            if ( in_array( $fee->get_name(), $surcharge_titles, true ) ) {
+                $fees_to_remove[] = $fee->get_id();
+            }
+        }
+
+        foreach ( $fees_to_remove as $fee_id ) {
+            $order->remove_item( $fee_id );
+        }
+    }
+
+    /**
+     * Apply payment gateway surcharge on order pay page (for AJAX requests).
+     *
+     * @since 2.0.3
+     * @access public
+     */
+    public function apply_payment_gateway_surcharge_on_order_pay() {
+        global $wp;
+
+        // Only apply on order pay page or AJAX requests.
+        if ( ! is_wc_endpoint_url( 'order-pay' ) ) {
+            return;
+        }
+
+        $order_id = 0;
+        if ( ! empty( $wp->query_vars['order-pay'] ) ) {
+            $order_id = absint( $wp->query_vars['order-pay'] );
+        } elseif ( isset( $_POST['order_id'] ) ) { //phpcs:ignore
+            $order_id = absint( wp_unslash( $_POST['order_id'] ) ); //phpcs:ignore
+        }
+
+        if ( ! $order_id ) {
+            return;
+        }
+
+        $order = wc_get_order( $order_id );
+
+        if ( ! $order ) {
+            return;
+        }
+
+        $user_wholesale_role = $this->_wwpp_wholesale_roles->getUserWholesaleRole();
+
+        if ( empty( $user_wholesale_role ) ) {
+            return;
+        }
+
+        $payment_gateway_surcharge = $this->get_payment_gateway_surcharge();
+
+        if ( empty( $payment_gateway_surcharge ) ) {
+            return;
+        }
+
+        // Get available payment gateways.
+        $available_gateways = WC()->payment_gateways->payment_gateways();
+        if ( ! is_array( $available_gateways ) ) {
+            $available_gateways = array();
+        }
+
+        if ( ! empty( $available_gateways ) ) {
+            $current_gateway = array();
+
+            // Get chosen payment method from session or default.
+            if ( isset( WC()->session->chosen_payment_method ) && isset( $available_gateways[ WC()->session->chosen_payment_method ] ) ) {
+                $current_gateway = $available_gateways[ WC()->session->chosen_payment_method ];
+            } elseif ( isset( $available_gateways[ get_option( 'woocommerce_default_gateway' ) ] ) ) {
+                $current_gateway = $available_gateways[ get_option( 'woocommerce_default_gateway' ) ];
+            }
+
+            // First, remove any existing surcharges.
+            $this->remove_existing_surcharges( $order );
+
+            // Then apply surcharge if the current payment method has one configured.
+            if ( ! empty( $current_gateway ) ) {
+                foreach ( $payment_gateway_surcharge as $mapping ) {
+                    if ( $mapping['wholesale_role'] == $user_wholesale_role[0] && $mapping['payment_gateway'] == $current_gateway->id ) { // phpcs:ignore
+
+                        if ( 'percentage' === $mapping['surcharge_type'] ) {
+                            $surcharge = wc_format_decimal( ( ( $order->get_subtotal() + $order->get_shipping_total() ) * $mapping['surcharge_amount'] ) / 100, '' );
+                        } else {
+                            $surcharge = $mapping['surcharge_amount'];
+
+                            /**
+                             * Make fixed price additional payment gateway surcharge feature compatible with "Aelia Currency Switcher" plugin.
+                             * No need for the percentage types as the WC total will already be in converted price.
+                             */
+                            if ( WWP_ACS_Integration_Helper::aelia_currency_switcher_active() ) {
+                                $active_currency    = get_woocommerce_currency();
+                                $shop_base_currency = get_option( 'woocommerce_currency' );
+
+                                if ( $active_currency !== $shop_base_currency ) {
+                                    $surcharge = WWP_ACS_Integration_Helper::convert( $surcharge, $active_currency, $shop_base_currency );
+                                }
+                            }
+                        }
+
+                        $taxable = ( 'yes' === $mapping['taxable'] ) ? true : false;
+
+                        // Apply Wholesale Tax Class if wholesale role/user has tax class mapping set in the setting.
+                        $tax_class = '';
+
+                        if ( $taxable ) {
+                            $tax_class = $this->_wwpp_tax->apply_proper_tax_classes( '' );
+                        }
+
+                        // Add fee to the order.
+                        $fee = new WC_Order_Item_Fee();
+                        $fee->set_name( $mapping['surcharge_title'] );
+                        $fee->set_amount( $surcharge );
+                        $fee->set_total( $surcharge );
+                        $fee->set_tax_class( $tax_class );
+                        $fee->set_tax_status( $taxable ? 'taxable' : 'none' );
+
+                        $order->add_item( $fee );
+
+                        // Only apply one surcharge per payment method.
+                        break;
+                    }
+                }
+            }
+
+            // Recalculate totals and save the order.
+            $order->calculate_totals();
+            $order->save();
+        }
+    }
+
+    /**
+     * Ensure the selected payment method is maintained on order pay page.
+     *
+     * @since 2.0.3
+     * @access public
+     */
+    public function ensure_selected_payment_method_on_order_pay() {
+        global $wp;
+
+        // Only apply on order pay page.
+        if ( ! is_wc_endpoint_url( 'order-pay' ) ) {
+            return;
+        }
+
+        // If there's a chosen payment method in session, ensure it's selected.
+        if ( WC()->session && isset( WC()->session->chosen_payment_method ) ) {
+            $chosen_method = WC()->session->chosen_payment_method;
+
+            // Add JavaScript to ensure the payment method is selected without triggering change event.
+            add_action(
+                'wp_footer',
+                function () use ( $chosen_method ) {
+                    ?>
+                    <script type="text/javascript">
+                    jQuery( document ).ready( function( $ ) {
+                        // Select the payment method from session without triggering change event.
+                        $( 'input[name="payment_method"][value="<?php echo esc_js( $chosen_method ); ?>"]' ).prop( 'checked', true );
+                    });
+                    </script>
+                    <?php
+                }
+            );
+        }
     }
 }

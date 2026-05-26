@@ -211,17 +211,6 @@ class WC_REST_Connect_Shipping_Label_Controller extends WC_REST_Connect_Base_Con
 			);
 		}
 
-		// Shipping labels should be enabled in account settings.
-		if ( true !== $this->settings_store->get_account_settings()['enabled'] ) {
-			return new WP_REST_Response(
-				array(
-					'is_eligible' => false,
-					'reason'      => 'account_settings_disabled',
-				),
-				200
-			);
-		}
-
 		// Check if the store is eligible for shipping label creation.
 		if ( ! $this->shipping_label->is_store_eligible_for_shipping_label_creation() ) {
 			return new WP_REST_Response(

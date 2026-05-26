@@ -441,7 +441,7 @@ class WWLC_WWS_License_Manager {
             );
         }
 
-        switch ( $_REQUEST['type'] ) {
+        switch ( sanitize_key( wp_unslash( $_REQUEST['type'] ) ) ) {
             case 'nolicense':
                 $option_name = constant( $this->_software_key . '_SHOW_NO_LICENSE_NOTICE' );
                 break;
@@ -569,7 +569,7 @@ class WWLC_WWS_License_Manager {
      * @access public
      */
     public function ajax_dismiss_license_reminder_pointer() {
-        if ( strtolower( $this->_software_key ) === $_REQUEST['software_key'] ) {
+        if ( strtolower( $this->_software_key ) === sanitize_text_field( wp_unslash( $_REQUEST['software_key'] ?? '' ) ) ) {
 
             // Check this is an AJAX operation and that user is able to manage WC settings.
             if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX || ! current_user_can( 'manage_woocommerce' ) ) { // phpcs:ignore.

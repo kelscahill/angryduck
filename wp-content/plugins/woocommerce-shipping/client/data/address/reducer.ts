@@ -8,12 +8,21 @@ import {
 	isOriginAddress,
 } from 'utils';
 import {
+	getFormattedStoreAddress,
+	isMainOriginInSyncWithStore,
+	getStoreAddressDraft,
+} from 'utils/config';
+import {
 	ADD_ORIGIN_ADDRESS,
 	ADD_ORIGIN_ADDRESS_FAILED,
 	ADDRESS_NORMALIZATION,
 	ADDRESS_NORMALIZATION_FAILED,
 	DELETE_ORIGIN_ADDRESS,
+	FETCH_ORIGIN_ADDRESSES,
 	RESET_ADDRESS_NORMALIZATION,
+	SET_DESTINATION_RESIDENTIAL,
+	SET_STORE_ADDRESS_SYNC_STATUS,
+	STATE_RESET,
 	UPDATE_SHIPMENT_ADDRESS,
 	UPDATE_SHIPMENT_ADDRESS_FAILED,
 	VERIFY_ORDER_SHIPPING_ADDRESS,
@@ -25,8 +34,11 @@ import {
 	AddOriginAddressFailedAction,
 	AddressActions,
 	DeleteOriginAddressAction,
+	FetchOriginAddressesAction,
 	NormalizationAddressAction,
 	NormalizationAddressFailedAction,
+	SetDestinationResidentialAction,
+	SetStoreAddressSyncStatusAction,
 	ShippingAddressVerifyAction,
 	ShippingAddressVerifyFailedAction,
 	ShippingAddressVerifyStartAction,
@@ -37,35 +49,66 @@ import { resetAddressNormalizationResponse } from './actions';
 import { AddressState } from '../types';
 
 export const getReducer = ( withDestination: boolean ) => {
-	const defaultState: AddressState = {
-		origin: {
-			addresses: getOriginAddresses(),
-			address: getFirstSelectableOriginAddress(),
-			isVerified: getFirstSelectableOriginAddress()?.isVerified,
-			isAddressVerificationInProgress: false,
-			normalizedAddress: null,
-			submittedAddress: null,
-			isTrivialNormalization: null,
-			addressNeedsConfirmation: false,
-			formErrors: {},
-		},
-		storeOrigin: getStoreOrigin(),
-	} as const;
+	const getDefaultState = (): AddressState => {
+		const originAddresses = getOriginAddresses();
+		const firstSelectableAddress = getFirstSelectableOriginAddress();
+		const storeAddressDraft = getStoreAddressDraft();
 
-	if ( withDestination ) {
-		defaultState.destination = {
-			address: getCurrentOrderShipTo(),
-			isVerified: getIsDestinationVerified(),
-			isAddressVerificationInProgress: false,
-			normalizedAddress: null,
-			submittedAddress: null,
-			isTrivialNormalization: null,
-			addressNeedsConfirmation: false,
-			formErrors: {},
+		// Provide a default empty address if none exist
+		const defaultOriginAddress = firstSelectableAddress ?? {
+			id: '',
+			name: '',
+			address: '',
+			address1: '',
+			address2: '',
+			city: '',
+			state: '',
+			postcode: '',
+			country: getStoreOrigin().country,
+			phone: '',
+			email: '',
+			firstName: '',
+			lastName: '',
+			company: '',
+			isVerified: false,
+			defaultAddress: false,
 		};
-	}
 
-	const addressReducer = createReducer( defaultState )
+		const defaultState: AddressState = {
+			origin: {
+				addresses: originAddresses,
+				address: defaultOriginAddress,
+				isVerified: defaultOriginAddress.isVerified ?? false,
+				isAddressVerificationInProgress: false,
+				normalizedAddress: null,
+				submittedAddress: null,
+				isTrivialNormalization: null,
+				addressNeedsConfirmation: false,
+				formErrors: {},
+			},
+			storeOrigin: getStoreOrigin(),
+			isMainOriginInSyncWithStore: isMainOriginInSyncWithStore(),
+			formattedStoreAddress: getFormattedStoreAddress(),
+			storeAddressDraft,
+		} as const;
+
+		if ( withDestination ) {
+			defaultState.destination = {
+				address: getCurrentOrderShipTo(),
+				isVerified: getIsDestinationVerified(),
+				isAddressVerificationInProgress: false,
+				normalizedAddress: null,
+				submittedAddress: null,
+				isTrivialNormalization: null,
+				addressNeedsConfirmation: false,
+				formErrors: {},
+			};
+		}
+
+		return defaultState;
+	};
+
+	const addressReducer = createReducer( getDefaultState() )
 		.on(
 			ADDRESS_NORMALIZATION,
 			(
@@ -76,6 +119,7 @@ export const getReducer = ( withDestination: boolean ) => {
 						normalizedAddress,
 						isTrivialNormalization,
 						addressType,
+						warnings,
 					},
 				}: NormalizationAddressAction
 			) => ( {
@@ -88,6 +132,7 @@ export const getReducer = ( withDestination: boolean ) => {
 					submittedAddress: address,
 					formErrors: {},
 					isAddressVerificationInProgress: false,
+					warnings,
 				},
 			} )
 		)
@@ -146,6 +191,26 @@ export const getReducer = ( withDestination: boolean ) => {
 							if ( originAddress.id === address.id ) {
 								return address;
 							}
+							// Clear defaultAddress from other addresses if the updated address is being set as default
+							if (
+								address.defaultAddress &&
+								originAddress.defaultAddress
+							) {
+								return {
+									...originAddress,
+									defaultAddress: false,
+								};
+							}
+							// Clear defaultReturnAddress from other addresses if the updated address is being set as default return
+							if (
+								address.defaultReturnAddress &&
+								originAddress.defaultReturnAddress
+							) {
+								return {
+									...originAddress,
+									defaultReturnAddress: false,
+								};
+							}
 							return originAddress;
 						}
 					);
@@ -187,12 +252,24 @@ export const getReducer = ( withDestination: boolean ) => {
 		.on(
 			ADD_ORIGIN_ADDRESS,
 			( state, { payload: { address } }: AddOriginAddressAction ) => {
-				const existingAddresses = address.defaultAddress
-					? state.origin.addresses.map( ( origin ) => ( {
-							...origin,
-							defaultAddress: false,
-					  } ) )
-					: state.origin.addresses;
+				let existingAddresses = state.origin.addresses;
+
+				// Clear defaultAddress from other addresses if the new address is being set as default
+				if ( address.defaultAddress ) {
+					existingAddresses = existingAddresses.map( ( origin ) => ( {
+						...origin,
+						defaultAddress: false,
+					} ) );
+				}
+
+				// Clear defaultReturnAddress from other addresses if the new address is being set as default return
+				if ( address.defaultReturnAddress ) {
+					existingAddresses = existingAddresses.map( ( origin ) => ( {
+						...origin,
+						defaultReturnAddress: false,
+					} ) );
+				}
+
 				return {
 					...state,
 					origin: {
@@ -289,6 +366,77 @@ export const getReducer = ( withDestination: boolean ) => {
 				};
 			}
 		)
+		.on(
+			FETCH_ORIGIN_ADDRESSES,
+			(
+				state,
+				{
+					payload: {
+						addresses,
+						isMainOriginInSyncWithStore: inSync,
+						formattedStoreAddress,
+						storeAddressDraft,
+					},
+				}: FetchOriginAddressesAction
+			) => ( {
+				...state,
+				origin: {
+					...state.origin,
+					addresses,
+				},
+				...( inSync !== undefined && {
+					isMainOriginInSyncWithStore: inSync,
+				} ),
+				...( formattedStoreAddress !== undefined && {
+					formattedStoreAddress,
+				} ),
+				...( storeAddressDraft !== undefined && {
+					storeAddressDraft,
+				} ),
+			} )
+		)
+		.on(
+			SET_STORE_ADDRESS_SYNC_STATUS,
+			(
+				state,
+				{
+					payload: {
+						isMainOriginInSyncWithStore: inSync,
+						formattedStoreAddress,
+						storeAddressDraft,
+					},
+				}: SetStoreAddressSyncStatusAction
+			) => ( {
+				...state,
+				isMainOriginInSyncWithStore: inSync,
+				formattedStoreAddress,
+				storeAddressDraft,
+			} )
+		)
+		.on(
+			SET_DESTINATION_RESIDENTIAL,
+			(
+				state,
+				{ payload: { residential } }: SetDestinationResidentialAction
+			) => {
+				if ( ! state.destination ) {
+					return state;
+				}
+				return {
+					...state,
+					destination: {
+						...state.destination,
+						address: {
+							...state.destination.address,
+							residential,
+						},
+					},
+				};
+			}
+		)
+		.on( STATE_RESET, () => ( {
+			...getDefaultState(),
+		} ) )
 		.bind< AddressActions >();
 
 	return addressReducer;

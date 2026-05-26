@@ -1,4 +1,4 @@
-<table border="0" cellpadding="0" cellspacing="0" width="100%" role="presentation" style="padding: 20px;">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" role="presentation" style="padding: 20px; font-family: Georgia, 'Times New Roman', Times, serif;">
     <tr>
         <td valign="top" class="greetings-content">
             <h1 style="margin: 0; font-size: 20px;"><?php esc_html_e( 'Hey There,', 'woocommerce-wholesale-prices-premium' ); ?> <img src="<?php echo esc_url( $hand_icon ); ?>" alt="Hand Icon" /></h1>

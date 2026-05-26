@@ -9,11 +9,11 @@
         {{ option.text }}
       </SelectOption>
     </Select>
-    <CheckboxGroup v-else-if="field.type === 'checkbox-group' && field.active"
+    <CheckboxGroup v-else-if="(field.type === 'checkbox-group' || (field.type === 'checkbox' && field.options?.length > 0)) && field.active"
       :value="field.value"
-      @update:value="$emit('update:value', $event)"
+      @update:value="field.type === 'checkbox' ? '' : $emit('update:value', $event)"
       v-bind="field.attributes">
-      <Checkbox v-for="option in field.options" :value="option.value" :key="option.key">{{ option.text }}</Checkbox>
+      <Checkbox v-for="option in field.options" :value="option.value" :key="option.key" @change="field.type === 'checkbox' ? $emit('update:value', [$event?.target?.value]) : ''">{{ option.text }}</Checkbox>
     </CheckboxGroup>
     <Checkbox v-else-if="field.type === 'checkbox' && field.active"
       :checked="convertedCheckboxValue"
@@ -41,7 +41,10 @@
       <Radio :name="field.name" v-for="option in field.options" :value="option.value" :key="option.key">{{ option.text }}</Radio>
     </RadioGroup>
     <div v-else-if="field.type === 'content' && field.active" v-html="field.content || field.placeholder" class="wwlc-content-field"></div>
-    <Input v-else-if="field.type === 'file' && field.active" type="file" v-bind="field.attributes" @change="handleFileUpload" />
+    <div v-else-if="field.type === 'file' && field.active">
+      <Input type="file" v-bind="field.attributes" @change="handleFileUpload" />
+      <p v-if="typeof field?.value === 'string' && field?.value?.length > 0"><b>{{ getTheFileLastName }}</b></p>
+    </div>
     <Input v-else-if="field.type === 'hidden'" type="hidden" :value="field.value" @update:value="$emit('update:value', $event)" />
     <Input v-else
       :value="field.value"
@@ -114,6 +117,11 @@ export default {
       if (this.field.value === "1" || this.field.value === "true") return true;
       if (this.field.value === "0" || this.field.value === "false") return false;
       return Boolean(this.field.value);
+    },
+    getTheFileLastName() {
+      let fileParts = this.field?.value?.split('/');
+      let lastName = fileParts[fileParts?.length - 1];
+      return 'Filename: '+lastName;
     }
   }
 }

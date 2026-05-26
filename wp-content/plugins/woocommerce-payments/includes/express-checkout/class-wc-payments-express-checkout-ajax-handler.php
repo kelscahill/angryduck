@@ -49,15 +49,6 @@ class WC_Payments_Express_Checkout_Ajax_Handler {
 			);
 		}
 
-		add_action(
-			'woocommerce_store_api_checkout_update_order_from_request',
-			[
-				$this,
-				'tokenized_cart_set_payment_method_type',
-			],
-			10,
-			2
-		);
 		add_filter( 'rest_pre_dispatch', [ $this, 'tokenized_cart_store_api_address_normalization' ], 10, 3 );
 		add_filter( 'woocommerce_get_country_locale', [ $this, 'modify_country_locale_for_express_checkout' ], 20 );
 	}
@@ -156,46 +147,6 @@ class WC_Payments_Express_Checkout_Ajax_Handler {
 	}
 
 	/**
-	 * Updates the checkout order based on the request, to set the Apple Pay/Google Pay payment method title.
-	 *
-	 * @param \WC_Order        $order The order to be updated.
-	 * @param \WP_REST_Request $request Store API request to update the order.
-	 */
-	public function tokenized_cart_set_payment_method_type( \WC_Order $order, \WP_REST_Request $request ) {
-		if ( ! isset( $request['payment_method'] ) || 'woocommerce_payments' !== $request['payment_method'] ) {
-			return;
-		}
-
-		if ( empty( $request['payment_data'] ) ) {
-			return;
-		}
-
-		$payment_data = [];
-		foreach ( $request['payment_data'] as $data ) {
-			$payment_data[ sanitize_key( $data['key'] ) ] = wc_clean( $data['value'] );
-		}
-
-		if ( empty( $payment_data['payment_request_type'] ) ) {
-			return;
-		}
-
-		$payment_request_type = wc_clean( wp_unslash( $payment_data['payment_request_type'] ) );
-
-		$payment_method_titles = [
-			'apple_pay'  => 'Apple Pay',
-			'google_pay' => 'Google Pay',
-		];
-
-		$suffix = apply_filters( 'wcpay_payment_request_payment_method_title_suffix', 'WooPayments' );
-		if ( ! empty( $suffix ) ) {
-			$suffix = " ($suffix)";
-		}
-
-		$payment_method_title = isset( $payment_method_titles[ $payment_request_type ] ) ? $payment_method_titles[ $payment_request_type ] : 'Payment Request';
-		$order->set_payment_method_title( $payment_method_title . $suffix );
-	}
-
-	/**
 	 * Google Pay/Apple Pay parameters for address data might need some massaging for some of the countries.
 	 * Ensuring that the Store API doesn't throw a `rest_invalid_param` error message for some of those scenarios.
 	 *
@@ -227,6 +178,7 @@ class WC_Payments_Express_Checkout_Ajax_Handler {
 		if ( isset( $request['shipping_address'] ) && is_array( $request['shipping_address'] ) ) {
 			$shipping_address = $request['shipping_address'];
 			$shipping_address = $this->transform_ece_address_state_data( $shipping_address );
+			$shipping_address = $this->transform_ece_address_lines_data( $shipping_address );
 			// on the "update customer" route, Google Pay/Apple Pay might provide redacted postcode data.
 			// we need to modify the zip code to ensure that shipping zone identification still works.
 			if ( $is_update_customer_route ) {
@@ -237,6 +189,7 @@ class WC_Payments_Express_Checkout_Ajax_Handler {
 		if ( isset( $request['billing_address'] ) && is_array( $request['billing_address'] ) ) {
 			$billing_address = $request['billing_address'];
 			$billing_address = $this->transform_ece_address_state_data( $billing_address );
+			$billing_address = $this->transform_ece_address_lines_data( $billing_address );
 			// on the "update customer" route, Google Pay/Apple Pay might provide redacted postcode data.
 			// we need to modify the zip code to ensure that shipping zone identification still works.
 			if ( $is_update_customer_route ) {
@@ -323,6 +276,41 @@ class WC_Payments_Express_Checkout_Ajax_Handler {
 		if ( ! empty( $state ) ) {
 			$address['state'] = $this->get_normalized_state( $state, $country );
 		}
+
+		return $address;
+	}
+
+	/**
+	 * Consolidates the address lines so `address_1` is always populated when any line is.
+	 *
+	 * Specifically fixes Amazon Pay on EU Stripe accounts, which can return an empty `line1` with
+	 * the street value in `line2` (e.g. `{ line1: "", line2: "Meininger Strasse 58" }`). WC
+	 * requires `address_1`, so without this the Store API rejects the order. Safe to run on all
+	 * addresses: if `address_1` is already set, this is a no-op.
+	 *
+	 * @param array $address The address to normalize.
+	 *
+	 * @return array
+	 */
+	private function transform_ece_address_lines_data( $address ) {
+		$lines = array_values(
+			array_filter(
+				[
+					trim( (string) ( $address['address_1'] ?? '' ) ),
+					trim( (string) ( $address['address_2'] ?? '' ) ),
+				],
+				function ( $line ) {
+					return '' !== $line;
+				}
+			)
+		);
+
+		if ( empty( $lines ) ) {
+			return $address;
+		}
+
+		$address['address_1'] = $lines[0];
+		$address['address_2'] = $lines[1] ?? '';
 
 		return $address;
 	}

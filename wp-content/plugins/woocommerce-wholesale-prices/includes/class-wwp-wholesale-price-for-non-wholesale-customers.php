@@ -120,11 +120,11 @@ class WWP_Wholesale_Prices_For_Non_Wholesale_Customers {
         /**
          * Verify nonce if its the same as we created, if not then we return
          */
-        if ( empty( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'wwp_nonce' ) ) {
+        if ( empty( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'wwp_nonce' ) ) {
             return;
         }
 
-        $product_id                 = $_POST['data']['product_id'];
+        $product_id                 = isset( $_POST['data']['product_id'] ) ? absint( $_POST['data']['product_id'] ) : 0; //phpcs:ignore WordPress.Security.NonceVerification.Missing
         $product_object             = wc_get_product( $product_id );
         $wholesale_roles            = $wc_wholesale_prices->wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
         $wholesale_price_title_text = trim( apply_filters( 'wwp_filter_wholesale_price_title_text', __( 'Wholesale Price:', 'woocommerce-wholesale-prices' ) ) );

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Automattic\WooCommerce\Internal\EmailEditor\WCTransactionalEmails;
 
-use Automattic\WooCommerce\Admin\Features\Features;
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 /**
  * Class WCTransactionalEmails
@@ -20,7 +20,9 @@ class WCTransactionalEmails {
 	 * @var array
 	 */
 	public static $core_transactional_emails = array(
+		'admin_payment_gateway_enabled',
 		'cancelled_order',
+		'customer_cancelled_order',
 		'customer_completed_order',
 		'customer_failed_order',
 		'customer_invoice',
@@ -29,7 +31,9 @@ class WCTransactionalEmails {
 		'customer_on_hold_order',
 		'customer_processing_order',
 		'customer_refunded_order',
+		'customer_partially_refunded_order',
 		'customer_reset_password',
+		'customer_review_request',
 		'failed_order',
 		'new_order',
 	);
@@ -60,17 +64,37 @@ class WCTransactionalEmails {
 	}
 
 	/**
+	 * Get the core transactional emails.
+	 *
+	 * @return array
+	 */
+	public static function get_core_transactional_emails() {
+		$emails = self::$core_transactional_emails;
+
+		if ( FeaturesUtil::feature_is_enabled( 'point_of_sale' ) ) {
+			$emails[] = 'customer_pos_completed_order';
+			$emails[] = 'customer_pos_refunded_order';
+		}
+
+		if ( FeaturesUtil::feature_is_enabled( 'fulfillments' ) ) {
+			$fulfillment_emails = array(
+				'customer_fulfillment_created',
+				'customer_fulfillment_updated',
+				'customer_fulfillment_deleted',
+			);
+			$emails             = array_merge( $emails, $fulfillment_emails );
+		}
+
+		return $emails;
+	}
+
+	/**
 	 * Get the Core WooCommerce transactional emails for the block editor.
 	 *
 	 * @return array
 	 */
 	public static function get_transactional_emails() {
-		$emails = self::$core_transactional_emails;
-
-		if ( Features::is_enabled( 'point-of-sale' ) ) {
-			$emails[] = 'customer_pos_completed_order';
-			$emails[] = 'customer_pos_refunded_order';
-		}
+		$emails = self::get_core_transactional_emails();
 
 		/**
 		 * Filter the transactional emails for the block editor.

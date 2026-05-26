@@ -134,7 +134,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Addon' ) ) {
         public function save_wwpp_addon_group_visibility_custom_fields( $data, $index ) {
             // phpcs:disable WordPress.Security.NonceVerification.Missing
             if ( isset( $_POST['wwpp-addon-group-role-visibility'][ $index ] ) ) {
-                $data['wwpp-addon-group-role-visibility'] = $_POST['wwpp-addon-group-role-visibility'][ $index ];
+                $data['wwpp-addon-group-role-visibility'] = array_map( 'sanitize_key', (array) wp_unslash( $_POST['wwpp-addon-group-role-visibility'][ $index ] ) );
             }
 
             return $data;
@@ -477,7 +477,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Addon' ) ) {
 
             if ( ! empty( $user_wholesale_role ) ) {
 
-                if ( ( strpos( $params['price_display_suffix'], '{price_including_tax}' ) !== false || strpos( $params['price_display_suffix'], '{price_excluding_tax}' ) !== false ) && ( strpos( $wholesale_price_suffix, '{price_including_tax}' ) !== false || strpos( $wholesale_price_suffix, '{price_excluding_tax}' ) !== false ) ) {
+                if ( ( str_contains( $params['price_display_suffix'], '{price_including_tax}' ) || str_contains( $params['price_display_suffix'], '{price_excluding_tax}' ) ) && ( str_contains( $wholesale_price_suffix, '{price_including_tax}' ) || str_contains( $wholesale_price_suffix, '{price_excluding_tax}' ) ) ) {
 
                     $params['price_display_suffix'] = '';
 

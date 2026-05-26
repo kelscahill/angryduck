@@ -6,17 +6,18 @@ import {
 	isCountryInEU,
 	isHSTariffNumberValid,
 	hasInvalidChar,
+	isUSPSDomesticMailShipment,
 	USPS_ITN_REQUIRED_DESTINATIONS,
 } from 'utils';
 import { getCurrentOrderItems } from 'utils/order';
-import { itnMatchingRegex } from './constants';
+import { itnMatchingRegex, MAX_ITEM_DESCRIPTION_LENGTH } from './constants';
 
 export const createLocalErrors = (
 	items: CustomsItem[]
 ): CustomsValidationInput[ 'errors' ] => ( {
 	items: Array( items.length )
 		.fill( 0 )
-		.map( () => ( {} as FormErrors< CustomsItem > ) ),
+		.map( () => ( {} ) as FormErrors< CustomsItem > ),
 } );
 
 /**
@@ -128,7 +129,7 @@ export const calculateValuesByTariffNumber = (
 ): Record< string, number > => {
 	return items.reduce(
 		( acc: Record< string, number >, { product_id, hsTariffNumber } ) => {
-			if ( hsTariffNumber && hsTariffNumber.length === 6 ) {
+			if ( hsTariffNumber?.length === 6 ) {
 				if ( ! acc[ hsTariffNumber ] ) {
 					acc[ hsTariffNumber ] = 0;
 				}
@@ -200,11 +201,10 @@ export const validateITN =
 				localErrors.itn = sprintf(
 					// translators: %s is the tariff number
 					__(
-						'International Transaction Number is required for shipping items valued over $2,500 per tariff number. ' +
-							'Products with tariff number %s add up to more than $2,500.',
+						'International Transaction Number is required for shipping items valued over $2,500 per tariff number. Products with tariff number %s add up to more than $2,500.',
 						'woocommerce-shipping'
 					),
-					classesAbove2500usd.values().next().value // Just pick the first code
+					classesAbove2500usd.values().next().value ?? ''
 				);
 			} else if ( USPS_ITN_REQUIRED_DESTINATIONS.includes( country ) ) {
 				localErrors.itn = sprintf(
@@ -233,7 +233,10 @@ export const validateITN =
 	};
 
 export const validateItems =
-	( { country }: Pick< Destination, 'country' > ) =>
+	( {
+		country,
+		originCountry,
+	}: Pick< Destination, 'country' > & { originCountry?: string } ) =>
 	( {
 		values: { items, ...rest },
 		errors,
@@ -250,6 +253,18 @@ export const validateItems =
 					localErrors.items[ index ].description = __(
 						'This field contains invalid characters.',
 						'woocommerce-shipping'
+					);
+				} else if (
+					isUSPSDomesticMailShipment( originCountry, country ) &&
+					description.length > MAX_ITEM_DESCRIPTION_LENGTH
+				) {
+					localErrors.items[ index ].description = sprintf(
+						// translators: %d is the maximum number of characters allowed in a customs item description.
+						__(
+							'Description must be %d characters or fewer.',
+							'woocommerce-shipping'
+						),
+						MAX_ITEM_DESCRIPTION_LENGTH
 					);
 				}
 

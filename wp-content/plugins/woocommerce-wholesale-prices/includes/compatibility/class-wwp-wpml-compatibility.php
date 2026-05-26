@@ -63,7 +63,7 @@ if ( ! class_exists( 'WWP_WPML_Compatibility' ) ) {
          * @param WC_Order      $order The current order object.
          * @return array
          */
-        public function order_items_updated( $items, $order ) {
+        public function order_items_updated( $items, $order ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 
             if ( isset( $_POST['action'] ) && in_array( // phpcs:ignore WordPress.Security.NonceVerification
                 $_POST['action'], // phpcs:ignore WordPress.Security.NonceVerification
@@ -105,21 +105,24 @@ if ( ! class_exists( 'WWP_WPML_Compatibility' ) ) {
         public function get_wholesale_price( $price, $product ) {
 
             $product_id = $product->get_id();
-            $order_id   = isset( $_POST['order_id'] ) ? $_POST['order_id'] : ''; // phpcs:ignore WordPress.Security.NonceVerification
+            $order_id   = isset( $_POST['order_id'] ) ? absint( $_POST['order_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification
             $products   = array();
 
             if ( isset( $_POST['items'] ) && ! empty( $_POST['items'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-                parse_str( $_POST['items'], $output ); // phpcs:ignore WordPress.Security.NonceVerification
-                foreach ( $output['order_item_id'] as $id ) {
-                    $variation_id = wc_get_order_item_meta( $id, '_variation_id', true );
-                    if ( ! empty( $variation_id ) ) {
-                        $products[ $variation_id ] = array(
-                            'item_id' => $id,
-                        );
-                    } else {
-                        $products[ wc_get_order_item_meta( $id, '_product_id', true ) ] = array(
-                            'item_id' => $id,
-                        );
+                parse_str( wp_unslash( $_POST['items'] ), $output ); // phpcs:ignore WordPress.Security.NonceVerification, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized below per parsed value.
+                if ( isset( $output['order_item_id'] ) && is_array( $output['order_item_id'] ) ) {
+                    $output['order_item_id'] = array_map( 'absint', $output['order_item_id'] );
+                    foreach ( $output['order_item_id'] as $id ) {
+                        $variation_id = wc_get_order_item_meta( $id, '_variation_id', true );
+                        if ( ! empty( $variation_id ) ) {
+                            $products[ $variation_id ] = array(
+                                'item_id' => $id,
+                            );
+                        } else {
+                            $products[ wc_get_order_item_meta( $id, '_product_id', true ) ] = array(
+                                'item_id' => $id,
+                            );
+                        }
                     }
                 }
             }

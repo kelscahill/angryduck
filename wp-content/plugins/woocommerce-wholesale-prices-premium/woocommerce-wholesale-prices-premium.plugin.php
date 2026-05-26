@@ -47,6 +47,7 @@ require_once WWPP_INCLUDES_PATH . 'class-wwpp-cache.php';
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-per-wholesale-user-settings.php';
 require_once WWPP_INCLUDES_PATH . 'blocks/class-woocommerce-blocks.php';
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-cart-discounts.php';
+require_once WWPP_INCLUDES_PATH . 'class-wwpp-analytics-reports.php';
 
 // Lifecycle Email.
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-lifecyle-email.php';
@@ -64,6 +65,9 @@ require_once WWPP_INCLUDES_PATH . 'plugin-integrations/woocommerce-multilingual/
 require_once WWPP_INCLUDES_PATH . 'plugin-integrations/wc-vendors/class-wwpp-wc-vendors.php';
 require_once WWPP_INCLUDES_PATH . 'plugin-integrations/wc-vendors/class-wwpp-wc-vendors-form-helper.php';
 require_once WWPP_INCLUDES_PATH . 'plugin-integrations/woocommerce-subscriptions/class-wwpp-wc-subscriptions.php';
+
+// WWPP Reports Factory.
+require_once WWPP_INCLUDES_PATH . 'api/class-wwpp-reports.php';
 
 // WWPP API Integrations.
 require_once WWPP_INCLUDES_PATH . 'api/class-wwpp-api.php';
@@ -119,7 +123,9 @@ class WooCommerceWholeSalePricesPremium {
     public $wwpp_per_wholesale_user_settings;
     public $wwpp_wc_blocks;
     public $wwpp_rest_api;
+    public $wwpp_reports_api_factory;
     public $wwpp_cart_discounts;
+    public $wwpp_reports;
 
     // Lifecycle Email.
     public $wwpp_lifecyle_email;
@@ -138,7 +144,7 @@ class WooCommerceWholeSalePricesPremium {
     public $wwpp_wc_subscriptions;
     // phpcs:enable
 
-    const VERSION = '2.0.4';
+    const VERSION = '2.0.9';
 
     /*
     |--------------------------------------------------------------------------
@@ -187,6 +193,7 @@ class WooCommerceWholeSalePricesPremium {
             array(
                 'WWPP_Wholesale_Roles' => $this->wwpp_wholesale_roles,
                 'WWPP_Tax'             => $this->wwpp_tax,
+                'WWPP_CURRENT_VERSION' => self::VERSION,
             )
         );
         $this->wwpp_bootstrap                                 = WWPP_Bootstrap::instance(
@@ -305,6 +312,11 @@ class WooCommerceWholeSalePricesPremium {
             )
         );
 
+        $this->wwpp_reports = WWPP_Reports::instance( array() );
+
+        // Reports Api Factory.
+        $this->wwpp_reports_api_factory = new WWPP_REPORTS_REST_API();
+
         // WWPP API.
         $this->wwpp_rest_api = WWPP_REST_API::instance( array() );
     }
@@ -378,6 +390,7 @@ class WooCommerceWholeSalePricesPremium {
         $this->wwpp_per_wholesale_user_settings->run();
         $this->wwpp_wc_blocks->run();
         $this->wwpp_cart_discounts->run();
+        $this->wwpp_reports->run();
 
         // Lifecycle Email.
         $this->wwpp_lifecyle_email->run();

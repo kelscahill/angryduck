@@ -284,8 +284,35 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Category_Discount_V1_Controller' ) ) {
                         $wholesale_discounts = array();
                     }
 
+                    // Filter to only update products that are not already set to have wholesale price.
+                    $products        = array();
+                    $products_in_api = apply_filters( 'wwpp_process_category_products_in_api', false, $request['category_id'] );
+                    if ( $products_in_api ) {
+                        $products = WWPP_WPDB_Helper::get_products_by_category( $request['category_id'] );
+                    }
+
                     foreach ( $parameters as $key => $discount ) {
                         $wholesale_discounts[ $key . '_wholesale_discount' ] = $discount;
+
+                        // Update products that are allowed to update wholesale price meta.
+                        if ( ! empty( $products ) ) {
+                            foreach ( $products as $p ) {
+                                // Get product object.
+                                $product = wc_get_product( $p->ID );
+
+                                if ( 'yes' !== $product->get_meta( $key . '_have_wholesale_price', true ) ) {
+
+                                    // Add have wholesale price meta.
+                                    $product->update_meta_data( $key . '_have_wholesale_price', 'yes' );
+
+                                    // Add additional meta to indicate that have wholesale price meta was set by the category.
+                                    $product->update_meta_data( $key . '_have_wholesale_price_set_by_product_cat', 'yes' );
+
+                                    // Save product.
+                                    $product->save();
+                                }
+                            }
+                        }
                     }
 
                     update_option( 'taxonomy_' . $request['category_id'], $wholesale_discounts, 'no' );

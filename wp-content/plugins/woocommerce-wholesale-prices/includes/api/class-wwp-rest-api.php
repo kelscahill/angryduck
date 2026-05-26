@@ -65,7 +65,7 @@ if ( ! class_exists( 'WWP_REST_API' ) ) {
          *
          * @param array $dependencies Array of instance objects of all dependencies of WWP_REST_API model.
          */
-        public function __construct( $dependencies = array() ) {
+        public function __construct( $dependencies = array() ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
             add_action( 'woocommerce_loaded', array( $this, 'load_wwp_api' ), 10 );
         }
 
@@ -92,9 +92,9 @@ if ( ! class_exists( 'WWP_REST_API' ) ) {
          * @param array $dependencies Array of instance objects of all dependencies of WWP_REST_API model.
          * @return WWP_REST_API
          */
-        public static function instance( $dependencies = array() ) {
+        public static function instance( $dependencies = array() ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
             if ( ! self::$_instance instanceof self ) {
-                self::$_instance = new self( $dependencies );
+                self::$_instance = new self();
             }
 
             return self::$_instance;
@@ -127,16 +127,15 @@ if ( ! class_exists( 'WWP_REST_API' ) ) {
          */
         public function authenticate_user( $rest_request ) {
             $rest_prefix = trailingslashit( rest_get_url_prefix() );
-            $request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+            $request_uri = esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
 
             // Authenticate if the request is using the wholesale/v1 endpoint.
-            if ( ( false !== strpos( $request_uri, $rest_prefix . 'wholesale/' ) ) ) {
+            if ( str_contains( $request_uri, $rest_prefix . 'wholesale/' ) ) {
                 return true;
             }
 
             return $rest_request;
         }
-
     }
 
 }

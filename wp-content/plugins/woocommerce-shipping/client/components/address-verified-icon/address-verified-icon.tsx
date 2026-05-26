@@ -6,6 +6,7 @@ import { check, info } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
 import './styles.scss';
 import { AddressTypes } from 'types';
+import { Badge } from 'components/wp';
 
 interface AddressVerifiedIconProps {
 	isVerified: boolean;
@@ -15,6 +16,7 @@ interface AddressVerifiedIconProps {
 	onClick?: MouseEventHandler;
 	message?: string;
 	addressType: AddressTypes;
+	nextDesign?: boolean;
 }
 
 export const AddressVerifiedIcon = ( {
@@ -25,6 +27,7 @@ export const AddressVerifiedIcon = ( {
 	onClick,
 	message = __( 'Address verified', 'woocommerce-shipping' ),
 	addressType,
+	nextDesign = false,
 }: AddressVerifiedIconProps ) => {
 	const isBusyVerifying = useSelect(
 		( select ) =>
@@ -36,15 +39,21 @@ export const AddressVerifiedIcon = ( {
 
 	if ( isVerified && ! isFormChanged && isFormValid && ! isBusyVerifying ) {
 		return (
-			<span className="verification">
-				<Icon icon={ check } size={ 16 } />
-				{ message }
-			</span>
+			! nextDesign && (
+				<span className="verification">
+					<Icon icon={ check } size={ 16 } />
+					{ message }
+				</span>
+			)
 		);
 	}
 
 	if ( isBusyVerifying ) {
-		return (
+		return nextDesign ? (
+			<Badge intent="info" hideIcon noEllipsis>
+				{ __( 'Validating…', 'woocommerce-shipping' ) }
+			</Badge>
+		) : (
 			<span className="verification in-progress">
 				<Icon icon={ check } size={ 16 } />
 				{ __( 'Verifying address…', 'woocommerce-shipping' ) }
@@ -52,7 +61,11 @@ export const AddressVerifiedIcon = ( {
 		);
 	}
 
-	return (
+	return nextDesign ? (
+		<Badge intent="warning" hideIcon noEllipsis>
+			{ errorMessage }
+		</Badge>
+	) : (
 		<span className="verification not-verified">
 			{ /* If onclick is provided, it will be a button */ }
 			{ onClick ? (

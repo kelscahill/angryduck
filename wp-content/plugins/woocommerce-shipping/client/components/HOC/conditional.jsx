@@ -24,7 +24,7 @@ export const Conditional = ( condition, A, B ) => ( componentProps ) => {
 			? condition( componentProps )
 			: condition;
 	if ( render ) {
-		return <A { ...componentProps } { ...( props || {} ) } />;
+		return <A { ...componentProps } { ...( props ?? {} ) } />;
 	}
-	return <B { ...componentProps } { ...( props || {} ) } />;
+	return <B { ...componentProps } { ...( props ?? {} ) } />;
 };

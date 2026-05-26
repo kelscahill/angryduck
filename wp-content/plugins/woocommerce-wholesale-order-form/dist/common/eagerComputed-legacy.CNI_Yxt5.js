@@ -1,0 +1,1 @@
+System.register(["./hooks-legacy.BRKQHcMP.js"],function(e,t){"use strict";var s,n;return{setters:[e=>{s=e.a2,n=e.s}],execute:function(){e("e",function(e){const t=n();return s(()=>{t.value=e()},{flush:"sync"}),t})}}});

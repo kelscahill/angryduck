@@ -135,20 +135,25 @@ if ( ! class_exists( 'WWP_WWS_License_Manager' ) ) {
         }
 
         /**
-         * Add WWP license header markup.
+         * Render a license settings nav tab link.
          *
-         * @since 2.1.3
-         * @access public
+         * Outputs the anchor tag for a tab in the License Settings nav tab strip,
+         * determining the active state based on the current $_GET['tab'] value
+         * with a fallback to self::DEFAULT_PLUGIN when no tab parameter is set.
+         *
+         * @since 2.2.8
+         * @access private
+         *
+         * @param string $key   Tab slug (e.g. 'wwpp', 'wwof', 'wwlc', 'wpay', 'wwq').
+         * @param string $label Translated, human-readable tab label.
+         *
+         * @return void
          */
-        public function wwpp_license_tab() {
-            ob_start();
-
-            $key = 'wwpp';
-
+        private function render_license_tab( $key, $label ) {
             // phpcs:disable WordPress.Security.NonceVerification.Recommended
             if ( isset( $_GET['tab'] ) ) {
-                $tab = $_GET['tab'];
-            } elseif ( ! isset( $_GET['tab'] ) && self::DEFAULT_PLUGIN === $key ) {
+                $tab = sanitize_key( wp_unslash( $_GET['tab'] ) );
+            } elseif ( self::DEFAULT_PLUGIN === $key ) {
                 $tab = self::DEFAULT_PLUGIN;
             } else {
                 $tab = '';
@@ -156,16 +161,31 @@ if ( ! class_exists( 'WWP_WWS_License_Manager' ) ) {
             // phpcs:enable WordPress.Security.NonceVerification.Recommended
 
             if ( is_multisite() ) {
-                $wwp_license_settings_url = get_site_url() . '/wp-admin/network/admin.php?page=wws-ms-license-settings&tab=wwpp';
+                $settings_url = network_admin_url( 'admin.php?page=wws-ms-license-settings&tab=' . $key );
             } else {
-                $wwp_license_settings_url = get_site_url() . '/wp-admin/admin.php?page=wws-license-settings&tab=wwpp';
+                $settings_url = admin_url( 'admin.php?page=wws-license-settings&tab=' . $key );
             }
-            ?>
 
-			<a href="<?php echo wp_kses_post( $wwp_license_settings_url ); ?>" class="nav-tab <?php echo ( 'wwpp' === $tab ) ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Wholesale Prices', 'woocommerce-wholesale-prices' ); ?></a>
+            $active_class = ( $key === $tab ) ? 'nav-tab-active' : '';
 
-			<?php
-            echo wp_kses_post( ob_get_clean() );
+            printf(
+                '<a href="%1$s" class="nav-tab %2$s">%3$s</a>',
+                esc_url( $settings_url ),
+                esc_attr( $active_class ),
+                esc_html( $label )
+            );
+        }
+
+        /**
+         * Add WWP license header markup.
+         *
+         * @since 2.1.3
+         * @access public
+         *
+         * @return void
+         */
+        public function wwpp_license_tab() {
+            $this->render_license_tab( 'wwpp', __( 'Wholesale Prices', 'woocommerce-wholesale-prices' ) );
         }
 
         /**
@@ -173,67 +193,24 @@ if ( ! class_exists( 'WWP_WWS_License_Manager' ) ) {
          *
          * @since 2.1.3
          * @access public
+         *
+         * @return void
          */
         public function wwof_license_tab() {
-            ob_start();
-
-            $key = 'wwof';
-
-            // phpcs:disable WordPress.Security.NonceVerification.Recommended
-            if ( isset( $_GET['tab'] ) ) {
-                $tab = $_GET['tab'];
-            } elseif ( ! isset( $_GET['tab'] ) && self::DEFAULT_PLUGIN === $key ) {
-                $tab = self::DEFAULT_PLUGIN;
-            } else {
-                $tab = '';
-            }
-            // phpcs:enable WordPress.Security.NonceVerification.Recommended
-
-            if ( is_multisite() ) {
-                $wwof_license_settings_url = get_site_url() . '/wp-admin/network/admin.php?page=wws-ms-license-settings&tab=wwof';
-            } else {
-                $wwof_license_settings_url = get_site_url() . '/wp-admin/admin.php?page=wws-license-settings&tab=wwof';
-            }
-            ?>
-
-            <a href="<?php echo wp_kses_post( $wwof_license_settings_url ); ?>" class="nav-tab <?php echo ( 'wwof' === $tab ) ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Wholesale Ordering', 'woocommerce-wholesale-prices' ); ?></a>
-
-			<?php
-            echo wp_kses_post( ob_get_clean() );
+            $this->render_license_tab( 'wwof', __( 'Wholesale Ordering', 'woocommerce-wholesale-prices' ) );
         }
 
         /**
          * Add WWLC license header markup.
          *
          * @since 2.1.3
+         * @since 2.2.8 Corrected tab label to "Wholesale Lead Capture" and fixed text domain to "woocommerce-wholesale-prices".
          * @access public
+         *
+         * @return void
          */
         public function wwlc_license_tab() {
-            ob_start();
-
-            $key = 'wwlc';
-
-            // phpcs:disable WordPress.Security.NonceVerification.Recommended
-            if ( isset( $_GET['tab'] ) ) {
-                $tab = $_GET['tab'];
-            } elseif ( ! isset( $_GET['tab'] ) && self::DEFAULT_PLUGIN === $key ) {
-                $tab = self::DEFAULT_PLUGIN;
-            } else {
-                $tab = '';
-            }
-            // phpcs:enable WordPress.Security.NonceVerification.Recommended
-
-            if ( is_multisite() ) {
-                $wwlc_license_settings_url = get_site_url() . '/wp-admin/network/admin.php?page=wws-ms-license-settings&tab=wwlc';
-            } else {
-                $wwlc_license_settings_url = get_site_url() . '/wp-admin/admin.php?page=wws-license-settings&tab=wwlc';
-            }
-            ?>
-
-            <a href="<?php echo wp_kses_post( $wwlc_license_settings_url ); ?>" class="nav-tab <?php echo ( 'wwlc' === $tab ) ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Wholesale Lead', 'woocommerce-wholesale-lead-capture' ); ?></a>
-
-			<?php
-            echo wp_kses_post( ob_get_clean() );
+            $this->render_license_tab( 'wwlc', __( 'Wholesale Lead Capture', 'woocommerce-wholesale-prices' ) );
         }
 
         /**
@@ -279,12 +256,79 @@ if ( ! class_exists( 'WWP_WWS_License_Manager' ) ) {
         }
 
         /**
+         * Add WPAY license header markup.
+         *
+         * Renders the "Wholesale Payments" tab link in the License Settings nav tab strip.
+         *
+         * @since 2.2.8
+         * @access public
+         *
+         * @return void
+         */
+        public function wpay_license_tab() {
+            $this->render_license_tab( 'wpay', __( 'Wholesale Payments', 'woocommerce-wholesale-prices' ) );
+        }
+
+        /**
+         * Add WPAY license upsell content markup.
+         *
+         * Loads the upsell view shown when the Wholesale Payments plugin is not active.
+         *
+         * @since 2.2.8
+         * @access public
+         *
+         * @return void
+         */
+        public function wpay_license_content() {
+            ob_start();
+
+            require_once WWP_PLUGIN_PATH . 'views/wws-license-settings/view-wpay-license-upsell-content.php';
+
+            echo wp_kses_post( ob_get_clean() );
+        }
+
+        /**
+         * Add WWQ license header markup.
+         *
+         * Renders the "Wholesale Quotes" tab link in the License Settings nav tab strip.
+         *
+         * @since 2.2.8
+         * @access public
+         *
+         * @return void
+         */
+        public function wwq_license_tab() {
+            $this->render_license_tab( 'wwq', __( 'Wholesale Quotes', 'woocommerce-wholesale-prices' ) );
+        }
+
+        /**
+         * Add WWQ license upsell content markup.
+         *
+         * Loads the upsell view shown when the Wholesale Quotes plugin is not active.
+         *
+         * @since 2.2.8
+         * @access public
+         *
+         * @return void
+         */
+        public function wwq_license_content() {
+            ob_start();
+
+            require_once WWP_PLUGIN_PATH . 'views/wws-license-settings/view-wwq-license-upsell-content.php';
+
+            echo wp_kses_post( ob_get_clean() );
+        }
+
+        /**
          * Inserts License and Tab Contents if Premium Plugins are not active
          *
          * @since 2.1.3
          * @since 2.1.4 Bug fix #229
+         * @since 2.2.8 Register upsell tabs for Wholesale Payments (WPAY) and Wholesale Quotes (WWQ) when their plugins are not active.
          *
          * @access public
+         *
+         * @return void
          */
         public function license_tab_and_contents() {
             // WWPP ---------------------------------------------------------------------------------------------------.
@@ -360,6 +404,24 @@ if ( ! class_exists( 'WWP_WWS_License_Manager' ) ) {
                     add_action( 'wws_action_license_settings_wwlc', array( $this, 'wwlc_license_content' ) );
 
                 }
+            }
+
+            // WPAY ---------------------------------------------------------------------------------------------------.
+
+            if ( ! WWP_Helper_Functions::is_wpay_active() ) {
+
+                add_action( 'wws_action_license_settings_tab', array( $this, 'wpay_license_tab' ) );
+                add_action( 'wws_action_license_settings_wpay', array( $this, 'wpay_license_content' ) );
+
+            }
+
+            // WWQ ----------------------------------------------------------------------------------------------------.
+
+            if ( ! WWP_Helper_Functions::is_wwq_active() ) {
+
+                add_action( 'wws_action_license_settings_tab', array( $this, 'wwq_license_tab' ) );
+                add_action( 'wws_action_license_settings_wwq', array( $this, 'wwq_license_content' ) );
+
             }
 
             do_action( 'wwp_license_tab_and_contents', $this );

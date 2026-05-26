@@ -8,7 +8,7 @@ import {
 	useRef,
 	useState,
 } from '@wordpress/element';
-import { Link } from '@woocommerce/components';
+import { Link } from 'components/wc';
 import { chevronDown, Icon } from '@wordpress/icons';
 import { useSelect } from '@wordpress/data';
 import {
@@ -145,10 +145,7 @@ export const ShipFromSelect = ( { disabled }: ShipFromSelectProps ) => {
 					onRequestClose={ () => openAddressForEdit( false ) }
 					focusOnMount
 					shouldCloseOnClickOutside={ false }
-					title={ __(
-						'Edit origin address',
-						'woocommerce-shipping'
-					) }
+					title={ __( 'Edit address', 'woocommerce-shipping' ) }
 				>
 					<AddressStep
 						type={ 'origin' }

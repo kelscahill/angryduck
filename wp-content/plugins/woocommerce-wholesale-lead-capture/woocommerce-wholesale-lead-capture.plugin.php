@@ -69,7 +69,7 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
         public $_wwlc_invisible_recaptcha;
         // phpcs:enable
 
-        const VERSION = '2.0.1';
+        const VERSION = '2.0.5';
 
         /*
         |--------------------------------------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
         public function __construct() {
             $this->_wwlc_license_manager = WWLC_WWS_License_Manager::instance(
                 array(
-					'WWLC_Version' => self::VERSION,
+                    'WWLC_Version' => self::VERSION,
                 )
             );
             $this->_wwlc_update_manager  = WWLC_WWS_Update_Manager::instance();
@@ -94,8 +94,8 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
 
             $this->_wwlc_scripts = WWLC_Scripts::instance(
                 array(
-					'WWLC_Forms'   => $this->_wwlc_forms,
-					'WWLC_Version' => self::VERSION,
+                    'WWLC_Forms'   => $this->_wwlc_forms,
+                    'WWLC_Version' => self::VERSION,
                 )
             );
 
@@ -103,7 +103,7 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
 
             $this->_wwlc_emails = WWLC_Emails::instance(
                 array(
-					'WWLC_User_Account' => $this->_wwlc_user_account,
+                    'WWLC_User_Account' => $this->_wwlc_user_account,
                 )
             );
 
@@ -111,32 +111,32 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
 
             $this->_wwlc_bootstrap = WWLC_Bootstrap::instance(
                 array(
-					'WWLC_Forms'               => $this->_wwlc_forms,
+                    'WWLC_Forms'               => $this->_wwlc_forms,
                     'WWLC_WWS_License_Manager' => $this->_wwlc_license_manager,
-					'WWLC_CURRENT_VERSION'     => self::VERSION,
+                    'WWLC_CURRENT_VERSION'     => self::VERSION,
                 )
             );
 
             $this->_wwlc_user_custom_fields = WWLC_User_Custom_Fields::instance(
                 array(
-					'WWLC_User_Account' => $this->_wwlc_user_account,
-					'WWLC_Emails'       => $this->_wwlc_emails,
+                    'WWLC_User_Account' => $this->_wwlc_user_account,
+                    'WWLC_Emails'       => $this->_wwlc_emails,
                 )
             );
 
             $this->_wwlc_shortcode = WWLC_Shortcode::instance(
                 array(
-					'WWLC_Forms' => $this->_wwlc_forms,
+                    'WWLC_Forms' => $this->_wwlc_forms,
                 )
             );
 
             $this->_wwlc_ajax = WWLC_AJAX::instance(
                 array(
-					'WWLC_Bootstrap'                       => $this->_wwlc_bootstrap,
-					'WWLC_User_Account'                    => $this->_wwlc_user_account,
-					'WWLC_Emails'                          => $this->_wwlc_emails,
-					'WWLC_Forms'                           => $this->_wwlc_forms,
-					'WWLC_Registration_Form_Custom_Fields' => $this->_wwlc_registration_form_custom_fields,
+                    'WWLC_Bootstrap'                       => $this->_wwlc_bootstrap,
+                    'WWLC_User_Account'                    => $this->_wwlc_user_account,
+                    'WWLC_Emails'                          => $this->_wwlc_emails,
+                    'WWLC_Forms'                           => $this->_wwlc_forms,
+                    'WWLC_Registration_Form_Custom_Fields' => $this->_wwlc_registration_form_custom_fields,
                 )
             );
 
@@ -145,7 +145,7 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
 
             $this->_wwlc_upgrade_account = WWLC_Upgrade_Account::instance(
                 array(
-					'WWLC_User_Account' => $this->_wwlc_user_account,
+                    'WWLC_User_Account' => $this->_wwlc_user_account,
                 )
             );
 
@@ -163,7 +163,7 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
 
             $this->_wwlc_rest_api = WWLC_REST_API::instance(
                 array(
-					'WWLC_User_Account'       => $this->_wwlc_user_account,
+                    'WWLC_User_Account'       => $this->_wwlc_user_account,
                     'WWLC_Emails'             => $this->_wwlc_emails,
                     'WWLC_User_Custom_Fields' => $this->_wwlc_user_custom_fields,
                 )
@@ -171,7 +171,7 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
 
             $this->_wwlc_roles_migrator = WWLC_Roles_Migrator::instance(
                 array(
-					'WWLC_Version' => self::VERSION,
+                    'WWLC_Version' => self::VERSION,
                 )
             );
         }
@@ -197,8 +197,9 @@ if ( ! class_exists( 'WooCommerce_Wholesale_Lead_Capture' ) ) {
         /**
          * Initialize plugin settings.
          *
-         * @since 1.0.0
          * @param array $settings Array of settings.
+         *
+         * @since 1.0.0
          */
         public function initialize_plugin_settings( $settings ) {
 

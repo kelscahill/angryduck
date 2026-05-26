@@ -55,7 +55,7 @@ const Item = withBoundary(
 							<dt className="item-variation">
 								{ item.variation
 									.map( ( { value } ) => value )
-									.join( ', ' ) || '-' }
+									.join( ', ' ) ?? '-' }
 							</dt>
 						) }
 						<dt className="item-dimensions">

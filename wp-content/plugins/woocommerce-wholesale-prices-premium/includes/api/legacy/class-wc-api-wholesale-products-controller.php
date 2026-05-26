@@ -150,6 +150,7 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
          * @param string $wholesale_role The wholesale role.
          *
          * @since 1.18
+         * @since 2.0.9 Harden against SQL injection by passing meta keys as $wpdb->prepare() placeholders and whitelisting the wholesale_role against registered roles.
          * @access public
          * @return array
          */
@@ -162,20 +163,21 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
             $have_wholesale_price_set_via_category     = array();
             $wholesale_role                            = sanitize_text_field( $wholesale_role );
 
+            // Validate wholesale_role against registered roles to prevent injection via unregistered role keys.
+            if ( ! empty( $wholesale_role ) && ! isset( $this->registered_wholesale_roles[ $wholesale_role ] ) ) {
+                return array();
+            }
+
             // Used to check if variable has wholesale variations.
             // OR wholesale discount set via the category.
             // Also this prevents fetching non-existing wholesale roles in case it was removed but the meta still exist in the product.
             $wholesale_roles_list = ! empty( $wholesale_role ) ? array( $wholesale_role => 1 ) : $this->registered_wholesale_roles;
 
             foreach ( $wholesale_roles_list as $role => $data ) {
-                array_push( $have_wholesale_price_meta_list, "'" . $role . "_have_wholesale_price'" );
-                array_push( $variations_with_wholesale_price_meta_list, "'" . $role . "_variations_with_wholesale_price'" );
-                array_push( $have_wholesale_price_set_via_category, "'" . $role . "_have_wholesale_price_set_by_product_cat'" );
+                $have_wholesale_price_meta_list[]            = $role . '_have_wholesale_price';
+                $variations_with_wholesale_price_meta_list[] = $role . '_variations_with_wholesale_price';
+                $have_wholesale_price_set_via_category[]     = $role . '_have_wholesale_price_set_by_product_cat';
             }
-
-            $have_wholesale_price_meta_list            = "'" . implode( ',', $have_wholesale_price_meta_list ) . "'";
-            $variations_with_wholesale_price_meta_list = "'" . implode( ',', $variations_with_wholesale_price_meta_list ) . "'";
-            $have_wholesale_price_set_via_category     = "'" . implode( ',', $have_wholesale_price_set_via_category ) . "'";
 
             $wholesale_products = array();
 
@@ -186,51 +188,61 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
                 $post_status = "= 'publish'";
             }
 
-            // phpcs:disable.
+            $hwp_placeholders = implode( ',', array_fill( 0, count( $have_wholesale_price_meta_list ), '%s' ) );
+            $vwp_placeholders = implode( ',', array_fill( 0, count( $variations_with_wholesale_price_meta_list ), '%s' ) );
+            $cat_placeholders = implode( ',', array_fill( 0, count( $have_wholesale_price_set_via_category ), '%s' ) );
+            $like_param       = '%' . $wpdb->esc_like( $wholesale_role . '_wholesale_price.' ) . '%';
+
+            // Build prepare args: hwp meta keys, LIKE param, vwp meta keys (x2), cat meta keys.
+            $prepare_args = array_merge(
+                $have_wholesale_price_meta_list,
+                array( $like_param ),
+                $variations_with_wholesale_price_meta_list,
+                $variations_with_wholesale_price_meta_list,
+                $have_wholesale_price_set_via_category
+            );
+
+            // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.NotPrepared
             $results = $wpdb->get_results(
                 $wpdb->prepare(
-                    "SELECT 
-                        DISTINCT p.ID 
-                     FROM 
-                        $wpdb->posts p 
-                        INNER JOIN $wpdb->postmeta pm1 ON (p.ID = pm1.post_id) 
-                        INNER JOIN $wpdb->postmeta pm2 ON (p.ID = pm2.post_id) 
-                     WHERE 
-                        p.post_status " . $post_status . " 
-                        AND p.post_type = 'product' 
+                    "SELECT
+                        DISTINCT p.ID
+                     FROM
+                        $wpdb->posts p
+                        INNER JOIN $wpdb->postmeta pm1 ON (p.ID = pm1.post_id)
+                        INNER JOIN $wpdb->postmeta pm2 ON (p.ID = pm2.post_id)
+                     WHERE
+                        p.post_status " . $post_status . "
+                        AND p.post_type = 'product'
                         AND (
                             (
-                                pm1.meta_key IN ( " . implode( ',', array_fill( 0, count( $have_wholesale_price_meta_list ), '%d' ) ) . " ) 
+                                pm1.meta_key IN ( $hwp_placeholders )
                                 AND pm1.meta_value = 'yes'
-                            ) 
+                            )
                             AND (
                                     (
                                         pm2.meta_key LIKE %s
                                         AND CAST(pm2.meta_value AS SIGNED) > 0
-                                    ) 
+                                    )
                                     OR (
-                                        pm2.meta_key IN ( " . implode( ',', array_fill( 0, count( $variations_with_wholesale_price_meta_list ), '%d' ) ) . " ) 
+                                        pm2.meta_key IN ( $vwp_placeholders )
                                         AND pm2.meta_value = 'yes'
-                                    ) 
+                                    )
                                     OR (
-                                        pm2.meta_key IN ( " . implode( ',', array_fill( 0, count( $variations_with_wholesale_price_meta_list ), '%d' ) ) . " ) 
+                                        pm2.meta_key IN ( $vwp_placeholders )
                                         AND CAST(pm2.meta_value AS SIGNED) > 0
-                                    ) 
+                                    )
                                     OR (
-                                        pm2.meta_key IN ( " . implode( ',', array_fill( 0, count( $have_wholesale_price_set_via_category ), '%d' ) ) . " ) 
+                                        pm2.meta_key IN ( $cat_placeholders )
                                         AND pm2.meta_value = 'yes'
                                     )
                             )
                         )",
-                    $have_wholesale_price_meta_list,
-                    '%' . $wpdb->esc_like( $wholesale_role . '_wholesale_price.' ) . '%',
-                    $variations_with_wholesale_price_meta_list,
-                    $variations_with_wholesale_price_meta_list,
-                    $have_wholesale_price_set_via_category,
+                    $prepare_args
                 ),
                 ARRAY_A
             );
-            // phpcs:enable.
+            // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.NotPrepared
 
             if ( $results ) {
 
@@ -641,10 +653,10 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
 
                     if ( in_array( $data->key, $meta_to_remove, true ) ) {
                         unset( $meta_data[ $key ] );
-                    } elseif ( strpos( $data->key, '_wholesale_price' ) !== false ||
-                        strpos( $data->key, '_have_wholesale_price' ) !== false ||
-                        strpos( $data->key, '_wholesale_minimum_order_quantity' ) !== false ||
-                        strpos( $data->key, '_wholesale_order_quantity_step' ) !== false ) {
+                    } elseif ( str_contains( $data->key, '_wholesale_price' ) ||
+                        str_contains( $data->key, '_have_wholesale_price' ) ||
+                        str_contains( $data->key, '_wholesale_minimum_order_quantity' ) ||
+                        str_contains( $data->key, '_wholesale_order_quantity_step' ) ) {
                         unset( $meta_data[ $key ] );
                     }
                 }
@@ -672,10 +684,8 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
                 return false;
             }
 
-            $route = explode( '/', $request->get_route() );
-
             // Check if wholesale endpoint.
-            return strpos( $request->get_route(), 'wc/v3/wholesale' ) !== false ? true : false;
+            return str_contains( $request->get_route(), 'wc/v3/wholesale' );
         }
 
         /**

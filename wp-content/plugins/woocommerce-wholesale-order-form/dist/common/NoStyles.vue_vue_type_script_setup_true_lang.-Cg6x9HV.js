@@ -1,0 +1,1 @@
+import{d as o,f as s,o as e,O as a,N as l,u as t}from"./hooks.C8Kwl4hr.js";const m=o({__name:"NoStyles",setup:o=>(o,m)=>(e(),s("p",null,[a("em",null,l(t(wp.i18n.__)("No available style settings.","woocommerce-wholesale-order-form")),1)]))});export{m as _};

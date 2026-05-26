@@ -10,7 +10,7 @@ export interface OrderItem {
 			description: string;
 			hs_tariff_number: string;
 			origin_country: string;
-		}
+		};
 	};
 	tax_class: string;
 	image: string;

@@ -123,7 +123,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             'process'            => array(
                 'methods'             => WP_REST_Server::EDITABLE,
                 'callback'            => array( $this, 'process_leads' ),
-                'permission_callback' => array( $this, 'create_item_permissions_check' ),
+                'permission_callback' => array( $this, 'update_item_permissions_check' ),
                 'args'                => array(
                     'leads'  => array(),
                     'action' => array(
@@ -211,10 +211,10 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             ),
             'status'  => array(
                 'sanitize_callback' => 'sanitize_text_field',
-                'default'           => '',
+                'default'           => 'all',
             ),
             'roles'   => array(
-                'default'           => '',
+                'default'           => 'all',
                 'sanitize_callback' => 'sanitize_text_field',
             ),
         );
@@ -263,8 +263,8 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
                 $args['role__in'] = array( WWLC_REJECTED_ROLE );
                 $total_count      = $this->wwlc_user_account->count_users_by_role( WWLC_REJECTED_ROLE );
             } elseif ( $roles && 'all' !== $roles ) {
-                $args['role__in'] = explode( ',', $roles );
-                $total_count      = $this->wwlc_user_account->count_users_by_role( $roles );
+                $args['role__in'] = $this->sanitize_roles_param( $roles, $wholesale_roles, false );
+                $total_count      = ! empty( $args['role__in'] ) ? $this->wwlc_user_account->count_users_by_role( $args['role__in'] ) : 0;
             }
         } else {
             $args['role__in'] = $this->default_roles;
@@ -346,8 +346,8 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
 
             // If search has multiple terms, add name combination searches.
             if ( count( $search_parts ) > 1 ) {
-                $first_name_search = esc_attr( $search_parts[0] );
-                $last_name_search  = esc_attr( $search_parts[1] );
+                $first_name_search = sanitize_text_field( $search_parts[0] );
+                $last_name_search  = sanitize_text_field( $search_parts[1] );
 
                 $meta_query[] = array(
                     'relation' => 'AND',
@@ -380,7 +380,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
                 );
             } else {
                 // Single term searches - use % wildcards for partial matching.
-                $search = esc_attr( $search );
+                $search = sanitize_text_field( $search );
 
                 $meta_query[] = array(
                     'relation' => 'OR',
@@ -463,7 +463,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             if ( 'approved' === $status ) {
                 $requested_roles  = explode( ',', $roles );
                 $filtered_roles   = array_intersect( $wholesale_roles, $requested_roles );
-                $args['role__in'] = ! empty( $filtered_roles ) ? $filtered_roles : $requested_roles;
+                $args['role__in'] = ! empty( $filtered_roles ) ? $filtered_roles : $wholesale_roles;
             } elseif ( 'pending' === $status ) {
                 // For other statuses (pending/rejected), we can't combine with role filtering
                 // as these are specific roles themselves.
@@ -472,7 +472,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
                 $args['role__in'] = array( WWLC_REJECTED_ROLE );
             } elseif ( ! empty( $roles ) && 'all' !== $roles ) {
                 // Handle role-specific filter when no specific status is selected or status is 'all'.
-                $args['role__in'] = explode( ',', $roles );
+                $args['role__in'] = $this->sanitize_roles_param( $roles, $wholesale_roles );
             } else {
                 // Default case - use default roles (always wholesale-related).
                 $args['role__in'] = $this->default_roles;
@@ -486,7 +486,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             $args['role__in'] = array( WWLC_REJECTED_ROLE );
         } elseif ( ! empty( $roles ) && 'all' !== $roles ) {
             // Handle role-specific filter when no specific status is selected or status is 'all'.
-            $args['role__in'] = explode( ',', $roles );
+            $args['role__in'] = $this->sanitize_roles_param( $roles, $wholesale_roles );
         } else {
             // Default case - use default roles (always wholesale-related).
             $args['role__in'] = $this->default_roles;
@@ -539,6 +539,17 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             );
         }
 
+        if ( ! $this->is_wholesale_lead( $user_id ) ) {
+            return $this->rest_response(
+                array(
+                    'error'   => true,
+                    'message' => __( 'User is not a wholesale lead.', 'woocommerce-wholesale-lead-capture' ),
+                ),
+                $request,
+                403
+            );
+        }
+
         $lead = $this->get_lead( $user_id );
 
         if ( ! $lead ) {
@@ -579,6 +590,9 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             $failed_leads  = array();
 
             foreach ( $leads_data as $user_data ) {
+                // Sanitize all user data before processing.
+                $user_data = wwlc_sanitize_user_data( $user_data, 'api' );
+
                 // Process meta_data before creating the user.
                 if ( isset( $user_data['meta_data'] ) && is_array( $user_data['meta_data'] ) ) {
                     $meta_data = $user_data['meta_data'];
@@ -625,10 +639,15 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
                     $user_id = $response['user_id'];
 
                     // Add any custom meta data after user creation.
+                    // Keys are already filtered by wwlc_sanitize_user_data() blocked list.
                     if ( isset( $meta_data ) && is_array( $meta_data ) ) {
                         foreach ( $meta_data as $meta ) {
                             if ( isset( $meta['key'] ) && isset( $meta['value'] ) ) {
-                                update_user_meta( $user_id, $meta['key'], $meta['value'] );
+                                $meta_key   = sanitize_text_field( $meta['key'] );
+                                $meta_value = is_array( $meta['value'] )
+                                    ? array_map( 'sanitize_text_field', $meta['value'] )
+                                    : sanitize_text_field( $meta['value'] );
+                                update_user_meta( $user_id, $meta_key, $meta_value );
                             }
                         }
                     }
@@ -661,7 +680,8 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             );
         }
 
-        $user_data = $data;
+        // Sanitize all user data for single lead creation.
+        $user_data = wwlc_sanitize_user_data( $data, 'api' );
 
         $required_fields = array( 'user_email', 'wwlc_username' );
         if ( ! array_intersect_key( $user_data, array_flip( $required_fields ) ) ) {
@@ -727,7 +747,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
                     __( 'Failed to create a lead: %s', 'woocommerce-wholesale-lead-capture' ),
                     $response['error_message']
                 ),
-                'data'    => $response['error_obj'],
+                'data'    => $response['error_obj'] ?? null,
             ),
             $request,
             400
@@ -737,14 +757,14 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
     /**
      * Update a single lead in the database
      *
-     * @version 2.0.0
+     * @version 2.0.4.1
      * @since   2.0.0
      *
      * @param WP_REST_Request $request The request object.
      * @return WP_REST_Response
      */
     public function update_item( $request ) {
-        $user_id = $request->get_param( 'user_id' );
+        $user_id = (int) $request->get_param( 'user_id' );
 
         $data = $request->get_json_params();
 
@@ -759,29 +779,110 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             );
         }
 
-        $userdata = array(
-            'ID'            => $user_id,
-            'user_email'    => $data['wwlc_email'],
-            'user_nicename' => "{$data['first_name']} {$data['last_name']}",
-            'role'          => $data['role'],
-            'user_url'      => $data['user_url'],
-        );
-
-        if ( isset( $data['role'] ) ) {
-            $userdata['role'] = $data['role'];
-        }
-
-        $user = wp_update_user( $userdata );
-
-        if ( is_wp_error( $user ) ) {
+        if ( ! $this->is_wholesale_lead( $user_id ) ) {
             return $this->rest_response(
                 array(
                     'error'   => true,
-                    'message' => sprintf(
-                        // translators: %s is the error message.
-                        __( 'Failed to update user: %s', 'woocommerce-wholesale-lead-capture' ),
-                        $user->get_error_message()
-                    ),
+                    'message' => __( 'User is not a wholesale lead.', 'woocommerce-wholesale-lead-capture' ),
+                ),
+                $request,
+                403
+            );
+        }
+
+        // Fetch the stored email so we can skip the user_email field in $userdata when it
+        // has not actually changed.  WordPress fires a built-in "Email Changed" notification
+        // whenever user_email appears in the update array and differs from the DB value (even
+        // when the difference is only cosmetic, e.g. sanitize_email() normalisation).
+        $current_user  = get_userdata( $user_id );
+        $current_email = $current_user ? $current_user->user_email : '';
+
+        // Extract special fields before sanitization to prevent them from being processed incorrectly.
+        // These keys are either deliberately skipped by wwlc_sanitize_user_data() or not present in
+        // $WWLC_REGISTRATION_FIELDS, so they must be sanitized and handled here before the call.
+        $role   = isset( $data['role'] ) ? sanitize_text_field( $data['role'] ) : '';
+        $status = isset( $data['status'] ) ? sanitize_text_field( $data['status'] ) : '';
+        // wwlc_email is the API alias for user_email; it is not in the registration field map.
+        $email = isset( $data['wwlc_email'] ) ? sanitize_email( wp_unslash( $data['wwlc_email'] ) ) : null;
+        // user_url is a core WP user field, not a registration form field — also absent from the field map.
+        $user_url = array_key_exists( 'user_url', $data ) ? esc_url_raw( wp_unslash( $data['user_url'] ) ) : null;
+
+        // Sanitize the shipping address fields individually since wwlc_sanitize_user_data() skips
+        // the entire 'shipping_address' key to avoid treating it as a registration form field.
+        $raw_shipping = isset( $data['shipping_address'] ) && is_array( $data['shipping_address'] )
+            ? $data['shipping_address']
+            : null;
+
+        $shipping_address = null;
+        if ( is_array( $raw_shipping ) ) {
+            $shipping_address = array(
+                'same_as_billing' => isset( $raw_shipping['same_as_billing'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['same_as_billing'] ) ) : 'no',
+                'first_name'      => isset( $raw_shipping['first_name'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['first_name'] ) ) : '',
+                'last_name'       => isset( $raw_shipping['last_name'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['last_name'] ) ) : '',
+                'address_1'       => isset( $raw_shipping['address_1'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['address_1'] ) ) : '',
+                'address_2'       => isset( $raw_shipping['address_2'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['address_2'] ) ) : '',
+                'city'            => isset( $raw_shipping['city'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['city'] ) ) : '',
+                'postcode'        => isset( $raw_shipping['postcode'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['postcode'] ) ) : '',
+                'country'         => isset( $raw_shipping['country'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['country'] ) ) : '',
+                'state'           => isset( $raw_shipping['state'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['state'] ) ) : '',
+                'company'         => isset( $raw_shipping['company'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['company'] ) ) : '',
+                'phone'           => isset( $raw_shipping['phone'] ) ? sanitize_text_field( wp_unslash( $raw_shipping['phone'] ) ) : '',
+                'email'           => isset( $raw_shipping['email'] ) ? sanitize_email( wp_unslash( $raw_shipping['email'] ) ) : '',
+            );
+        }
+
+        // Sanitize update data to prevent role spoofing and other security issues.
+        $data = wwlc_sanitize_user_data( $data, 'api' );
+
+        $userdata = array(
+            'ID'            => $user_id,
+            'user_nicename' => isset( $data['first_name'] ) && isset( $data['last_name'] )
+                ? sanitize_text_field( $data['first_name'] . ' ' . $data['last_name'] )
+                : '',
+        );
+
+        // Only include user_email in the update when it was explicitly provided, is valid, and
+        // actually differs from the stored value.  Omitting an unchanged email prevents WordPress
+        // from firing its built-in "Email Changed" notification (wp_update_user compares the
+        // incoming user_email against the DB and sends a notice whenever they differ, even when
+        // the difference is only due to sanitize_email() normalisation).
+        if ( null !== $email && '' !== $email && $email !== $current_email ) {
+            $userdata['user_email'] = $email;
+        }
+
+        // Only update user_url when explicitly provided in the payload.
+        if ( null !== $user_url ) {
+            $userdata['user_url'] = $user_url;
+        }
+
+        // Handle role assignment with proper validation.
+        if ( ! empty( $role ) ) {
+            $userdata['role'] = $this->wwlc_user_account->maybe_assign_role( $role );
+        }
+
+        // Temporarily prevent the profile_update hook from auto-triggering wwlc_approve_user().
+        // The profile_update hook is designed for WP admin user-edit-screen role changes; when
+        // called here it fires before the switch statement below, causing a duplicate approval
+        // email. Status-based operations are handled explicitly by the switch statement.
+        $suppress_profile_approval = static function () {
+            return false;
+        };
+        add_filter( 'wwlc_allow_profile_update_approval', $suppress_profile_approval );
+
+        $user = wp_update_user( $userdata );
+
+        remove_filter( 'wwlc_allow_profile_update_approval', $suppress_profile_approval );
+
+        if ( is_wp_error( $user ) ) {
+            wc_get_logger()->error(
+                sprintf( 'WWLC user update failed: %s', $user->get_error_message() ),
+                array( 'source' => 'woocommerce-wholesale-lead-capture' )
+            );
+
+            return $this->rest_response(
+                array(
+                    'error'   => true,
+                    'message' => __( 'Failed to update user. Please try again or contact support.', 'woocommerce-wholesale-lead-capture' ),
                     'data'    => null,
                 ),
                 $request,
@@ -791,21 +892,22 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
 
         // Save registration form fields.
         $this->wwlc_user_account->save_registration_form_fields( $user_id, $data, false );
-        // Save customer billing address.
-        $this->wwlc_user_account->wwlc_save_customer_billing_address( $user_id, $data );
-        // Save customer shipping address.
-        $this->wwlc_user_account->wwlc_save_customer_shipping_address( $user_id, $data['shipping_address'] );
+        // Save customer billing address (reads from user meta saved above).
+        $this->wwlc_user_account->wwlc_save_customer_billing_address( $user_id );
+        // Save customer shipping address only when the payload included shipping data.
+        if ( is_array( $shipping_address ) ) {
+            $this->wwlc_user_account->wwlc_save_customer_shipping_address( $user_id, $shipping_address );
+        }
 
         // Update lead status by checking the new status and performing the necessary action.
-        $status         = $data['status'];
-        $valid_statuses = array( 'approved', 'pending', 'inactive', 'rejected' );
+        $valid_statuses = array( 'active', 'approved', 'pending', 'inactive', 'rejected' );
         if ( in_array( $status, $valid_statuses, true ) ) {
             switch ( $status ) {
                 case 'approved':
                     $this->wwlc_user_account->wwlc_approve_user(
                         array(
                             'userID' => $user_id,
-                            'role'   => $data['role'],
+                            'role'   => $role,
                         )
                     );
                     break;
@@ -838,7 +940,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
     /**
      * Delete a lead in the database
      *
-     * @version 2.0.0
+     * @version 2.0.4.1
      * @since   2.0.0
      *
      * @param WP_REST_Request $request The request object.
@@ -858,6 +960,17 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             );
         }
 
+        if ( ! $this->is_wholesale_lead( $user_id ) ) {
+            return $this->rest_response(
+                array(
+                    'error'   => true,
+                    'message' => __( 'User is not a wholesale lead.', 'woocommerce-wholesale-lead-capture' ),
+                ),
+                $request,
+                403
+            );
+        }
+
         $user = get_user_by( 'id', $user_id );
 
         if ( ! $user ) {
@@ -871,23 +984,30 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             );
         }
 
+        // wp_delete_user() is defined in wp-admin/includes/user.php, which is only
+        // loaded automatically in admin contexts. The REST API runs outside the admin
+        // context, so we must require the file explicitly when needed.
+        if ( ! function_exists( 'wp_delete_user' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/user.php';
+        }
+
         $deleted = wp_delete_user( $user_id );
 
         if ( ! $deleted ) {
             return $this->rest_response(
                 array(
-                    'error'   => false,
+                    'error'   => true,
                     'message' => __( 'Failed to delete user.', 'woocommerce-wholesale-lead-capture' ),
                     'data'    => null,
                 ),
                 $request,
-                200,
+                500,
             );
         }
 
         return $this->rest_response(
             array(
-                'error'   => true,
+                'error'   => false,
                 'message' => __(
                     'The lead was deleted successfully.',
                     'woocommerce-wholesale-lead-capture'
@@ -945,14 +1065,14 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
         $lead_ids = $request->get_param( 'leads' );
         $action   = $request->get_param( 'action' );
 
-        $leads = wp_parse_args( $lead_ids );
+        $leads = array_map( 'absint', wp_parse_args( $lead_ids ) );
 
         $processed_users   = array();
         $failed_processing = array();
 
         foreach ( $leads as $user_id ) {
-            // Verify user exists before processing.
-            if ( ! get_user_by( 'ID', $user_id ) ) {
+            // Verify user exists and is a wholesale lead before processing.
+            if ( ! $user_id || ! $this->is_wholesale_lead( $user_id ) ) {
                 $failed_processing[] = $user_id;
                 continue;
             }
@@ -1049,6 +1169,57 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
      */
 
     /**
+     * Check if a user is a wholesale lead (has a WWLC-managed role).
+     *
+     * Prevents IDOR by ensuring REST API endpoints only operate on users
+     * with wholesale lead roles (unapproved, rejected, or any registered wholesale role).
+     *
+     * @param int $user_id The user ID to check.
+     * @return bool True if the user has a wholesale lead role.
+     * @since 2.0.5
+     */
+    private function is_wholesale_lead( $user_id ) {
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            return false;
+        }
+
+        $allowed_roles = array_unique(
+            array_merge(
+                $this->default_roles,
+                array_keys( $this->get_wholesale_roles() )
+            )
+        );
+
+        return ! empty( array_intersect( (array) $user->roles, $allowed_roles ) );
+    }
+
+    /**
+     * Sanitize a user-supplied roles parameter against the allowed wholesale lead roles.
+     *
+     * Returns only roles that are part of the WWLC role set (default lead roles +
+     * registered wholesale roles). Falls back to default_roles when the intersection
+     * is empty.
+     *
+     * @param string $roles           Comma-separated roles string from the request.
+     * @param array  $wholesale_roles Registered wholesale role slugs.
+     * @param bool   $fallback        Whether to fall back to default_roles when the
+     *                                 intersection is empty. Default true.
+     * @return array Sanitized array of role slugs (may be empty when $fallback is false).
+     * @since 2.0.5
+     */
+    private function sanitize_roles_param( $roles, $wholesale_roles, $fallback = true ) {
+        $allowed_roles = array_merge( $this->default_roles, $wholesale_roles );
+        $filtered      = array_intersect( explode( ',', $roles ), $allowed_roles );
+
+        if ( ! empty( $filtered ) ) {
+            return $filtered;
+        }
+
+        return $fallback ? $this->default_roles : array();
+    }
+
+    /**
      * Get lead details.
      *
      * @param int|WP_User $user_id The user id.
@@ -1084,6 +1255,9 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
     /**
      * Extract lead details from user object.
      *
+     * @version 2.0.4.1
+     * @since   2.0.0
+     *
      * @param WP_User $user The user object.
      * @return array
      */
@@ -1094,22 +1268,29 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
         $username = get_user_meta( $user->ID, 'wwlc_username', true );
         $username = '' !== $username ? $username : $user->data->user_email;
 
-        $approval_date  = get_user_meta( $user->ID, 'wwlc_approval_date', true );
-        $rejection_date = get_user_meta( $user->ID, 'wwlc_rejection_date', true );
-        $inactive       = get_user_meta( $user->ID, 'wwlc_is_user_active', true );
-
+        $approval_date   = get_user_meta( $user->ID, 'wwlc_approval_date', true );
+        $rejection_date  = get_user_meta( $user->ID, 'wwlc_rejection_date', true );
+        $is_active_meta  = get_user_meta( $user->ID, 'wwlc_is_user_active', true );
+        $is_active       = wc_string_to_bool( $is_active_meta ); // make sure to check if the user is active by the meta key.
         $wholesale_roles = $this->get_wholesale_roles();
 
         $status             = 'inactive';
         $rejected           = $rejection_date && '' !== $rejection_date;
         $approved           = $approval_date && '' !== $approval_date;
-        $inactive           = $inactive && wc_string_to_bool( $inactive );
         $pending            = WWLC_UNAPPROVED_ROLE === $user->roles[0];
         $has_wholesale_role = in_array( $user->roles[0], array_keys( $wholesale_roles ), true );
 
-        if ( $rejected ) {
+        // A lead is only considered explicitly deactivated if they have a prior approval
+        // date. New unapproved leads also have wwlc_is_user_active = 'no' at registration;
+        // without this guard they would incorrectly display as "Inactive" instead of "Pending".
+        $is_deactivated = 'no' === $is_active_meta && $approved;
+
+        // Explicit deactivation takes priority over other statuses.
+        if ( $is_deactivated ) {
+            $status = 'inactive';
+        } elseif ( $rejected ) {
             $status = 'rejected';
-        } elseif ( $approved || $has_wholesale_role ) {
+        } elseif ( $approved || $has_wholesale_role || $is_active ) { // If user is approved, has wholesale role, or is active, then set to approved.
             $status = 'approved';
         } elseif ( $pending ) {
             $status = 'pending';
@@ -1125,7 +1306,7 @@ class WWLC_Leads_Api extends WWLC_Abstract_REST_Controller {
             'approval_date'  => $approval_date,
             'rejection_date' => $rejection_date,
             'status'         => $status,
-            'is_active'      => $inactive,
+            'is_active'      => $is_active,
             'user_url'       => $user->user_url,
         );
 

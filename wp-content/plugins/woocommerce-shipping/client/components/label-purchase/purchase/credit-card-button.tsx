@@ -1,13 +1,25 @@
 import React from 'react';
-import { Button } from '@wordpress/components';
+import {
+	Button,
+	Flex,
+	Notice,
+	__experimentalText as Text,
+	__experimentalSpacer as Spacer,
+} from '@wordpress/components';
 import { useLabelPurchaseContext } from 'context/label-purchase';
-import { useCallback, useRef, useState } from '@wordpress/element';
+import {
+	createPortal,
+	useCallback,
+	useRef,
+	useState,
+} from '@wordpress/element';
 
 interface CreditCardButtonProps {
 	url: string;
 	disabled?: boolean;
 	buttonLabel: string;
 	buttonDescription: ( onChooseCard: () => void ) => React.JSX.Element;
+	nextDesign?: boolean;
 }
 
 export const CreditCardButton = ( {
@@ -15,6 +27,7 @@ export const CreditCardButton = ( {
 	disabled,
 	buttonLabel,
 	buttonDescription,
+	nextDesign = false,
 }: CreditCardButtonProps ) => {
 	const {
 		account: { refreshSettings },
@@ -45,8 +58,33 @@ export const CreditCardButton = ( {
 		creditCardWindow.current = window.open( url );
 		document.addEventListener( 'visibilitychange', onVisibilityChange );
 	}, [ url, onVisibilityChange ] );
-
-	return (
+	const portal = document.getElementById( 'label-purchase-status-notices' );
+	return nextDesign && portal ? (
+		createPortal(
+			<Spacer>
+				<Notice status="error">
+					<Flex
+						direction={ 'column' }
+						align={ 'flex-start' }
+						gap={ 4 }
+					>
+						<Text>{ buttonDescription( onChooseCard ) }</Text>
+						<Button
+							onClick={ onChooseCard }
+							disabled={ isRefreshing || disabled }
+							aria-disabled={ isRefreshing || disabled }
+							variant="primary"
+							isBusy={ isRefreshing }
+							__next40pxDefaultSize
+						>
+							{ buttonLabel }
+						</Button>
+					</Flex>
+				</Notice>
+			</Spacer>,
+			portal
+		)
+	) : (
 		<>
 			<Button
 				onClick={ onChooseCard }
@@ -55,6 +93,7 @@ export const CreditCardButton = ( {
 				variant="primary"
 				icon="external"
 				isBusy={ isRefreshing }
+				__next40pxDefaultSize={ nextDesign }
 			>
 				{ buttonLabel }
 			</Button>

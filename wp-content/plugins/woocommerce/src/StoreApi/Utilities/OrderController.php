@@ -2,16 +2,15 @@
 declare( strict_types = 1 );
 namespace Automattic\WooCommerce\StoreApi\Utilities;
 
-use Exception;
-use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
 use Automattic\WooCommerce\Blocks\Domain\Services\CheckoutFields;
 use Automattic\WooCommerce\Blocks\Package;
+use Automattic\WooCommerce\Internal\Customers\SearchService as CustomerSearchService;
+use Automattic\WooCommerce\StoreApi\Exceptions\RouteException;
+use Automattic\WooCommerce\Utilities\ArrayUtil;
+use Automattic\WooCommerce\Enums\OrderItemType;
 use Automattic\WooCommerce\Utilities\DiscountsUtil;
 use Automattic\WooCommerce\Utilities\ShippingUtil;
-use Automattic\WooCommerce\StoreApi\Utilities\LocalPickupUtils;
-use Automattic\WooCommerce\StoreApi\Utilities\PaymentUtils;
-use Automattic\WooCommerce\StoreApi\Utilities\ArrayUtils;
-use Automattic\WooCommerce\Utilities\ArrayUtil;
+use Exception;
 
 /**
  * OrderController class.
@@ -386,12 +385,14 @@ class OrderController {
 
 			// If only local pickup is selected, we don't need to validate the shipping country.
 			if ( ! $selected_shipping_rates_are_all_local_pickup && ! $this->validate_allowed_country( $shipping_country, (array) wc()->countries->get_shipping_countries() ) ) {
+				$countries             = WC()->countries->get_countries();
+				$shipping_country_name = $countries[ $shipping_country ] ?? $shipping_country;
 				throw new RouteException(
 					'woocommerce_rest_invalid_address_country',
 					sprintf(
-						/* translators: %s country code. */
+						/* translators: %s country name. */
 						esc_html__( 'Sorry, we do not ship orders to the provided country (%s)', 'woocommerce' ),
-						esc_html( $shipping_country )
+						esc_html( $shipping_country_name )
 					),
 					400,
 					array(
@@ -402,12 +403,14 @@ class OrderController {
 		}
 
 		if ( ! $this->validate_allowed_country( $billing_country, (array) wc()->countries->get_allowed_countries() ) ) {
+			$countries            = WC()->countries->get_countries();
+			$billing_country_name = $countries[ $billing_country ] ?? $billing_country;
 			throw new RouteException(
 				'woocommerce_rest_invalid_address_country',
 				sprintf(
-					/* translators: %s country code. */
+					/* translators: %s country name. */
 					esc_html__( 'Sorry, we do not allow orders from the provided country (%s)', 'woocommerce' ),
-					esc_html( $billing_country )
+					esc_html( $billing_country_name )
 				),
 				400,
 				array(
@@ -484,8 +487,11 @@ class OrderController {
 		$address = array_merge( $address, $additional_fields );
 
 		foreach ( $current_locale as $address_field_key => $address_field ) {
-			// Skip validation if field is not required.
-			if ( true !== $address_field['required'] ) {
+			// Skip validation if field is not required or if it is hidden.
+			if (
+				true !== wc_string_to_bool( $address_field['required'] ?? false ) ||
+				true === wc_string_to_bool( $address_field['hidden'] ?? false )
+			) {
 				continue;
 			}
 
@@ -520,10 +526,35 @@ class OrderController {
 	 */
 	protected function validate_coupon_email_restriction( \WC_Coupon $coupon, \WC_Order $order ) {
 		$restrictions = $coupon->get_email_restrictions();
-		// Email is forced lowercase like in validate_coupon_allowed_emails.
-		$billing_email = strtolower( $order->get_billing_email() );
 
-		if ( ! empty( $restrictions ) && $billing_email && ! DiscountsUtil::is_coupon_emails_allowed( array( $billing_email ), $restrictions ) ) {
+		if ( empty( $restrictions ) ) {
+			return;
+		}
+
+		$check_emails = array();
+
+		// Check the logged-in user's email.
+		$current_user = wp_get_current_user();
+		if ( $current_user->exists() ) {
+			$user_email = trim( sanitize_email( $current_user->user_email ) );
+			if ( ! empty( $user_email ) ) {
+				$check_emails[] = strtolower( $user_email );
+			}
+		}
+
+		// Also check the billing email from the order.
+		$billing_email = $order->get_billing_email();
+		if ( ! empty( $billing_email ) ) {
+			$billing_email = trim( sanitize_email( $billing_email ) );
+			if ( ! empty( $billing_email ) ) {
+				$check_emails[] = strtolower( $billing_email );
+			}
+		}
+
+		// Remove duplicates and empty values.
+		$check_emails = array_unique( array_filter( $check_emails ) );
+
+		if ( ! empty( $check_emails ) && ! DiscountsUtil::is_coupon_emails_allowed( $check_emails, $restrictions ) ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
 			throw new Exception( $coupon->get_coupon_error( \WC_Coupon::E_WC_COUPON_NOT_YOURS_REMOVED ) );
 		}
@@ -556,10 +587,8 @@ class OrderController {
 			);
 		} else {
 			// Otherwise we check if the email doesn't belong to an existing user.
-			$customer_data_store = \WC_Data_Store::load( 'customer' );
-
 			// This will get us any user ids for the given billing email.
-			$user_ids = $customer_data_store->get_user_ids_for_billing_email( array( $order->get_billing_email() ) );
+			$user_ids = wc_get_container()->get( CustomerSearchService::class )->find_user_ids_by_billing_email_for_coupons_usage_lookup( array( $order->get_billing_email() ) );
 
 			// Convert all found user ids to a list of email addresses.
 			$user_emails = array_map( array( $this, 'get_email_from_user_id' ), $user_ids );
@@ -782,31 +811,31 @@ class OrderController {
 
 		if ( $order->get_cart_hash() !== $cart_hashes['line_items'] ) {
 			$order->set_cart_hash( $cart_hashes['line_items'] );
-			$order->remove_order_items( 'line_item' );
+			$order->remove_order_items( OrderItemType::LINE_ITEM );
 			wc()->checkout->create_order_line_items( $order, $cart );
 		}
 
 		if ( $order->get_meta( '_shipping_hash' ) !== $cart_hashes['shipping'] ) {
 			$order->update_meta_data( '_shipping_hash', $cart_hashes['shipping'] );
-			$order->remove_order_items( 'shipping' );
+			$order->remove_order_items( OrderItemType::SHIPPING );
 			wc()->checkout->create_order_shipping_lines( $order, wc()->session->get( 'chosen_shipping_methods' ), wc()->shipping()->get_packages() );
 		}
 
 		if ( $order->get_meta( '_coupons_hash' ) !== $cart_hashes['coupons'] ) {
-			$order->remove_order_items( 'coupon' );
+			$order->remove_order_items( OrderItemType::COUPON );
 			$order->update_meta_data( '_coupons_hash', $cart_hashes['coupons'] );
 			wc()->checkout->create_order_coupon_lines( $order, $cart );
 		}
 
 		if ( $order->get_meta( '_fees_hash' ) !== $cart_hashes['fees'] ) {
 			$order->update_meta_data( '_fees_hash', $cart_hashes['fees'] );
-			$order->remove_order_items( 'fee' );
+			$order->remove_order_items( OrderItemType::FEE );
 			wc()->checkout->create_order_fee_lines( $order, $cart );
 		}
 
 		if ( $order->get_meta( '_taxes_hash' ) !== $cart_hashes['taxes'] ) {
 			$order->update_meta_data( '_taxes_hash', $cart_hashes['taxes'] );
-			$order->remove_order_items( 'tax' );
+			$order->remove_order_items( OrderItemType::TAX );
 			wc()->checkout->create_order_tax_lines( $order, $cart );
 		}
 	}

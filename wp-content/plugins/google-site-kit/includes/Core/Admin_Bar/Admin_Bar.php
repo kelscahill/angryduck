@@ -86,8 +86,8 @@ final class Admin_Bar {
 	 */
 	public function __construct(
 		Context $context,
-		Assets $assets = null,
-		Modules $modules = null
+		?Assets $assets = null,
+		?Modules $modules = null
 	) {
 		$this->context = $context;
 		$this->assets  = $assets ?: new Assets( $this->context );
@@ -383,7 +383,7 @@ final class Admin_Bar {
 								$this->admin_bar_enabled->set( ! empty( $data['enabled'] ) );
 							}
 
-							return $settings_callback( $request );
+							return $settings_callback();
 						},
 						'permission_callback' => $can_authenticate,
 						'args'                => array(

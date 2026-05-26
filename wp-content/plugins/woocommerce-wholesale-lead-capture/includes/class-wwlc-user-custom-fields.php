@@ -230,16 +230,16 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
 
                     if ( ! empty( $_REQUEST['users_approved'] ) ) {
                         $action   = 'approved';
-                        $affected = $_REQUEST['users_approved'];
+                        $affected = absint( $_REQUEST['users_approved'] );
                     } elseif ( ! empty( $_REQUEST['users_rejected'] ) ) {
                         $action   = 'rejected';
-                        $affected = $_REQUEST['users_rejected'];
+                        $affected = absint( $_REQUEST['users_rejected'] );
                     } elseif ( ! empty( $_REQUEST['users_activated'] ) ) {
                         $action   = 'activated';
-                        $affected = $_REQUEST['users_activated'];
+                        $affected = absint( $_REQUEST['users_activated'] );
                     } elseif ( ! empty( $_REQUEST['users_deactivated'] ) ) {
                         $action   = 'deactivated';
-                        $affected = $_REQUEST['users_deactivated'];
+                        $affected = absint( $_REQUEST['users_deactivated'] );
                     }
 
                     $message = sprintf(
@@ -357,7 +357,7 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
 
                 // make sure ids are submitted.  depending on the resource type, this may be 'media' or 'ids' or 'users'.
                 if ( isset( $_REQUEST['users'] ) ) {
-                    $user_ids = $_REQUEST['users'];
+                    $user_ids = array_map( 'absint', (array) $_REQUEST['users'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
                 }
 
                 if ( empty( $user_ids ) ) {
@@ -559,6 +559,7 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          * @return array
          *
          * @since 1.1.0
+         * @since 2.0.5 Register custom field labels for WPML String Translation (#455).
          */
         private function _get_formatted_custom_fields() {
 
@@ -567,8 +568,10 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
 
             foreach ( $registration_form_custom_fields as $field_id => $custom_field ) {
 
+                $raw_label = isset( $custom_field['field_name'] ) ? (string) $custom_field['field_name'] : '';
+
                 $formatted_registration_form_custom_fields[] = array(
-                    'label'        => $custom_field['field_name'],
+                    'label'        => WWLC_Forms::translate_custom_field_string( $field_id, $raw_label, 'label' ),
                     'name'         => $field_id,
                     'id'           => $field_id,
                     'class'        => 'wwlc_registration_field form_field wwlc_custom_field',
@@ -616,7 +619,7 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          * @return bool
          */
         public function wwlc_save_custom_fields_on_user_admin_page( $user_id ) {
-            if ( ! current_user_can( 'edit_user', $user_id ) && false === wp_verify_nonce( $_POST['_wpnonce'], 'update-user_' . $user_id ) ) {
+            if ( ! current_user_can( 'edit_user', $user_id ) || false === wp_verify_nonce( sanitize_key( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'update-user_' . $user_id ) ) {
                 return false;
             }
 
@@ -636,9 +639,10 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
 
                 if ( array_key_exists( $field['id'], $_POST ) ) {
                     if ( 'file' === $field['type'] ) {
-                        if ( ! empty( $_POST[ $field['id'] ] ) ) {
+                        $file_value = sanitize_text_field( wp_unslash( $_POST[ $field['id'] ] ) );
+                        if ( ! empty( $file_value ) ) {
                             // Set temporary data.
-                            update_user_meta( $user_id, $field['id'], $_POST[ $field['id'] ] );
+                            update_user_meta( $user_id, $field['id'], $file_value );
 
                             // Transfer files from temp folder to user folder.
                             $this->_wwlc_user_account->_move_user_files_to_permanent( $user_id );
@@ -650,10 +654,13 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
                             }
 
                             // Delete temporary data.
-                            update_user_meta( $user_id, $field['id'], $_POST[ $field['id'] ] );
+                            update_user_meta( $user_id, $field['id'], $file_value );
                         }
+                    } elseif ( 'checkbox' === $field['type'] ) {
+                        $checkbox_value = is_array( $_POST[ $field['id'] ] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST[ $field['id'] ] ) ) : array();
+                        update_user_meta( $user_id, $field['id'], $checkbox_value );
                     } else {
-                        update_user_meta( $user_id, $field['id'], $_POST[ $field['id'] ] );
+                        update_user_meta( $user_id, $field['id'], sanitize_text_field( wp_unslash( $_POST[ $field['id'] ] ) ) );
                     }
                 } elseif ( 'checkbox' === $field['type'] && $field['custom_field'] ) {
                     update_user_meta( $user_id, $field['id'], array() );
@@ -678,7 +685,7 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
                 <div class="notice manage-user-controls" data-screen-view="edit-screen">
                     <h4><?php esc_html_e( 'Manage User:', 'woocommerce-wholesale-lead-capture' ); ?></h4>
                     <?php
-                    $user_id = sanitize_text_field( $_REQUEST['user_id'] );
+                    $user_id = absint( $_REQUEST['user_id'] );
 
                     $approveText    = __( 'Approve', 'woocommerce-wholesale-lead-capture' );
                     $rejectText     = __( 'Reject', 'woocommerce-wholesale-lead-capture' );
@@ -810,6 +817,274 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
         }
 
         /**
+         * Check if a custom field should be displayed on the checkout page.
+         *
+         * @since 2.0.5
+         * @access private
+         *
+         * @param array $custom_field The custom field data array.
+         * @return bool True if the field is enabled and set to display on checkout.
+         */
+        private function should_display_field_on_checkout( $custom_field ) {
+            return isset( $custom_field['enabled'], $custom_field['checkout_display'] )
+                && $custom_field['enabled'] > 0
+                && $custom_field['checkout_display'] > 0;
+        }
+
+        /**
+         * Return the list of WWLC field types that cannot be represented in the
+         * WooCommerce Block checkout API and must therefore be skipped.
+         *
+         * Centralised so both the registration and save routines share a single
+         * source of truth and cannot drift out of sync.
+         *
+         * @since 2.0.5
+         * @access private
+         *
+         * @return string[] Field type slugs to skip.
+         */
+        private function get_block_checkout_skipped_field_types() {
+            return array( 'file', 'content', 'terms_conditions', 'checkbox' );
+        }
+
+        /**
+         * Map a WWLC custom-field type to the corresponding type accepted by
+         * woocommerce_register_additional_checkout_field().
+         *
+         * Block checkout supports a narrower set of types than the legacy form,
+         * so any free-form text-like type collapses to 'text' and any choice-like
+         * type collapses to 'select'. Field types the Block API cannot represent
+         * (file, content, terms_conditions, checkbox) are skipped by callers
+         * before this method is reached.
+         *
+         * @param string $wwlc_type WWLC field type.
+         * @return string Block-checkout-compatible type.
+         *
+         * @since 2.0.5
+         */
+        private function map_wwlc_type_to_block_type( $wwlc_type ) {
+
+            switch ( $wwlc_type ) {
+                case 'select':
+                case 'radio':
+                    return 'select';
+                default:
+                    return 'text';
+            }
+        }
+
+        /**
+         * Register WWLC custom fields with WooCommerce Blocks-based Cart / Checkout.
+         *
+         * The legacy `woocommerce_checkout_fields` filter only feeds the shortcode
+         * checkout. The Cart / Checkout Blocks expose extensibility through
+         * `woocommerce_register_additional_checkout_field()` (WC 8.6+), so any field
+         * marked with `checkout_display=yes` must be registered there separately —
+         * otherwise customers using the Blocks-based checkout cannot see / fill it
+         * (#305, #393).
+         *
+         * Fields are placed in the 'order' location so they render once beneath the
+         * address blocks (mirroring the legacy "billing-only" placement and avoiding
+         * a duplicate render in both billing and shipping address sections). Field
+         * types not representable in Block checkout (file, content, terms_conditions,
+         * checkbox) are skipped — they fall back to legacy-checkout-only behaviour.
+         * WWLC checkboxes are multi-option (stored as arrays) while the Block API's
+         * 'checkbox' is a single boolean ('1'/'0'), so the two cannot round-trip
+         * correctly. textarea, number, email and url collapse to 'text' since the
+         * Block API only supports text/select.
+         *
+         * @since 2.0.5
+         * @access public
+         */
+        public function wwlc_register_block_checkout_fields() {
+
+            if ( ! function_exists( 'woocommerce_register_additional_checkout_field' ) ) {
+                return;
+            }
+
+            $custom_fields = (array) get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+
+            foreach ( $this->build_block_checkout_field_args( $custom_fields ) as $custom_field_id => $args ) {
+
+                $custom_field = isset( $custom_fields[ $custom_field_id ] ) && is_array( $custom_fields[ $custom_field_id ] )
+                    ? $custom_fields[ $custom_field_id ]
+                    : array();
+
+                /**
+                 * Fires before each WWLC custom field is registered with the Block
+                 * checkout. Callers (including tests) can hook this to capture the
+                 * exact `$args` payload that will be passed to WC.
+                 *
+                 * @since 2.0.5
+                 *
+                 * @param array  $args            The args passed to woocommerce_register_additional_checkout_field().
+                 * @param array  $custom_field    The raw WWLC custom field config.
+                 * @param string $custom_field_id The field's id key.
+                 */
+                do_action( 'wwlc_before_register_block_checkout_field', $args, $custom_field, $custom_field_id );
+
+                woocommerce_register_additional_checkout_field( $args );
+            }
+        }
+
+        /**
+         * Compute the woocommerce_register_additional_checkout_field() args for every
+         * WWLC custom field that qualifies for the Block checkout, keyed by custom-field id.
+         *
+         * Pure data producer — no side effects. Exposed so tests can assert on the
+         * decisions wwlc_register_block_checkout_fields() will make without having to
+         * intercept action callbacks.
+         *
+         * @since 2.0.5
+         * @access public
+         *
+         * @param array|null $custom_fields Optional pre-fetched WWLC custom fields option.
+         *                                  When null the option is read fresh; callers
+         *                                  that already have the source array can pass it
+         *                                  to avoid a duplicate read.
+         * @return array<string, array> Map of custom_field_id => args payload.
+         */
+        public function build_block_checkout_field_args( $custom_fields = null ) {
+
+            if ( null === $custom_fields ) {
+                $custom_fields = (array) get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            }
+
+            $custom_fields = array_filter( (array) $custom_fields );
+
+            if ( empty( $custom_fields ) ) {
+                return array();
+            }
+
+            $skipped  = $this->get_block_checkout_skipped_field_types();
+            $payloads = array();
+
+            foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+
+                if ( ! is_array( $custom_field ) ) {
+                    continue;
+                }
+
+                if ( ! $this->should_display_field_on_checkout( $custom_field ) ) {
+                    continue;
+                }
+
+                if ( ! isset( $custom_field['field_type'], $custom_field['field_name'], $custom_field['required'] ) ) {
+                    continue;
+                }
+
+                // Skip types the Block API cannot represent. 'checkbox' is excluded because
+                // WWLC checkboxes are multi-option (stored as arrays), whereas the Block
+                // API's 'checkbox' type is a single boolean ('1'/'0') — the two cannot
+                // round-trip correctly.
+                if ( in_array( $custom_field['field_type'], $skipped, true ) ) {
+                    continue;
+                }
+
+                $args = array(
+                    'id'       => 'wwlc/' . $custom_field_id,
+                    'label'    => (string) $custom_field['field_name'],
+                    'location' => 'order',
+                    'type'     => $this->map_wwlc_type_to_block_type( $custom_field['field_type'] ),
+                    'required' => '1' === (string) $custom_field['required'],
+                );
+
+                $placeholder = isset( $custom_field['field_placeholder'] ) ? (string) $custom_field['field_placeholder'] : '';
+                if ( '' !== $placeholder ) {
+                    $args['attributes'] = array(
+                        'placeholder' => $placeholder,
+                    );
+                }
+
+                if ( 'select' === $args['type'] && ! empty( $custom_field['options'] ) ) {
+                    $options = array();
+                    foreach ( $custom_field['options'] as $opt ) {
+                        if ( ! isset( $opt['value'], $opt['text'] ) ) {
+                            continue;
+                        }
+                        $options[] = array(
+                            'value' => (string) $opt['value'],
+                            'label' => (string) $opt['text'],
+                        );
+                    }
+                    $args['options'] = $options;
+                }
+
+                $payloads[ $custom_field_id ] = $args;
+            }
+
+            return $payloads;
+        }
+
+        /**
+         * Persist Block-checkout WWLC field submissions into the storage layout the
+         * rest of the plugin already reads from.
+         *
+         * The Block checkout stores additional fields under the order-level meta key
+         * `_wc_order/wwlc/<field_id>`, but legacy WWLC code (order-details rendering,
+         * admin user-edit UI, registration form) reads from user and order meta using
+         * the bare `$custom_field_id` as the meta key. This method bridges the two so
+         * submissions made on the Block checkout flow into the same storage and
+         * surface in the same places.
+         *
+         * @since 2.0.5
+         * @access public
+         *
+         * @param WC_Order $order The order being created.
+         */
+        public function wwlc_save_block_checkout_fields_on_order( $order ) {
+
+            if ( ! $order instanceof WC_Order ) {
+                return;
+            }
+
+            $custom_fields = (array) get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = array_filter( $custom_fields );
+
+            if ( empty( $custom_fields ) ) {
+                return;
+            }
+
+            $user_id = $order->get_user_id();
+            $dirty   = false;
+
+            foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+
+                if ( ! is_array( $custom_field ) ) {
+                    continue;
+                }
+
+                if ( ! $this->should_display_field_on_checkout( $custom_field ) ) {
+                    continue;
+                }
+
+                // Same skip list as wwlc_register_block_checkout_fields(); checkbox fields
+                // are never registered with the Block API so no meta will exist for them.
+                if ( ! isset( $custom_field['field_type'] )
+                    || in_array( $custom_field['field_type'], $this->get_block_checkout_skipped_field_types(), true ) ) {
+                    continue;
+                }
+
+                $value = $order->get_meta( '_wc_order/wwlc/' . $custom_field_id );
+
+                if ( '' === $value || null === $value ) {
+                    continue;
+                }
+
+                $order->update_meta_data( $custom_field_id, $value );
+                $dirty = true;
+
+                if ( $user_id > 0 ) {
+                    update_user_meta( $user_id, $custom_field_id, $value );
+                }
+            }
+
+            if ( $dirty ) {
+                $order->save();
+            }
+        }
+
+        /**
 		 * Sets the loead capture custom fields used during checkout.
 		 *
 		 * @since 1.17.4
@@ -819,38 +1094,39 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          * @return $fields
 		 */
         public function wwlc_show_custom_fields_on_checkout( $fields ) {
-            $user_wholesale_role = wwlc_get_wholesale_role();
 
-            if ( ! empty( $user_wholesale_role ) ) {
-                $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
-                $custom_fields = (array) $custom_fields;
-                $custom_fields = array_filter( $custom_fields );
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = (array) $custom_fields;
+            $custom_fields = array_filter( $custom_fields );
 
-                if ( ! empty( $custom_fields ) ) {
-                    foreach ( $custom_fields as $custom_field_id => $custom_field ) {
-                        if ( $custom_field['enabled'] > 0 && $custom_field['checkout_display'] > 0 ) {
-                            // Disallow showing custom field for content and terms conditions field type.
-                            if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
-                                continue;
+            if ( ! empty( $custom_fields ) ) {
+                foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+                    if ( ! is_array( $custom_field ) ) {
+                        continue;
+                    }
+
+                    if ( $this->should_display_field_on_checkout( $custom_field ) ) {
+                        // Disallow showing custom field for content and terms conditions field type.
+                        if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
+                            continue;
+                        }
+
+                        $fields['billing'][ $custom_field_id ] = array(
+                            'type'         => $custom_field['field_type'],
+                            'label'        => WWLC_Forms::translate_custom_field_string( $custom_field_id, $custom_field['field_name'], 'label' ),
+                            'class'        => array( 'form-row-wide' ),
+                            'required'     => $custom_field['required'],
+                            'placeholder'  => WWLC_Forms::translate_custom_field_string( $custom_field_id, $custom_field['field_placeholder'], 'placeholder' ),
+                            'autocomplete' => $custom_field_id,
+                            'priority'     => 200 + $custom_field['field_order'],
+                        );
+
+                        if ( in_array( $custom_field['field_type'], array( 'select', 'radio', 'checkbox' ), true ) ) {
+                            $options = array();
+                            foreach ( $custom_field['options'] as $wwlc_cf_options ) {
+                                $options[ $wwlc_cf_options['value'] ] = $wwlc_cf_options['text'];
                             }
-
-                            $fields['billing'][ $custom_field_id ] = array(
-                                'type'         => $custom_field['field_type'],
-                                'label'        => $custom_field['field_name'],
-                                'class'        => array( 'form-row-wide' ),
-                                'required'     => $custom_field['required'],
-                                'placeholder'  => $custom_field['field_placeholder'],
-                                'autocomplete' => $custom_field_id,
-                                'priority'     => 200 + $custom_field['field_order'],
-                            );
-
-                            if ( in_array( $custom_field['field_type'], array( 'select', 'radio', 'checkbox' ), true ) ) {
-                                $options = array();
-                                foreach ( $custom_field['options'] as $wwlc_cf_options ) {
-                                    $options[ $wwlc_cf_options['value'] ] = $wwlc_cf_options['text'];
-                                }
-                                $fields['billing'][ $custom_field_id ]['options'] = $options;
-                            }
+                            $fields['billing'][ $custom_field_id ]['options'] = $options;
                         }
                     }
                 }
@@ -869,29 +1145,30 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          */
         public function add_custom_fields_to_checkout_posted_data( $data ) {
             // phpcs:disable WordPress.Security.NonceVerification
-            $user_wholesale_role = wwlc_get_wholesale_role();
 
-            if ( ! empty( $user_wholesale_role ) ) {
-                $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
-                $custom_fields = (array) $custom_fields;
-                $custom_fields = array_filter( $custom_fields );
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = (array) $custom_fields;
+            $custom_fields = array_filter( $custom_fields );
 
-                if ( ! empty( $custom_fields ) ) {
-                    foreach ( $custom_fields as $custom_field_id => $custom_field ) {
-                        if ( $custom_field['enabled'] > 0 && $custom_field['checkout_display'] > 0 ) {
-                            // Disallow custom field for file, content and terms conditions field type.
-                            if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
-                                continue;
-                            }
+            if ( ! empty( $custom_fields ) ) {
+                foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+                    if ( ! is_array( $custom_field ) ) {
+                        continue;
+                    }
 
-                            if ( isset( $_REQUEST[ $custom_field_id ] ) ) {
+                    if ( $this->should_display_field_on_checkout( $custom_field ) ) {
+                        // Disallow custom field for file, content and terms conditions field type.
+                        if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
+                            continue;
+                        }
 
-                                // Sanitize before saving to db.
-                                if ( is_array( $_REQUEST[ $custom_field_id ] ) ) {
-                                    $data[ $custom_field_id ] = array_map( 'sanitize_text_field', wp_unslash( $_REQUEST[ $custom_field_id ] ) );
-                                } else {
-                                    $data[ $custom_field_id ] = sanitize_text_field( $_REQUEST[ $custom_field_id ] );
-                                }
+                        if ( isset( $_REQUEST[ $custom_field_id ] ) ) {
+
+                            // Sanitize before saving to db.
+                            if ( is_array( $_REQUEST[ $custom_field_id ] ) ) {
+                                $data[ $custom_field_id ] = array_map( 'sanitize_text_field', wp_unslash( $_REQUEST[ $custom_field_id ] ) );
+                            } else {
+                                $data[ $custom_field_id ] = sanitize_text_field( $_REQUEST[ $custom_field_id ] );
                             }
                         }
                     }
@@ -915,34 +1192,34 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          */
         public function wwlc_save_custom_fields_and_add_order_meta_after_create_order( $order_id, $data ) {
 
-            $user_wholesale_role = wwlc_get_wholesale_role();
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = (array) $custom_fields;
+            $custom_fields = array_filter( $custom_fields );
 
-            if ( ! empty( $user_wholesale_role ) ) {
-                $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
-                $custom_fields = (array) $custom_fields;
-                $custom_fields = array_filter( $custom_fields );
+            if ( ! empty( $custom_fields ) ) {
+                $order   = wc_get_order( $order_id );
+                $user_id = $order->get_customer_id();
 
-                if ( ! empty( $custom_fields ) ) {
-                    $order   = wc_get_order( $order_id );
-                    $user_id = $order->get_customer_id();
+                foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+                    if ( ! is_array( $custom_field ) ) {
+                        continue;
+                    }
 
-                    foreach ( $custom_fields as $custom_field_id => $custom_field ) {
-                        if ( $custom_field['enabled'] > 0 && $custom_field['checkout_display'] > 0 ) {
-                            // Disallow custom field for file, content and terms conditions field type.
-                            if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
-                                continue;
+                    if ( $this->should_display_field_on_checkout( $custom_field ) ) {
+                        // Disallow custom field for file, content and terms conditions field type.
+                        if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
+                            continue;
+                        }
+
+                        if ( isset( $data[ $custom_field_id ] ) ) {
+                            update_user_meta( $user_id, $custom_field_id, $data[ $custom_field_id ] );
+
+                            if ( 'checkbox' === $custom_field['field_type'] ) {
+                                $order->update_meta_data( $custom_field_id, implode( ', ', $data[ $custom_field_id ] ) );
+                            } else {
+                                $order->update_meta_data( $custom_field_id, $data[ $custom_field_id ] );
                             }
-
-                            if ( isset( $data[ $custom_field_id ] ) ) {
-                                update_user_meta( $user_id, $custom_field_id, $data[ $custom_field_id ] );
-
-                                if ( 'checkbox' === $custom_field['field_type'] ) {
-                                    $order->update_meta_data( $custom_field_id, implode( ', ', $data[ $custom_field_id ] ) );
-                                } else {
-                                    $order->update_meta_data( $custom_field_id, $data[ $custom_field_id ] );
-                                }
-                                $order->save();
-                            }
+                            $order->save();
                         }
                     }
                 }
@@ -958,75 +1235,76 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          * @param object $order The order object.
          */
         public function wwlc_show_custom_fields_on_order_details( $order ) {
-            $user_wholesale_role = wwlc_get_wholesale_role();
 
-            if ( ! empty( $user_wholesale_role ) ) {
-                $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
-                $custom_fields = (array) $custom_fields;
-                $custom_fields = array_filter( $custom_fields );
-                $user_id       = $order->get_customer_id();
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = (array) $custom_fields;
+            $custom_fields = array_filter( $custom_fields );
+            $user_id       = $order->get_customer_id();
 
-                if ( ! empty( $custom_fields ) ) {
+            if ( ! empty( $custom_fields ) ) {
 
-                    $custom_fields_checkout = array();
-                    foreach ( $custom_fields as $custom_field_id => $custom_field ) {
-                        // Disallow custom field for file, content and terms conditions field type.
-                        if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
-                            continue;
-                        }
-
-                        if ( $custom_field['enabled'] > 0 && $custom_field['checkout_display'] > 0 ) {
-                            $custom_fields_checkout[ $custom_field_id ] = $custom_field;
-                        }
+                $custom_fields_checkout = array();
+                foreach ( $custom_fields as $custom_field_id => $custom_field ) {
+                    if ( ! is_array( $custom_field ) ) {
+                        continue;
                     }
 
-                    if ( ! empty( $custom_fields_checkout ) ) {
-                        ?>
-                        <section class="woocommerce-columns woocommerce-columns--2 woocommerce-columns--wholesale-details col2-set wholesale-details">
-                            <h2 class="woocommerce-column__title"><?php esc_html_e( 'Wholesale details', 'woocommerce' ); ?></h2>
-                            <address>
-                                <?php
-                                $wholesale_details = '';
-                                foreach ( $custom_fields_checkout as $custom_field_id => $custom_field ) {
+                    // Disallow custom field for file, content and terms conditions field type.
+                    if ( in_array( $custom_field['field_type'], array( 'file', 'content', 'terms_conditions' ), true ) ) {
+                        continue;
+                    }
 
-                                    $user_meta_value = get_user_meta( $user_id, $custom_field_id, true );
+                    if ( $this->should_display_field_on_checkout( $custom_field ) ) {
+                        $custom_fields_checkout[ $custom_field_id ] = $custom_field;
+                    }
+                }
 
-                                    if ( empty( $user_meta_value ) ) {
-                                        continue;
-                                    }
+                if ( ! empty( $custom_fields_checkout ) ) {
+                    ?>
+                    <section class="woocommerce-columns woocommerce-columns--2 woocommerce-columns--wholesale-details col2-set wholesale-details">
+                        <h2 class="woocommerce-column__title"><?php esc_html_e( 'Wholesale details', 'woocommerce' ); ?></h2>
+                        <address>
+                            <?php
+                            $wholesale_details = '';
+                            foreach ( $custom_fields_checkout as $custom_field_id => $custom_field ) {
 
-                                    $wholesale_details_items = '<div class="%1$s">
-                                        <span class="wholesale-details--title">%2$s</span>:
-                                        <span class="wholesale-details--value">%3$s</span>
-                                    </div>';
+                                $user_meta_value = get_user_meta( $user_id, $custom_field_id, true );
 
-                                    if ( 'checkbox' === $custom_field['field_type'] && is_array( $user_meta_value ) ) {
-                                        // get text value of checkbox options.
-                                        $user_meta_value = array_map(
-                                            function ( $option ) use ( $custom_field ) {
-                                                return WWLC_Helper_Functions::get_custom_field_option_text( $option, $custom_field );
-                                            },
-                                            $user_meta_value
-                                        );
-
-                                        $user_meta_value = implode( ',', $user_meta_value );
-                                    } elseif ( in_array( $custom_field['field_type'], array( 'radio', 'select' ), true ) ) {
-                                        $user_meta_value = WWLC_Helper_Functions::get_custom_field_option_text( $user_meta_value, $custom_field );
-                                    }
-
-                                    $wholesale_details .= sprintf(
-                                        $wholesale_details_items,
-                                        $custom_field_id,
-                                        esc_html( $custom_field['field_name'] ),
-                                        esc_html( $user_meta_value )
-                                    );
+                                if ( empty( $user_meta_value ) ) {
+                                    continue;
                                 }
-                                echo apply_filters( 'wwlc_show_custom_fields_on_order_details', $wholesale_details, $custom_fields_checkout, $order ); //phpcs:ignore
-                                ?>
-                            </address>
-                        </section>
-                        <?php
-                    }
+
+                                $wholesale_details_items = '<div class="%1$s">
+                                    <span class="wholesale-details--title">%2$s</span>:
+                                    <span class="wholesale-details--value">%3$s</span>
+                                </div>';
+
+                                if ( 'checkbox' === $custom_field['field_type'] && is_array( $user_meta_value ) ) {
+                                    // get text value of checkbox options.
+                                    $user_meta_value = array_map(
+                                        function ( $option ) use ( $custom_field ) {
+                                            return WWLC_Helper_Functions::get_custom_field_option_text( $option, $custom_field );
+                                        },
+                                        $user_meta_value
+                                    );
+
+                                    $user_meta_value = implode( ',', $user_meta_value );
+                                } elseif ( in_array( $custom_field['field_type'], array( 'radio', 'select' ), true ) ) {
+                                    $user_meta_value = WWLC_Helper_Functions::get_custom_field_option_text( $user_meta_value, $custom_field );
+                                }
+
+                                $wholesale_details .= sprintf(
+                                    $wholesale_details_items,
+                                    $custom_field_id,
+                                    esc_html( WWLC_Forms::translate_custom_field_string( $custom_field_id, $custom_field['field_name'], 'label' ) ),
+                                    esc_html( $user_meta_value )
+                                );
+                            }
+                            echo apply_filters( 'wwlc_show_custom_fields_on_order_details', $wholesale_details, $custom_fields_checkout, $order ); //phpcs:ignore
+                            ?>
+                        </address>
+                    </section>
+                    <?php
                 }
             }
         }
@@ -1045,96 +1323,93 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          * @param string  $value (default: null).
 		 */
         public function wwlc_custom_field_checkbox_on_checkout_page( $field, $key, $args, $value ) {
-            $user_wholesale_role = wwlc_get_wholesale_role();
 
-            if ( ! empty( $user_wholesale_role ) ) {
-                $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
-                $custom_fields = (array) $custom_fields;
-                $custom_fields = array_filter( $custom_fields );
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = (array) $custom_fields;
+            $custom_fields = array_filter( $custom_fields );
 
-                if ( ! empty( $custom_fields ) ) {
-                    if ( array_key_exists( $key, $custom_fields ) ) {
+            if ( ! empty( $custom_fields ) ) {
+                if ( array_key_exists( $key, $custom_fields ) ) {
 
-                        if ( is_string( $args['class'] ) ) {
-                            $args['class'] = array( $args['class'] );
+                    if ( is_string( $args['class'] ) ) {
+                        $args['class'] = array( $args['class'] );
+                    }
+
+                    if ( $args['required'] ) {
+                        $args['class'][] = 'validate-required';
+                        $required        = '&nbsp;<abbr class="required" title="' . esc_attr__( 'required', 'woocommerce' ) . '">*</abbr>';
+                    } else {
+                        $required = '&nbsp;<span class="optional">(' . esc_html__( 'optional', 'woocommerce' ) . ')</span>';
+                    }
+
+                    if ( is_string( $args['label_class'] ) ) {
+                        $args['label_class'] = array( $args['label_class'] );
+                    }
+
+                    if ( is_null( $value ) ) {
+                        $value = $args['default'];
+                    } else {
+                        $value = explode( ',', $value );
+                    }
+
+                    // Custom attribute handling.
+                    $custom_attributes         = array();
+                    $args['custom_attributes'] = array_filter( (array) $args['custom_attributes'], 'strlen' );
+
+                    if ( $args['maxlength'] ) {
+                        $args['custom_attributes']['maxlength'] = absint( $args['maxlength'] );
+                    }
+
+                    if ( ! empty( $args['autocomplete'] ) ) {
+                        $args['custom_attributes']['autocomplete'] = $args['autocomplete'];
+                    }
+
+                    if ( true === $args['autofocus'] ) {
+                        $args['custom_attributes']['autofocus'] = 'autofocus';
+                    }
+
+                    if ( $args['description'] ) {
+                        $args['custom_attributes']['aria-describedby'] = $args['id'] . '-description';
+                    }
+
+                    if ( ! empty( $args['custom_attributes'] ) && is_array( $args['custom_attributes'] ) ) {
+                        foreach ( $args['custom_attributes'] as $attribute => $attribute_value ) {
+                            $custom_attributes[] = esc_attr( $attribute ) . '="' . esc_attr( $attribute_value ) . '"';
                         }
+                    }
 
-                        if ( $args['required'] ) {
-                            $args['class'][] = 'validate-required';
-                            $required        = '&nbsp;<abbr class="required" title="' . esc_attr__( 'required', 'woocommerce' ) . '">*</abbr>';
-                        } else {
-                            $required = '&nbsp;<span class="optional">(' . esc_html__( 'optional', 'woocommerce' ) . ')</span>';
+                    if ( ! empty( $args['validate'] ) ) {
+                        foreach ( $args['validate'] as $validate ) {
+                            $args['class'][] = 'validate-' . $validate;
                         }
+                    }
 
-                        if ( is_string( $args['label_class'] ) ) {
-                            $args['label_class'] = array( $args['label_class'] );
+                    $field           = '';
+                    $label_id        = $args['id'] . '_' . current( array_keys( $args['options'] ) );
+                    $sort            = $args['priority'] ? $args['priority'] : '';
+                    $field_container = '<p class="form-row %1$s" id="%2$s" data-priority="' . esc_attr( $sort ) . '">%3$s</p>';
+
+                    if ( ! empty( $args['options'] ) ) {
+                        foreach ( $args['options'] as $option_key => $option_text ) {
+                            $checked_value = in_array( $option_key, $value ) ? $option_key : ''; //phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
+                            $field        .= '<label for="' . esc_attr( $args['id'] ) . '_' . esc_attr( $option_key ) . '" class="checkbox ' . implode( ' ', $args['label_class'] ) . '" ' . implode( ' ', $custom_attributes ) . '>
+                                                <input type="checkbox" class="input-checkbox ' . esc_attr( implode( ' ', $args['input_class'] ) ) . '" name="' . esc_attr( $key ) . '[]" id="' . esc_attr( $args['id'] ) . '_' . esc_attr( $option_key ) . '" value="' . esc_attr( $option_key ) . '" ' . checked( $checked_value, $option_key, false ) . ' /> ' . $option_text . '</label>';
                         }
+                    }
 
-                        if ( is_null( $value ) ) {
-                            $value = $args['default'];
-                        } else {
-                            $value = explode( ',', $value );
-                        }
-
-                        // Custom attribute handling.
-                        $custom_attributes         = array();
-                        $args['custom_attributes'] = array_filter( (array) $args['custom_attributes'], 'strlen' );
-
-                        if ( $args['maxlength'] ) {
-                            $args['custom_attributes']['maxlength'] = absint( $args['maxlength'] );
-                        }
-
-                        if ( ! empty( $args['autocomplete'] ) ) {
-                            $args['custom_attributes']['autocomplete'] = $args['autocomplete'];
-                        }
-
-                        if ( true === $args['autofocus'] ) {
-                            $args['custom_attributes']['autofocus'] = 'autofocus';
-                        }
+                    if ( ! empty( $field ) ) {
+                        $field_html  = '<label for="' . esc_attr( $label_id ) . '" class="' . esc_attr( implode( ' ', $args['label_class'] ) ) . '">' . wp_kses_post( $args['label'] ) . $required . '</label>';
+                        $field_html .= '<span class="woocommerce-input-wrapper">' . $field;
 
                         if ( $args['description'] ) {
-                            $args['custom_attributes']['aria-describedby'] = $args['id'] . '-description';
+                            $field_html .= '<span class="description" id="' . esc_attr( $args['id'] ) . '-description" aria-hidden="true">' . wp_kses_post( $args['description'] ) . '</span>';
                         }
 
-                        if ( ! empty( $args['custom_attributes'] ) && is_array( $args['custom_attributes'] ) ) {
-                            foreach ( $args['custom_attributes'] as $attribute => $attribute_value ) {
-                                $custom_attributes[] = esc_attr( $attribute ) . '="' . esc_attr( $attribute_value ) . '"';
-                            }
-                        }
+                        $field_html .= '</span>';
 
-                        if ( ! empty( $args['validate'] ) ) {
-                            foreach ( $args['validate'] as $validate ) {
-                                $args['class'][] = 'validate-' . $validate;
-                            }
-                        }
-
-                        $field           = '';
-                        $label_id        = $args['id'] . '_' . current( array_keys( $args['options'] ) );
-                        $sort            = $args['priority'] ? $args['priority'] : '';
-                        $field_container = '<p class="form-row %1$s" id="%2$s" data-priority="' . esc_attr( $sort ) . '">%3$s</p>';
-
-                        if ( ! empty( $args['options'] ) ) {
-                            foreach ( $args['options'] as $option_key => $option_text ) {
-                                $checked_value = in_array( $option_key, $value ) ? $option_key : ''; //phpcs:ignore WordPress.PHP.StrictInArray.MissingTrueStrict
-                                $field        .= '<label for="' . esc_attr( $args['id'] ) . '_' . esc_attr( $option_key ) . '" class="checkbox ' . implode( ' ', $args['label_class'] ) . '" ' . implode( ' ', $custom_attributes ) . '>
-                                                    <input type="checkbox" class="input-checkbox ' . esc_attr( implode( ' ', $args['input_class'] ) ) . '" name="' . esc_attr( $key ) . '[]" id="' . esc_attr( $args['id'] ) . '_' . esc_attr( $option_key ) . '" value="' . esc_attr( $option_key ) . '" ' . checked( $checked_value, $option_key, false ) . ' /> ' . $option_text . '</label>';
-                            }
-                        }
-
-                        if ( ! empty( $field ) ) {
-                            $field_html  = '<label for="' . esc_attr( $label_id ) . '" class="' . esc_attr( implode( ' ', $args['label_class'] ) ) . '">' . wp_kses_post( $args['label'] ) . $required . '</label>';
-                            $field_html .= '<span class="woocommerce-input-wrapper">' . $field;
-
-                            if ( $args['description'] ) {
-                                $field_html .= '<span class="description" id="' . esc_attr( $args['id'] ) . '-description" aria-hidden="true">' . wp_kses_post( $args['description'] ) . '</span>';
-                            }
-
-                            $field_html .= '</span>';
-
-                            $container_class = esc_attr( implode( ' ', $args['class'] ) );
-                            $container_id    = esc_attr( $args['id'] ) . '_field';
-                            $field           = sprintf( $field_container, $container_class, $container_id, $field_html );
-                        }
+                        $container_class = esc_attr( implode( ' ', $args['class'] ) );
+                        $container_id    = esc_attr( $args['id'] ) . '_field';
+                        $field           = sprintf( $field_container, $container_class, $container_id, $field_html );
                     }
                 }
             }
@@ -1154,34 +1429,31 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
          * @return string
          */
         public function wwlc_set_default_value_for_checkbox_custom_fields( $value, $key ) {
-            $user_wholesale_role = wwlc_get_wholesale_role();
 
-            if ( ! empty( $user_wholesale_role ) ) {
-                $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
-                $custom_fields = (array) $custom_fields;
-                $custom_fields = array_filter( $custom_fields );
+            $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
+            $custom_fields = (array) $custom_fields;
+            $custom_fields = array_filter( $custom_fields );
 
-                if ( is_array( $custom_fields ) && ! empty( $custom_fields ) ) {
-                    if ( array_key_exists( $key, $custom_fields ) ) {
-                        if ( 'checkbox' === $custom_fields[ $key ]['field_type'] ) {
-                            $customer_object = false;
+            if ( is_array( $custom_fields ) && ! empty( $custom_fields ) ) {
+                if ( array_key_exists( $key, $custom_fields ) ) {
+                    if ( 'checkbox' === $custom_fields[ $key ]['field_type'] ) {
+                        $customer_object = false;
 
-                            if ( is_user_logged_in() ) {
-                                $customer_object = new WC_Customer( get_current_user_id(), true );
-                            }
-
-                            if ( ! $customer_object ) {
-                                $customer_object = WC()->customer;
-                            }
-
-                            if ( is_callable( array( $customer_object, "get_$key" ) ) ) {
-                                $meta_value = $customer_object->{"get_$key"}();
-                            } elseif ( $customer_object->meta_exists( $key ) ) {
-                                $meta_value = $customer_object->get_meta( $key, true );
-                            }
-
-                            $value = ! empty( $meta_value ) ? implode( ',', $meta_value ) : '';
+                        if ( is_user_logged_in() ) {
+                            $customer_object = new WC_Customer( get_current_user_id(), true );
                         }
+
+                        if ( ! $customer_object ) {
+                            $customer_object = WC()->customer;
+                        }
+
+                        if ( is_callable( array( $customer_object, "get_$key" ) ) ) {
+                            $meta_value = $customer_object->{"get_$key"}();
+                        } elseif ( $customer_object->meta_exists( $key ) ) {
+                            $meta_value = $customer_object->get_meta( $key, true );
+                        }
+
+                        $value = ! empty( $meta_value ) ? implode( ',', $meta_value ) : '';
                     }
                 }
             }
@@ -1212,7 +1484,7 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
                         $file_name = end( $file_tmp );
                     ?>
                     <div class="wwlc-account-details-field">
-                        <label for="<?php echo esc_attr( $wwlc_form_custom_field_key ); ?>"><?php echo esc_html( $wwlc_form_custom_field['field_name'] ); ?></label>
+                        <label for="<?php echo esc_attr( $wwlc_form_custom_field_key ); ?>"><?php echo esc_html( WWLC_Forms::translate_custom_field_string( $wwlc_form_custom_field_key, $wwlc_form_custom_field['field_name'], 'label' ) ); ?></label>
                         <div class="wwlc-account-details-field-file">
                             <input type="hidden" name="<?php echo esc_attr( $wwlc_form_custom_field_key ); ?>" id="<?php echo esc_attr( $wwlc_form_custom_field_key ); ?>" value="<?php echo esc_html( $file_name ); ?>" />
                             <input name="file" type="file" data-field="<?php echo esc_attr( $wwlc_form_custom_field_key ); ?>">
@@ -1242,8 +1514,9 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
                 foreach ( $wwlc_form_custom_fields as $wwlc_form_custom_field_key => $wwlc_form_custom_field ) {
 
                     // Check if the field is enabled and is a file type.
-                    if ( '1' === $wwlc_form_custom_field['enabled'] && 'file' === $wwlc_form_custom_field['field_type'] ) {
-                        update_user_meta( $user_id, $wwlc_form_custom_field_key, $_POST[ $wwlc_form_custom_field_key ] ); // phpcs:ignore.
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified by WooCommerce save_account_details action.
+                    if ( '1' === $wwlc_form_custom_field['enabled'] && 'file' === $wwlc_form_custom_field['field_type'] && isset( $_POST[ $wwlc_form_custom_field_key ] ) ) {
+                        update_user_meta( $user_id, $wwlc_form_custom_field_key, sanitize_text_field( wp_unslash( $_POST[ $wwlc_form_custom_field_key ] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
                     }
                 }
 
@@ -1295,6 +1568,14 @@ if ( ! class_exists( 'WWLC_User_Custom_Fields' ) ) {
 
             // Show custom fields on checkout page.
             add_filter( 'woocommerce_checkout_fields', array( $this, 'wwlc_show_custom_fields_on_checkout' ) );
+
+            // Show custom fields on the Blocks-based Cart / Checkout (WC 8.6+).
+            // Hooked on 'woocommerce_init' so WC's block registry is loaded before we register.
+            add_action( 'woocommerce_init', array( $this, 'wwlc_register_block_checkout_fields' ) );
+
+            // Persist Block-checkout submissions into WWLC's user/order meta layout so the
+            // existing order-details rendering and admin user-edit UI surface the values.
+            add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'wwlc_save_block_checkout_fields_on_order' ) );
 
             // Save custom fields on checkout order processed.
             add_filter( 'woocommerce_checkout_posted_data', array( $this, 'add_custom_fields_to_checkout_posted_data' ), 10, 1 );

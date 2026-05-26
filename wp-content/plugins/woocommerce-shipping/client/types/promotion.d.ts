@@ -18,14 +18,14 @@ export interface Promotion {
 	discountAmount: number;
 
 	/** HTML to display in order detail notice */
-	notice?: string
+	notice?: string;
 
 	/** HTML to display in shipping label banner */
-	banner?: string
+	banner?: string;
 
 	/** Text to display in shipping flow badges */
-	badge?: string
+	badge?: string;
 
 	/** HTML to display in shipping service tooltip */
-	tooltip?: string
+	tooltip?: string;
 }

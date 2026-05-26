@@ -27,6 +27,7 @@ export interface LabelPurchaseContextType {
 	labels: ReturnType< typeof useLabelsState >;
 	account: ReturnType< typeof useAccountState >;
 	essentialDetails: ReturnType< typeof useEssentialDetails >;
+	nextDesign: boolean;
 }
 
 export interface LabelPurchaseContextProviderProps {

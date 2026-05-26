@@ -95,7 +95,7 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Product_Variations_V1_Controller' ) ) 
                     ),
                 );
                 $meta_query                 = array(
-                    'relation' => 'AND',
+                    'relation' => 'OR',
                     array(
                         'key'     => WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER,
                         'value'   => array( 'all', $wholesale_role ),

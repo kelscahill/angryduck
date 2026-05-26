@@ -1,6 +1,8 @@
-import { getDateParamsFromQuery } from '@woocommerce/date';
-import { getCurrentDates } from '@woocommerce/date';
-import { appendTimestamp } from '@woocommerce/date';
+import {
+	getDateParamsFromQuery,
+	appendTimestamp,
+	getCurrentDates,
+} from '@woocommerce/date';
 import { addQueryArgs } from '@wordpress/url';
 import { getLabelsReportPath } from 'data/routes';
 import { ReportQuery } from 'types';

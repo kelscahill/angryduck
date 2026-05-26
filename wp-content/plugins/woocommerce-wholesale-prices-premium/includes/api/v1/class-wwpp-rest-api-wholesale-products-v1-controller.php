@@ -539,6 +539,39 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Products_V1_Controller' ) ) {
                         'desc'    => $qty_discount_rule_desc,
                         'mapping' => $qty_discount_rule_mapping,
                     );
+
+                    // Fix for save percentage calculation in the API response.
+                    // Only apply when "Always Use Regular Price" setting is turned on.
+                    $use_regular_price = get_option( 'wwpp_settings_explicitly_use_product_regular_price_on_discount_calc' );
+                    if ( 'yes' === $use_regular_price ) {
+                        // Get the regular price of the product.
+                        $regular_price = $product->get_regular_price();
+                        if ( empty( $regular_price ) ) {
+                            $regular_price = $product->get_price();
+                        }
+
+                        // Add regular_price to the wholesale_data for the Vue component to use.
+                        $meta_data['regular_price'] = $regular_price;
+
+                        // Loop through each mapping and add the correct wholesale_discount field.
+                        foreach ( $meta_data['wwpp_quantity_discount_rule_mapping']['mapping'] as &$mapping ) {
+                            if ( $mapping['wholesale_role'] === $request['wholesale_role'] ) {
+                                if ( isset( $mapping['price_type'] ) && 'fixed-price' === $mapping['price_type'] ) {
+                                    // Calculate the save percentage based on regular price.
+                                    $wholesale_price = floatval( $mapping['wholesale_price'] );
+                                    $save_percentage = 0;
+
+                                    if ( floatval( $regular_price ) > 0 ) {
+                                        $save_percentage = 100 - ( ( $wholesale_price / floatval( $regular_price ) ) * 100 );
+                                    }
+
+                                    // Add the wholesale_discount field that the Vue component will use.
+                                    $mapping['wholesale_discount']    = number_format( $save_percentage, 2 );
+                                    $mapping['product_regular_price'] = $regular_price;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 // "Product Quantity Based Wholesale Pricing" option.
@@ -1008,7 +1041,7 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Products_V1_Controller' ) ) {
                 $wholesale_suffix_for_regular_price = $price_suffix_option;
                 $has_match                          = false;
 
-                if ( strpos( $wholesale_suffix_for_regular_price, '{price_including_tax}' ) !== false ) {
+                if ( str_contains( $wholesale_suffix_for_regular_price, '{price_including_tax}' ) ) {
 
                     $product_price_incl_tax             = WWP_Helper_Functions::wwp_formatted_price(
                         WWP_Helper_Functions::wwp_get_price_including_tax(
@@ -1028,7 +1061,7 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Products_V1_Controller' ) ) {
 
                 }
 
-                if ( strpos( $wholesale_suffix_for_regular_price, '{price_excluding_tax}' ) !== false ) {
+                if ( str_contains( $wholesale_suffix_for_regular_price, '{price_excluding_tax}' ) ) {
 
                     $product_price_excl_tax             = WWP_Helper_Functions::wwp_formatted_price(
                         WWP_Helper_Functions::wwp_get_price_excluding_tax(

@@ -7,6 +7,10 @@
 
 namespace Automattic\WCShipping\Migration;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Class MigrationNotices
  */

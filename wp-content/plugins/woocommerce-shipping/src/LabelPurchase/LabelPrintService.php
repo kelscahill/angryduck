@@ -11,6 +11,7 @@ use Automattic\WCShipping\Connect\WC_Connect_API_Client;
 use Automattic\WCShipping\Connect\WC_Connect_Logger;
 use Automattic\WCShipping\LabelPurchase\LabelPurchaseService;
 use Automattic\WCShipping\Utilities\AddressUtils;
+use Automattic\WCShipping\Utils;
 use WP_Error;
 
 /**
@@ -34,7 +35,7 @@ class LabelPrintService {
 	/**
 	 * Labels service.
 	 *
-	 * @var LabelsService
+	 * @var LabelPurchaseService
 	 */
 	private $label_purchase_service;
 
@@ -144,6 +145,16 @@ class LabelPrintService {
 		// Get shipment origin
 		$origin = $origins[ 'shipment_' . $shipment_id ];
 
+		// For return labels, addresses are reversed on the label itself
+		// So we need to flip them to match what appears on the actual label
+		$is_return_label = ! empty( $label['is_return'] ) && $label['is_return'];
+		if ( $is_return_label ) {
+			// Swap origin and destination for return labels
+			$temp        = $origin;
+			$origin      = $destination;
+			$destination = $temp;
+		}
+
 		// Get store information
 		$store_address = AddressUtils::address_array_to_formatted_html_string( $origin );
 
@@ -155,20 +166,51 @@ class LabelPrintService {
 
 		$shipment_items = $shipments[ $shipment_id ];
 
-		$label_items = array();
-		foreach ( $shipment_items as $item ) {
-			$label_items[] = array(
-				'name'       => $item['name'],
-				'sku'        => $item['sku'],
-				'quantity'   => $item['quantity'],
-				'weight'     => $item['weight'],
-				'dimensions' => $item['dimensions'],
-				'variation'  => $item['variation'],
-				'image'      => $item['image'],
-			);
-		}
+		$label_items = $this->create_rows_from_shipment_items( $shipment_items, $order );
 
-		// Generate HTML
+		$packing_slip_html = $this->render_packing_slip_html(
+			array(
+				'order_number'          => $order->get_order_number(),
+				'shipment_number'       => $shipment_number,
+				'total_shipments'       => $total_shipments,
+				'label_details'         => array(
+					'service_name' => $label['service_name'],
+					'tracking'     => $label['tracking'],
+					'package_name' => $label['package_name'],
+				),
+				'store_address_html'    => $store_address,
+				'shipping_address_html' => $shipping_address,
+				'items'                 => $label_items,
+			)
+		);
+
+		$html = apply_filters( 'wcshipping_packing_list_html', $packing_slip_html, $order_id, $label_id );
+
+		return array(
+			'success' => true,
+			'html'    => $html,
+		);
+	}
+
+	/**
+	 * Render the packing slip HTML shared across label and no-label flows.
+	 *
+	 * @param array $args Arguments used to populate the template.
+	 * @return string HTML markup for the packing slip.
+	 */
+	private function render_packing_slip_html( array $args ): string {
+		$defaults    = array(
+			'order_number'          => '',
+			'shipment_number'       => null,
+			'total_shipments'       => null,
+			'label_details'         => null,
+			'store_address_html'    => '',
+			'shipping_address_html' => '',
+			'items'                 => array(),
+		);
+		$data        = wp_parse_args( $args, $defaults );
+		$weight_unit = get_option( 'woocommerce_weight_unit' );
+
 		ob_start();
 		?>
 		<!DOCTYPE html>
@@ -201,54 +243,58 @@ class LabelPrintService {
 					<p>
 						<?php
 							// translators: %s is the order number.
-							echo esc_html( sprintf( __( 'Order #%s', 'woocommerce-shipping' ), $order->get_order_number() ) );
+							echo esc_html( sprintf( __( 'Order #%s', 'woocommerce-shipping' ), $data['order_number'] ) );
 						?>
-						<br/>
-						<?php
-							// translators: %1$s is the shipment number, %2$s is the total shipments.
-							echo esc_html( sprintf( __( 'Shipment #%1$s of %2$s', 'woocommerce-shipping' ), $shipment_number, $total_shipments ) );
-						?>
+						<?php if ( $data['shipment_number'] && $data['total_shipments'] ) : ?>
+							<br/>
+							<?php
+								// translators: %1$s is the shipment number, %2$s is the total shipments.
+								echo esc_html( sprintf( __( 'Shipment #%1$s of %2$s', 'woocommerce-shipping' ), $data['shipment_number'], $data['total_shipments'] ) );
+							?>
+						<?php endif; ?>
 					</p>
 				</div>
 
-				<div class="label-info">
-					<h3><?php echo esc_html( __( 'Shipping Label Details', 'woocommerce-shipping' ) ); ?></h3>
-					<p>
-						<?php
-							// translators: %s is the service name.
-							echo esc_html( sprintf( __( 'Service: %s', 'woocommerce-shipping' ), $label['service_name'] ) );
-						?>
-						<br/>
-						<?php
-							// translators: %s is the tracking number.
-							echo esc_html( sprintf( __( 'Tracking #: %s', 'woocommerce-shipping' ), $label['tracking'] ) );
-						?>
-						<br/>
-						<?php
-							// translators: %s is the package name.
-							echo esc_html( sprintf( __( 'Package: %s', 'woocommerce-shipping' ), $label['package_name'] ) );
-						?>
-					</p>
-				</div>
+				<?php if ( ! empty( $data['label_details'] ) && is_array( $data['label_details'] ) ) : ?>
+					<?php $label_details = $data['label_details']; ?>
+					<div class="label-info">
+						<h3><?php echo esc_html( __( 'Shipping Label Details', 'woocommerce-shipping' ) ); ?></h3>
+						<p>
+							<?php
+								// translators: %s is the service name.
+								echo esc_html( sprintf( __( 'Service: %s', 'woocommerce-shipping' ), $label_details['service_name'] ?? '' ) );
+							?>
+							<br/>
+							<?php
+								// translators: %s is the tracking number.
+								echo esc_html( sprintf( __( 'Tracking #: %s', 'woocommerce-shipping' ), $label_details['tracking'] ?? '' ) );
+							?>
+							<br/>
+							<?php
+								// translators: %s is the package name.
+								echo esc_html( sprintf( __( 'Package: %s', 'woocommerce-shipping' ), $label_details['package_name'] ?? '' ) );
+							?>
+						</p>
+					</div>
+				<?php endif; ?>
 
 				<div class="addresses">
 					<div class="address">
 						<h3><?php echo esc_html( __( 'From:', 'woocommerce-shipping' ) ); ?></h3>
-						<p><?php echo wp_kses_post( $store_address ); ?></p>
+						<p><?php echo wp_kses_post( $data['store_address_html'] ); ?></p>
 					</div>
 					<div class="address">
 						<h3><?php echo esc_html( __( 'Ship To:', 'woocommerce-shipping' ) ); ?></h3>
-						<p><?php echo wp_kses_post( $shipping_address ); ?></p>
+						<p><?php echo wp_kses_post( $data['shipping_address_html'] ); ?></p>
 					</div>
 				</div>
-
-
 
 				<table>
 					<thead>
 						<tr>
 							<th><?php echo esc_html( __( 'Item', 'woocommerce-shipping' ) ); ?></th>
 							<th><?php echo esc_html( __( 'SKU', 'woocommerce-shipping' ) ); ?></th>
+							<th><?php echo esc_html( __( 'Variant', 'woocommerce-shipping' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Quantity', 'woocommerce-shipping' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Weight', 'woocommerce-shipping' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Dimensions', 'woocommerce-shipping' ) ); ?></th>
@@ -256,51 +302,252 @@ class LabelPrintService {
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $label_items as $item ) : ?>
-							<tr>
-								<td>
-									<div class="item-cell">
-										<img class="item-image" src="<?php echo esc_url( $item['image'] ); ?>" alt="<?php echo esc_attr( $item['name'] ); ?>" />
-										<?php echo esc_html( $item['name'] ); ?>
-									</div>
-								</td>
-								<td><?php echo esc_html( $item['sku'] ); ?></td>
-								<td><?php echo esc_html( $item['quantity'] ); ?></td>
-								<td><?php echo esc_html( $item['weight'] ? $item['weight'] . ' ' . get_option( 'woocommerce_weight_unit' ) : '-' ); ?></td>
-								<td>
+						<?php foreach ( $data['items'] as $item ) : ?>
+						<tr>
+							<td>
+								<div class="item-cell">
 									<?php
-									if ( $item['dimensions']['length'] && $item['dimensions']['width'] && $item['dimensions']['height'] ) {
-										echo esc_html(
-											sprintf(
-												'%s x %s x %s %s',
-												$item['dimensions']['length'],
-												$item['dimensions']['width'],
-												$item['dimensions']['height'],
-												get_option( 'woocommerce_dimension_unit' )
-											)
-										);
-									} else {
-										echo '-';
-									}
+									echo wp_kses(
+										$item['image'],
+										array(
+											'img' => array(
+												'src'    => true,
+												'alt'    => true,
+												'class'  => true,
+												'width'  => true,
+												'height' => true,
+												'sizes'  => true,
+											),
+										)
+									);
 									?>
-								</td>
-								<td><div class="checkbox-cell"></div></td>
-							</tr>
+									<?php echo esc_html( $item['name'] ); ?>
+								</div>
+							</td>
+							<td><?php echo esc_html( $item['sku'] ); ?></td>
+							<td><?php echo esc_html( $item['variation'] ? $item['variation'] : '-' ); ?></td>
+							<td><?php echo esc_html( $item['quantity'] ); ?></td>
+							<td><?php echo esc_html( $item['weight'] ? $item['weight'] . ' ' . $weight_unit : '-' ); ?></td>
+							<td><?php echo esc_html( $item['dimensions'] ); ?></td>
+							<td><div class="checkbox-cell"></div></td>
+						</tr>
 						<?php endforeach; ?>
 					</tbody>
 				</table>
 			</div>
-			<div class="footer">
-				<p>Powered by WooCommerce Shipping</p>
-			</div>
+			<?php if ( ! Utils::is_next() ) : ?>
+				<div class="footer">
+					<p>Powered by WooCommerce Shipping</p>
+				</div>
+			<?php endif; ?>
 		</body>
 		</html>
 		<?php
-		$html = apply_filters( 'wcshipping_packing_list_html', ob_get_clean(), $order_id, $label_id );
+
+		return ob_get_clean();
+	}
+
+	/**
+	 * Generate packing list HTML for an order without requiring a shipping label.
+	 *
+	 * @param int    $order_id WC Order ID.
+	 * @param string $format   Output format ('html' or 'pdf').
+	 * @return array|WP_Error REST response body.
+	 */
+	public function get_packing_list_without_label( int $order_id, string $format = 'html' ) {
+		$order = \wc_get_order( $order_id );
+		if ( ! $order ) {
+			$message = __( 'Order not found', 'woocommerce-shipping' );
+			return new WP_Error(
+				401,
+				$message,
+				array(
+					'success' => false,
+					'message' => $message,
+				)
+			);
+		}
+
+		// Get shipment items from order without label requirement
+		$shipments = $this->label_purchase_service->get_shipments( $order_id );
+
+		// Use the first shipment (index 0) or build from order items if none exist
+		$shipment_items = ! empty( $shipments ) ? reset( $shipments ) : array();
+
+		// Get store origin address from settings
+		$origin_address = $this->get_store_origin_address();
+
+		// Get shipping address from order
+		$shipping_address = AddressUtils::address_array_to_formatted_html_string(
+			array(
+				'company'    => $order->get_shipping_company(),
+				'address_1'  => $order->get_shipping_address_1(),
+				'address_2'  => $order->get_shipping_address_2(),
+				'city'       => $order->get_shipping_city(),
+				'state'      => $order->get_shipping_state(),
+				'postcode'   => $order->get_shipping_postcode(),
+				'country'    => $order->get_shipping_country(),
+				'first_name' => $order->get_shipping_first_name(),
+				'last_name'  => $order->get_shipping_last_name(),
+			)
+		);
+
+		// Create items array from order items if shipment_items is empty
+		if ( empty( $shipment_items ) ) {
+			$shipment_items = array();
+			foreach ( $order->get_items() as $item_id => $item ) {
+				if ( ! $item->get_product() || ! $item->get_product()->needs_shipping() ) {
+					continue;
+				}
+				$shipment_items[] = array(
+					'id'       => $item_id,
+					'quantity' => $item->get_quantity(),
+				);
+			}
+		}
+
+		$label_items = $this->create_rows_from_shipment_items( $shipment_items, $order );
+
+		$packing_slip_html = $this->render_packing_slip_html(
+			array(
+				'order_number'          => $order->get_order_number(),
+				'store_address_html'    => $origin_address,
+				'shipping_address_html' => $shipping_address,
+				'items'                 => $label_items,
+			)
+		);
+
+		$html = apply_filters( 'wcshipping_packing_list_without_label_html', $packing_slip_html, $order_id );
+
+		// If PDF format is requested, convert HTML to PDF via Connect Server
+		if ( 'pdf' === $format ) {
+			$this->logger->log( "Converting packing slip to PDF for order $order_id", __CLASS__ );
+
+			$request_params = array(
+				'html'     => $html,
+				'order_id' => $order_id,
+			);
+
+			// Call the Connect Server PDF endpoint
+			$raw_response = $this->api_client->get_packing_slip_pdf( $request_params );
+
+			if ( is_wp_error( $raw_response ) ) {
+				$this->logger->log( $raw_response, __CLASS__ );
+				return $raw_response;
+			}
+
+			if ( empty( $raw_response['body'] ) ) {
+				$this->logger->log( 'PDF generation returned empty body', __CLASS__ );
+				return new WP_Error(
+					500,
+					__( 'PDF generation failed', 'woocommerce-shipping' ),
+					array(
+						'success' => false,
+						'message' => __( 'PDF generation returned empty response', 'woocommerce-shipping' ),
+					)
+				);
+			}
+
+			return array(
+				'success'    => true,
+				'b64Content' => base64_encode( $raw_response['body'] ),
+				'mimeType'   => 'application/pdf',
+			);
+		}
 
 		return array(
 			'success' => true,
 			'html'    => $html,
 		);
+	}
+
+	/**
+	 * Create label items array from shipment items.
+	 *
+	 * @param array     $shipment_items Array of shipment items.
+	 * @param \WC_Order $order         WooCommerce order object.
+	 * @return array                   Array of formatted label items.
+	 */
+	private function create_rows_from_shipment_items( array $shipment_items, \WC_Order $order ): array {
+		$label_items = array();
+
+		foreach ( $shipment_items as $item ) {
+			/**
+			 * @var \WC_Order_Item_Product $order_item
+			 */
+			$order_item = $order->get_item( $item['id'] );
+			if ( ! $order_item || ! $order_item->get_product() ) {
+				continue;
+			}
+
+			$variation_text = wc_display_item_meta(
+				$order_item,
+				array(
+					'before'       => '',
+					'after'        => '',
+					'separator'    => ', ',
+					'echo'         => false,
+					'label_before' => '',
+					'label_after'  => ': ',
+					'autop'        => false,
+				)
+			);
+
+			// Strip any remaining HTML tags for clean table display
+			$variation_text = wp_strip_all_tags( $variation_text );
+
+			// Default to order item quantity, when it's a single shipment, the order acuatlly doesn't have a shipment meta set.
+			$quantity = $order_item->get_quantity();
+
+			// Determine quantity: use count of subItems if present
+			if ( isset( $item['subItems'] ) && is_array( $item['subItems'] ) ) {
+				$quantity = max( count( $item['subItems'] ), 1 );
+			}
+
+			$label_items[] = array(
+				'name'       => $order_item->get_name(),
+				'sku'        => $order_item->get_product()->get_sku(),
+				'quantity'   => $quantity,
+				'weight'     => $order_item->get_product()->get_weight(),
+				'dimensions' => wc_format_dimensions( $order_item->get_product()->get_dimensions( false ) ?? array() ),
+				'variation'  => $variation_text,
+				'image'      => $order_item->get_product()->get_image(
+					'woocommerce_thumbnail',
+					array(
+						'class' => 'item-image',
+					)
+				),
+			);
+		}
+
+		return $label_items;
+	}
+
+	/**
+	 * Get store origin address from WooCommerce settings.
+	 *
+	 * @return string Formatted store address HTML.
+	 */
+	private function get_store_origin_address(): string {
+		$store_address = array(
+			'company'   => get_bloginfo( 'name' ),
+			'address_1' => get_option( 'woocommerce_store_address' ),
+			'address_2' => get_option( 'woocommerce_store_address_2' ),
+			'city'      => get_option( 'woocommerce_store_city' ),
+			'state'     => get_option( 'woocommerce_default_state' ),
+			'postcode'  => get_option( 'woocommerce_store_postcode' ),
+			'country'   => get_option( 'woocommerce_default_country' ),
+		);
+
+		// If we have a country code with state (e.g., 'US:CA'), split it
+		if ( strpos( $store_address['country'], ':' ) !== false ) {
+			list( $country, $state )  = explode( ':', $store_address['country'] );
+			$store_address['country'] = $country;
+			if ( empty( $store_address['state'] ) ) {
+				$store_address['state'] = $state;
+			}
+		}
+
+		return AddressUtils::address_array_to_formatted_html_string( $store_address );
 	}
 }

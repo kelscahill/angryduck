@@ -70,11 +70,11 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Get password reset url.
          *
+         * @param string $user_login The username of the user.
+         *
+         * @return bool
          * @since 1.0.0
          * @since 1.7.2 Refactored code so instead of manually creating key, we use get_password_reset_key WP function.
-         *
-         * @param string $user_login The username of the user.
-         * @return bool
          */
         private function _get_reset_password_url( $user_login ) {
             global $wpdb;
@@ -125,13 +125,27 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         }
 
         /**
+         * Get the WWLC Leads admin page URL used by the {user_management_url}
+         * placeholder in admin notification emails.
+         *
+         * Extracted as a static accessor so callers (and tests) can resolve the
+         * URL without going through the full WC_Email rendering pipeline.
+         *
+         * @return string
+         * @since 2.0.5
+         */
+        public static function get_user_management_url() {
+            return get_admin_url( null, 'admin.php?page=wwlc-leads-admin-page#/' );
+        }
+
+        /**
          * Get admin email recipients.
          *
+         * @param array|string $display Value to display.
+         *
+         * @return array|string
          * @since 1.3.0
          * @since 1.17.4 add display parameter
-         *
-         * @param array|string $display Value to display.
-         * @return array|string
          */
         public static function get_admin_email_recipients( $display = 'string' ) {
             $to = trim( get_option( 'wwlc_emails_main_recipient' ) );
@@ -157,16 +171,18 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Get admin email cc.
          *
+         * @param array|string $display Value to display.
+         *
+         * @return array|string
          * @since 1.3.0
          * @since 1.17.4 add display parameter
-         *
-         * @param array|string $display Value to display.
-         * @return array|string
          */
         public static function get_admin_email_cc( $display = 'string' ) {
             $cc = trim( get_option( 'wwlc_emails_cc' ) );
 
             if ( '' !== $cc ) {
+                // Strip CRLF characters to prevent email header injection.
+                $cc = str_replace( array( "\r", "\n" ), '', $cc );
                 $cc = array_map( 'trim', explode( ',', $cc ) );
                 $cc = array_filter( $cc, 'is_email' );
 
@@ -181,16 +197,18 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Get admin email bcc.
          *
+         * @param array|string $display Value to display.
+         *
+         * @return array|string
          * @since 1.3.0
          * @since 1.17.4 add display parameter
-         *
-         * @param array|string $display Value to display.
-         * @return array|string
          */
         public static function get_admin_email_bcc( $display = 'string' ) {
             $bcc = trim( get_option( 'wwlc_emails_bcc' ) );
 
             if ( '' !== $bcc ) {
+                // Strip CRLF characters to prevent email header injection.
+                $bcc = str_replace( array( "\r", "\n" ), '', $bcc );
                 $bcc = array_map( 'trim', explode( ',', $bcc ) );
                 $bcc = array_filter( $bcc, 'is_email' );
 
@@ -206,10 +224,10 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
          * ! Not Implemented
          * Retrieves the attachment.
          *
-         * @since 1.6.0
-         *
          * @param int $userID The user ID.
+         *
          * @return array
+         * @since 1.6.0
          */
         public static function get_custom_field_email_attachments( $userID ) {
             $wwlc_forms         = WWLC_Forms::instance();
@@ -234,21 +252,43 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Show Approve and Reject action in admin email when 'Allow managing of users via email' option is enabled.
          *
-         * @since 1.8.0
+         * @param string  $message Manage user link to be sent to email.
+         * @param WP_User $user WP_User object.
          *
-         * @param string  $message  Manage user link to be sent to email.
-         * @param WP_User $user     WP_User object.
          * @return string
+         * @since 1.8.0
+         * @since 2.0.5 Replaced wp_nonce_url() with a user-context-independent token to fix false
+         *              expiry caused by WP nonces being bound to the user session at generation time.
          */
         public function wwlc_allow_managing_of_users_via_email( $message, $user ) {
             $allow = get_option( 'wwlc_email_allow_managing_of_users', false );
 
             if ( 'yes' === $allow ) {
 
+                $approve_url = add_query_arg(
+                    array(
+                        'page'        => 'wwlc-leads-admin-page',
+                        'user_id'     => $user->ID,
+                        'action'      => 'approve_user',
+                        '_wwlc_token' => $this->generate_email_action_token( $user->ID, 'approve_user' ),
+                    ),
+                    admin_url( 'admin.php' )
+                );
+
+                $reject_url = add_query_arg(
+                    array(
+                        'page'        => 'wwlc-leads-admin-page',
+                        'user_id'     => $user->ID,
+                        'action'      => 'reject_user',
+                        '_wwlc_token' => $this->generate_email_action_token( $user->ID, 'reject_user' ),
+                    ),
+                    admin_url( 'admin.php' )
+                );
+
                 $mgt_links_html  = '<p>';
-                $mgt_links_html .= '<a target="_blank" href="' . admin_url( 'user-edit.php?user_id=' . $user->ID ) . '&action=approve_user">Approve</a>';
+                $mgt_links_html .= '<a target="_blank" href="' . esc_url( $approve_url ) . '">' . esc_html__( 'Approve', 'woocommerce-wholesale-lead-capture' ) . '</a>';
                 $mgt_links_html .= '&nbsp;|&nbsp;';
-                $mgt_links_html .= '<a target="_blank" href="' . admin_url( 'user-edit.php?user_id=' . $user->ID ) . '&action=reject_user">Reject</a>';
+                $mgt_links_html .= '<a target="_blank" href="' . esc_url( $reject_url ) . '">' . esc_html__( 'Reject', 'woocommerce-wholesale-lead-capture' ) . '</a>';
                 $mgt_links_html .= '</p></div>';
 
                 // Find <div id="body_content_inner"></div> and replace the closing </div> with $mgt_links_html.
@@ -263,93 +303,234 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
          * Handles approval and rejection of users via email.
          *
          * @since 1.8.0
+         * @since 2.0.4 Redirect to Leads page instead of Edit User page.
+         * @since 2.0.5 Replaced wp_verify_nonce() with verify_email_action_token() to fix links
+         *              that were always treated as expired due to WP nonces being user-session-bound.
+         *              Added backward compatibility for legacy _wwlc_nonce links.
          */
         public function wwlc_process_approve_reject() {
-            // phpcs:disable WordPress.Security.NonceVerification
-            $allow              = get_option( 'wwlc_email_allow_managing_of_users', false );
-            $screen             = get_current_screen();
-            $current_user       = wp_get_current_user();
-            $current_user_roles = $current_user->roles;
+            $allow = get_option( 'wwlc_email_allow_managing_of_users', false );
 
-            if ( 'yes' === $allow && 'user-edit' === $screen->id && in_array( 'administrator', $current_user_roles, true ) && isset( $_GET['action'] ) && isset( $_GET['user_id'] ) ) {
-
-                $action  = $_GET['action'];
-                $user_id = $_GET['user_id'];
-                $user    = get_userdata( $_GET['user_id'] );
-                $roles   = $user->roles;
-
-                if ( $user && array_intersect( $roles, array( WWLC_UNAPPROVED_ROLE, WWLC_REJECTED_ROLE ) ) ) {
-
-                    if ( 'approve_user' === $action ) {
-
-                        if ( $this->wwlc_user_account->wwlc_approve_user( array( 'userID' => $user_id ) ) ) {
-                            wp_safe_redirect( wwlc_get_current_url() . '&status=success' );
-                            exit;
-                        }
-                    } elseif ( 'reject_user' === $action ) {
-
-                        if ( $this->wwlc_user_account->wwlc_reject_user( array( 'userID' => $user_id ) ) ) {
-                            wp_safe_redirect( wwlc_get_current_url() . '&status=success' );
-                            exit;
-                        }
-                    }
-                }
+            if ( 'yes' !== $allow ) {
+                return;
             }
-            // phpcs:enable WordPress.Security.NonceVerification
+
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                return;
+            }
+
+            // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Token/nonce verified below after extracting user_id and action.
+            $has_token        = isset( $_GET['action'], $_GET['user_id'], $_GET['_wwlc_token'] );
+            $has_legacy_nonce = isset( $_GET['action'], $_GET['user_id'], $_GET['_wwlc_nonce'] );
+
+            if ( ! $has_token && ! $has_legacy_nonce ) {
+                return;
+            }
+
+            $action  = sanitize_text_field( wp_unslash( $_GET['action'] ) );
+            $user_id = absint( $_GET['user_id'] );
+            // phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+            if ( ! in_array( $action, array( 'approve_user', 'reject_user' ), true ) ) {
+                return;
+            }
+
+            // Redirects token_expired, already_processed, and success notices to the Leads page with appropriate query parameters for notice display; see wwlc_user_management_notice().
+            $token_expired_redirect_url     = $this->get_email_action_redirect_url( $action, 'token_expired' );
+            $already_processed_redirect_url = $this->get_email_action_redirect_url( $action, 'already_processed', $user_id );
+            $success_redirect_url           = $this->get_email_action_redirect_url( $action, 'success' );
+
+            // Backward compatibility: links generated before 2.0.5 carry a WP nonce (_wwlc_nonce)
+            // which is inherently unverifiable — WP nonces are bound to the user session at generation
+            // time, and notification emails are sent outside any admin session. Rather than silently
+            // dropping the request, redirect to the expired-link notice so the admin receives clear
+            // feedback and can act manually from the Leads page.
+            if ( ! $has_token ) {
+                wp_safe_redirect( $token_expired_redirect_url );
+                exit;
+            }
+
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Custom token verification used; see verify_email_action_token().
+            $token = sanitize_text_field( wp_unslash( $_GET['_wwlc_token'] ) );
+
+            if ( ! $this->verify_email_action_token( $user_id, $action, $token ) ) {
+                // A failed token can mean two things: genuine expiry, or a single-use token that
+                // was consumed when another admin already processed this lead (either from the
+                // Leads page or via a concurrent email link click). Check the user's current role
+                // to surface the most accurate and actionable notice to the admin.
+                $user = get_userdata( $user_id );
+
+                if ( $user && ! array_intersect( $user->roles, array( WWLC_UNAPPROVED_ROLE, WWLC_REJECTED_ROLE ) ) ) {
+                    wp_safe_redirect( $already_processed_redirect_url );
+                } else {
+                    wp_safe_redirect( $token_expired_redirect_url );
+                }
+
+                exit;
+            }
+
+            $user = get_userdata( $user_id );
+
+            if ( ! $user ) {
+                return;
+            }
+
+            // Token is valid but the user no longer holds an actionable role — another admin
+            // processed this lead via the Leads page before this email link was clicked.
+            if ( ! array_intersect( $user->roles, array( WWLC_UNAPPROVED_ROLE, WWLC_REJECTED_ROLE ) ) ) {
+                wp_safe_redirect( $already_processed_redirect_url );
+                exit;
+            }
+
+            if ( 'approve_user' === $action && $this->wwlc_user_account->wwlc_approve_user( array( 'userID' => $user_id ) ) ) {
+                wp_safe_redirect( $success_redirect_url );
+                exit;
+            }
+
+            if ( 'reject_user' === $action && $this->wwlc_user_account->wwlc_reject_user( array( 'userID' => $user_id ) ) ) {
+                wp_safe_redirect( $success_redirect_url );
+                exit;
+            }
         }
 
         /**
-         * Shows user approval notice in user edit screen.
+         * Shows user approval notice on the Leads page after email-based approve/reject.
          *
          * @since 1.8.0
+         * @since 2.0.4 Updated to display on Leads page instead of user edit screen.
+         * @since 2.0.5 Added error notice for expired nonce and already-processed notice.
          */
         public function wwlc_user_management_notice() {
-            // phpcs:disable WordPress.Security.NonceVerification
-            if ( isset( $_GET['action'] ) && isset( $_GET['status'] ) ) {
-
-                // Approved Notice.
-                if ( 'approve_user' === $_GET['action'] && 'success' === $_GET['status'] ) {
-                    ?>
-                    <div class="notice notice-success is-dismissible">
-                        <p><?php esc_html_e( 'Successfully Approved!', 'woocommerce-wholesale-lead-capture' ); ?></p>
-                    </div>
-                    <?php
-
-                }
-
-                // Rejected Notice.
-                if ( 'reject_user' === $_GET['action'] && 'success' === $_GET['status'] ) {
-                    ?>
-                    <div class="notice notice-success is-dismissible">
-                        <p><?php esc_html_e( 'Successfully Rejected!', 'woocommerce-wholesale-lead-capture' ); ?></p>
-                    </div>
-                    <?php
-
-                }
+            // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Display-only; token verified in wwlc_process_approve_reject().
+            if ( ! isset( $_GET['action'], $_GET['status'] ) ) {
+                return;
             }
-            // phpcs:enable WordPress.Security.NonceVerification
+
+            $action = sanitize_text_field( wp_unslash( $_GET['action'] ) );
+            $status = sanitize_text_field( wp_unslash( $_GET['status'] ) );
+            // phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+            // Expired token notice — shown when an email approve/reject link is clicked after the token has expired.
+            if ( 'token_expired' === $status ) {
+                ?>
+                <div class="notice notice-error is-dismissible">
+                    <p><?php esc_html_e( 'The approval link has expired. Please approve or reject the user manually from the Leads page.', 'woocommerce-wholesale-lead-capture' ); ?></p>
+                </div>
+                <?php
+                return;
+            }
+
+            // Already-processed notice — shown when the lead was already approved or rejected by another
+            // admin before this email link was clicked (e.g., via the Leads page or a concurrent click).
+            if ( 'already_processed' === $status ) {
+                $user_id   = isset( $_GET['user_id'] ) ? absint( $_GET['user_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                $user      = $user_id ? get_userdata( $user_id ) : false;
+                $user_name = $user ? esc_html( $user->display_name ) : esc_html__( 'This lead', 'woocommerce-wholesale-lead-capture' );
+                ?>
+                <div class="notice notice-warning is-dismissible">
+                    <p>
+                        <?php
+                        /* translators: %s is the name of the user whose lead was already processed. */
+                        printf(
+                            '<strong>%s</strong> %s',
+                            esc_html( $user_name ),
+                            esc_html__( 'has already been processed. Their account status has been updated by another admin.', 'woocommerce-wholesale-lead-capture' )
+                        );
+                        ?>
+                    </p>
+                </div>
+                <?php
+                return;
+            }
+
+            if ( 'success' !== $status ) {
+                return;
+            }
+
+            // Approved Notice.
+            if ( 'approve_user' === $action ) {
+                ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php esc_html_e( 'Successfully Approved!', 'woocommerce-wholesale-lead-capture' ); ?></p>
+                </div>
+                <?php
+            }
+
+            // Rejected Notice.
+            if ( 'reject_user' === $action ) {
+                ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php esc_html_e( 'Successfully Rejected!', 'woocommerce-wholesale-lead-capture' ); ?></p>
+                </div>
+                <?php
+            }
         }
 
         /**
-         * Generate user reset password link.
+         * Generate the "set your password" link rendered inside the Wholesale
+         * Application Received email.
          *
-         * @since 1.13
-         * @access private
+         * Extracted as a static accessor (mirroring {@see self::get_user_management_url()})
+         * so tests and other callers can resolve the URL without going through
+         * the full WC_Email rendering pipeline.
          *
          * @param int $user_id User ID.
-         * @return string User reset password link.
+         *
+         * @return string Set-password URL, or the bare lost-password URL when the
+         *                user can't be resolved.
+         * @since 1.13
+         * @since 2.0.5 Made public + static; URL now uses WooCommerce's
+         *              `action=newaccount&key=&login=` format and bypasses the
+         *              WWLC `allow_password_reset` filter for internal key
+         *              generation (the filter is intended to block user-initiated
+         *              resets only — see #570).
          */
-        private function _generate_user_reset_password_link( $user_id ) {
+        public static function get_password_reset_link( $user_id ) {
             $user = get_user_by( 'ID', absint( $user_id ) );
 
             if ( ! is_a( $user, 'WP_User' ) ) {
                 return wc_lostpassword_url();
             }
 
-            $reset_key = get_password_reset_key( $user );
-            $username  = rawurlencode( $user->user_login );
+            // Detach WWLC's `allow_password_reset` gate around the internal,
+            // server-side key generation. The gate (see WWLC_User_Account::wwlc_block_unapproved_password_reset,
+            // introduced for #487) is intended to block user-initiated front-end
+            // resets for unapproved/rejected wholesale users — not to block the
+            // email helper that ships the brand-new lead a link to set their
+            // first password. Leaving it attached here would cause
+            // get_password_reset_key() to return WP_Error and the email to fall
+            // back to a bare lost-password URL (#570).
+            $user_account    = WWLC_User_Account::instance();
+            $filter_detached = remove_filter( 'allow_password_reset', array( $user_account, 'wwlc_block_unapproved_password_reset' ), 10 );
 
-            return wc_lostpassword_url() . "?key=$reset_key&login=$username";
+            // `try/finally` so the gate is restored even if a third-party callback
+            // attached to `retrieve_password_key` (fired inside get_password_reset_key())
+            // throws — leaving #487's protection globally detached for the rest of
+            // the request would silently re-open the bypass for any later code path.
+            try {
+                $reset_key = get_password_reset_key( $user );
+            } finally {
+                if ( $filter_detached ) {
+                    add_filter( 'allow_password_reset', array( $user_account, 'wwlc_block_unapproved_password_reset' ), 10, 2 );
+                }
+            }
+
+            if ( is_wp_error( $reset_key ) ) {
+                return wc_lostpassword_url();
+            }
+
+            // Match WooCommerce's customer-new-account email URL format
+            // (`?action=newaccount&key=&login=`). The `action=newaccount` param
+            // is what WC_Query reads to render the "Set password" form title
+            // instead of the "Lost password" form.
+            return add_query_arg(
+                array(
+                    'action' => 'newaccount',
+                    'key'    => $reset_key,
+                    'login'  => rawurlencode( $user->user_login ),
+                ),
+                wc_lostpassword_url()
+            );
         }
 
         /**
@@ -366,10 +547,10 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Ultimate Member Plugin integration - attached new hook callback function to not send email to admin if new user register using WWLC Registration Form
          *
-         * @since 1.17
-         *
          * @param int   $user_id User ID.
-         * @param array $args    Array of actions.
+         * @param array $args Array of actions.
+         *
+         * @since 1.17
          */
         public function wwlc_um_send_registration_notification_fix( $user_id, $args ) {
             // Do nothing - Don't send email if registration is coming from wwlc registration page
@@ -396,10 +577,10 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
          * Ultimate Member Plugin integration - ttached new hook callback function to not send activation email link to customer who register for wholesale customer via wwlc.
          * Attached new hook callback function to not send activation email link to customer who register for wholesale customer via wwlc.
          *
-         * @since 1.17
-         *
          * @param int   $user_id User ID.
-         * @param array $args    Array of actions.
+         * @param array $args Array of actions.
+         *
+         * @since 1.17
          */
         public function wwlc_um_post_registration_checkmail_hook_fix( $user_id, $args ) {
             // Do nothing - Dont send email for activation link on registration from wwlc, admin will be the one to approve for wholesale customer.
@@ -415,10 +596,10 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Ultimate Member Plugin integration - attached new hook callback function to not send welcome  email link to customer who register for wholesale customer via wwlc.
          *
-         * @since 1.17
-         *
          * @param int   $user_id User ID.
-         * @param array $args    Array of actions.
+         * @param array $args Array of actions.
+         *
+         * @since 1.17
          */
         public function wwlc_um_post_registration_approved_hook_fix( $user_id, $args ) {
             // Do nothing - Don't send email if registration is coming from wwlc registration page
@@ -434,12 +615,11 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Register WWLC email classes.
          *
-         * @since 1.17.4
-         * @access public
-         *
          * @param array $email_classes Array of email classes.
          *
          * @return array
+         * @since 1.17.4
+         * @access public
          */
         public function register_wwlc_emails_classes( $email_classes ) {
             require_once WWLC_INCLUDES_ROOT_DIR . 'emails/class-wwlc-email-new-wholesale-lead.php';
@@ -460,36 +640,35 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Render whysiwyg editor for WWLC email content.
          *
-         * @since 1.17.4
-         * @access public
-         *
-         * @param string      $field_html  The markup of the field being generated (initiated as an empty string).
-         * @param string      $key         The key of the field.
-         * @param array       $data        The attributes of the field as an associative array.
+         * @param string      $field_html The markup of the field being generated (initiated as an empty string).
+         * @param string      $key The key of the field.
+         * @param array       $data The attributes of the field as an associative array.
          * @param WC_Settings $wc_settings The current WC_Settings_API object.
          *
          * @return string
+         * @since 1.17.4
+         * @access public
          */
         public function render_email_wysiwyg_html( $field_html, $key, $data, $wc_settings ) {
             ob_start();
             ?>
             <tr valign="top">
                 <th scope="row" class="titledesc">
-                    <label for="<?php echo esc_attr( $key ); ?>"><?php echo wp_kses_post( $data['title'] ); ?> <?php echo $wc_settings->get_tooltip_html( $data ) ; // phpcs:ignore. ?></label>
+                    <label for="<?php echo esc_attr( $key ); ?>"><?php echo wp_kses_post( $data['title'] ); ?><?php echo $wc_settings->get_tooltip_html( $data ); // phpcs:ignore. ?></label>
                 </th>
                 <td class="forminp forminp-<?php echo sanitize_title( $data['type'] ); //phpcs:ignore ?>">
                     <fieldset>
                         <?php
-                            wp_editor(
-                                html_entity_decode( $wc_settings->get_option( $key, $data['default'] ) ),
-                                $wc_settings->id,
-                                array(
-                                    'wpautop'       => false,
-                                    'textarea_name' => 'woocommerce_' . $wc_settings->id . '_' . $key,
-                                    'textarea_rows' => 12,
-                                    'editor_css'    => '<style type="text/css">div#wp-' . $wc_settings->id . '-wrap{width: 600px;}</style>',
-                                )
-                            );
+                        wp_editor(
+                            html_entity_decode( $wc_settings->get_option( $key, $data['default'] ) ),
+                            $wc_settings->id,
+                            array(
+								'wpautop'       => false,
+								'textarea_name' => 'woocommerce_' . $wc_settings->id . '_' . $key,
+								'textarea_rows' => 12,
+								'editor_css'    => '<style type="text/css">div#wp-' . $wc_settings->id . '-wrap{width: 600px;}</style>',
+							)
+                        );
                         ?>
                     </fieldset>
                     <div class="wwlc-email-wysiwyg-desc">
@@ -520,10 +699,9 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Get all custom fields available then convert to WC_Email placeholder.
          *
+         * @return array
          * @since 1.17.4
          * @access public
-         *
-         * @return array
          */
         public static function get_custom_fields_placeholders() {
             $custom_fields              = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
@@ -541,21 +719,21 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Override wwlc template file check to make sure our custom email templates are found by WC.
          *
+         * @param string $core_file Core template file path.
+         * @param string $template Template file name.
+         * @param string $template_base Template base path.
+         * @param string $email_id Email ID.
+         *
          * @since 1.17.4
          * @access public
-         *
-         * @param string $core_file     Core template file path.
-         * @param string $template      Template file name.
-         * @param string $template_base Template base path.
-         * @param string $email_id      Email ID.
          */
         public function override_wwlc_template_file_path_check( $core_file, $template, $template_base, $email_id ) {
             $wwlc_email_ids = array(
-                'wwlc_email_new_wholesale_lead',
-                'wwlc_email_new_wholesale_lead_auto_approved',
-                'wwlc_email_wholesale_application_received',
-                'wwlc_email_wholesale_account_approved',
-                'wwlc_email_wholesale_account_rejected',
+				'wwlc_email_new_wholesale_lead',
+				'wwlc_email_new_wholesale_lead_auto_approved',
+				'wwlc_email_wholesale_application_received',
+				'wwlc_email_wholesale_account_approved',
+				'wwlc_email_wholesale_account_rejected',
             );
 
             if ( in_array( $email_id, $wwlc_email_ids, true ) ) {
@@ -568,54 +746,61 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Format email string, replace email content placeholders with appropriate values.
          *
-         * @since 1.17.4
-         * @access public
-         *
          * @param string   $find_replace String of email content.
-         * @param WC_Email $wc_email     WC_Email object.
+         * @param WC_Email $wc_email WC_Email object.
          *
          * @return array
+         * @since 1.17.4
+         * @since 2.0.5 {user_management_url} now resolves to the WWLC Leads admin page.
+         * @access public
          */
         public function wwlc_woocommerce_email_format_string( $find_replace, $wc_email ) {
 
             $wwlc_email_ids = array(
-                'wwlc_email_new_wholesale_lead',
-                'wwlc_email_new_wholesale_lead_auto_approved',
-                'wwlc_email_wholesale_application_received',
-                'wwlc_email_wholesale_account_approved',
-                'wwlc_email_wholesale_account_rejected',
+				'wwlc_email_new_wholesale_lead',
+				'wwlc_email_new_wholesale_lead_auto_approved',
+				'wwlc_email_wholesale_application_received',
+				'wwlc_email_wholesale_account_approved',
+				'wwlc_email_wholesale_account_rejected',
             );
 
-            if ( in_array( $wc_email->id, $wwlc_email_ids, true ) ) {
+            $is_preview = apply_filters( 'woocommerce_is_email_preview', false );
+
+            if ( in_array( $wc_email->id, $wwlc_email_ids, true ) && ! $is_preview ) { // do not render this on preview mode, because preview data objects are not shown properly.
                 $find    = array_keys( $wc_email->wwlc_placeholders );
                 $replace = array();
+
+                // Extract user data safely from $wc_email->object.
+                $user_data = $this->_extract_user_data_from_email_object( $wc_email->object );
+                $user_id   = $user_data['ID'];
+                $user      = $user_id ? get_user_by( 'ID', $user_id ) : null;
 
                 if ( in_array( '{site_name}', $find, true ) ) {
                     $replace[ array_search( '{site_name}', $find, true ) ] = get_bloginfo( 'name' );
                 }
 
                 if ( in_array( '{user_management_url}', $find, true ) ) {
-                    $replace[ array_search( '{user_management_url}', $find, true ) ] = get_admin_url( null, 'users.php' );
+                    $replace[ array_search( '{user_management_url}', $find, true ) ] = self::get_user_management_url();
                 }
 
                 if ( in_array( '{user_edit_profile_url}', $find, true ) ) {
-                    $replace[ array_search( '{user_edit_profile_url}', $find, true ) ] = admin_url( 'user-edit.php?user_id=' . $wc_email->object->data->ID );
+                    $replace[ array_search( '{user_edit_profile_url}', $find, true ) ] = $user ? admin_url( 'user-edit.php?user_id=' . $user->ID ) : '';
                 }
 
                 if ( in_array( '{user_role}', $find, true ) ) {
-                    $replace[ array_search( '{user_role}', $find, true ) ] = wwlc_get_user_role( $wc_email->object->data->ID );
+                    $replace[ array_search( '{user_role}', $find, true ) ] = $user ? wwlc_get_user_role( $user->ID ) : '';
                 }
 
                 // Generate {user_wholesale_role} template tag.
                 if ( in_array( '{user_wholesale_role}', $find, true ) ) {
-                    if ( class_exists( 'WWP_Wholesale_Roles' ) ) {
+                    if ( class_exists( 'WWP_Wholesale_Roles' ) && $user ) {
 
                         $user_wholesale_role = '';
                         $wwp_wholesale_role  = WWP_Wholesale_Roles::getInstance();
                         $wholesale_roles     = $wwp_wholesale_role->getAllRegisteredWholesaleRoles();
 
                         // Check wholesale role name.
-                        foreach ( $wc_email->object->roles as $role ) {
+                        foreach ( $user->roles as $role ) {
                             if ( isset( $wholesale_roles[ $role ] ) ) {
                                 $user_wholesale_role = $wholesale_roles[ $role ]['roleName'];
                             }
@@ -630,23 +815,23 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
                 }
 
                 if ( in_array( '{reset_password_url}', $find, true ) ) {
-                    $replace[ array_search( '{reset_password_url}', $find, true ) ] = $this->_get_reset_password_url( $wc_email->object->data->user_login );
+                    $replace[ array_search( '{reset_password_url}', $find, true ) ] = $user ? $this->_get_reset_password_url( $user->user_login ) : '';
                 }
 
                 if ( in_array( '{full_name}', $find, true ) ) {
-                    $replace[ array_search( '{full_name}', $find, true ) ] = $wc_email->object->first_name . ' ' . $wc_email->object->last_name;
+                    $replace[ array_search( '{full_name}', $find, true ) ] = $user ? esc_html( $user->first_name . ' ' . $user->last_name ) : '';
                 }
 
                 if ( in_array( '{first_name}', $find, true ) ) {
-                    $replace[ array_search( '{first_name}', $find, true ) ] = $wc_email->object->first_name;
+                    $replace[ array_search( '{first_name}', $find, true ) ] = $user ? esc_html( $user->first_name ) : '';
                 }
 
                 if ( in_array( '{last_name}', $find, true ) ) {
-                    $replace[ array_search( '{last_name}', $find, true ) ] = $wc_email->object->last_name;
+                    $replace[ array_search( '{last_name}', $find, true ) ] = $user ? esc_html( $user->last_name ) : '';
                 }
 
                 if ( in_array( '{username}', $find, true ) ) {
-                    $replace[ array_search( '{username}', $find, true ) ] = $wc_email->object->data->user_login;
+                    $replace[ array_search( '{username}', $find, true ) ] = $user ? esc_html( $user->user_login ) : '';
                 }
 
                 /**
@@ -654,85 +839,72 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
                  * Only send plain password to user only on wholesale lead registration.
                  */
                 if ( in_array( '{password}', $find, true ) ) {
-
-                    global $wpdb;
-                    $user_capability         = maybe_unserialize( get_user_meta( $wc_email->object->data->ID, $wpdb->get_blog_prefix() . 'capabilities', true ) );
-                    $auto_generated_password = get_user_meta( $wc_email->object->data->ID, 'wwlc_auto_generated_password', true );
-
-                    // On upgrade Account.
-                    if ( get_user_meta( $wc_email->object->data->ID, 'wwlc_request_upgrade', true ) ) {
-                        $replace[ array_search( '{password}', $find, true ) ] = __( '[your current password]', 'woocommerce-wholesale-lead-capture' );
-                    } else { // phpcs:ignore
-                        // On wholesale lead registration, send plain password to email content.
-                        if ( isset( $user_capability ) && ( isset( $user_capability['wwlc_unapproved'] ) && true === $user_capability['wwlc_unapproved'] ) ) {
-                            $replace[ array_search( '{password}', $find, true ) ] = $wc_email->user_password ?? '';
-                        } elseif ( ! empty( $auto_generated_password ) && get_option( 'wwlc_general_auto_approve_new_leads' ) === 'yes' ) { // On wholesale lead registration, if password is auto generated.
-                            $reset_link = $this->_generate_user_reset_password_link( $wc_email->object->data->ID );
-                            $replace[ array_search( '{password}', $find, true ) ] = sprintf( '<a href="%1$s">%2$s</a>', $reset_link, __( 'Click here to set your password', 'woocommerce-wholesale-lead-capture' ) );
-                        } elseif ( ! empty( $auto_generated_password ) ) {
-                            $replace[ array_search( '{password}', $find, true ) ] = __( '[the password was supplied in your registration email]', 'woocommerce-wholesale-lead-capture' );
-                        } else {
-                            $replace[ array_search( '{password}', $find, true ) ] = __( '[the password supplied upon registration]', 'woocommerce-wholesale-lead-capture' );
-                        }
-                    }
+                    $replace[ array_search( '{password}', $find, true ) ] = $user ? $this->_get_password_placeholder_value( $user ) : '';
                 }
 
                 if ( in_array( '{email}', $find, true ) ) {
-                    $replace[ array_search( '{email}', $find, true ) ] = $wc_email->object->data->user_email;
+                    $replace[ array_search( '{email}', $find, true ) ] = $user ? esc_html( $user->user_email ) : '';
                 }
 
                 if ( in_array( '{phone}', $find, true ) ) {
-                    $replace[ array_search( '{phone}', $find, true ) ] = $wc_email->object->wwlc_phone;
+                    $replace[ array_search( '{phone}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_phone', true ) ) : '';
                 }
 
                 if ( in_array( '{company_name}', $find, true ) ) {
-                    $replace[ array_search( '{company_name}', $find, true ) ] = $wc_email->object->wwlc_company_name;
+                    $replace[ array_search( '{company_name}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_company_name', true ) ) : '';
                 }
 
                 if ( in_array( '{address}', $find, true ) ) {
+                    $address_1 = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_address', true ) ) : '';
+                    $address_2 = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_address_2', true ) ) : '';
+                    $city      = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_city', true ) ) : '';
+                    $state     = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_state', true ) ) : '';
+                    $postcode  = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_postcode', true ) ) : '';
+                    $country   = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_country', true ) ) : '';
+
                     $replace[ array_search( '{address}', $find, true ) ] = sprintf(
                         '%1$s%2$s%3$s%4$s%5$s%6$s',
-                        $wc_email->object->wwlc_address,
-                        $wc_email->object->wwlc_address_2 ? '<br/>' . $wc_email->object->wwlc_address_2 : '',
-                        $wc_email->object->wwlc_city ? '<br/>' . $wc_email->object->wwlc_city : '',
-                        $wc_email->object->wwlc_state ? '<br/>' . $wc_email->object->wwlc_state : '',
-                        $wc_email->object->wwlc_postcode ? '<br/>' . $wc_email->object->wwlc_postcode : '',
-                        $wc_email->object->wwlc_country ? '<br/>' . $wc_email->object->wwlc_country : '',
+                        $address_1,
+                        $address_2 ? '<br/>' . $address_2 : '',
+                        $city ? '<br/>' . $city : '',
+                        $state ? '<br/>' . $state : '',
+                        $postcode ? '<br/>' . $postcode : '',
+                        $country ? '<br/>' . $country : '',
                     );
                 }
 
                 if ( in_array( '{address_1}', $find, true ) ) {
-                    $replace[ array_search( '{address_1}', $find, true ) ] = $wc_email->object->wwlc_address;
+                    $replace[ array_search( '{address_1}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_address', true ) ) : '';
                 }
 
                 if ( in_array( '{address_2}', $find, true ) ) {
-                    $replace[ array_search( '{address_2}', $find, true ) ] = $wc_email->object->wwlc_address_2;
+                    $replace[ array_search( '{address_2}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_address_2', true ) ) : '';
                 }
 
                 if ( in_array( '{city}', $find, true ) ) {
-                    $replace[ array_search( '{city}', $find, true ) ] = $wc_email->object->wwlc_city;
+                    $replace[ array_search( '{city}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_city', true ) ) : '';
                 }
 
                 if ( in_array( '{state}', $find, true ) ) {
-                    $replace[ array_search( '{state}', $find, true ) ] = $wc_email->object->wwlc_state;
+                    $replace[ array_search( '{state}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_state', true ) ) : '';
                 }
 
                 if ( in_array( '{postcode}', $find, true ) ) {
-                    $replace[ array_search( '{postcode}', $find, true ) ] = $wc_email->object->wwlc_postcode;
+                    $replace[ array_search( '{postcode}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_postcode', true ) ) : '';
                 }
 
                 if ( in_array( '{country}', $find, true ) ) {
-                    $replace[ array_search( '{country}', $find, true ) ] = $wc_email->object->wwlc_country;
+                    $replace[ array_search( '{country}', $find, true ) ] = $user ? esc_html( get_user_meta( $user->ID, 'wwlc_country', true ) ) : '';
                 }
 
                 // Custom fields.
                 $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, array() );
 
-                if ( is_array( $custom_fields ) && ! empty( $custom_fields ) ) {
+                if ( is_array( $custom_fields ) && ! empty( $custom_fields ) && $user ) {
                     foreach ( $custom_fields as $cf_key => $cf_data ) {
                         if ( in_array( '{custom_field:' . $cf_key . '}', $find, true ) ) {
 
-                            $cf_value = $wc_email->object->{$cf_key};
+                            $cf_value = get_user_meta( $user->ID, $cf_key, true );
 
                             if ( 'checkbox' === $cf_data['field_type'] && is_array( $cf_value ) ) {
 
@@ -765,18 +937,213 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
         /**
          * Display correct text in woocommerce email footer.
          *
-         * @since 1.17.5
-         * @access public
-         *
          * @param string $footer_text Footer text.
          *
          * @return string
+         * @since 1.17.5
+         * @access public
          */
         public function display_correct_wc_email_footer_text( $footer_text ) {
 
             $footer_text = apply_filters( 'woocommerce_email_footer_text', $footer_text );
 
             return $footer_text;
+        }
+
+        /**
+         * Extract user data safely from email object.
+         *
+         * @param mixed $email_object Email object that may be WP_User, stdClass, or array.
+         *
+         * @return array Array with 'ID' key containing user ID or null.
+         * @since 1.17.4
+         * @access private
+         */
+        private function _extract_user_data_from_email_object( $email_object ) {
+            $user_data = array( 'ID' => null );
+
+            if ( ! $email_object ) {
+                return $user_data;
+            }
+
+            // Handle WP_User object.
+            if ( $email_object instanceof WP_User ) {
+                $user_data['ID'] = $email_object->ID;
+
+                return $user_data;
+            }
+
+            // Handle objects with data property.
+            if ( is_object( $email_object ) && isset( $email_object->data ) ) {
+                if ( is_object( $email_object->data ) && isset( $email_object->data->ID ) ) {
+                    $user_data['ID'] = $email_object->data->ID;
+
+                    return $user_data;
+                } elseif ( is_array( $email_object->data ) && isset( $email_object->data['ID'] ) ) {
+                    $user_data['ID'] = $email_object->data['ID'];
+
+                    return $user_data;
+                }
+                // Don't return here - fall through to check other formats.
+            }
+
+            // Handle direct object properties.
+            if ( is_object( $email_object ) && isset( $email_object->ID ) ) {
+                $user_data['ID'] = $email_object->ID;
+
+                return $user_data;
+            }
+
+            // Handle array format.
+            if ( is_array( $email_object ) ) {
+                if ( isset( $email_object['ID'] ) ) {
+                    $user_data['ID'] = $email_object['ID'];
+                } elseif ( isset( $email_object['data'] ) && is_array( $email_object['data'] ) && isset( $email_object['data']['ID'] ) ) {
+                    $user_data['ID'] = $email_object['data']['ID'];
+                }
+            }
+
+            return $user_data;
+        }
+
+        /**
+         * Get password placeholder value based on user context.
+         *
+         * @param WP_User $user User object.
+         *
+         * @return string Password placeholder value.
+         * @since 1.17.4
+         * @access private
+         */
+        private function _get_password_placeholder_value( $user ) {
+            global $wpdb;
+
+            $user_capability         = maybe_unserialize( get_user_meta( $user->ID, $wpdb->get_blog_prefix() . 'capabilities', true ) );
+            $user_capability         = is_array( $user_capability ) ? $user_capability : array();
+            $auto_generated_password = get_user_meta( $user->ID, 'wwlc_auto_generated_password', true );
+
+            // On upgrade Account.
+            if ( get_user_meta( $user->ID, 'wwlc_request_upgrade', true ) ) {
+                return __( '[your current password]', 'woocommerce-wholesale-lead-capture' );
+            }
+
+            // On wholesale lead registration, send a password reset link instead of the plain password.
+            if ( isset( $user_capability['wwlc_unapproved'] ) && true === $user_capability['wwlc_unapproved'] ) {
+                $reset_link = self::get_password_reset_link( $user->ID );
+
+                return sprintf( '<a href="%1$s">%2$s</a>', esc_url( $reset_link ), esc_html__( 'Click here to set your password', 'woocommerce-wholesale-lead-capture' ) );
+            }
+
+            // On wholesale lead registration, if password is auto generated.
+            if ( ! empty( $auto_generated_password ) && get_option( 'wwlc_general_auto_approve_new_leads' ) === 'yes' ) {
+                $reset_link = self::get_password_reset_link( $user->ID );
+
+                return sprintf( '<a href="%1$s">%2$s</a>', esc_url( $reset_link ), esc_html__( 'Click here to set your password', 'woocommerce-wholesale-lead-capture' ) );
+            }
+
+            if ( ! empty( $auto_generated_password ) ) {
+                return __( '[the password was supplied in your registration email]', 'woocommerce-wholesale-lead-capture' );
+            }
+
+            return __( '[the password supplied upon registration]', 'woocommerce-wholesale-lead-capture' );
+        }
+
+        /**
+         * Generate a secure, time-limited action token for email-based user management.
+         *
+         * WordPress nonces are bound to the logged-in user session at generation time.
+         * Admin notification emails are generated server-side — typically during WooCommerce
+         * action hooks fired by the registering customer — meaning no admin session is active.
+         * This causes wp_verify_nonce() to always fail when any logged-in admin later clicks
+         * the link in the email.
+         *
+         * This method issues a user-context-independent, cryptographically secure token stored
+         * as a transient. Any authenticated admin with manage_woocommerce capability can redeem
+         * the token within the configured validity window, regardless of which PHP session was
+         * active when the email was sent.
+         *
+         * @param int    $user_id The ID of the lead user being managed.
+         * @param string $action  The action being authorized ('approve_user' or 'reject_user').
+         *
+         * @return string Hex-encoded 32-byte cryptographically secure random token.
+         * @since 2.0.5
+         * @access private
+         */
+        private function generate_email_action_token( int $user_id, string $action ): string {
+            $token     = bin2hex( random_bytes( 32 ) );
+            $transient = 'wwlc_email_token_' . $user_id . '_' . $action;
+
+            /**
+             * Filters the validity period (in seconds) for email-based approve/reject action tokens.
+             *
+             * Defaults to 7 days. Increase this value if admins are unlikely to process new leads
+             * within a week; decrease it if your security policy requires a shorter window.
+             *
+             * @since 2.0.5
+             *
+             * @param int    $expiry  Token lifetime in seconds. Default: 7 * DAY_IN_SECONDS.
+             * @param int    $user_id The lead user ID.
+             * @param string $action  The action ('approve_user' or 'reject_user').
+             */
+            $expiry = (int) apply_filters( 'wwlc_email_action_token_expiry', 7 * DAY_IN_SECONDS, $user_id, $action );
+
+            set_transient( $transient, $token, $expiry );
+
+            return $token;
+        }
+
+        /**
+         * Verify and consume a secure action token for email-based user management.
+         *
+         * Tokens are single-use: on successful verification the transient is immediately
+         * deleted to prevent replay attacks. Returns false for expired, missing, or
+         * mismatched tokens. Uses hash_equals() for constant-time comparison to prevent
+         * timing side-channel attacks.
+         *
+         * @param int    $user_id The ID of the lead user being managed.
+         * @param string $action  The action being authorized ('approve_user' or 'reject_user').
+         * @param string $token   The token value submitted via the request URL.
+         *
+         * @return bool True if the token is valid and unused, false otherwise.
+         * @since 2.0.5
+         * @access private
+         */
+        private function verify_email_action_token( int $user_id, string $action, string $token ): bool {
+            $transient    = 'wwlc_email_token_' . $user_id . '_' . $action;
+            $stored_token = get_transient( $transient );
+
+            if ( false === $stored_token || ! hash_equals( (string) $stored_token, $token ) ) {
+                return false;
+            }
+
+            // Single-use enforcement: delete immediately after successful verification
+            // to prevent the same link from being used more than once.
+            delete_transient( $transient );
+
+            return true;
+        }
+
+        /**
+         * Generate the redirect URL for email action links with appropriate query parameters.
+         *
+         * @param string $action  The action being performed ('approve_user' or 'reject_user').
+         * @param string $status  The status of the action result ('success', 'nonce_expired', 'already_processed').
+         * @param int    $user_id Optional user ID to include in the URL for more specific notices.
+         *
+         * @return string The generated URL with query parameters.
+         * @since 2.0.4.1
+         * @access private
+         */
+        private function get_email_action_redirect_url( string $action, string $status, int $user_id = 0 ): string {
+            $args = array(
+                'page'   => 'wwlc-leads-admin-page',
+                'action' => $action,
+                'status' => $status,
+            );
+            if ( $user_id ) {
+                $args['user_id'] = $user_id;
+            }
+            return add_query_arg( $args, admin_url( 'admin.php' ) );
         }
 
         /**
@@ -787,21 +1154,77 @@ if ( ! class_exists( 'WWLC_Emails' ) ) {
          */
         public function run() {
             add_filter( 'woocommerce_email_classes', array( $this, 'register_wwlc_emails_classes' ), 10, 1 );
-            add_filter( 'wwlc_email_content_html_wwlc_email_new_wholesale_lead', array( $this, 'wwlc_allow_managing_of_users_via_email' ), 10, 2 );
-            add_action( 'admin_head', array( $this, 'wwlc_process_approve_reject' ) );
+            add_filter(
+                'wwlc_email_content_html_wwlc_email_new_wholesale_lead',
+                array(
+					$this,
+					'wwlc_allow_managing_of_users_via_email',
+                ),
+                10,
+                2
+            );
+            add_action( 'admin_init', array( $this, 'wwlc_process_approve_reject' ) );
             add_action( 'admin_notices', array( $this, 'wwlc_user_management_notice' ) );
-            add_filter( 'woocommerce_generate_wwlc_email_wysiwyg_html', array( $this, 'render_email_wysiwyg_html' ), 10, 4 );
+            add_filter(
+                'woocommerce_generate_wwlc_email_wysiwyg_html',
+                array(
+					$this,
+					'render_email_wysiwyg_html',
+                ),
+                10,
+                4
+            );
             add_action( 'wwlc_email_footer', array( $this, 'display_wwlc_email_footer' ), 10, 1 );
-            add_filter( 'woocommerce_locate_core_template', array( $this, 'override_wwlc_template_file_path_check' ), 10, 4 );
-            add_filter( 'woocommerce_email_format_string', array( $this, 'wwlc_woocommerce_email_format_string' ), 10, 2 );
+            add_filter(
+                'woocommerce_locate_core_template',
+                array(
+					$this,
+					'override_wwlc_template_file_path_check',
+                ),
+                10,
+                4
+            );
+            add_filter(
+                'woocommerce_email_format_string',
+                array(
+					$this,
+					'wwlc_woocommerce_email_format_string',
+                ),
+                10,
+                2
+            );
             add_filter( 'wwlc_email_footer_text', array( $this, 'display_correct_wc_email_footer_text' ) );
 
             // Ultimate Member Plugin integration - registration email conflicts with WWLC wholesale registration.
             if ( is_plugin_active( 'ultimate-member/ultimate-member.php' ) ) {
                 add_action( 'init', array( $this, 'wwlc_um_email_conflicts_fix' ) );
-                add_action( 'um_registration_complete', array( $this, 'wwlc_um_send_registration_notification_fix' ), 10, 2 );
-                add_action( 'um_post_registration_checkmail_hook', array( $this, 'wwlc_um_post_registration_checkmail_hook_fix' ), 10, 2 );
-                add_action( 'um_post_registration_approved_hook', array( $this, 'wwlc_um_post_registration_approved_hook_fix' ), 10, 2 );
+                add_action(
+                    'um_registration_complete',
+                    array(
+						$this,
+						'wwlc_um_send_registration_notification_fix',
+                    ),
+                    10,
+                    2
+                );
+                add_action(
+                    'um_post_registration_checkmail_hook',
+                    array(
+						$this,
+						'wwlc_um_post_registration_checkmail_hook_fix',
+                    ),
+                    10,
+                    2
+                );
+                add_action(
+                    'um_post_registration_approved_hook',
+                    array(
+						$this,
+						'wwlc_um_post_registration_approved_hook_fix',
+                    ),
+                    10,
+                    2
+                );
             }
         }
     }

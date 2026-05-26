@@ -20,6 +20,7 @@ use Google\Site_Kit\Core\Authentication\Authentication;
 use Google\Site_Kit\Core\Authentication\Clients\Google_Site_Kit_Client;
 use Google\Site_Kit\Core\Dismissals\Dismissed_Items;
 use Google\Site_Kit\Core\Modules\Module;
+use Google\Site_Kit\Core\Modules\Module_Settings;
 use Google\Site_Kit\Core\Modules\Module_With_Assets;
 use Google\Site_Kit\Core\Modules\Module_With_Assets_Trait;
 use Google\Site_Kit\Core\Modules\Module_With_Deactivation;
@@ -33,8 +34,10 @@ use Google\Site_Kit\Core\Modules\Module_With_Settings;
 use Google\Site_Kit\Core\Modules\Module_With_Settings_Trait;
 use Google\Site_Kit\Core\Modules\Module_With_Tag;
 use Google\Site_Kit\Core\Modules\Module_With_Tag_Trait;
+use Google\Site_Kit\Core\Modules\Tags\Module_Tag_Matchers;
 use Google\Site_Kit\Core\Permissions\Permissions;
 use Google\Site_Kit\Core\REST_API\Data_Request;
+use Google\Site_Kit\Core\REST_API\Exception\Invalid_Datapoint_Exception;
 use Google\Site_Kit\Core\REST_API\Exception\Missing_Required_Param_Exception;
 use Google\Site_Kit\Core\Site_Health\Debug_Data;
 use Google\Site_Kit\Core\Storage\Options;
@@ -42,6 +45,8 @@ use Google\Site_Kit\Core\Storage\Post_Meta;
 use Google\Site_Kit\Core\Storage\User_Options;
 use Google\Site_Kit\Core\Tags\Guards\Tag_Environment_Type_Guard;
 use Google\Site_Kit\Core\Tags\Guards\Tag_Verify_Guard;
+use Google\Site_Kit\Core\Tracking\Feature_Metrics_Trait;
+use Google\Site_Kit\Core\Tracking\Provides_Feature_Metrics;
 use Google\Site_Kit\Core\Util\Block_Support;
 use Google\Site_Kit\Core\Util\Method_Proxy_Trait;
 use Google\Site_Kit\Core\Util\URL;
@@ -56,6 +61,9 @@ use Google\Site_Kit\Modules\Reader_Revenue_Manager\Tag_Matchers;
 use Google\Site_Kit\Modules\Reader_Revenue_Manager\Web_Tag;
 use Google\Site_Kit\Modules\Search_Console\Settings as Search_Console_Settings;
 use Google\Site_Kit_Dependencies\Google\Service\SubscribewithGoogle as Google_Service_SubscribewithGoogle;
+use Google\Site_Kit_Dependencies\Google\Service\SubscribewithGoogle\PaymentOptions;
+use Google\Site_Kit_Dependencies\Google\Service\SubscribewithGoogle\Publication;
+use Google\Site_Kit_Dependencies\Psr\Http\Message\RequestInterface;
 use WP_Error;
 
 /**
@@ -65,13 +73,14 @@ use WP_Error;
  * @access private
  * @ignore
  */
-final class Reader_Revenue_Manager extends Module implements Module_With_Scopes, Module_With_Assets, Module_With_Service_Entity, Module_With_Deactivation, Module_With_Owner, Module_With_Settings, Module_With_Tag, Module_With_Debug_Fields {
+final class Reader_Revenue_Manager extends Module implements Module_With_Scopes, Module_With_Assets, Module_With_Service_Entity, Module_With_Deactivation, Module_With_Owner, Module_With_Settings, Module_With_Tag, Module_With_Debug_Fields, Provides_Feature_Metrics {
 	use Module_With_Assets_Trait;
 	use Module_With_Owner_Trait;
 	use Module_With_Scopes_Trait;
 	use Module_With_Settings_Trait;
 	use Module_With_Tag_Trait;
 	use Method_Proxy_Trait;
+	use Feature_Metrics_Trait;
 
 	/**
 	 * Module slug name.
@@ -119,6 +128,11 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 		'rrm-product-id-subscriptions-notification',
 	);
 
+	const POLICY_VIOLATION_NOTIFICATIONS = array(
+		'rrm-policy-violation-moderate-high-notification',
+		'rrm-policy-violation-extreme-notification',
+	);
+
 	/**
 	 * Constructor.
 	 *
@@ -132,10 +146,10 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 	 */
 	public function __construct(
 		Context $context,
-		Options $options = null,
-		User_Options $user_options = null,
-		Authentication $authentication = null,
-		Assets $assets = null
+		?Options $options = null,
+		?User_Options $user_options = null,
+		?Authentication $authentication = null,
+		?Assets $assets = null
 	) {
 		parent::__construct( $context, $options, $user_options, $authentication, $assets );
 
@@ -155,6 +169,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 	 */
 	public function register() {
 		$this->register_scopes_hook();
+		$this->register_feature_metrics();
 
 		$synchronize_publication = new Synchronize_Publication(
 			$this,
@@ -199,13 +214,17 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 		// Reader Revenue Manager tag placement logic.
 		add_action( 'template_redirect', array( $this, 'register_tag' ) );
 
-		// If the publication ID changes, clear the dismissed state for product ID notifications.
+		// If the publication ID changes, clear the dismissed state for notifications.
 		$this->get_settings()->on_change(
 			function ( $old_value, $new_value ) {
 				if ( $old_value['publicationID'] !== $new_value['publicationID'] ) {
 					$dismissed_items = new Dismissed_Items( $this->user_options );
 
 					foreach ( self::PRODUCT_ID_NOTIFICATIONS as $notification ) {
+						$dismissed_items->remove( $notification );
+					}
+
+					foreach ( self::POLICY_VIOLATION_NOTIFICATIONS as $notification ) {
 						$dismissed_items->remove( $notification );
 					}
 				}
@@ -444,11 +463,124 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 	protected function parse_data_response( Data_Request $data, $response ) {
 		switch ( "{$data->method}:{$data->datapoint}" ) {
 			case 'GET:publications':
-				$publications = $response->getPublications();
-				return array_values( $publications );
+				$publications = array_values( $response->getPublications() );
+				$this->synchronize_publication_data( $publications );
+				return $publications;
 		}
 
 		return parent::parse_data_response( $data, $response );
+	}
+
+	/**
+	 * Synchronizes the publication data with the module settings.
+	 *
+	 * @since 1.175.0
+	 *
+	 * @param array $publications Array of Publication objects.
+	 * @return void
+	 */
+	protected function synchronize_publication_data( $publications ) {
+		if ( empty( $publications ) ) {
+			return;
+		}
+
+		$settings       = $this->get_settings()->get();
+		$publication_id = $settings['publicationID'];
+
+		if ( empty( $publication_id ) ) {
+			return;
+		}
+
+		$filtered_publications = array_filter(
+			$publications,
+			function ( $pub ) use ( $publication_id ) {
+				return $pub->getPublicationId() === $publication_id;
+			}
+		);
+
+		if ( empty( $filtered_publications ) ) {
+			return;
+		}
+
+		$filtered_publications = array_values( $filtered_publications );
+		$publication           = $filtered_publications[0];
+
+		$onboarding_state     = $settings['publicationOnboardingState'];
+		$new_onboarding_state = $publication->getOnboardingState();
+
+		$new_settings = array(
+			'publicationOnboardingState' => $new_onboarding_state,
+			'productIDs'                 => $this->get_product_ids( $publication ),
+			'paymentOption'              => $this->get_payment_option( $publication ),
+		);
+
+		$content_policy_status = $publication->getContentPolicyStatus();
+
+		if ( $content_policy_status ) {
+			$new_settings['contentPolicyState'] = $content_policy_status->getContentPolicyState() ?? '';
+			$new_settings['policyInfoLink']     = $content_policy_status->getPolicyInfoLink() ?? '';
+		}
+
+		if ( $new_onboarding_state !== $onboarding_state ) {
+			$new_settings['publicationOnboardingStateChanged'] = true;
+		}
+
+		$this->get_settings()->merge( $new_settings );
+
+		$cron_event = wp_next_scheduled( Synchronize_Publication::CRON_SYNCHRONIZE_PUBLICATION );
+		if ( $cron_event ) {
+			wp_unschedule_event( $cron_event, Synchronize_Publication::CRON_SYNCHRONIZE_PUBLICATION );
+		}
+
+		wp_schedule_single_event(
+			time() + HOUR_IN_SECONDS,
+			Synchronize_Publication::CRON_SYNCHRONIZE_PUBLICATION
+		);
+	}
+
+	/**
+	 * Returns the product IDs for the given publication.
+	 *
+	 * @since 1.175.0
+	 *
+	 * @param Publication $publication Publication object.
+	 * @return array Product IDs.
+	 */
+	private function get_product_ids( Publication $publication ) {
+		$products    = $publication->getProducts();
+		$product_ids = array();
+
+		if ( ! empty( $products ) ) {
+			foreach ( $products as $product ) {
+				$product_ids[] = $product->getName();
+			}
+		}
+
+		return $product_ids;
+	}
+
+	/**
+	 * Returns the payment option for the given publication.
+	 *
+	 * @since 1.175.0
+	 *
+	 * @param Publication $publication Publication object.
+	 * @return string Payment option.
+	 */
+	private function get_payment_option( Publication $publication ) {
+		$payment_options = $publication->getPaymentOptions();
+		$payment_option  = '';
+
+		if ( $payment_options instanceof PaymentOptions ) {
+			foreach ( $payment_options as $option => $value ) {
+				if ( true === $value ) {
+					$payment_option = $option;
+					break;
+				}
+			}
+		}
+
+		return $payment_option;
 	}
 
 	/**
@@ -537,7 +669,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 			$assets[] = new Script(
 				'blocks-reader-revenue-manager-block-editor-plugin',
 				array(
-					'src'           => $base_url . 'js/blocks/reader-revenue-manager/block-editor-plugin/index.js',
+					'src'           => $base_url . 'blocks/reader-revenue-manager/block-editor-plugin/index.js',
 					'dependencies'  => array(
 						'googlesitekit-components',
 						'googlesitekit-data',
@@ -553,7 +685,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 			$assets[] = new Stylesheet(
 				'blocks-reader-revenue-manager-block-editor-plugin-styles',
 				array(
-					'src'           => $base_url . 'js/blocks/reader-revenue-manager/block-editor-plugin/editor-styles.css',
+					'src'           => $base_url . 'blocks/reader-revenue-manager/block-editor-plugin/editor-styles.css',
 					'dependencies'  => array(),
 					'load_contexts' => array( Asset::CONTEXT_ADMIN_POST_EDITOR ),
 				)
@@ -562,7 +694,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 			$assets[] = new Script(
 				'blocks-contribute-with-google',
 				array(
-					'src'           => $base_url . 'js/blocks/reader-revenue-manager/contribute-with-google/index.js',
+					'src'           => $base_url . 'blocks/reader-revenue-manager/contribute-with-google/index.js',
 					'dependencies'  => array(
 						'googlesitekit-components',
 						'googlesitekit-data',
@@ -578,7 +710,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 			$assets[] = new Script(
 				'blocks-subscribe-with-google',
 				array(
-					'src'           => $base_url . 'js/blocks/reader-revenue-manager/subscribe-with-google/index.js',
+					'src'           => $base_url . 'blocks/reader-revenue-manager/subscribe-with-google/index.js',
 					'dependencies'  => array(
 						'googlesitekit-components',
 						'googlesitekit-data',
@@ -595,7 +727,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 				$assets[] = new Script(
 					'blocks-contribute-with-google-non-sitekit-user',
 					array(
-						'src'           => $base_url . 'js/blocks/reader-revenue-manager/contribute-with-google/non-site-kit-user.js',
+						'src'           => $base_url . 'blocks/reader-revenue-manager/contribute-with-google/non-site-kit-user.js',
 						'dependencies'  => array(
 							'googlesitekit-i18n',
 						),
@@ -607,7 +739,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 				$assets[] = new Script(
 					'blocks-subscribe-with-google-non-sitekit-user',
 					array(
-						'src'           => $base_url . 'js/blocks/reader-revenue-manager/subscribe-with-google/non-site-kit-user.js',
+						'src'           => $base_url . 'blocks/reader-revenue-manager/subscribe-with-google/non-site-kit-user.js',
 						'dependencies'  => array( 'googlesitekit-i18n' ),
 						'load_contexts' => array( Asset::CONTEXT_ADMIN_POST_EDITOR ),
 						'execution'     => 'defer',
@@ -618,7 +750,7 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 			$assets[] = new Stylesheet(
 				'blocks-reader-revenue-manager-common-editor-styles',
 				array(
-					'src'           => $base_url . 'js/blocks/reader-revenue-manager/common/editor-styles.css',
+					'src'           => $base_url . 'blocks/reader-revenue-manager/common/editor-styles.css',
 					'dependencies'  => array(),
 					'load_contexts' => array( Asset::CONTEXT_ADMIN_BLOCK_EDITOR ),
 				)
@@ -800,6 +932,30 @@ final class Reader_Revenue_Manager extends Module implements Module_With_Scopes,
 			);
 		}
 
+		$content_policy_state = $settings['contentPolicyState'] ?? '';
+
+		$debug_fields['reader_revenue_manager_content_policy_state'] = array(
+			'label' => __( 'Reader Revenue Manager: Content policy state', 'google-site-kit' ),
+			'value' => $content_policy_state,
+			'debug' => $content_policy_state,
+		);
+
 		return $debug_fields;
+	}
+
+
+	/**
+	 * Gets an array of internal feature metrics.
+	 *
+	 * @since 1.163.0
+	 *
+	 * @return array
+	 */
+	public function get_feature_metrics() {
+		$settings = $this->get_settings()->get();
+
+		return array(
+			'rrm_publication_onboarding_state' => $settings['publicationOnboardingState'],
+		);
 	}
 }

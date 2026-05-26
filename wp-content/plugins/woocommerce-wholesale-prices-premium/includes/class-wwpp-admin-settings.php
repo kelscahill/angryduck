@@ -1854,7 +1854,9 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
 
             // Cart Price Discount Mapping options - Section.
             $apply_discount_if_min_order_req_met = get_option( 'enable_wholesale_role_cart_only_apply_discount_if_min_order_req_met' );
-            $types                               = array(
+            $apply_wholesale_products_discount   = get_option( 'apply_discounts_to_wholesale_products_only' );
+
+            $types = array(
                 'percent-discount' => __( 'Percent Discount', 'woocommerce-wholesale-prices-premium' ),
                 'fixed-discount'   => __( 'Fixed Discount', 'woocommerce-wholesale-prices-premium' ),
             );
@@ -1894,6 +1896,14 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                     'input_label' => __( 'When enabled, prevents the customer from getting the below additional discounts if they haven’t met the minimum order requirements.', 'woocommerce-wholesale-prices-premium' ),
                     'multiple'    => false,
                     'default'     => $apply_discount_if_min_order_req_met,
+                ),
+                array(
+                    'type'        => 'checkbox',
+                    'label'       => __( 'Apply discounts to wholesale products only', 'woocommerce-wholesale-prices-premium' ),
+                    'id'          => 'apply_discounts_to_wholesale_products_only',
+                    'input_label' => __( 'When enabled, discounts will be applied to only wholesale products subtotal.', 'woocommerce-wholesale-prices-premium' ),
+                    'multiple'    => false,
+                    'default'     => $apply_wholesale_products_discount,
                 ),
                 array(
                     'type'         => 'group',
@@ -2083,7 +2093,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                             'default'     => array(),
                             'multiple'    => true,
                             'options'     => $available_payment_gateways,
-                            'description' => sprintf(
+                            'description' => ( ! WWP_Helper_Functions::is_wpay_active() ) ? sprintf(
                                 /* translators: %1$s <br>, %2$s open span, %3$s close span */
                                 __(
                                     'You can add multiple payment gateways to a single role mapping.%1$s %2$sPro Tip: You can add NET 30/45/60 invoices for your wholesale customers using the Wholesale Payment plugin. %3$s',
@@ -2092,6 +2102,9 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                                 '<br>',
                                 '<span class="wwpp-recommendation-notice"><span class="dashicons dashicons-info-outline"></span>&nbsp;',
                                 '<a href="' . $install_activate_url . '" target="_blank">' . $install_activate_text . '</a></span>'
+                            ) : __(
+                                'You can add multiple payment gateways to a single role mapping.',
+                                'woocommerce-wholesale-prices-premium'
                             ),
                         ),
                     ),
@@ -2581,7 +2594,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
          */
         public function admin_old_wholesale_settings_redirect() {
             // For wholesale prices tabs.
-            if ( strpos( $_SERVER['REQUEST_URI'], 'page=wc-settings&tab=wwp_settings' ) !== false ) {
+            if ( str_contains( $_SERVER['REQUEST_URI'], 'page=wc-settings&tab=wwp_settings' ) ) { //phpcs:ignore
                 wp_safe_redirect( admin_url( 'admin.php?page=wholesale-settings&tab=wholesale_prices' ) );
                 exit;
             }

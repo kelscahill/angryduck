@@ -274,7 +274,7 @@ class WWLC_Leads_App {
                     wp_enqueue_script(
 						'wwlc-leads-admin-page-' . $this->get_entry_file_name( $entry ),
 						esc_url( WWLC_DIST_URL . $info['file'] ),
-						array(),
+						array( 'lodash' ),
 						$this->wwlc_version,
 						true
 					);

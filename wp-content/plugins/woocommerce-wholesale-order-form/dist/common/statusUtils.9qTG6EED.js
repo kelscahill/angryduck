@@ -1,0 +1,1 @@
+import{E as a}from"./hooks.C8Kwl4hr.js";function s(s,t,c){return a({["".concat(s,"-status-success")]:"success"===t,["".concat(s,"-status-warning")]:"warning"===t,["".concat(s,"-status-error")]:"error"===t,["".concat(s,"-status-validating")]:"validating"===t,["".concat(s,"-has-feedback")]:c})}const t=(a,s)=>s||a;export{t as a,s as g};

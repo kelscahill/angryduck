@@ -19,6 +19,8 @@ use WP_REST_Server;
 
 /**
  * Registers the REST routes for Connections.
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class REST_Connector {
 	/**
@@ -240,6 +242,10 @@ class REST_Connector {
 						'description' => __( 'Indicates from what plugin the request is coming from', 'jetpack-connection' ),
 						'type'        => 'string',
 					),
+					'plugins'      => array(
+						'description' => __( 'Comma-separated list of plugin slugs currently using the Jetpack connection', 'jetpack-connection' ),
+						'type'        => 'string',
+					),
 				),
 			)
 		);
@@ -255,6 +261,14 @@ class REST_Connector {
 				'args'                => array(
 					'redirect_uri' => array(
 						'description' => __( 'URI of the admin page where the user should be redirected after connection flow', 'jetpack-connection' ),
+						'type'        => 'string',
+					),
+					'from'         => array(
+						'description' => __( 'Tracking/segmentation identifier for this authorize URL request', 'jetpack-connection' ),
+						'type'        => 'string',
+					),
+					'plugins'      => array(
+						'description' => __( 'Comma-separated list of plugin slugs currently using the Jetpack connection', 'jetpack-connection' ),
 						'type'        => 'string',
 					),
 				),
@@ -474,7 +488,7 @@ class REST_Connector {
 				'constant'        => defined( 'JETPACK_DEV_DEBUG' ) && JETPACK_DEV_DEBUG,
 				'url'             => $status->is_local_site(),
 				/** This filter is documented in packages/status/src/class-status.php */
-				'filter'          => ( apply_filters( 'jetpack_development_mode', false ) || apply_filters( 'jetpack_offline_mode', false ) ), // jetpack_development_mode is deprecated.
+				'filter'          => apply_filters( 'jetpack_offline_mode', false ),
 				'wpLocalConstant' => defined( 'WP_LOCAL_DEV' ) && WP_LOCAL_DEV,
 				'option'          => (bool) get_option( 'jetpack_offline_mode' ),
 			),
@@ -787,8 +801,9 @@ class REST_Connector {
 	 * @return \WP_REST_Response|WP_Error
 	 */
 	public function connection_register( $request ) {
-		if ( isset( $request['from'] ) ) {
-			$this->connection->add_register_request_param( 'from', (string) $request['from'] );
+		$from = isset( $request['from'] ) ? (string) $request['from'] : '';
+		if ( '' !== $from ) {
+			$this->connection->add_register_request_param( 'from', $from );
 		}
 
 		if ( ! empty( $request['plugin_slug'] ) ) {
@@ -807,7 +822,12 @@ class REST_Connector {
 
 		$redirect_uri = $request->get_param( 'redirect_uri' ) ? admin_url( $request->get_param( 'redirect_uri' ) ) : null;
 
-		$authorize_url = ( new Authorize_Redirect( $this->connection ) )->build_authorize_url( $redirect_uri );
+		$authorize_url = ( new Authorize_Redirect( $this->connection ) )->build_authorize_url( $redirect_uri, '' !== $from ? $from : false );
+
+		$plugins = $request->get_param( 'plugins' );
+		if ( ! empty( $plugins ) ) {
+			$authorize_url = add_query_arg( 'plugins', (string) $plugins, $authorize_url );
+		}
 
 		/**
 		 * Filters the response of jetpack/v4/connection/register endpoint
@@ -820,7 +840,7 @@ class REST_Connector {
 			array()
 		);
 
-		// We manipulate the alternate URLs after the filter is applied, so they can not be overwritten.
+		// We manipulate the alternate URLs after the filter is applied, so they cannot be overwritten.
 		$response_body['authorizeUrl'] = $authorize_url;
 		if ( ! empty( $response_body['alternateAuthorizeUrl'] ) ) {
 			$response_body['alternateAuthorizeUrl'] = Redirect::get_url( $response_body['alternateAuthorizeUrl'] );
@@ -840,7 +860,13 @@ class REST_Connector {
 	 */
 	public function connection_authorize_url( $request ) {
 		$redirect_uri  = $request->get_param( 'redirect_uri' ) ? admin_url( $request->get_param( 'redirect_uri' ) ) : null;
-		$authorize_url = $this->connection->get_authorization_url( null, $redirect_uri );
+		$from          = $request->get_param( 'from' );
+		$authorize_url = $this->connection->get_authorization_url( null, $redirect_uri, ! empty( $from ) ? (string) $from : false );
+
+		$plugins = $request->get_param( 'plugins' );
+		if ( ! empty( $plugins ) ) {
+			$authorize_url = add_query_arg( 'plugins', (string) $plugins, $authorize_url );
+		}
 
 		return rest_ensure_response(
 			array(
@@ -1101,7 +1127,8 @@ class REST_Connector {
 				'rest_route' => filter_var( wp_unslash( $_GET['rest_route'] ) ),
 				'timestamp'  => (int) $_GET['timestamp'],
 				'url'        => filter_var( wp_unslash( $_GET['url'] ) ),
-			)
+			),
+			0 // phpcs:ignore Jetpack.Functions.JsonEncodeFlags.ZeroFound -- No `json_encode()` flags because this needs to match whatever is calculating the hash on the other end.
 		);
 
 		if (

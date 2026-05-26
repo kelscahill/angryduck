@@ -12,10 +12,10 @@ namespace Google\Site_Kit\Core\Authentication;
 
 use Google\Site_Kit\Context;
 use Google\Site_Kit\Core\Util\Feature_Flags;
-use Exception;
 use Google\Site_Kit\Core\Authentication\Clients\OAuth_Client;
 use Google\Site_Kit\Core\Storage\User_Options;
 use Google\Site_Kit\Core\Util\URL;
+use Exception;
 use WP_Error;
 
 /**
@@ -36,6 +36,7 @@ class Google_Proxy {
 	const OAUTH2_AUTH_URI           = '/o/oauth2/auth/';
 	const OAUTH2_DELETE_SITE_URI    = '/o/oauth2/delete-site/';
 	const SETUP_URI                 = '/v2/site-management/setup/';
+	const SETUP_V3_URI              = '/v3/site-management/setup/';
 	const PERMISSIONS_URI           = '/site-management/permissions/';
 	const FEATURES_URI              = '/site-management/features/';
 	const SURVEY_TRIGGER_URI        = '/survey/trigger/';
@@ -139,7 +140,12 @@ class Google_Proxy {
 			throw new Exception( __( 'Missing site_id or site_code parameter for setup URL.', 'google-site-kit' ) );
 		}
 
-		return add_query_arg( $query_params, $this->url( self::SETUP_URI ) );
+		return add_query_arg(
+			$query_params,
+			$this->url(
+				Feature_Flags::enabled( 'setupFlowRefresh' ) ? self::SETUP_V3_URI : self::SETUP_URI
+			)
+		);
 	}
 
 	/**
@@ -294,8 +300,20 @@ class Google_Proxy {
 		$body = wp_remote_retrieve_body( $response );
 		$body = json_decode( $body, true );
 		if ( $code < 200 || 299 < $code ) {
-			$message = is_array( $body ) && ! empty( $body['error'] ) ? $body['error'] : '';
-			return new WP_Error( 'request_failed', $message, array( 'status' => $code ) );
+			$message    = '';
+			$error_code = 'request_failed';
+
+			if ( is_array( $body ) ) {
+				if ( ! empty( $body['error'] ) ) {
+					$message = $body['error'];
+				}
+
+				if ( ! empty( $body['error_code'] ) ) {
+					$error_code = $body['error_code'];
+				}
+			}
+
+			return new WP_Error( $error_code, $message, array( 'status' => $code ) );
 		}
 
 		if ( ! empty( $args['return'] ) && 'response' === $args['return'] ) {
@@ -321,13 +339,22 @@ class Google_Proxy {
 	 * @return array Associative array of $query_arg => $value pairs.
 	 */
 	public function get_site_fields() {
+		$return_uri             = Feature_Flags::enabled( 'setupFlowRefresh' )
+			? admin_url( 'index.php' )
+			: $this->context->admin_url( 'splash' );
+		$analytics_redirect_uri = add_query_arg( 'gatoscallback', 1, admin_url( 'index.php' ) );
+
+		if ( Feature_Flags::enabled( 'setupFlowRefresh' ) ) {
+			$analytics_redirect_uri = add_query_arg( 'service_version', 'v3', $analytics_redirect_uri );
+		}
+
 		return array(
 			'name'                   => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
 			'url'                    => $this->context->get_canonical_home_url(),
 			'redirect_uri'           => add_query_arg( 'oauth2callback', 1, admin_url( 'index.php' ) ),
 			'action_uri'             => admin_url( 'index.php' ),
-			'return_uri'             => $this->context->admin_url( 'splash' ),
-			'analytics_redirect_uri' => add_query_arg( 'gatoscallback', 1, admin_url( 'index.php' ) ),
+			'return_uri'             => $return_uri,
+			'analytics_redirect_uri' => $analytics_redirect_uri,
 		);
 	}
 
@@ -348,6 +375,10 @@ class Google_Proxy {
 			'service_version'  => 'v2',
 		);
 
+		if ( Feature_Flags::enabled( 'setupFlowRefresh' ) ) {
+			$metadata['service_version'] = 'v3';
+		}
+
 		/**
 		 * Filters the setup mode.
 		 *
@@ -358,43 +389,6 @@ class Google_Proxy {
 		$metadata['mode'] = apply_filters( 'googlesitekit_proxy_setup_mode', $metadata['mode'] );
 
 		return $metadata;
-	}
-
-	/**
-	 * Fetch site fields
-	 *
-	 * @since 1.22.0
-	 *
-	 * @param Credentials $credentials Credentials instance.
-	 * @return array|WP_Error The response as an associative array or WP_Error on failure.
-	 */
-	public function fetch_site_fields( Credentials $credentials ) {
-		return $this->request( self::OAUTH2_SITE_URI, $credentials );
-	}
-
-	/**
-	 * Are site fields synced
-	 *
-	 * @since 1.22.0
-	 *
-	 * @param Credentials $credentials Credentials instance.
-	 *
-	 * @return boolean|WP_Error Boolean do the site fields match or WP_Error on failure.
-	 */
-	public function are_site_fields_synced( Credentials $credentials ) {
-		$site_fields = $this->fetch_site_fields( $credentials );
-		if ( is_wp_error( $site_fields ) ) {
-			return $site_fields;
-		}
-
-		$get_site_fields = $this->get_site_fields();
-		foreach ( $get_site_fields as $key => $site_field ) {
-			if ( ! array_key_exists( $key, $site_fields ) || $site_fields[ $key ] !== $site_field ) {
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	/**
@@ -464,7 +458,7 @@ class Google_Proxy {
 	 * @param string      $mode        Sync mode.
 	 * @return string|WP_Error Redirect URL on success, otherwise an error.
 	 */
-	private function send_site_fields( Credentials $credentials = null, $mode = 'async' ) {
+	private function send_site_fields( ?Credentials $credentials = null, $mode = 'async' ) {
 		$response = $this->request(
 			self::OAUTH2_SITE_URI,
 			$credentials,
@@ -539,6 +533,7 @@ class Google_Proxy {
 	 *
 	 * @since 1.27.0
 	 * @since 1.104.0 Added `php_version` to request.
+	 * @since 1.167.0 Added `amp_mode` to request.
 	 *
 	 * @param Credentials $credentials Credentials instance.
 	 * @return array|WP_Error Response of the wp_remote_post request.
@@ -549,6 +544,7 @@ class Google_Proxy {
 		$platform               = self::get_platform();
 		$user_count             = count_users();
 		$connectable_user_count = isset( $user_count['avail_roles']['administrator'] ) ? $user_count['avail_roles']['administrator'] : 0;
+		$amp_mode               = $this->context->get_amp_mode();
 
 		$body = array(
 			'platform'               => $platform . '/google-site-kit',
@@ -558,6 +554,7 @@ class Google_Proxy {
 			'user_count'             => $user_count['total_users'],
 			'connectable_user_count' => $connectable_user_count,
 			'connected_user_count'   => $this->count_connected_users(),
+			'amp_mode'               => $amp_mode ? $amp_mode : '',
 		);
 
 		/**

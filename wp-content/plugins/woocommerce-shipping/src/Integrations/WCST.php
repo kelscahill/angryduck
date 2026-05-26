@@ -7,6 +7,10 @@
 
 namespace Automattic\WCShipping\Integrations;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Class for modifying some of the WooCommerce Shipping & Tax plugin behavior.
  *

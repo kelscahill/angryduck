@@ -144,8 +144,8 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
                     'id_remember'    => 'rememberme',
                     'id_submit'      => 'wp-submit',
                     'remember'       => true,
-                    'value_username' => isset( $_POST['wwlc_username'] ) ? $_POST['wwlc_username'] : null, // phpcs:ignore WordPress.Security.NonceVerification.Missing
-                    'value_remember' => isset( $_POST['rememberme'] ) ? $_POST['rememberme'] : false, // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                    'value_username' => isset( $_POST['wwlc_username'] ) ? sanitize_text_field( wp_unslash( $_POST['wwlc_username'] ) ) : null, // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                    'value_remember' => isset( $_POST['rememberme'] ) ? sanitize_text_field( wp_unslash( $_POST['rememberme'] ) ) : false, // phpcs:ignore WordPress.Security.NonceVerification.Missing
                     'recaptcha'      => $this->_wwlc_forms->_get_recaptcha_field(),
                 );
 
@@ -240,6 +240,15 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
             // enqueue registration form JS script.
             wp_enqueue_script( 'wwlc_RegistrationForm_js' );
 
+            // localize nonce for file upload functionality.
+            wp_localize_script(
+                'wwlc_RegistrationForm_js',
+                'wwlcObject',
+                array(
+					'wwlc_file_upload_nonce' => wp_create_nonce( 'wwlc_file_upload_nonce' ),
+                )
+            );
+
             // enqueue password meter script if password field is enabled.
             if ( get_option( 'wwlc_fields_activate_password_field' ) === 'yes' ) {
                 wp_enqueue_script( 'wwlc_password_meter_js' );
@@ -267,6 +276,10 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
             if ( ! empty( $custom_fields ) ) {
                 foreach ( $custom_fields as $key => $value ) {
 
+                    if ( ! is_array( $value ) ) {
+                        continue;
+                    }
+
                     if ( 'select' === $value['field_type'] ) {
                         $has_custom_select_fields = true;
                         break;
@@ -288,6 +301,47 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
 
             do_action( 'before_registration_form', $registration_form_fields );
 
+            // Prepare options array with secure nonce-based approach for auto_approve and auto_login.
+            $options = array(
+                'role' => WWLC_User_Account::sanitize_custom_role( $atts['role'] ),
+            );
+
+            // Get current page/post ID for nonce context.
+            $page_id = get_queried_object_id();
+            // Store page ID in options so we can verify it during form submission (important for AJAX).
+            $options['pageId'] = $page_id;
+
+            // Store per-page auto_approve setting as persistent post meta (cache-safe).
+            // The nonce provides CSRF protection; the value is stored in post meta to avoid
+            // race conditions with full-page caching that made single-use transients unreliable.
+            if ( ! empty( $atts['auto_approve'] ) && $page_id > 0 ) {
+                $auto_approve_value = in_array( strtolower( $atts['auto_approve'] ), array( 'true', 'yes', '1' ), true );
+                $new_meta_value     = $auto_approve_value ? 'yes' : 'no';
+
+                // Only write post meta when the value has changed to avoid unnecessary DB writes on every page load.
+                if ( get_post_meta( $page_id, '_wwlc_shortcode_auto_approve', true ) !== $new_meta_value ) {
+                    update_post_meta( $page_id, '_wwlc_shortcode_auto_approve', $new_meta_value );
+                }
+
+                $options['autoApproveNonce'] = wp_create_nonce( 'wwlc_auto_approve_' . $page_id );
+            }
+
+            // Create secure nonce-based system for auto_login if attribute is set to 'true' or 'yes'.
+            // Store both the boolean value and page_id in transient to prevent cross-page attacks.
+            if ( ! empty( $atts['auto_login'] ) && in_array( strtolower( $atts['auto_login'] ), array( 'true', 'yes', '1' ), true ) ) {
+                $auto_login_nonce = wp_create_nonce( 'wwlc_auto_login_' . $page_id );
+                // Store array with both value and page_id to prevent cross-page attacks.
+                set_transient(
+                    'wwlc_auto_login_' . $auto_login_nonce,
+                    array(
+                        'value'   => true,
+                        'page_id' => $page_id,
+                    ),
+                    HOUR_IN_SECONDS
+                );
+                $options['autoLoginNonce'] = $auto_login_nonce;
+            }
+
             // Load product listing template.
             $this->_wwlc_forms->_load_template(
                 'wwlc-registration-form.php',
@@ -295,11 +349,7 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
                     'formProcessor' => $this->_wwlc_forms,
                     'formFields'    => apply_filters( 'wwlc_registration_form_fields', $registration_form_fields ),
                     'redirect'      => ( $atts['redirect'] && filter_var( $atts['redirect'], FILTER_VALIDATE_URL ) ) ? $atts['redirect'] : '',
-                    'options'       => array(
-                        'role'        => WWLC_User_Account::sanitize_custom_role( $atts['role'] ),
-                        'autoApprove' => $atts['auto_approve'],
-                        'autoLogin'   => $atts['auto_login'],
-                    ),
+                    'options'       => $options,
                 ),
                 WWLC_TEMPLATES_ROOT_DIR
             );
@@ -373,7 +423,7 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
 
                 // Check if 'Set as front page' has been set in Landing page builder advanced option,
                 // because if the option is checked the plugin will replace the content of the front page but the $post variable is still using default wp front page setting.
-                $ulpb_front_page_id = $wpdb->get_row( "SELECT pm.post_id FROM {$wpdb->prefix}postmeta pm WHERE pm.meta_key = 'ULPB_FrontPage' AND pm.meta_value = 'true'" );
+                $ulpb_front_page_id = $wpdb->get_row( $wpdb->prepare( "SELECT pm.post_id FROM {$wpdb->prefix}postmeta pm WHERE pm.meta_key = %s AND pm.meta_value = %s", 'ULPB_FrontPage', 'true' ) );
 
                 // Check if post type is Landing Page Builder.
                 if ( metadata_exists( 'post', $post->ID, 'ULPB_DATA' ) || ( ! empty( $ulpb_front_page_id ) && is_front_page() ) ) {
@@ -399,7 +449,7 @@ if ( ! class_exists( 'WWLC_Shortcode' ) ) {
 
                 // Check if 'Set as front page' has been set in Landing page builder advanced option,
                 // because if the option is checked the plugin will replace the content of the front page but the $post variable is still using default wp front page setting.
-                $ulpb_front_page_id = $wpdb->get_row( "SELECT pm.post_id FROM {$wpdb->prefix}postmeta pm WHERE pm.meta_key = 'ULPB_FrontPage' AND pm.meta_value = 'true'" );
+                $ulpb_front_page_id = $wpdb->get_row( $wpdb->prepare( "SELECT pm.post_id FROM {$wpdb->prefix}postmeta pm WHERE pm.meta_key = %s AND pm.meta_value = %s", 'ULPB_FrontPage', 'true' ) );
 
                 // Check if post type is Landing Page Builder.
                 if ( metadata_exists( 'post', $post->ID, 'ULPB_DATA' ) || ( ! empty( $ulpb_front_page_id ) && is_front_page() ) ) {

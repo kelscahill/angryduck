@@ -197,7 +197,7 @@ class LaunchYourStore {
 			// translators: no need to translate it. It's a link.
 			__(
 				"
-			This page is in \"Coming soon\" mode and is only visible to you and those who have permission. To make it public to everyone,&nbsp;<a href='%s'>change visibility settings</a>
+			This page is in \"Coming soon\" mode and is only visible to you and those who have permission. To make it public to everyone,&nbsp;<a href='%s'>change visibility settings</a>.
 		",
 				'woocommerce'
 			),
@@ -354,6 +354,6 @@ class LaunchYourStore {
 		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion, WordPress.WP.EnqueuedResourceParameters.NotInFooter
 		wp_register_script( 'coming-soon-newsletter-mailpoet', '' );
 		wp_enqueue_script( 'coming-soon-newsletter-mailpoet' );
-		wp_add_inline_script( 'coming-soon-newsletter-mailpoet', 'var comingSoonNewsletter = ' . wp_json_encode( $mailpoet ) . ';' );
+		wp_add_inline_script( 'coming-soon-newsletter-mailpoet', 'var comingSoonNewsletter = ' . wp_json_encode( $mailpoet, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . ';' );
 	}
 }

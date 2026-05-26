@@ -3,6 +3,7 @@
 namespace Automattic\WCShipping\Connect;
 
 use Automattic\WCShipping\Integrations\WCST;
+use Automattic\WCShipping\Testing\WCConnectE2EConnectionShim;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -29,8 +30,28 @@ class WC_Connect_Account_Settings {
 			$payment_methods_warning = __( 'There was a problem updating your saved credit cards.', 'woocommerce-shipping' );
 		}
 
-		$master_user          = WC_Connect_Jetpack::get_connection_owner();
-		$connected_data       = WC_Connect_Jetpack::get_connected_user_data( $master_user->ID );
+		$master_user                = WC_Connect_Jetpack::get_connection_owner();
+		if ( ! $master_user instanceof \WP_User && WCConnectE2EConnectionShim::is_enabled() ) {
+			$current_user = wp_get_current_user();
+			if ( $current_user instanceof \WP_User && $current_user->ID > 0 ) {
+				$master_user = $current_user;
+			}
+		}
+
+		$connected_data = array(
+			'login' => '',
+			'email' => '',
+		);
+		if ( $master_user instanceof \WP_User ) {
+			$connected_data_value = WC_Connect_Jetpack::get_connected_user_data( $master_user->ID );
+			if ( is_array( $connected_data_value ) ) {
+				$connected_data = array_merge( $connected_data, $connected_data_value );
+			}
+		}
+
+		$master_user_name     = $master_user instanceof \WP_User ? $master_user->display_name : '';
+		$master_user_login    = $master_user instanceof \WP_User ? $master_user->user_login : '';
+		$master_user_email    = $master_user instanceof \WP_User ? $master_user->user_email : '';
 		$last_box_id          = get_user_meta( get_current_user_id(), 'wcshipping_last_box_id', true );
 		$last_box_id          = $last_box_id === 'individual' ? '' : $last_box_id;
 		$last_service_id      = get_user_meta( get_current_user_id(), 'wcshipping_last_service_id', true );
@@ -47,10 +68,10 @@ class WC_Connect_Account_Settings {
 			$purchaseSettingsMetaKey => array(
 				'can_manage_payments'     => $this->settings_store->can_user_manage_payment_methods(),
 				'can_edit_settings'       => true,
-				'master_user_name'        => $master_user->display_name,
-				'master_user_login'       => $master_user->user_login,
-				'master_user_wpcom_login' => $connected_data['login'],
-				'master_user_email'       => $connected_data['email'],
+				'master_user_name'        => $master_user_name,
+				'master_user_login'       => $master_user_login,
+				'master_user_wpcom_login' => $connected_data['login'] ? $connected_data['login'] : $master_user_login,
+				'master_user_email'       => $connected_data['email'] ? $connected_data['email'] : $master_user_email,
 				'payment_methods'         => $this->payment_methods_store->get_payment_methods(),
 				'add_payment_method_url'  => $this->payment_methods_store->get_add_payment_method_url(),
 				'warnings'                => array( 'payment_methods' => $payment_methods_warning ),

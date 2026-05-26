@@ -1,0 +1,1 @@
+System.register(["../index-legacy.Cc6Sy7X6.js","../../../../common/LoadingOutlined-legacy.CZa04zJ1.js","../../../../common/vue.esm-bundler-legacy.WK047frM.js","../../../../common/preload-helper-legacy.TPiD7rVa.js"],(function(e,l){"use strict";return{setters:[l=>{l._,e("default",l._)},null,null,null],execute:function(){}}}));

@@ -29,7 +29,14 @@ class Admin_Script extends Abstract_Class {
         wp_enqueue_style( 'wpay-admin-style' );
         wp_register_script( 'wpay-admin-l10n', '', array( 'lodash' ), Helper::get_plugin_data( 'Version' ), false );
         wp_enqueue_script( 'wpay-admin-l10n' );
-        wp_localize_script( 'wpay-admin-l10n', 'wpayObj', array( 'pluginDirUrl' => plugins_url( '', WPAY_PLUGIN_FILE ) ) );
+        wp_localize_script(
+            'wpay-admin-l10n',
+            'wpayObj',
+            array(
+                'pluginDirUrl' => plugins_url( '', WPAY_PLUGIN_FILE ),
+                'wpayDebug'    => defined( 'WPAY_DEBUG' ) && WPAY_DEBUG,
+            )
+        );
     }
 
     /**

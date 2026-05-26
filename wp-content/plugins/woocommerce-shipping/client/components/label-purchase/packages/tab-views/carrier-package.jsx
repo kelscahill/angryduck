@@ -15,6 +15,7 @@ import { Packages } from './carrier-package/packages';
 import { CarrierIcon } from '../../../carrier-icon';
 import { FetchNotice } from './fetch-notice';
 import { TotalWeight } from '../../total-weight';
+import { CustomsWeightWarning } from './customs-weight-warning';
 import { GetRatesButton } from '../../get-rates-button';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { recordEvent } from 'utils/tracks';
@@ -46,6 +47,7 @@ export const CarrierPackage = withBoundary(
 				labels: { hasMissingPurchase },
 				shipment: { isExtraLabelPurchaseValid },
 				packages: { initialCarrierTab },
+				nextDesign,
 			} = useLabelPurchaseContext();
 
 			const tabs = Object.keys( availablePackages ).map(
@@ -112,7 +114,11 @@ export const CarrierPackage = withBoundary(
 				// eslint-disable-next-line react-hooks/exhaustive-deps
 			}, [ isGetRatesButtonDisabled, availableRates ] );
 
-			return (
+			return nextDesign ? (
+				<TotalWeight
+					packageWeight={ selectedPackage?.boxWeight ?? 0 }
+				/>
+			) : (
 				<TabPanel
 					className="carrier-package-tabs"
 					tabs={ tabs }
@@ -141,6 +147,7 @@ export const CarrierPackage = withBoundary(
 										disabled={ isGetRatesButtonDisabled }
 									/>
 								</Flex>
+								<CustomsWeightWarning />
 								<FetchNotice margin="before" />
 							</>
 						);

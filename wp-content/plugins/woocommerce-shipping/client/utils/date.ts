@@ -1,6 +1,5 @@
 import { getDate, getSettings } from '@wordpress/date';
-import { __ } from '@wordpress/i18n';
-import { sprintf } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 const DATE_FORMAT_OPTIONS = { month: 'long', day: 'numeric' } as const;
 
@@ -71,4 +70,77 @@ export const getDisplayDate = ( date: Date ) => {
 export const isDateValid = ( date: string ): boolean => {
 	const dateObject = new Date( date );
 	return ! isNaN( dateObject.getTime() );
+};
+
+/**
+ * Extract UTC date components from a date string or Date object.
+ * This is useful for comparing dates without timezone conversion issues.
+ *
+ * @param date - The date string or Date object to extract UTC components from
+ * @return Object with year, month, and day in UTC
+ */
+export const getUTCDateComponents = (
+	date: string | Date
+): { year: number; month: number; day: number } => {
+	const dateObj = typeof date === 'string' ? new Date( date ) : date;
+	return {
+		year: dateObj.getUTCFullYear(),
+		month: dateObj.getUTCMonth(),
+		day: dateObj.getUTCDate(),
+	};
+};
+
+/**
+ * Validate that a delivery date is after the ship date.
+ * Compares dates using UTC to avoid timezone conversion issues.
+ *
+ * For overnight/next-day services, the delivery date should be at least
+ * the day after the ship date. Same-day delivery is not supported for
+ * these services.
+ *
+ * @param deliveryDate - The delivery date from the API (ISO string)
+ * @param shipDate     - The ship date (Date object)
+ * @return True if the delivery date is valid (after ship date) or if validation
+ *         cannot be performed due to missing dates, false if the delivery date
+ *         is invalid (same day or before ship date)
+ */
+export const isDeliveryDateValid = (
+	deliveryDate: string | null | undefined,
+	shipDate: Date | null | undefined
+): boolean => {
+	if ( ! deliveryDate || ! shipDate ) {
+		return true; // If we don't have both dates, we can't validate
+	}
+
+	const delivery = getUTCDateComponents( deliveryDate );
+	const ship = getUTCDateComponents( shipDate );
+
+	// Create comparable date values (days since epoch at UTC midnight)
+	const deliveryDays =
+		Date.UTC( delivery.year, delivery.month, delivery.day ) /
+		( 1000 * 60 * 60 * 24 );
+	const shipDays =
+		Date.UTC( ship.year, ship.month, ship.day ) / ( 1000 * 60 * 60 * 24 );
+
+	// Delivery date must be after ship date (not same day)
+	return deliveryDays > shipDays;
+};
+
+/**
+ * Convert a Date object to a UTC midnight ISO string, preserving the local date.
+ *
+ * Extracts the local date components (year, month, day) and returns them as a
+ * UTC midnight timestamp. This prevents timezone conversion from shifting the date.
+ *
+ * Example: If local date is 2025-12-19 in UTC+7:
+ * - date.toISOString() returns '2025-12-18T17:00:00.000Z' (shifted)
+ * - toUTCMidnightISOString() returns '2025-12-19T00:00:00.000Z' (preserved)
+ *
+ * @param date - The Date object to convert.
+ * @return ISO string at UTC midnight (YYYY-MM-DDTHH:mm:ss.sssZ).
+ */
+export const toUTCMidnightISOString = ( date: Date ): string => {
+	return new Date(
+		Date.UTC( date.getFullYear(), date.getMonth(), date.getDate() )
+	).toISOString();
 };

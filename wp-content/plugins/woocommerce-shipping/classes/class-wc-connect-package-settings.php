@@ -48,7 +48,8 @@ class WC_Connect_Package_Settings {
 	}
 
 	/**
-	 * Filters out UPS DAP predefined packages schema if it is not supported by the client.
+	 * Filters out UPS DAP and FedEx predefined packages schema if it is not supported by the client.
+	 * This is only necessary to ensure the filtered out packages are not shown in the UI even if they exist in the local cache.
 	 *
 	 * @param array|null $features_supported_by_client Features supported by the client.
 	 *
@@ -74,6 +75,13 @@ class WC_Connect_Package_Settings {
 			isset( $schema['upsdap'] )
 		) {
 			unset( $schema['upsdap'] );
+		}
+
+		if (
+			! in_array( 'fedex', $features_supported_by_client, true ) &&
+			isset( $schema['fedex'] )
+		) {
+			unset( $schema['fedex'] );
 		}
 
 		return $schema;

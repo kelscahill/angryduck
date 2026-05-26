@@ -1,17 +1,30 @@
 import { __, _n, sprintf } from '@wordpress/i18n';
 import React from 'react';
 import { getCustomFulfillmentSummary } from 'utils';
+import { SHIPMENT_TYPE } from 'utils/shipment';
+import type { ShipmentType } from 'types';
 
 export const getShipmentTitle = (
 	index: string | number,
-	totalCount: number
-) =>
-	sprintf(
+	totalCount: number,
+	type: ShipmentType
+) => {
+	if ( type === SHIPMENT_TYPE.RETURN ) {
+		return sprintf(
+			// translators: %1$d is the shipment number, %2$d is the total number of shipments
+			__( 'Return %1$d/%2$d', 'woocommerce-shipping' ),
+			parseInt( `${ index }`, 10 ) + 1,
+			totalCount
+		);
+	}
+
+	return sprintf(
 		// translators: %1$d is the shipment number, %2$d is the total number of shipments
 		__( 'Shipment %1$d/%2$d', 'woocommerce-shipping' ),
 		parseInt( `${ index }`, 10 ) + 1,
 		totalCount
 	);
+};
 
 export const getShipmentSummaryText = (
 	orderFulfilled: boolean,
@@ -53,15 +66,15 @@ export const getShipmentSummaryText = (
 				{ sprintf(
 					// translators: %1$d: number of items fulfilled
 					_n(
-						'%1$d item was fulfilled, ',
-						'%1$d items were fulfilled, ',
+						'%1$d item was fulfilled,',
+						'%1$d items were fulfilled,',
 						purchasedLabelProductCount,
 						'woocommerce-shipping'
 					),
 					purchasedLabelProductCount
-				) }
+				) }{ ' ' }
 				{ sprintf(
-					// translators: %1$d: number of items to be fulfilled
+					// translators: %d: number of items to be fulfilled
 					_n(
 						'%d item still requires fulfillment.',
 						'%d items still require fulfillment.',

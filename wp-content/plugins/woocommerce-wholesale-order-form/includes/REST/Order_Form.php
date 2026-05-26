@@ -14,6 +14,7 @@ use RymeraWebCo\WWOF\Helpers\WPML;
 use RymeraWebCo\WWOF\Helpers\WWOF;
 use RymeraWebCo\WWOF\Traits\Singleton_Trait;
 use RymeraWebCo\WWOF\Factories\Order_Form as Order_Form_Object;
+use Exception;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -82,6 +83,21 @@ class Order_Form extends Abstract_REST {
                     'formIds' => array(
                         'required'          => true,
                         'sanitize_callback' => array( $this, 'sanitize_ids_list' ),
+                    ),
+                ),
+            )
+        );
+
+        register_rest_route(
+            $this->namespace,
+            "/$this->rest_base/duplicate-form",
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'duplicate_form' ),
+                'permission_callback' => array( $this, 'can_manage_woocommerce' ),
+                'args'                => array(
+                    'formId' => array(
+                        'required' => true,
                     ),
                 ),
             )
@@ -514,6 +530,61 @@ class Order_Form extends Abstract_REST {
     public function sanitize_ids_list( $ids ) {
 
         return array_map( 'absint', $ids );
+    }
+
+    /**
+     * Duplicate a form.
+     *
+     * @param WP_REST_Request $request Full data about the request.
+     * @return array|WP_Error
+     */
+    public function duplicate_form( $request ) {
+        $params           = $request->get_params() ?? array();
+        $existing_form_id = isset( $params['formId'] ) ? absint( $params['formId'] ) : 0;
+        $form_meta_keys   = array( 'form_header', 'form_body', 'form_footer' );
+
+        if ( empty( $existing_form_id ) ) {
+            return new WP_Error( 'invalid_form_id', __( 'Invalid form id', 'woocommerce-wholesale-order-form' ) );
+        }
+
+        $existing_form_data = Order_Form_Object::get_instance( $existing_form_id ); // get existing metadata.
+
+        if ( empty( $existing_form_data ) ) { // if somehow the form id is 0, return error.
+            return new WP_Error(
+                'form_not_found',
+                __( 'Original form not found', 'woocommerce-wholesale-order-form' ),
+                array( 'status' => 404 )
+            );
+        }
+
+        $new_form = new Order_Form_Object(); // create a new form.
+        $new_form->set_form_property( 'post_name', $existing_form_data->post_name );
+        $new_form->set_form_property( 'post_type', $existing_form_data->post_type );
+        $new_form->set_form_property( 'post_title', $existing_form_data->post_title );
+        $new_form->set_form_property( 'post_status', 'draft' );
+        $new_form->set_form_property( WWOF::FORM_HEADER, $existing_form_data->form_header );
+        $new_form->set_form_property( WWOF::FORM_BODY, $existing_form_data->form_body );
+        $new_form->set_form_property( WWOF::FORM_FOOTER, $existing_form_data->form_footer );
+        $new_form->set_form_property( WWOF::FORM_SETTINGS, $existing_form_data->settings );
+
+        try {
+            $new_form->save();
+        } catch ( Exception $e ) {
+            WWOF::log_error( $e->getMessage() );
+            return false;
+        }
+
+        $order_forms = new Order_Forms_Query(
+            array(
+                'post_status'    => array( 'draft', 'publish' ),
+                'orderby'        => 'ID',
+                'order'          => 'DESC',
+                'posts_per_page' => 10,
+            ),
+            'edit'
+        );
+
+        return $order_forms->get_id_indexed_posts();
     }
 
     /**

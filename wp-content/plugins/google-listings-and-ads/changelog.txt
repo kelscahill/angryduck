@@ -1,5 +1,133 @@
 *** Google for WooCommerce Changelog ***
 
+= 3.7.0 - 2026-05-19 =
+* Add - Create Your Own Incentive (CYOI) feature.
+* Add - In-Product Placements feature.
+* Add - Restrict accepted image formats when creating campaign assets.
+* Dev - Upgrade Google Ads PHP Library to v23.
+* Dev - Added tracking for YouTube connected stores.
+* Fix - Cache miss on empty recommendations triggering live Ads API calls on every admin page load.
+* Fix - Shipping tab failing to render when no shipping options were set.
+* Fix - Sorting order of the programs column.
+* Update - Default values for shipping time inputs during onboarding.
+* Update - Success notice displayed after saving a campaign.
+
+= 3.6.2 - 2026-04-27 =
+* Dev - Bump WooCommerce "tested up to" version 10.7.
+* Dev - Remove API Pull sync status rows from the Connection Test page.
+* Fix - Disconnect modal now shows Google Ads-specific copy and confirmation text when disconnecting only the Google Ads account, instead of always falling back to the "all accounts" variant.
+* Fix - Improve scheduling for job that updates non-EU campaigns.
+* Fix - Improved performance of the expiring products query for large catalogs.
+* Fix - Only schedule UpdateEuPoliticalCampaigns jobs with an Ads connection.
+* Fix - Unschedule all Action Scheduler jobs when the plugin is deactivated to prevent orphaned recurring tasks from accumulating failure logs.
+* Fix - Update gmc_merchant_id in YouTube Shopping reports.
+* Fix - Updated caniuse-lite browserslist database.
+
+= 3.6.1 - 2026-03-31 =
+* Add - EU political ads declaration modal for compliance with Google's political advertising requirements.
+* Dev - Refactor YouTube card E2E tests.
+* Fix - Cache GAQL query for highest spend campaign.
+* Fix - Remove legacy conversion event.
+
+= 3.6.0 - 2026-03-16 =
+* Add - Generative AI for assets.
+* Add - YouTube shopping support.
+* Fix – Rename the logo svg file.
+* Fix - Update Google Ads API to v22.
+* Fix - Duplicated values in the report comparison filters.
+* Fix - Conversion events use product variation ID in purchase events.
+* Fix - Resolved fatal error in Channel Visibility when creating coupons.
+* Fix - Show user error message when Brand Guidelines are enabled.
+* Update - Update Google Ads API to v22.
+
+= 3.5.3 - 2026-03-03 =
+* Add - Support for service based merchants.
+* Dev - Added two new filters to the Jetpack and Google OAuth flows.
+* Fix – CSS lint error in raise-budget-recommendation-banner.
+* Update - Disable API Pull mode for all users.
+
+= 3.5.2 - 2026-01-29 =
+* Add - Sorting functionality in `AllProgramsTableCard` to allow users to reorder columns by key attributes.
+* Fix - Resolve an issue where website claim conflicts were not detected correctly during Google Merchant Center account setup in the onboarding flow.
+* Update - Add `timeZone` and `languageCode` fields to create-merchant request for Merchant API compatibility.
+* Update - Allow legacy conversion events to be disabled via a filter.
+
+= 3.5.1 - 2025-12-10 =
+* Add - EU political content confirmation checkbox for EU-based advertisers.
+* Fix - Button misaligned after navigating between tabs.
+* Fix - Correct the product edit URL to properly handle product variations in the Price Benchmark modal.
+* Fix - Fill missing intervals in products chart.
+* Fix - Prevent “Free Listings” from being automatically added after unselecting all campaigns in the comparison filter.
+* Fix - Setup enhanced conversion data when gtag is added by the Google Analytics extension.
+* Tweak - Make it possible to complete the onboarding flow using a site URL with paths.
+* Tweak - WC 10.4 compatibility.
+* Tweak - WP 6.9 compatibility.
+* Update - Modify `wc/gla/tours` API endpoint to retrieve all tours at once.
+
+= 3.5.0 - 2025-11-04 =
+* Add - Additional options to the skip paid ads survey.
+* Add - Recommendation for improving conversions by raising budgets.
+* Fix - Alignment issue on Reports page.
+* Fix - Error when syncing bundled products.
+* Fix - MC connection stuck in loading state when connection is interrupted.
+* Fix - Prevent floating point precision errors when converting to micro units by rounding before casting to integer.
+* Fix - Remove ads account status check from `ads/recommendations` endpoint.
+* Tweak - WC 10.3 compatibility.
+
+= 3.4.3 - 2025-09-16 =
+* Dev - Update NPM packages with security issues.
+* Dev - Update NPM packages with security issues.
+* Fix - Improve focus handling in `TreeSelectControl`.
+* Fix - Use `isGoogleAdsReady` property instead of `hasGoogleAdsConnection` to check for a connected Ads account.
+* Tweak - WC 10.2 compatibility.
+* Update - Incorporate API changes for EU political advertising.
+
+= 3.4.2 - 2025-09-02 =
+* Add - Display the statuses of synchronization modes with Google Merchant Center in WooCommerce System Status Report.
+* Tweak -  Adjust the value of the Merchant Center setting in the WPCOM proxy endpoint to null before completing onboarding so that Google service can recognize whether the Merchant Center account has been disconnected.
+* Tweak - Renamed the log file name from `google-listings-and-ads` to `google-for-woocommerce`.
+* Update - Include the current plugin version in the WPCOM proxy endpoint for Google service to recognize which plugin version is being used.
+* Update - Schedule resynchronization for all products via the Push mode when the Push mode of product synchronization is switched to enable.
+
+= 3.4.1 - 2025-08-26 =
+* Fix - Replaced multiple `setValue` calls with a single `setValues` call to eliminate race conditions during form initialization and reduce inconsistent validation behavior.
+* Tweak - Reduce the cache time for product statuses and issues from 12 hours to 30 minutes.
+
+= 3.4.0 - 2025-08-19 =
+* Add - Help merchants improve the assets for their PMax campaigns.
+* Dev - Update E2E tests ahead of Woo 10.1 release.
+* Fix - Use `wp_is_serving_rest_request()` to detect if we are handling a REST API request.
+* Tweak - WC 10.1 compatibility.
+
+= 3.3.1 - 2025-08-12 =
+* Fix - Avoid errors when unnecessarily revoking WPCOM connection during deactivation.
+* Fix - Avoid scheduling the job to synchronize all products with Google Merchant Center when the plugin is initialized for the first time.
+* Fix - Modal overflow on small viewports.
+* Fix - Remove error message related to granting access for API pull.
+* Fix - Remove unnecessary kebab menu from setup task.
+* Update - The filtering for synchronizable products data by channel visibility in API Pull mode is now opt-out, changed from its previous opt-in setting.
+
+= 3.3.0 - 2025-08-05 =
+* Add - Enhanced Conversions support for Google Ads.
+* Add - Survey users when campaign creation is skipped during onboarding.
+* Tweak - Display a more detailed error message when failing to link Google Ads account.
+* Tweak - Replace "free listings" with "product feed".
+
+= 3.2.0 - 2025-07-22 =
+* Add - Block shipping, products, and coupons synchronization when push synchronization is disabled.
+* Add - Budget Metrics endpoint for fetching metrics with a custom budget.
+* Add - Controller for fetching incentive credits from Middleware.
+* Add - Event tracking for budget recommendations and metrics.
+* Add - Fetch budget recommendations from the Google Ads API.
+* Add - Include blog ID to all notification messages.
+* Add - New endpoint for synchronizing listing settings with Google.
+* Add - Provide the recommendations and metrics when setting a campaign budget.
+* Add - Show a prompt for suggesting a higher budget to get back free ad credits before completing the onboarding and ads onboarding.
+* Tweak - Restrict Budget Metrics to positive numbers.
+* Update - Google Ads API from v18 to v20.
+* Update - Remove WPCOM API authorization check as authorization is granted by default.
+* Update - Remove opt-in/opt-out UI controls for product data sync.
+
 = 3.1.1 - 2025-07-08 =
 * Fix - Do not render experience rating banner if Ads account is disconnected.
 * Fix - Fixed undefined array key warnings in Price Benchmarks feature.
@@ -672,7 +800,7 @@
 * Tweak - WC 6.6 compatibility.
 
 = 1.13.4 - 2022-06-07 =
-* Fix - Adding Github Actions for storybook.
+* Fix - Adding GitHub Actions for storybook.
 * Fix - Do not show error notice when Merchant Center review request API call failed.
 * Fix - Do not store URL matches transient until fully connected.
 * Fix - Fix GitHub Workflow paths.
@@ -849,7 +977,7 @@
 * Add - The partial authorization feature of Google account to the onboarding setup, Google Ads setup and reconnection pages.
 * Add - Accept login_hint when generating OAuth URL.
 * Add - Review request inbox notification after 10 conversions and 100 free listing clicks
-* Update – Add support for retrieving the name and domain from the Google API
+* Update - Add support for retrieving the name and domain from the Google API
 * Fix - Add support for Norwegian language, nb and nn
 * Fix - Report tabs lose active state when changing chart.
 * Tweak - Update `in_stock` and `out_of_stock` availability enums

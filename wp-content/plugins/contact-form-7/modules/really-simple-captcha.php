@@ -31,16 +31,11 @@ function wpcf7_add_form_tag_captcha() {
 
 function wpcf7_captchac_form_tag_handler( $tag ) {
 	if ( ! class_exists( 'ReallySimpleCaptcha' ) ) {
-		$error = sprintf(
-			/* translators: %s: link labeled 'Really Simple CAPTCHA' */
-			esc_html( __( 'To use CAPTCHA, you need %s plugin installed.', 'contact-form-7' ) ),
-			wpcf7_link(
-				'https://wordpress.org/plugins/really-simple-captcha/',
-				'Really Simple CAPTCHA'
-			)
-		);
-
-		return sprintf( '<em>%s</em>', $error );
+		return wp_kses_data( sprintf(
+			/* translators: %s: URL to the Really Simple CAPTCHA plugin page */
+			__( '<strong>Warning:</strong> The <a href="%s">Really Simple CAPTCHA</a> plugin is not active.', 'contact-form-7' ),
+			'https://wordpress.org/plugins/really-simple-captcha/'
+		) );
 	}
 
 	if ( empty( $tag->name ) ) {
@@ -277,22 +272,24 @@ function wpcf7_captcha_display_warning_message( $page, $action, $object ) {
 	wpcf7_init_captcha();
 
 	if ( ! is_dir( $uploads_dir ) or ! wp_is_writable( $uploads_dir ) ) {
-		$message = sprintf(
-			/* translators: %s: Path to the temporary folder */
-			__( 'This contact form contains CAPTCHA fields, but the temporary folder for the files (%s) does not exist or is not writable. You can create the folder or change its permission manually.', 'contact-form-7' ),
-			$uploads_dir
+		wp_admin_notice(
+			sprintf(
+				/* translators: %s: Path to the temporary folder */
+				__( 'This contact form contains CAPTCHA fields, but the temporary folder for the files (%s) does not exist or is not writable. You can create the folder or change its permission manually.', 'contact-form-7' ),
+				$uploads_dir
+			),
+			array( 'type' => 'warning' )
 		);
-
-		wp_admin_notice( esc_html( $message ), array( 'type' => 'warning' ) );
 	}
 
 	if (
 		! function_exists( 'imagecreatetruecolor' ) or
 		! function_exists( 'imagettftext' )
 	) {
-		$message = __( 'This contact form contains CAPTCHA fields, but the necessary libraries (GD and FreeType) are not available on your server.', 'contact-form-7' );
-
-		wp_admin_notice( esc_html( $message ), array( 'type' => 'warning' ) );
+		wp_admin_notice(
+			__( 'This contact form contains CAPTCHA fields, but the necessary libraries (GD and FreeType) are not available on your server.', 'contact-form-7' ),
+			array( 'type' => 'warning' )
+		);
 	}
 }
 
@@ -416,8 +413,10 @@ function wpcf7_generate_captcha( $options = null ) {
 		return false;
 	}
 
-	if ( ! is_dir( $captcha->tmp_dir )
-	or ! wp_is_writable( $captcha->tmp_dir ) ) {
+	if (
+		! is_dir( $captcha->tmp_dir ) or
+		! wp_is_writable( $captcha->tmp_dir )
+	) {
 		return false;
 	}
 

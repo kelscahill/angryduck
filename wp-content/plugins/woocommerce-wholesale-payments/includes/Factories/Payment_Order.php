@@ -157,7 +157,10 @@ class Payment_Order {
         $this->order_id       = $this->order->get_id();
         $this->order_date     = $this->order->get_date_created()->date( 'Y-m-d H:i:s' );
         $this->invoice_id     = $this->order->get_meta( '_wpay_stripe_invoice_id' );
-        $this->invoice_data   = (array) $this->order->get_meta( '_wpay_stripe_invoice' );
+        $invoice_meta         = $this->order->get_meta( '_wpay_stripe_invoice' );
+        $this->invoice_data   = is_array( $invoice_meta ) && ! wp_is_numeric_array( $invoice_meta )
+            ? $invoice_meta
+            : array();
         $this->invoice_plan   = (array) json_decode( $this->order->get_meta( '_wpay_plan' ), true );
         $this->order_status   = $this->order->get_status();
         $this->order_link     = get_edit_post_link( $this->order->get_id() );
@@ -196,6 +199,12 @@ class Payment_Order {
      * @return void
      */
     public function set_payment_status() {
+        // Deferred orders always show "deferred" status regardless of Stripe state.
+        if ( 'yes' === $this->order->get_meta( '_wpay_schedule_deferred' ) ) {
+            $this->status = 'deferred';
+            return;
+        }
+
         // Get the last row from order_invoices array.
         $status = $this->order->get_meta( '_wpay_stripe_invoice_status' );
 
@@ -248,6 +257,32 @@ class Payment_Order {
      */
     private function set_amount_due() {
         $stripe_line_items = $this->invoice_data;
+        $is_deferred       = 'yes' === $this->order->get_meta( '_wpay_schedule_deferred' );
+
+        // Build deferred preview from payment plan breakdown.
+        if ( $is_deferred && ! empty( $this->invoice_plan['breakdown'] ) ) {
+            $order_total  = (int) round( (float) $this->order->get_total() * 100 );
+            $cent_amounts = WPay::calculate_breakdown_amounts( $this->invoice_plan['breakdown'], $order_total );
+            $amounts_due  = array();
+
+            foreach ( $cent_amounts as $i => $amount ) {
+                $amounts_due[] = array(
+                    'amount'      => $amount,
+                    'amount_paid' => 0,
+                    'due_date'    => 0,
+                    'paid_at'     => null,
+                    'status'      => 'deferred',
+                    'description' => sprintf(
+                        /* translators: %d = payment number */
+                        __( 'Payment #%d', 'woocommerce-wholesale-payments' ),
+                        $i + 1
+                    ),
+                );
+            }
+
+            $this->order_amount_due = array_map( array( $this, 'map_amount_due' ), $amounts_due );
+            return;
+        }
 
         if ( empty( $stripe_line_items['amounts_due'] ) ) {
             $stripe_line_items['amounts_due'] = array(
@@ -311,6 +346,31 @@ class Payment_Order {
      * @return array
      */
     public function map_order_invoices( $invoices ) {
+        // Handle deferred auto-charge orders with no invoice rows yet.
+        if ( 'yes' === $this->order->get_meta( '_wpay_schedule_deferred' ) && 'yes' === $this->order->get_meta( '_wpay_auto_charge' ) ) {
+            $plan_json = $this->order->get_meta( '_wpay_plan' );
+            $plan_data = json_decode( $plan_json, true );
+
+            if ( ! empty( $plan_data['breakdown'] ) ) {
+                $preview_invoices = array();
+                foreach ( $plan_data['breakdown'] as $i => $item ) {
+                    $preview_invoices[] = array(
+                        'breakdown_index'       => $i,
+                        'breakdown_amount'      => isset( $item['due']['value'] ) ? $item['due']['value'] : 0,
+                        'breakdown_description' => sprintf(
+                            /* translators: %d = payment number */
+                            __( 'Payment #%d', 'woocommerce-wholesale-payments' ),
+                            $i + 1
+                        ),
+                        'breakdown_due_date'    => isset( $item['day'] ) ? $item['day'] : 0,
+                        'status'                => 'pending',
+                        'due_date_display'      => __( 'Pending order completion', 'woocommerce-wholesale-payments' ),
+                    );
+                }
+                return $preview_invoices;
+            }
+        }
+
         $order_invoices = array();
 
         if ( ! empty( $invoices ) ) {

@@ -17,6 +17,7 @@ use WCPay\Logger;
 use WCPay\Core\Server\Request\Get_Intention;
 use WCPay\Core\Server\Request\Cancel_Intention;
 use WCPay\Core\Server\Request\Capture_Intention;
+use WCPay\Constants\Order_Mode;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -127,6 +128,13 @@ class WC_Payments_Order_Service {
 	const WCPAY_MODE_META_KEY = '_wcpay_mode';
 
 	/**
+	 * Option key holding a one-way flag indicating the store has had at least one live WooPayments sale.
+	 *
+	 * @const string
+	 */
+	const HAS_LIVE_SALE_OPTION = 'wcpay_has_live_sale';
+
+	/**
 	 * Meta key used to store payment transaction Id.
 	 *
 	 * @const string
@@ -162,6 +170,20 @@ class WC_Payments_Order_Service {
 	const WCPAY_MULTIBANCO_URL_META_KEY = '_wcpay_multibanco_url';
 
 	/**
+	 * Meta key for cached payment method details.
+	 *
+	 * @const string
+	 */
+	const PAYMENT_METHOD_DETAILS_META_KEY = '_wcpay_payment_method_details';
+
+	/**
+	 * Meta key used to store the IPP channel from Stripe intent metadata.
+	 *
+	 * @const string
+	 */
+	const IPP_CHANNEL_META_KEY = '_wcpay_ipp_channel';
+
+	/**
 	 * Client for making requests to the WooCommerce Payments API
 	 *
 	 * @var WC_Payments_API_Client
@@ -175,6 +197,80 @@ class WC_Payments_Order_Service {
 	 */
 	public function __construct( WC_Payments_API_Client $api_client ) {
 		$this->api_client = $api_client;
+	}
+
+	/**
+	 * Registers hooks.
+	 *
+	 * @return void
+	 */
+	public function init_hooks(): void {
+		add_action( 'woocommerce_order_status_processing', [ $this, 'maybe_record_first_live_sale' ] );
+		add_action( 'woocommerce_order_status_completed', [ $this, 'maybe_record_first_live_sale' ] );
+	}
+
+	/**
+	 * Sets the one-way `HAS_LIVE_SALE_OPTION` flag the first time a live WooPayments
+	 * order reaches a successful status. Subsequent invocations short-circuit on the
+	 * autoloaded option read so they cost nothing for the lifetime of the store.
+	 *
+	 * @param int $order_id Order ID from the woocommerce_order_status_* hook.
+	 * @return void
+	 */
+	public function maybe_record_first_live_sale( $order_id ): void {
+		if ( get_option( self::HAS_LIVE_SALE_OPTION ) ) {
+			return;
+		}
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+
+		if ( Order_Mode::PRODUCTION === $order->get_meta( self::WCPAY_MODE_META_KEY ) ) {
+			update_option( self::HAS_LIVE_SALE_OPTION, '1', true );
+			delete_transient( WC_Payments_Account::POST_KYC_ACTIVATION_ELIGIBLE_TRANSIENT );
+
+			if ( class_exists( 'WC_Tracks' ) ) {
+				WC_Tracks::record_event( 'wcpay_first_live_sale' );
+			}
+		}
+	}
+
+	/**
+	 * Returns whether the store has had at least one live (production) WooPayments sale.
+	 *
+	 * Reads the one-way `HAS_LIVE_SALE_OPTION` flag set by `maybe_record_first_live_sale()`;
+	 * falls back to a single `wc_get_orders` meta query when the option hasn't been
+	 * populated yet (e.g., for stores that took their first live sale before this
+	 * feature shipped). Writes the option on hit so subsequent reads short-circuit.
+	 *
+	 * @return bool
+	 */
+	public function has_live_sale(): bool {
+		if ( get_option( self::HAS_LIVE_SALE_OPTION ) ) {
+			return true;
+		}
+
+		$orders = wc_get_orders(
+			[
+				'payment_method' => 'woocommerce_payments',
+				'limit'          => 1,
+				'return'         => 'ids',
+				'status'         => [ 'wc-completed', 'wc-processing' ],
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_key'       => self::WCPAY_MODE_META_KEY,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'meta_value'     => Order_Mode::PRODUCTION,
+			]
+		);
+
+		if ( ! empty( $orders ) ) {
+			update_option( self::HAS_LIVE_SALE_OPTION, '1', true );
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -390,13 +486,14 @@ class WC_Payments_Order_Service {
 	/**
 	 * Updates the order status based on dispute status and adds a note about the dispute.
 	 *
-	 * @param WC_Order $order      Order object.
-	 * @param string   $charge_id  The ID of the disputed charge associated with this order.
-	 * @param string   $status     The status of the dispute.
+	 * @param WC_Order $order           Order object.
+	 * @param string   $charge_id       The ID of the disputed charge associated with this order.
+	 * @param string   $status          The status of the dispute.
+	 * @param array    $dispute_summary Dispute summary information.
 	 *
 	 * @return void
 	 */
-	public function mark_payment_dispute_closed( $order, $charge_id, $status ) {
+	public function mark_payment_dispute_closed( $order, $charge_id, $status, $dispute_summary = [] ): void {
 		if ( ! is_a( $order, 'WC_Order' ) ) {
 			return;
 		}
@@ -411,14 +508,36 @@ class WC_Payments_Order_Service {
 		// Order `completed` and `refunded` emails should both be blocked when disputes are closed.
 		add_filter( 'woocommerce_email_enabled_customer_completed_order', '__return_false' );
 		add_filter( 'woocommerce_email_enabled_customer_refunded_order', '__return_false' );
+		add_filter( 'woocommerce_email_enabled_customer_completed_renewal_order', '__return_false' );
 
 		if ( 'lost' === $status ) {
+			// Use dispute summary data if available to determine refund amount.
+			$refund_amount = $order->get_remaining_refund_amount();
+			$line_items    = $order->get_items();
+			if ( ! empty( $dispute_summary ) ) {
+				$disputed_amount = isset( $dispute_summary['disputed_amount'] ) ? $dispute_summary['disputed_amount'] : 0;
+				if ( $disputed_amount > 0 ) {
+					// Use disputed amount for refund if available.
+					$currency = strtolower( isset( $dispute_summary['currency'] ) ? $dispute_summary['currency'] : $order->get_currency() );
+
+					// Convert amounts to the correct format based on currency (e.g. cents to dollars).
+					$disputed_amount = WC_Payments_Utils::interpret_stripe_amount( (int) $disputed_amount, $currency );
+
+					// Use the appropriate amount, but don't exceed order total.
+					$refund_amount = min( $refund_amount, $disputed_amount );
+					if ( $disputed_amount < (float) $order->get_total() ) {
+						// For partial disputes pass empty line_items to avoid inconsistency in the order view.
+						$line_items = [];
+					}
+				}
+			}
+
 			wc_create_refund(
 				[
-					'amount'     => $order->get_total(),
+					'amount'     => $refund_amount,
 					'reason'     => __( 'Dispute lost.', 'woocommerce-payments' ),
 					'order_id'   => $order->get_id(),
-					'line_items' => $order->get_items(),
+					'line_items' => $line_items,
 				]
 			);
 		} else {
@@ -430,6 +549,7 @@ class WC_Payments_Order_Service {
 		// Restore completed and refunded order emails.
 		remove_filter( 'woocommerce_email_enabled_customer_completed_order', '__return_false' );
 		remove_filter( 'woocommerce_email_enabled_customer_refunded_order', '__return_false' );
+		remove_filter( 'woocommerce_email_enabled_customer_completed_renewal_order', '__return_false' );
 
 		$order->add_order_note( $note );
 	}
@@ -486,7 +606,7 @@ class WC_Payments_Order_Service {
 
 		$order->add_order_note( $note );
 		$this->complete_order_processing( $order, $intent_status );
-		// Trigger the failed order status hook to send notifications etc only if the order status was not already failed to avoid duplicate notifications.
+		// When the order is already in 'failed' status, WC core won't fire notification hooks (status didn't change). Manually trigger them so the merchant is notified on every terminal payment failure.
 		if ( Order_Status::FAILED === $order_status_before_update ) {
 			do_action( 'woocommerce_order_status_pending_to_failed_notification', $order->get_id(), $order );
 			do_action( 'woocommerce_order_status_failed_notification', $order->get_id(), $order );
@@ -536,6 +656,11 @@ class WC_Payments_Order_Service {
 		try {
 			$events = $this->api_client->get_timeline( $intent_id );
 
+			if ( ! isset( $events['data'] ) || ! is_array( $events['data'] ) ) {
+				Logger::log( sprintf( 'Timeline data missing or malformed for intent_id %s.', $intent_id ) );
+				return;
+			}
+
 			$captured_event = current(
 				array_filter(
 					$events['data'],
@@ -544,6 +669,11 @@ class WC_Payments_Order_Service {
 					}
 				)
 			);
+
+			if ( ! is_array( $captured_event ) ) {
+				Logger::log( sprintf( 'No captured event found in timeline for intent_id %s.', $intent_id ) );
+				return;
+			}
 
 			$details = ( new WC_Payments_Captured_Event_Note( $captured_event ) )->generate_html_note();
 
@@ -935,6 +1065,36 @@ class WC_Payments_Order_Service {
 	}
 
 	/**
+	 * Set the IPP channel for an order.
+	 *
+	 * @param mixed  $order   The order ID or order object.
+	 * @param string $channel The IPP channel value (e.g. 'mobile_pos', 'mobile_store_management').
+	 *
+	 * @return void
+	 *
+	 * @throws Order_Not_Found_Exception
+	 */
+	public function set_ipp_channel_for_order( $order, string $channel ): void {
+		$order = $this->get_order( $order );
+		$order->update_meta_data( self::IPP_CHANNEL_META_KEY, $channel );
+		$order->save_meta_data();
+	}
+
+	/**
+	 * Get the IPP channel for an order.
+	 *
+	 * @param mixed $order The order Id or order object.
+	 *
+	 * @return string
+	 *
+	 * @throws Order_Not_Found_Exception
+	 */
+	public function get_ipp_channel_for_order( $order ): string {
+		$order = $this->get_order( $order );
+		return $order->get_meta( self::IPP_CHANNEL_META_KEY );
+	}
+
+	/**
 	 * Given the payment intent data, adds it to the given order as metadata and parses any notes that need to be added
 	 *
 	 * @param WC_Order                                                          $order The order.
@@ -960,8 +1120,25 @@ class WC_Payments_Order_Service {
 		$payment_transaction_id = $payment_transaction['id'] ?? '';
 		$outcome                = $charge ? $charge->get_outcome() : null;
 		$risk_level             = $outcome ? $outcome['risk_level'] : null;
+
 		// next, save it in order meta.
 		$this->attach_intent_info_to_order__legacy( $order, $intent_id, $intent_status, $payment_method, $customer_id, $charge_id, $currency, $payment_transaction_id, $risk_level );
+
+		// Store payment method details when available.
+		if ( null !== $charge ) {
+			$payment_method_details = $charge->get_payment_method_details();
+			if ( $payment_method_details ) {
+				$this->store_payment_method_details( $order, $payment_method_details );
+			}
+		}
+
+		// Store IPP channel from intent metadata if present.
+		$metadata         = $intent->get_metadata();
+		$ipp_channel      = $metadata['ipp_channel'] ?? '';
+		$allowed_channels = [ 'mobile_pos', 'mobile_store_management' ];
+		if ( in_array( $ipp_channel, $allowed_channels, true ) ) {
+			$this->set_ipp_channel_for_order( $order, $ipp_channel );
+		}
 	}
 
 	/**
@@ -1065,14 +1242,17 @@ class WC_Payments_Order_Service {
 		return $billing_details;
 	}
 
+
 	/**
 	 * Creates an "authorization cancelled" order note if not already present.
 	 *
 	 * @param WC_Order $order The order.
+	 * @param string   $intent_id The ID of the intent associated with this order.
+	 * @param string   $charge_id The charge ID related to the intent/order.
 	 * @return boolean        True if the note was added, false otherwise.
 	 */
-	public function post_unique_capture_cancelled_note( $order ) {
-		$note = $this->generate_capture_cancelled_note();
+	public function post_unique_capture_cancelled_note( $order, $intent_id, $charge_id ): bool {
+		$note = $this->generate_capture_cancelled_note( $intent_id, $charge_id );
 		if ( ! $this->order_note_exists( $order, $note ) ) {
 			$order->add_order_note( $note );
 			return true;
@@ -1106,7 +1286,7 @@ class WC_Payments_Order_Service {
 	 * @return void
 	 */
 	private function mark_payment_capture_cancelled( $order, $intent_data ) {
-		if ( false === $this->post_unique_capture_cancelled_note( $order ) ) {
+		if ( false === $this->post_unique_capture_cancelled_note( $order, $intent_data['intent_id'], $intent_data['charge_id'] ) ) {
 			$this->complete_order_processing( $order );
 			return;
 		}
@@ -1121,6 +1301,10 @@ class WC_Payments_Order_Service {
 			$this->set_fraud_meta_box_type_for_order( $order, Fraud_Meta_Box_Type::REVIEW_BLOCKED );
 		}
 
+		// Remove transaction fee since the authorization was canceled and no payment was processed.
+		$order->delete_meta_data( self::WCPAY_TRANSACTION_FEE_META_KEY );
+		$order->delete_meta_data( '_wcpay_net' );
+
 		$this->update_order_status( $order, Order_Status::CANCELLED );
 		$this->complete_order_processing( $order, $intent_data['intent_status'] );
 	}
@@ -1134,9 +1318,16 @@ class WC_Payments_Order_Service {
 	 * @return void
 	 */
 	private function mark_payment_completed( $order, $intent_data ) {
-		// Need to have a check for the intention status of `requires_capture`.
 		$note = $this->generate_payment_success_note( $intent_data['intent_id'], $intent_data['charge_id'], $this->get_order_amount( $order ) );
 		if ( $this->order_note_exists( $order, $note ) ) {
+			return;
+		}
+
+		// Check if a capture note already exists for this payment intent.
+		// This prevents adding a duplicate "charged" note when the payment was already
+		// processed via manual capture (race condition between capture flow and webhooks).
+		$capture_note = $this->generate_capture_success_note( $order, $intent_data['intent_id'], $intent_data['charge_id'] );
+		if ( $this->order_note_exists( $order, $capture_note ) ) {
 			return;
 		}
 
@@ -1297,7 +1488,39 @@ class WC_Payments_Order_Service {
 	 */
 	public function attach_transaction_fee_to_order( $order, $charge ) {
 		try {
-			if ( $charge && null !== $charge->get_application_fee_amount() ) {
+			if ( ! $charge || ! $charge->is_captured() ) {
+				return;
+			}
+
+			// FEE_BREAKDOWN_FORK_PATCH: remove when envelope is the only path.
+			// Prefer the server-driven fee_breakdown_v1 envelope when present.
+			// totals.fee.amount is authoritative for every merchant-facing
+			// surface — the order page row, the _wcpay_net meta, and the
+			// timeline all read from the same place. Falls back to the
+			// legacy application_fee_amount inference for older servers.
+			$fee_breakdown_v1 = $charge->get_fee_breakdown_v1();
+			if ( is_array( $fee_breakdown_v1 ) && isset( $fee_breakdown_v1['totals']['fee']['amount'], $fee_breakdown_v1['totals']['fee']['currency'] ) ) {
+				$order->update_meta_data(
+					self::WCPAY_TRANSACTION_FEE_META_KEY,
+					WC_Payments_Utils::interpret_stripe_amount(
+						(int) $fee_breakdown_v1['totals']['fee']['amount'],
+						$fee_breakdown_v1['totals']['fee']['currency']
+					)
+				);
+				if ( isset( $fee_breakdown_v1['totals']['net']['amount'], $fee_breakdown_v1['totals']['net']['currency'] ) ) {
+					$order->update_meta_data(
+						'_wcpay_net',
+						WC_Payments_Utils::interpret_stripe_amount(
+							(int) $fee_breakdown_v1['totals']['net']['amount'],
+							$fee_breakdown_v1['totals']['net']['currency']
+						)
+					);
+				}
+				$order->save_meta_data();
+				return;
+			}
+
+			if ( null !== $charge->get_application_fee_amount() ) {
 				$order->update_meta_data(
 					self::WCPAY_TRANSACTION_FEE_META_KEY,
 					WC_Payments_Utils::interpret_stripe_amount( $charge->get_application_fee_amount(), $charge->get_currency() )
@@ -1339,7 +1562,11 @@ class WC_Payments_Order_Service {
 							$request->set_hook_args( $order );
 							$intent = $request->send();
 
-							$this->post_unique_capture_cancelled_note( $order );
+							$this->post_unique_capture_cancelled_note( $order, $intent_id, $charge->get_id() );
+
+							// Remove transaction fee since the authorization was canceled and no payment was processed.
+							$order->delete_meta_data( self::WCPAY_TRANSACTION_FEE_META_KEY );
+							$order->delete_meta_data( '_wcpay_net' );
 					}
 
 					$this->set_intention_status_for_order( $order, $intent->get_status() );
@@ -1764,15 +1991,25 @@ class WC_Payments_Order_Service {
 	/**
 	 * Generates the capture cancelled order note.
 	 *
+	 * @param string $intent_id The ID of the intent associated with this order.
+	 * @param string $charge_id The charge ID related to the intent/order.
+	 *
 	 * @return string
 	 */
-	private function generate_capture_cancelled_note(): string {
-		$note = WC_Payments_Utils::esc_interpolated_html(
-			__( 'Payment authorization was successfully <strong>cancelled</strong>.', 'woocommerce-payments' ),
-			[ 'strong' => '<strong>' ]
-		);
+	private function generate_capture_cancelled_note( $intent_id, $charge_id ): string {
+		$transaction_url = WC_Payments_Utils::compose_transaction_url( $intent_id, $charge_id );
 
-		return $note;
+		return sprintf(
+			WC_Payments_Utils::esc_interpolated_html(
+				/* translators: %1: transaction ID of the payment */
+				__( 'Payment authorization was successfully <strong>cancelled</strong> (<a>%1$s</a>).', 'woocommerce-payments' ),
+				[
+					'strong' => '<strong>',
+					'a'      => ! empty( $transaction_url ) ? '<a href="' . $transaction_url . '" target="_blank" rel="noopener noreferrer">' : '<code>',
+				]
+			),
+			WC_Payments_Utils::get_transaction_url_id( $intent_id, $charge_id )
+		);
 	}
 
 	/**
@@ -2322,6 +2559,32 @@ class WC_Payments_Order_Service {
 	}
 
 	/**
+	 * Store payment method details in the order meta.
+	 *
+	 * @param  WC_Order $order                  The order.
+	 * @param  array    $payment_method_details The payment method details.
+	 * @return void
+	 */
+	public function store_payment_method_details( WC_Order $order, array $payment_method_details ): void {
+		$order->update_meta_data( self::PAYMENT_METHOD_DETAILS_META_KEY, wp_json_encode( $payment_method_details ) );
+		$order->save_meta_data();
+	}
+
+	/**
+	 * Get cached payment method details from the order meta.
+	 *
+	 * @param  WC_Order $order The order.
+	 * @return array           The payment method details.
+	 */
+	public function get_payment_method_details( WC_Order $order ): ?array {
+		$json = $order->get_meta( self::PAYMENT_METHOD_DETAILS_META_KEY );
+		if ( '' === $json ) {
+			return null;
+		}
+		return json_decode( $json, true );
+	}
+
+	/**
 	 * Check if FROD is supported for the given country.
 	 *
 	 * @param string $country_code Two-letter country code.
@@ -2342,7 +2605,7 @@ class WC_Payments_Order_Service {
 	 * @return string
 	 */
 	private function get_frod_support_note( $formatted_amount ) {
-		$learn_more_url = 'https://woocommerce.com/document/woopayments/fees-and-debits/preventing-negative-balances/#adding-funds';
+		$learn_more_url = 'https://woocommerce.com/document/woopayments/fees/preventing-negative-balances/#adding-funds';
 		return sprintf(
 			WC_Payments_Utils::esc_interpolated_html(
 				/* translators: %s: Formatted refund amount */

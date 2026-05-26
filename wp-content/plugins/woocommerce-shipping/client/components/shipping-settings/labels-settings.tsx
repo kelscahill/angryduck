@@ -41,6 +41,8 @@ export const LabelsSettingsComponent = () => {
 		storeOwnerEmail,
 		automaticallyOpenPrintDialog,
 		rememberLastUsedShippingDate,
+		returnToSenderDefault,
+		scanformEnabled,
 	} = useSettings();
 
 	const maybeConfirmExit = ( isChanged: boolean ) => {
@@ -170,7 +172,7 @@ export const LabelsSettingsComponent = () => {
 								'woocommerce-shipping'
 							) }
 							help={ sprintf(
-								// translators: %s is the store owner's username, %s is the store owner's login, %s is the store owner's email address.
+								// translators: %1$s: store owner's username, %2$s: store owner's login, %3$s: store owner's email address.
 								__(
 									`Email the label purchase receipts to %1$s (%2$s) at %3$s`,
 									'woocommerce-shipping'
@@ -179,7 +181,7 @@ export const LabelsSettingsComponent = () => {
 								storeOwnerLogin,
 								storeOwnerEmail
 							) }
-							checked={ emailReceiptEnabled }
+							checked={ Boolean( emailReceiptEnabled ) }
 							onChange={ updateFormData(
 								SETTINGS_KEYS.EMAIL_RECEIPTS
 							) }
@@ -196,7 +198,7 @@ export const LabelsSettingsComponent = () => {
 								'Save the service selection from previous transaction.',
 								'woocommerce-shipping'
 							) }
-							checked={ rememberServiceEnabled }
+							checked={ Boolean( rememberServiceEnabled ) }
 							onChange={ updateFormData(
 								SETTINGS_KEYS.USE_LAST_SERVICE
 							) }
@@ -213,7 +215,7 @@ export const LabelsSettingsComponent = () => {
 								'Save the package selection from previous transaction.',
 								'woocommerce-shipping'
 							) }
-							checked={ rememberPackageEnabled }
+							checked={ Boolean( rememberPackageEnabled ) }
 							onChange={ updateFormData(
 								SETTINGS_KEYS.USE_LAST_PACKAGE
 							) }
@@ -230,7 +232,7 @@ export const LabelsSettingsComponent = () => {
 								'Give your customers the chance to validate their shipping address before they complete their purchase.',
 								'woocommerce-shipping'
 							) }
-							checked={ checkoutAddressValidation }
+							checked={ Boolean( checkoutAddressValidation ) }
 							onChange={ updateFormData(
 								SETTINGS_KEYS.CHECKOUT_ADDRESS_VALIDATION
 							) }
@@ -247,7 +249,7 @@ export const LabelsSettingsComponent = () => {
 								'Automatically open the print dialog after a successful label purchase.',
 								'woocommerce-shipping'
 							) }
-							checked={ automaticallyOpenPrintDialog }
+							checked={ Boolean( automaticallyOpenPrintDialog ) }
 							onChange={ updateFormData(
 								SETTINGS_KEYS.AUTOMATICALLY_OPEN_PRINT_DIALOG
 							) }
@@ -264,11 +266,43 @@ export const LabelsSettingsComponent = () => {
 								'Remember the last shipping date used to purchase a label.',
 								'woocommerce-shipping'
 							) }
-							checked={ rememberLastUsedShippingDate }
+							checked={ Boolean( rememberLastUsedShippingDate ) }
 							onChange={ updateFormData(
 								SETTINGS_KEYS.REMEMBER_LAST_USED_SHIPPING_DATE
 							) }
 							// Opt in to the new bottom margin for consistency with other form fields.
+							__nextHasNoMarginBottom={ true }
+						/>
+						<Spacer marginTop={ 0 } marginBottom={ 3 } />
+						<CheckboxControl
+							label={ __(
+								'Enable automatic returns of undeliverable international shipments',
+								'woocommerce-shipping'
+							) }
+							help={ __(
+								'Default selection of the return to sender option for cross-border orders. You will be charged for: return shipping fees, customs duties on returned goods, import taxes, and any broker or handling fees assessed by carriers or customs authorities.',
+								'woocommerce-shipping'
+							) }
+							checked={ Boolean( returnToSenderDefault ) }
+							onChange={ updateFormData(
+								SETTINGS_KEYS.RETURN_TO_SENDER_DEFAULT
+							) }
+							__nextHasNoMarginBottom={ true }
+						/>
+						<Spacer marginTop={ 0 } marginBottom={ 3 } />
+						<CheckboxControl
+							label={ __(
+								'Enable USPS® SCAN Form feature',
+								'woocommerce-shipping'
+							) }
+							help={ __(
+								'Create a single barcode to scan all USPS packages scheduled for pickup.',
+								'woocommerce-shipping'
+							) }
+							checked={ Boolean( scanformEnabled ) }
+							onChange={ updateFormData(
+								SETTINGS_KEYS.SCANFORM_ENABLED
+							) }
 							__nextHasNoMarginBottom={ true }
 						/>
 

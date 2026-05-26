@@ -28,4 +28,18 @@ export const SETTINGS_KEYS = {
 	TAX_IDENTIFIER_VOEC: 'tax_identifier_voec',
 	TAX_IDENTIFIER_PVA: 'tax_identifier_pva',
 	REMEMBER_LAST_USED_SHIPPING_DATE: 'remember_last_used_shipping_date',
+	RETURN_TO_SENDER_DEFAULT: 'return_to_sender_default',
+	SCANFORM_ENABLED: 'scanform_enabled',
 } as const;
+
+const MANAGE_PAYMENT_METHODS_URL = `https://my.wordpress.com/me/billing/purchases?search=${ encodeURIComponent(
+	window.location.host
+) }`;
+
+export function getChangePaymentMethodUrl( subscriptionId?: number ): string {
+	if ( ! subscriptionId ) {
+		return MANAGE_PAYMENT_METHODS_URL;
+	}
+	const redirectTo = encodeURIComponent( window.location.href );
+	return `https://my.wordpress.com/me/billing/purchases/${ subscriptionId }/payment-method/change?redirect_to=${ redirectTo }`;
+}

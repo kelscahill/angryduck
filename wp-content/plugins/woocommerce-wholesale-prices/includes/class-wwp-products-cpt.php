@@ -129,7 +129,7 @@ if ( ! class_exists( 'WWP_Products_CPT' ) ) {
                             // We pass 1 as the price, it doesn't matter, its not being used here in this scenario, as long as we pass truthy value we are good.
                             $wholesale_price = $this->_wwp_wholesale_prices->wholesale_price_html_filter( 1, $product, array( $roleKey ), true );
 
-                            if ( strpos( $wholesale_price, 'wholesale_price_container' ) !== false && ! empty( $wholesale_price ) ) {
+                            if ( str_contains( $wholesale_price, 'wholesale_price_container' ) && ! empty( $wholesale_price ) ) {
                                 ?>
                                 <div id="<?php echo esc_attr( $roleKey ); ?>_wholesale_price" class="wholesale_price">
                                     <div class="wholesale_role"><b><?php echo wp_kses_post( $role['roleName'] ); ?></b></div>

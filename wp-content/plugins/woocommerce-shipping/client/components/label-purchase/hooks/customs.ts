@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from '@wordpress/element';
 import { isEmpty, isEqual } from 'lodash';
 import {
 	CustomsItem,
@@ -16,15 +22,19 @@ import {
 	isCustomsRequired,
 	isHSTariffNumberValid,
 	sanitizeHSTariffNumber,
+	getAccountSettings,
 } from 'utils';
 import { useShipmentState } from './shipment';
 import { labelPurchaseStore } from 'data/label-purchase';
 
-const getInitialShipmentCustomsState = < T >( items: T ) => ( {
+const getInitialShipmentCustomsState = < T >(
+	items: T,
+	isReturnToSender = false
+) => ( {
 	items,
 	contentsType: contentTypes[ 0 ].value,
 	restrictionType: 'none',
-	isReturnToSender: false,
+	isReturnToSender,
 	itn: '',
 } );
 
@@ -92,9 +102,16 @@ export function useCustomsState(
 		]
 	);
 
+	const returnToSenderDefault =
+		getAccountSettings()?.purchaseSettings?.return_to_sender_default ??
+		false;
+
 	const initialCustomsInfo: CustomsState =
 		storedCustomsInformationForShipment ??
-		getInitialShipmentCustomsState( getCustomsItems() );
+		getInitialShipmentCustomsState(
+			getCustomsItems(),
+			returnToSenderDefault
+		);
 
 	const initialCustomsState: Record<
 		typeof currentShipmentId,
@@ -139,7 +156,8 @@ export function useCustomsState(
 						allTheCustomItems.find(
 							( i ) => i.product_id === item.product_id
 						) ?? item
-				)
+				),
+				returnToSenderDefault
 			);
 
 		if ( isEmpty( state[ currentShipmentId ] ) ) {
@@ -148,12 +166,52 @@ export function useCustomsState(
 				[ currentShipmentId ]: currentShipmentCustomsInfo,
 			} ) );
 		}
-	}, [ currentShipmentId, getCustomsItems, state ] );
+	}, [ currentShipmentId, getCustomsItems, returnToSenderDefault, state ] );
 
 	const getCustomsState = useCallback(
 		() => state[ currentShipmentId ],
 		[ state, currentShipmentId ]
 	);
+
+	/**
+	 * Memoized fingerprint of the current customs state for rate invalidation.
+	 * Only recomputes when the customs state for the current shipment changes.
+	 */
+	const customsFingerprint = useMemo( () => {
+		if ( ! isCustomsNeeded() ) {
+			return null;
+		}
+		const customs = state[ currentShipmentId ];
+		if ( ! customs?.items?.length ) {
+			return null;
+		}
+		return JSON.stringify( {
+			items: customs.items.map(
+				( {
+					price,
+					weight,
+					quantity,
+					description,
+					hsTariffNumber,
+					originCountry,
+				} ) => ( {
+					price,
+					weight,
+					quantity,
+					description,
+					hsTariffNumber,
+					originCountry,
+				} )
+			),
+			contentsType: customs.contentsType,
+			contentsExplanation: customs.contentsExplanation,
+			restrictionType: customs.restrictionType,
+			restrictionComments: customs.restrictionComments,
+			itn: customs.itn,
+			isReturnToSender: customs.isReturnToSender,
+		} );
+	}, [ isCustomsNeeded, state, currentShipmentId ] );
+
 	const setCustomsState = useCallback(
 		( newState: CustomsState ) => {
 			setState( ( prev ) => ( {
@@ -407,6 +465,7 @@ export function useCustomsState(
 
 	return {
 		getCustomsState,
+		customsFingerprint,
 		setCustomsState,
 		maybeApplyCustomsToPackage,
 		hasErrors,

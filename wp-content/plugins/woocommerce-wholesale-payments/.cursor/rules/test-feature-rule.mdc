@@ -1,0 +1,288 @@
+---
+description:
+globs: tests/Cypress/cypress/tests/**/*.feature
+alwaysApply: false
+---
+# Introduction
+
+- Role: You are an automation test engineer.
+- Objective: Create or improve a test feature file in Gherkin format.
+- Knowledge
+  - Gherkin
+  - Cucumber
+  - software testing principles
+- References
+  - Existing scenario steps: https://rymera-web-co.github.io/automated-test-helper/existing_steps.txt
+
+---
+
+# General Rules
+
+- Spacing
+  - Indentation: 2 spaces
+- Instructions
+  - Always use the correct grammar
+- Minor duplication is okay if it improves clarity
+
+---
+
+# Test Feature Rules
+
+- Spacing
+  - No line between the feature tags and the feature title
+  - 1 line between the feature title and the feature description
+  - 2 lines between the feature description and the next section
+
+## Test Feature Title
+
+- Instructions
+  - Write a user-centered Feature Title
+  - Focus on what the **user sees or experiences**, not settings or toggles
+  - Describe what happens **after** the setting is changed
+  - Identify only **one distinct user-facing behavior or goal**
+  - Do **not group multiple settings or feature into a single test feature**
+    - If multiple options affect the system (e.g., toggling categories, attributes, tag limits), generate **separate features** for each.
+    - If multiple behaviors or configuration options are detected, split them into multiple features.
+    - Treat each setting or outcome as a standalone feature if it:
+      - Has its own user goal
+      - Leads to a distinct visible effect
+      - Would require its own testing or acceptance criteria
+  - Use plain, everyday language — as if describing the user's goal
+  - Avoid internal, backend, or admin configuration language (e.g., *enable, disable, configure*)
+  - Be short, outcome-driven, and understandable by non-technical users
+- Avoid
+  - Phrasing feature titles as "Allow users to enable/disable X"
+- Examples
+  - Good Examples
+    - Show a specific number of product features in the summaries
+    - Let customers log in with their email and password
+    - Allow users to preview their product before publishing
+    - Generate a specific number of tags for products
+  - Bad Examples
+    - Configure number of product features in summaries
+    - Enable toggle for summary visibility count
+    - Activate experimental product limit feature
+    - Enable or disable the Product Tags Generator AI
+    - Customize tag generation settings
+
+## Test Feature description
+
+- Instructions
+  - Write a Feature Description using the user story format
+    ```
+    As a [user role]
+    I want to [desired action or feature]
+    So that [business value or benefit]
+    ```
+  - Use a specific, realistic user role (not just "user")
+  - Focus on what the user **wants to accomplish**, not what they are configuring
+  - Avoid describing system interactions like "enable", "toggle", or "configure"
+  - Emphasize the **goal or effect**, not the mechanism
+  - Include a meaningful business value (e.g., save time, improve discoverability)
+- Examples
+  - Good Examples
+    - Example 1
+      ```
+      As a registered customer
+      I want to log in to my account
+      So that I can view my order history and make purchases faster
+      ```
+    - Example 2
+      ```
+      As a store owner
+      I want to show the Product Tags Generator AI button
+      So that I can start generating tags for my products
+      ```
+    - Example 3
+      ```
+      As a store owner
+      I want to generate only a specific number of tags
+      So that I can improve tag relevance
+      ```
+  - Bad Examples
+    - Example 1
+      ```
+      As a store owner
+      I want to configure the price label setting
+      So that I can change the price label
+      ```
+
+---
+
+# Feature Background Rules
+
+- Spacing
+  - 2 lines between the Background section and the next section
+- Instructions
+  - If all scenarios has the same precondition (Given), put the same steps into the Background section
+
+---
+
+# Test Scenario Rules
+
+- Spacing
+  - 2 lines between scenarios
+- Use `Scenario:` for specific flows
+- Use `Scenario Outline:` with an `Examples:` table for variations
+
+## Test Scenario Title
+
+- Instructions
+  - Write distinct Scenario Titles for the test feature
+  - One clear action or condition per scenario
+  - Use natural language to describe what is being verified
+  - Tie the scenario to the "So that" part of the user story
+  - Cover both positive and negative cases
+- Avoid
+  - Using Examples parameter in the title (something like <parameter_name>)
+  - Indicating a specific value to be set in the settings
+- Examples
+  - Good Examples
+    - Login with valid credentials
+    - Prevent login with incorrect password
+    - Change the price label
+  - Bad Examples
+    - Set the price label to "Cost"
+    - Show <price_value> to the customer
+
+## Test Scenario Description
+
+- Instructions
+  - Write a short description for the test scenario
+  - Explain what the scenario is testing
+  - Explain what the difference from the other scenarios
+- Examples
+  - Good Examples;
+    - Ensure a registered user can successfully log in using correct email and password to access their dashboard
+    - Verify that users are blocked from logging in if the password is incorrect, and a helpful error is displayed
+
+## Test Scenario Steps
+
+- Instructions
+  - Write Given/When/Then steps using Gherkin syntax
+    - Given: Preconditions or setup
+      - Use passive voice
+    - When: User actions
+      - Use "the user" instead of "I"
+    - Then: Outcome or assertion
+      - Use "should" for the assertion
+  - Use simple present tense
+  - Lowercase the first letter after each keyword
+  - End steps without punctuation (unless followed by table or doc string)
+  - Use declarative language focused on what happens (not how)
+  - Follow the strict order: Given -> When -> Then
+  - Write modular, reusable steps
+  - Make sure to reuse the steps in `Existing scenario steps` reference
+- Avoid
+  - Mixing Gherking keyword order
+- Examples
+  - Good Examples:
+    - Example 1
+      ```
+      Given the user has an account
+      When the user submits correct login credentials
+      Then the user should be redirected to the dashboard
+      ```
+    - Example 2
+      ```
+      Given the "WP Admin > Settings > General > Site Title" is set to "Test Site"
+      When the "admin" user logs in
+      And the user navigates to the "Home" page
+      Then the page title should be "Test Site"
+      ```
+    - Example 3 (doc string and datatable)
+      ```
+      Then the page should show the following message:
+        """
+        Success! Your changes have been saved.
+        """
+      And the product has the following info:
+        | Info  | Value   |
+        | Price | $123.00 |
+        | Size  | Big     |
+      ```
+  - Bad Examples
+    - Example 1
+      ```
+      Given the user has an account
+      When the user submits correct login credentials
+      Then the user should be redirected to the dashboard
+      When the user navigates to the "Cart" page
+      Then the user should be redirected to the "Cart" page
+      ```
+    - Example 2
+      ```
+      Given the customer is opening the "Cart" page
+      And the Cart page title is "Cart"
+      When I navigate to the "Cart" page
+      Then the page title is "Cart"
+      ```
+
+---
+
+# Test Feature And Test Scenario Tags
+
+- Instructions
+  - Tag features and scenarios for traceability
+  - Tags go directly above Feature or Scenario blocks
+  - Use `@` prefix for all tags
+  - Remove scenario-level tags if all scenarios use the same set (move to the top of test feature)
+- Tag categories
+  - @current-sprint: Part of current sprint
+  - @needs:automation: Not yet automated
+  - @needs:automation-fixes: Automation broken
+  - @[project-code]-issue-[id]: Related GitHub issue
+  - @smoke-test: Critical regression checks
+  - @feature:[name]: Plugin feature
+  - @user:[role]: User role involved
+  - @area:[location]: Page or component
+  - @setting:[path]:[to]:[setting]: Specific setting
+
+---
+
+# Example
+
+```
+@smoke-test
+@feature:customer-login @user:customer @area:login-page
+Feature: Allow customer to log in
+  As a customer
+  I want to log in to the system
+  So that I can access the registered-customer only features
+
+
+  Background: Needed customer account is created
+    Given the "customer" account is created
+
+
+  Scenario: Login with valid credentials
+    Ensure a registered user can successfully log in using correct email and password to access their dashboard
+
+    When the user visits the "login" page
+    And the user fills the login form with "customer_account" as the username and "account_password" as the password
+    Then the user should be logged in
+    And the page should show notification of:
+      """
+      Success logged in.
+      Please visit documentation to learn more about the features.
+      """
+    And the page should show login history table:
+      | loginDate  | loginIP         |
+      | 02-12-2222 | 111.111.111.111 |
+      | 01-12-2222 | 222.222.222.222 |
+
+
+  Scenario Outline: Prevent login with incorrect password
+    Verify that users are blocked from logging in if the password is incorrect, and a helpful error is displayed
+
+    When the user visits the "login" page
+    And the user fills the login form with "<username>" as the username and "<password>" as the password
+    Then the user shouldn't be logged in
+    And the login page should show "<error_message>" error message
+
+    Examples:
+    | username         | password         | error_message                                  |
+    | wrong_username   | account_password | Unable to log in. Wrong username              |
+    | customer_account | wrong_password   | Unable to log in. Wrong password              |
+    | wrong_username   | wrong_password   | Unable to log in. Wrong username and password |
+```

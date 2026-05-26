@@ -472,14 +472,19 @@ if ( ! class_exists( 'WWPP_Per_Wholesale_User_Settings' ) ) {
         }
 
         /**
-         * Display per wholesale user settings fields.$_COOKIE
+         * Display per wholesale user settings fields.
          *
          * @since 1.16.0
+         * @since 2.0.9 Gate behind manage_woocommerce capability to prevent wholesale admin nonce leakage to non-admin profile viewers.
          * @access public
          *
          * @param WP_User $user WP_User object.
          */
         public function display_per_wholesale_user_settings_fields( $user ) {
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                return;
+            }
+
             $wwpp_shipping_zone    = get_user_meta( $user->ID, 'wwpp_shipping_zone', true );
             $wwpp_shipping_methods = get_user_meta( $user->ID, 'wwpp_shipping_methods', true );
 
@@ -591,7 +596,7 @@ if ( ! class_exists( 'WWPP_Per_Wholesale_User_Settings' ) ) {
          */
         public function save_per_wholesale_user_settings_fields( $user_id ) {
 
-            if ( isset( $_POST['_wpnonce'] ) && ! wp_verify_nonce( $_POST['_wpnonce'], 'update-user_' . $user_id ) ) {
+            if ( isset( $_POST['_wpnonce'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'update-user_' . $user_id ) ) {
                 return;
             }
 
@@ -681,7 +686,8 @@ if ( ! class_exists( 'WWPP_Per_Wholesale_User_Settings' ) ) {
 
                         break;
                     case 'wwpp_shipping_methods':
-                        if ( 'yes' !== $_POST['wwpp_override_shipping_options'] ||
+                        if ( ! isset( $_POST['wwpp_override_shipping_options'], $_POST['wwpp_shipping_methods_type'] ) ||
+                            'yes' !== $_POST['wwpp_override_shipping_options'] ||
                             'specify_shipping_methods' !== $_POST['wwpp_shipping_methods_type'] ) {
                             $val = array();
                         } else {
@@ -698,7 +704,8 @@ if ( ! class_exists( 'WWPP_Per_Wholesale_User_Settings' ) ) {
 
                         break;
                     case 'wwpp_non_zoned_shipping_methods':
-                        if ( 'yes' !== $_POST['wwpp_override_shipping_options'] ||
+                        if ( ! isset( $_POST['wwpp_override_shipping_options'], $_POST['wwpp_shipping_methods_type'], $_POST['wwpp_specify_non_zoned_shipping_methods'] ) ||
+                            'yes' !== $_POST['wwpp_override_shipping_options'] ||
                             'specify_shipping_methods' !== $_POST['wwpp_shipping_methods_type'] ||
                             'yes' !== $_POST['wwpp_specify_non_zoned_shipping_methods'] ) {
                             $val = array();
@@ -721,7 +728,8 @@ if ( ! class_exists( 'WWPP_Per_Wholesale_User_Settings' ) ) {
 
                         break;
                     case 'wwpp_payment_gateway_options':
-                        if ( 'yes' !== $_POST['wwpp_override_payment_gateway_options'] ) {
+                        if ( ! isset( $_POST['wwpp_override_payment_gateway_options'] ) ||
+                            'yes' !== $_POST['wwpp_override_payment_gateway_options'] ) {
                             $val = array();
                         } else {
                             $val = ! is_array( $data ) ? array() : WWPP_Helper_Functions::sanitize_array( $data );

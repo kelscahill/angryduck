@@ -18,6 +18,13 @@ export const getIsAddressVerified = (
 	return state[ type ]?.isVerified ?? false;
 };
 
+export const getAddressVerifcationWarnings = (
+	state: AddressState,
+	type: AddressTypes
+) => {
+	return state[ type ]?.warnings ?? [];
+};
+
 export const getFormErrors = ( state: AddressState, type: AddressTypes ) => {
 	return state[ type ]?.formErrors ?? {};
 };
@@ -51,15 +58,9 @@ export const getAddressNeedsConfirmation = (
 };
 
 export const getPreparedDestination = ( state: AddressState ) => {
-	/* eslint-disable camelcase, no-unused-vars */
-	const {
-		firstName,
-		lastName,
-		email,
-		address1,
-		address2,
-		...rawDestination
-	} = getOrderDestination( state );
+	/* eslint-disable camelcase */
+	const { firstName, lastName, address1, address2, ...rawDestination } =
+		getOrderDestination( state );
 	const destination = {
 		...rawDestination,
 		name: composeName( {
@@ -72,6 +73,10 @@ export const getPreparedDestination = ( state: AddressState ) => {
 			address_2: address2,
 			address: rawDestination.address,
 		} ),
+		// Explicit user override wins; otherwise infer from company
+		// presence. Drives FedEx rate accuracy and service availability
+		// (e.g., Ground Home Delivery).
+		residential: rawDestination.residential ?? ! rawDestination.company,
 	};
 	// eslint-disable-next-line no-unused-vars
 	return destination;
@@ -83,3 +88,12 @@ export function getIsAddressVerificationInProgress(
 ) {
 	return state[ type ]?.isAddressVerificationInProgress ?? false;
 }
+
+export const getIsMainOriginInSyncWithStore = ( state: AddressState ) =>
+	state.isMainOriginInSyncWithStore;
+
+export const getFormattedStoreAddress = ( state: AddressState ) =>
+	state.formattedStoreAddress;
+
+export const getStoreAddressDraft = ( state: AddressState ) =>
+	state.storeAddressDraft;

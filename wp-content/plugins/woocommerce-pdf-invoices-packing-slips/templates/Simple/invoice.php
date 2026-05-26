@@ -20,6 +20,15 @@
 			<?php do_action( 'wpo_wcpdf_before_shop_address', $this->get_type(), $this->order ); ?>
 			<div class="shop-address"><?php $this->shop_address(); ?></div>
 			<?php do_action( 'wpo_wcpdf_after_shop_address', $this->get_type(), $this->order ); ?>
+			<?php do_action( 'wpo_wcpdf_before_shop_phone_number', $this->get_type(), $this->order ); ?>
+			<?php if ( ! empty( $this->get_shop_phone_number() ) ) : ?>
+				<div class="shop-phone-number"><?php $this->shop_phone_number(); ?></div>
+			<?php endif; ?>
+			<?php do_action( 'wpo_wcpdf_after_shop_phone_number', $this->get_type(), $this->order ); ?>
+			<?php if ( ! empty( $this->get_shop_email_address() ) ) : ?>
+				<div class="shop-email-address"><?php $this->shop_email_address(); ?></div>
+			<?php endif; ?>
+			<?php do_action( 'wpo_wcpdf_after_shop_email_address', $this->get_type(), $this->order ); ?>
 		</td>
 	</tr>
 </table>
@@ -109,16 +118,16 @@
 	</thead>
 	<tbody>
 		<?php foreach ( $this->get_order_items() as $item_id => $item ) : ?>
-			<tr class="<?php echo esc_html( $item['row_class'] ); ?>">
+			<tr class="<?php echo esc_attr( $item['row_class'] ); ?>">
 				<td class="product">
 					<p class="item-name"><?php echo esc_html( $item['name'] ); ?></p>
 					<?php do_action( 'wpo_wcpdf_before_item_meta', $this->get_type(), $item, $this->order ); ?>
 					<div class="item-meta">
 						<?php if ( ! empty( $item['sku'] ) ) : ?>
-							<p class="sku"><span class="label"><?php $this->sku_title(); ?></span> <?php echo esc_attr( $item['sku'] ); ?></p>
+							<p class="sku"><span class="label"><?php $this->sku_title(); ?></span> <?php echo esc_html( $item['sku'] ); ?></p>
 						<?php endif; ?>
 						<?php if ( ! empty( $item['weight'] ) ) : ?>
-							<p class="weight"><span class="label"><?php $this->weight_title(); ?></span> <?php echo esc_attr( $item['weight'] ); ?><?php echo esc_attr( get_option( 'woocommerce_weight_unit' ) ); ?></p>
+							<p class="weight"><span class="label"><?php $this->weight_title(); ?></span> <?php echo esc_html( $item['weight'] ); ?><?php echo esc_html( get_option( 'woocommerce_weight_unit' ) ); ?></p>
 						<?php endif; ?>
 						<!-- ul.wc-item-meta -->
 						<?php if ( ! empty( $item['meta'] ) ) : ?>

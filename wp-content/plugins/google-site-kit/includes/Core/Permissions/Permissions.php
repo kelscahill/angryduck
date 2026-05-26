@@ -391,9 +391,7 @@ final class Permissions {
 	 * @return array Array with a 'do_not_allow' element if checks fail, empty array if checks pass.
 	 */
 	private function check_dashboard_sharing_capability( $cap, $user_id, $args ) {
-		if ( isset( $args[0] ) ) {
-			$module_slug = $args[0];
-		}
+		$module_slug = $args[0] ?? '';
 
 		switch ( $cap ) {
 			case self::VIEW_SHARED_DASHBOARD:
@@ -601,7 +599,7 @@ final class Permissions {
 	 * @param string[]|null $shared_roles Optional. List of shared role IDs to check against the user's. Defaults to all shared module roles.
 	 * @return bool
 	 */
-	private function user_has_shared_role( $user_id, array $shared_roles = null ) {
+	private function user_has_shared_role( $user_id, ?array $shared_roles = null ) {
 		if ( ! is_array( $shared_roles ) ) {
 			$shared_roles = $this->modules->get_module_sharing_settings()->get_all_shared_roles();
 		}

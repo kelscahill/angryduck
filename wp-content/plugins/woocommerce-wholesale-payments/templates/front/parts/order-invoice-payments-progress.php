@@ -29,9 +29,12 @@ defined( 'ABSPATH' ) || exit;
 );
 
 $payment_linked = false;
+$is_deferred    = ! empty( $amounts_due ) && isset( $amounts_due[0]['status'] ) && 'deferred' === $amounts_due[0]['status'];
 ?>
 <h2 class="woocommerce-column__title"><?php esc_html_e( 'Wholesale Payments', 'woocommerce-wholesale-payments' ); ?></h2>
-<?php if ( empty( $amounts_due ) ) : ?>
+<?php if ( $is_deferred ) : ?>
+    <p><?php esc_html_e( 'Payment plan schedule is pending — installments will begin when this order is completed.', 'woocommerce-wholesale-payments' ); ?></p>
+<?php elseif ( empty( $amounts_due ) ) : ?>
     <p><?php esc_html_e( 'No invoice payment plan associated.' ); ?></p>
 <?php else : ?>
     <table class="wholesale-payments-progress">
@@ -46,7 +49,7 @@ $payment_linked = false;
             <?php foreach ( $amounts_due as $amount ) : ?>
                 <tr>
                     <td class="amount-due"><?php echo wp_kses_post( wc_price( $amount['amount'] / 100 ) ); ?></td>
-                    <td class="due-date"><?php echo esc_html( gmdate( 'F j, Y', $amount['due_date'] ) ); ?></td>
+                    <td class="due-date"><?php echo esc_html( date_i18n( wc_date_format(), $amount['due_date'] ) ); ?></td>
                     <td class="status">
                         <?php if ( ! $payment_linked && ( 'past_due' === $amount['status'] || 'open' === $amount['status'] ) ) : ?>
                             <?php $payment_linked = true; ?>

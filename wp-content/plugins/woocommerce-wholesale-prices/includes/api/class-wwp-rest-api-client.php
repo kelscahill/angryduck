@@ -9,7 +9,7 @@ use Automattic\WooCommerce\Client;
 use Automattic\WooCommerce\HttpClient\HttpClientException;
 
 
-if ( ! class_exists( 'WWP_REST_API' ) ) {
+if ( ! class_exists( 'WWP_Rest_API_Client' ) ) {
 
     /**
      * Model that houses the logic of WWPP API.
@@ -96,6 +96,5 @@ if ( ! class_exists( 'WWP_REST_API' ) ) {
                 error_log( print_r( $e->getMessage(), true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions
             }
         }
-
     }
 }

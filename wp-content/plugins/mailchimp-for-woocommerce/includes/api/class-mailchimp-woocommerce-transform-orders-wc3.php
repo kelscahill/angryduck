@@ -116,7 +116,9 @@ class MailChimp_WooCommerce_Transform_Orders {
 
 		$order->setId( $woo->get_order_number() );
 
-		$order->setProcessedAt( $woo->get_date_created()->setTimezone( new DateTimeZone( 'UTC' ) ) );
+        if ($created_date = $woo->get_date_created()) {
+            $order->setProcessedAt( $created_date->setTimezone( new DateTimeZone( 'UTC' ) ) );
+        }
 
 		$order->setCurrencyCode( $woo->get_currency() );
 
@@ -150,8 +152,8 @@ class MailChimp_WooCommerce_Transform_Orders {
 
 		// only set this if the order is cancelled.
 		if ( $status === 'cancelled' ) {
-			if ( method_exists( $woo, 'get_date_modified' ) ) {
-				$order->setCancelledAt( $woo->get_date_modified()->setTimezone( new DateTimeZone( 'UTC' ) ) );
+			if ( method_exists( $woo, 'get_date_modified' ) && ($modified_date = $woo->get_date_modified()) ) {
+				$order->setCancelledAt( $modified_date->setTimezone( new DateTimeZone( 'UTC' ) ) );
 			}
 		}
 
@@ -258,8 +260,12 @@ class MailChimp_WooCommerce_Transform_Orders {
             mailchimp_debug('order_logic', "order did not have a wordpress user id, checking by email {$order->get_billing_email()}");
             $wordpress_user = get_user_by('email', $order->get_billing_email());
             if ($wordpress_user) {
-                mailchimp_debug('order_logic', "found a wordpress user by email {$order->get_billing_email()}");
+                mailchimp_debug('order_logic', "found a wordpress user by email {$order->get_billing_email()} order ID {$order->get_id()}");
+            } else {
+                mailchimp_debug('order_logic', "GUEST USER :: did not find an existing user by email {$order->get_billing_email()} order ID {$order->get_id()}");
             }
+        } else {
+            mailchimp_debug('order_logic', "found user from order {$order->get_billing_email()} order ID {$order->get_id()}");
         }
 
 		// attach the WordPress user to the Mailchimp customer object.

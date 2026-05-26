@@ -202,6 +202,26 @@ abstract class WC_Connect_API_Client {
 	}
 
 	/**
+	 * Create a USPS ScanForm from label IDs.
+	 *
+	 * @param array $body Request body containing label_ids.
+	 * @return object|WP_Error Response from server with ScanForm data.
+	 */
+	public function send_scan_form( $body ) {
+		return $this->request( 'POST', '/shipping/scan-form', $body );
+	}
+
+	/**
+	 * Review label IDs before creating a ScanForm.
+	 *
+	 * @param array $body Request body containing label_ids.
+	 * @return object|WP_Error Response with eligible, already_scanned, not_found, and invalid_site arrays.
+	 */
+	public function review_scan_form( $body ) {
+		return $this->request( 'POST', '/shipping/scan-form/review', $body );
+	}
+
+	/**
 	 * Asks the WooCommerce Shipping server for an array of payment methods
 	 *
 	 * @return mixed|WP_Error
@@ -218,6 +238,16 @@ abstract class WC_Connect_API_Client {
 	 */
 	public function send_tos_acceptance_for_origin_address( $body ) {
 		return $this->request( 'POST', '/shipping/origin-addresses', $body );
+	}
+
+	/**
+	 * Send FedEx TOS acceptance to the WooCommerce Shipping Server.
+	 *
+	 * @param array $body Request body.
+	 * @return mixed|WP_Error Response from the server.
+	 */
+	public function send_fedex_tos_acceptance( $body ) {
+		return $this->request( 'POST', '/tos/shipping-fedex', $body );
 	}
 
 	/**
@@ -299,6 +329,17 @@ abstract class WC_Connect_API_Client {
 	 */
 	public function get_labels_print_pdf( $request ) {
 		return $this->request( 'POST', 'shipping/labels/print', $request );
+	}
+
+	/**
+	 * Gets a PDF of the packing slip
+	 *
+	 * @param $request
+	 *
+	 * @return object|WP_Error
+	 */
+	public function get_packing_slip_pdf( $request ) {
+		return $this->request( 'POST', 'shipping/packing-slip/pdf', $request );
 	}
 
 	/**
@@ -571,6 +612,17 @@ abstract class WC_Connect_API_Client {
 
 	protected function authorization_header() {
 		$token = WC_Connect_Jetpack::get_blog_access_token();
+		/**
+		 * Filter the Jetpack access token used for Connect Server requests.
+		 *
+		 * Internal hook used by WooCommerce Shipping test/bootstrap infrastructure.
+		 * It is not designed for third-party plugin integrations and may change or
+		 * be removed in future releases without notice.
+		 *
+		 * @internal
+		 *
+		 * @param object|false $token Jetpack blog access token.
+		 */
 		$token = apply_filters( 'wcshipping_jetpack_access_token', $token );
 		if ( ! $token || empty( $token->secret ) ) {
 			return new WP_Error(

@@ -84,7 +84,7 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
 
             global $wc_wholesale_prices;
 
-            if ( false === strpos( $hook_queue, 'page_wholesale-settings' ) ) {
+            if ( ! str_contains( $hook_queue, 'page_wholesale-settings' ) ) {
                 return;
             }
 
@@ -170,7 +170,7 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
          */
         public function permission_admin_check( $request ) { // phpcs:ignore.
 
-            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            if ( ! current_user_can( 'manage_options' ) ) {
                 return new WP_Error( 'rest_forbidden', esc_html__( 'You do not have permission to save data.', 'woocommerce-wholesale-prices' ), array( 'status' => 403 ) );
             }
 
@@ -193,10 +193,27 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
                 'status'  => 'success',
                 'message' => esc_html__( 'Settings saved successfully.', 'woocommerce-wholesale-prices' ),
             );
+
+            // Deprecate the old prefix-based filter.
+            if ( has_filter( 'wwp_allowed_settings_prefix' ) ) {
+                _deprecated_hook( 'wwp_allowed_settings_prefix', '2.2.7', 'wwp_allowed_settings_keys' );
+            }
+
             if ( ! empty( $params ) ) {
+
+                // Check if there is an action.
+                $has_action = false;
+                foreach ( $params as $param ) {
+                    if ( isset( $param['key'] ) && 'action' === $param['key'] ) {
+                        $has_action = true;
+                        break;
+                    }
+                }
+
                 $options = array();
                 foreach ( $params as $param ) {
                     if ( is_array( $param ) && isset( $param['key'] ) ) {
+                        $key         = sanitize_key( $param['key'] );
                         $value       = isset( $param['value'] ) ? $param['value'] : '';
                         $final_value = $value;
 
@@ -209,17 +226,38 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
                             }
                         }
 
-                        $options[ $param['key'] ] = $final_value;
+                        $options[ $key ] = $final_value;
                     }
                 }
 
-                if ( ! empty( $options['action'] ) ) {
-                    // trigger the custom group save action.
-                    $settings_messages = apply_filters( 'wwp_group_settings_' . $options['action'], $options );
+                if ( $has_action && ! empty( $options['action'] ) ) {
+                    $action_name     = sanitize_key( $options['action'] );
+                    $allowed_actions = $this->get_allowed_group_actions();
+
+                    if ( ! in_array( $action_name, $allowed_actions, true ) ) {
+                        return rest_ensure_response(
+                            array(
+                                'status'  => 'error',
+                                'message' => esc_html__( 'Invalid action.', 'woocommerce-wholesale-prices' ),
+                            )
+                        );
+                    }
+
+                    // Trigger the custom group save action.
+                    $settings_messages = apply_filters( 'wwp_group_settings_' . $action_name, $options );
                 } else {
+                    // Regular save path: validate keys against explicit allowlist.
+                    $allowed_keys = $this->get_allowed_option_keys();
+                    $type_map     = $this->get_control_type_map();
+
                     foreach ( $options as $option_name => $option_value ) {
-                        $setting_value = $option_value;
-                        $arr_value     = json_decode( $setting_value, true );
+                        if ( ! in_array( $option_name, $allowed_keys, true ) ) {
+                            continue;
+                        }
+
+                        $setting_value = $this->sanitize_option_value( $option_value, $option_name, $type_map );
+
+                        $arr_value = is_string( $setting_value ) ? json_decode( $setting_value, true ) : null;
                         if ( is_array( $arr_value ) ) {
                             $setting_value = $arr_value;
                         }
@@ -253,8 +291,23 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
             );
 
             if ( ! empty( $params ) && ! empty( $params['action'] ) ) {
-                // trigger the custom group save action.
-                $settings_messages = apply_filters( 'wwp_trigger_' . $params['action'], $params );
+                $action_name     = sanitize_key( $params['action'] );
+                $allowed_actions = $this->get_allowed_trigger_actions();
+
+                if ( ! in_array( $action_name, $allowed_actions, true ) ) {
+                    return rest_ensure_response(
+                        array(
+                            'status'  => 'error',
+                            'message' => esc_html__( 'Invalid action.', 'woocommerce-wholesale-prices' ),
+                        )
+                    );
+                }
+
+                // Sanitize all params before passing to filter.
+                $params = map_deep( $params, 'sanitize_text_field' );
+
+                // Trigger the custom action.
+                $settings_messages = apply_filters( 'wwp_trigger_' . $action_name, $params );
             }
 
             $response = array(
@@ -268,6 +321,257 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
             }
 
             return rest_ensure_response( $response );
+        }
+
+        /**
+         * Get the list of allowed option keys derived from registered tab settings controls.
+         *
+         * Walks the controls tree returned by get_registered_tab_settings() and extracts
+         * all 'id' values to build an explicit allowlist. Additional keys can be added
+         * via the 'wwp_allowed_settings_keys' filter.
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @return array Flat array of allowed option key strings.
+         */
+        private function get_allowed_option_keys() {
+            $settings = $this->get_registered_tab_settings();
+            $keys     = array();
+
+            if ( ! empty( $settings['controls'] ) && is_array( $settings['controls'] ) ) {
+                array_walk_recursive(
+                    $settings['controls'],
+                    function ( $value, $key ) use ( &$keys ) {
+                        if ( 'id' === $key && is_string( $value ) ) {
+                            $keys[] = $value;
+                        }
+                    }
+                );
+            }
+
+            /**
+             * Filter the list of allowed settings keys for the REST API save endpoint.
+             *
+             * @since 2.2.7
+             *
+             * @param array $keys Allowed option key strings.
+             */
+            $keys = apply_filters( 'wwp_allowed_settings_keys', $keys );
+
+            return array_unique( $keys );
+        }
+
+        /**
+         * Build a type map from registered controls (id => type).
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @return array Associative array of option_key => control_type.
+         */
+        private function get_control_type_map() {
+            $settings = $this->get_registered_tab_settings();
+            $type_map = array();
+
+            if ( ! empty( $settings['controls'] ) && is_array( $settings['controls'] ) ) {
+                $this->extract_type_map( $settings['controls'], $type_map );
+            }
+
+            return $type_map;
+        }
+
+        /**
+         * Recursively extract id => type pairs and option choices from controls.
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @param array $controls The controls array to walk.
+         * @param array $type_map  Reference to the type map being built.
+         */
+        private function extract_type_map( $controls, &$type_map ) {
+            foreach ( $controls as $value ) {
+                if ( is_array( $value ) ) {
+                    if ( isset( $value['id'], $value['type'] ) ) {
+                        $type_map[ $value['id'] ] = array(
+                            'type'     => $value['type'],
+                            'options'  => isset( $value['options'] ) ? $value['options'] : array(),
+                            'editor'   => ! empty( $value['editor'] ),
+                            'multiple' => ! empty( $value['multiple'] ),
+                        );
+                    }
+                    $this->extract_type_map( $value, $type_map );
+                }
+            }
+        }
+
+        /**
+         * Sanitize an option value based on the control type.
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @param mixed  $value      The value to sanitize.
+         * @param string $option_key The option key.
+         * @param array  $type_map   Type map from get_control_type_map().
+         * @return mixed Sanitized value.
+         */
+        private function sanitize_option_value( $value, $option_key, $type_map ) {
+            if ( is_array( $value ) ) {
+                return map_deep( $value, 'sanitize_text_field' );
+            }
+
+            if ( ! isset( $type_map[ $option_key ] ) ) {
+                return sanitize_text_field( $value );
+            }
+
+            $control = $type_map[ $option_key ];
+
+            switch ( $control['type'] ) {
+                case 'checkbox':
+                case 'switch':
+                    if ( ! empty( $control['options'] ) ) {
+                        $allowed = array_keys( $control['options'] );
+                        if ( in_array( $value, $allowed, true ) ) {
+                            return $value;
+                        }
+                    }
+                    // Default checkbox values.
+                    return in_array( $value, array( 'yes', 'no' ), true ) ? $value : 'no';
+
+                case 'select':
+                case 'radio':
+                    if ( ! empty( $control['options'] ) ) {
+                        $allowed = array_keys( $control['options'] );
+
+                        // Handle multi-select: value may be a JSON-encoded array.
+                        if ( ! empty( $control['multiple'] ) ) {
+                            $decoded = is_string( $value ) ? json_decode( $value, true ) : null;
+                            if ( is_array( $decoded ) ) {
+                                $sanitized = array_values( array_intersect( $decoded, $allowed ) );
+                                return wp_json_encode( $sanitized );
+                            }
+                        }
+
+                        if ( in_array( $value, $allowed, true ) ) {
+                            return $value;
+                        }
+                        // Return first option as default if invalid.
+                        return ! empty( $allowed ) ? reset( $allowed ) : '';
+                    }
+                    return sanitize_text_field( $value );
+
+                case 'number':
+                case 'money':
+                case 'percent':
+                    if ( is_numeric( $value ) ) {
+                        return $value;
+                    }
+                    return '';
+
+                case 'textarea':
+                    if ( $control['editor'] ) {
+                        return wp_kses_post( $value );
+                    }
+                    return sanitize_textarea_field( $value );
+
+                default:
+                    return sanitize_text_field( $value );
+            }
+        }
+
+        /**
+         * Get the list of allowed group action names.
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @return array Array of allowed group action slug strings.
+         */
+        private function get_allowed_group_actions() {
+            // WWP core group actions.
+            $actions = array(
+                'group_save',
+                'group_delete',
+                'group_edit',
+            );
+
+            // Auto-detect group actions registered by companion plugins via WordPress hooks.
+            // This ensures backwards compatibility with older plugin versions that register
+            // 'wwp_group_settings_*' hooks but don't yet use the 'wwp_allowed_group_actions' filter.
+            $actions = array_merge( $actions, $this->detect_registered_hooks( 'wwp_group_settings_' ) );
+
+            /**
+             * Filter the list of allowed group actions for the REST API save endpoint.
+             *
+             * Companion plugins should add their group action slugs via this filter.
+             *
+             * @since 2.2.7
+             *
+             * @param array $actions Allowed group action slug strings.
+             */
+            return array_unique( apply_filters( 'wwp_allowed_group_actions', $actions ) );
+        }
+
+        /**
+         * Get the list of allowed trigger action names.
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @return array Array of allowed trigger action slug strings.
+         */
+        private function get_allowed_trigger_actions() {
+            // Auto-detect trigger actions registered by companion plugins via WordPress hooks.
+            // This ensures backwards compatibility with older plugin versions that register
+            // 'wwp_trigger_*' hooks but don't yet use the 'wwp_allowed_trigger_actions' filter.
+            $actions = $this->detect_registered_hooks( 'wwp_trigger_' );
+
+            /**
+             * Filter the list of allowed trigger actions for the REST API action endpoint.
+             *
+             * Companion plugins should add their trigger action slugs via this filter.
+             *
+             * @since 2.2.7
+             *
+             * @param array $actions Allowed trigger action slug strings.
+             */
+            return array_unique( apply_filters( 'wwp_allowed_trigger_actions', $actions ) );
+        }
+
+        /**
+         * Detect registered WordPress hooks matching a given prefix and extract action slugs.
+         *
+         * Scans the global $wp_filter for hooks that start with the given prefix and returns
+         * the action slug portion (everything after the prefix). This provides backwards
+         * compatibility with companion plugins that register hooks but haven't yet been
+         * updated to use the explicit allowlist filters.
+         *
+         * @since  2.2.7
+         * @access private
+         *
+         * @param string $prefix The hook prefix to match (e.g. 'wwp_group_settings_' or 'wwp_trigger_').
+         * @return array Array of action slug strings extracted from matching hooks.
+         */
+        private function detect_registered_hooks( $prefix ) {
+            global $wp_filter;
+
+            $actions       = array();
+            $prefix_length = strlen( $prefix );
+
+            if ( ! empty( $wp_filter ) && is_array( $wp_filter ) ) {
+                foreach ( array_keys( $wp_filter ) as $hook_name ) {
+                    if ( str_starts_with( $hook_name, $prefix ) ) {
+                        $slug = substr( $hook_name, $prefix_length );
+                        if ( ! empty( $slug ) ) {
+                            $actions[] = $slug;
+                        }
+                    }
+                }
+            }
+
+            return $actions;
         }
 
         /**
@@ -1600,7 +1904,7 @@ if ( ! class_exists( 'WWP_Admin_Settings' ) ) {
          * @access public
          */
         public function wwp_new_settings_notice_hide() {
-            if ( ! wp_doing_ajax() || ! wp_verify_nonce( $_POST['nonce'], 'wwp_new_settings_notice_nonce' ) ) {
+            if ( ! WWP_Helper_Functions::verify_ajax_nonce( 'wwp_new_settings_notice_nonce' ) ) {
                 // Security check failure.
                 return;
             }

@@ -30,10 +30,14 @@ export const applyPromo = ( rate: number, promoId?: string ) => {
 export const maybeDecrementPromoRemaining = (
 	label: CamelCaseType< ResponseLabel >
 ) => {
-	if ( ! label.promoId ) return;
+	if ( ! label.promoId ) {
+		return;
+	}
 
 	const promo = getPromotion();
-	if ( ! promo || promo.remaining <= 0 ) return;
+	if ( ! promo || promo.remaining <= 0 ) {
+		return;
+	}
 
 	--promo.remaining;
 };

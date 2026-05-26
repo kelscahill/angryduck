@@ -9,7 +9,7 @@ import * as Sentry from '@sentry/react';
 import { getComponentDisplayName } from 'utils';
 import { __ } from '@wordpress/i18n';
 import { createInterpolateElement } from '@wordpress/element';
-import { Link } from '@woocommerce/components';
+import { ExternalLink } from '@wordpress/components';
 
 interface ErrorBoundaryState {
 	hasError: boolean;
@@ -123,16 +123,12 @@ export class ErrorBoundary extends Component<
 									</a>
 								),
 								a: (
-									<Link
-										href="https://woocommerce.com/products/shipping/"
-										target="_blank"
-										type="external"
-									>
+									<ExternalLink href="https://woocommerce.com/products/shipping/">
 										{ __(
 											'WooCommerce Shipping Support',
 											'woocommerce-shipping'
 										) }
-									</Link>
+									</ExternalLink>
 								),
 							}
 						) }

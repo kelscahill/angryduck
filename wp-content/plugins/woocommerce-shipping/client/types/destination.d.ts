@@ -8,4 +8,9 @@ export interface Destination
 	> {
 	address1?: string;
 	address2?: string;
+	/**
+	 * Whether the destination is a residential address. When undefined,
+	 * EasyPost applies its own residential classification.
+	 */
+	residential?: boolean;
 }

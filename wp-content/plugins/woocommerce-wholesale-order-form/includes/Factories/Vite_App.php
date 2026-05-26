@@ -7,6 +7,7 @@
 
 namespace RymeraWebCo\WWOF\Factories;
 
+use RymeraWebCo\WWOF\Helpers\WPML as WPML_Helper;
 use RymeraWebCo\WWOF\Helpers\WWOF;
 
 /**
@@ -104,11 +105,20 @@ class Vite_App {
     protected $is_gutenberg;
 
     /**
-     * Whether to just register the script.
+     * Tracks if the base localization object has been initialized.
      *
-     * @var bool
+     * @since 3.0
+     * @var array<string, bool> Array keyed by l10n_name to track initialization status.
      */
-    protected $register;
+    protected static $l10n_initialized = array();
+
+    /**
+     * Caches merged translation JSON per domain:locale to avoid repeated file I/O.
+     *
+     * @since 3.0
+     * @var array<string, string|false> Keyed by "{domain}:{locale}". False means no translations found.
+     */
+    protected static $merged_translations_cache = array();
 
     /**
      * Setups Vue app script files. After instantiation, call the enqueue() method to enqueue the script.
@@ -157,7 +167,10 @@ class Vite_App {
          * Whether to enqueue the app in hot module replacement context or the
          * current build script.
          */
-        $this->is_hmr = defined( 'HMR_DEV' ) && 'wwof' === HMR_DEV;
+        $this->is_hmr = apply_filters(
+            'wwof_is_hmr',
+            defined( 'HMR_DEV' ) && 'wwof' === HMR_DEV
+        );
 
         /***************************************************************************
          * Check if Vue App is a Gutenberg app
@@ -246,6 +259,7 @@ class Vite_App {
                     'wp-plugins',
                     'wp-edit-post',
                     'wp-hooks',
+                    'lodash',
                 )
             )
             : $dependencies;
@@ -260,11 +274,10 @@ class Vite_App {
         $this->l10n = $l10n;
 
         if ( ! empty( $l10n ) ) {
-            if ( is_admin() ) {
-                $this->dependencies = array_merge( $this->dependencies, array( 'wwof-admin-l10n' ) );
-            } else {
-                $this->dependencies = array_merge( $this->dependencies, array( 'wwof-frontend-l10n' ) );
-            }
+            // Use shared l10n handle instead of per-script-handle.
+            $context            = is_admin() ? 'admin' : 'frontend';
+            $shared_handle      = "wwof-$this->l10n_name-$context-l10n";
+            $this->dependencies = array_merge( $this->dependencies, array( $shared_handle ) );
         }
 
         /**************************************************************************
@@ -281,14 +294,6 @@ class Vite_App {
                 )
             )
             : $style_dependencies;
-
-        /***************************************************************************
-         * Enqueue or just register the script
-         ***************************************************************************
-         *
-         * By default, enqueue the script immediately, otherwise, just register it.
-         */
-        $this->register = false;
     }
 
     /**
@@ -331,67 +336,51 @@ class Vite_App {
      */
     public function global_l10n() {
 
+        // Use a shared script handle based on l10n_name and context (admin/frontend).
+        $context        = is_admin() ? 'admin' : 'frontend';
+        $shared_handle  = "wwof-$this->l10n_name-$context-l10n";
+        $init_key       = "$this->l10n_name-$context";
+        $plugin_version = WWOF::get_plugin_data()['Version'];
+
+        // Register and enqueue the shared l10n script if not already done.
+        if ( ! wp_script_is( $shared_handle, 'registered' ) ) {
+            wp_register_script( $shared_handle, '', array( 'lodash' ), $plugin_version, false );
+        }
+
+        if ( ! wp_script_is( $shared_handle ) ) {
+            wp_enqueue_script( $shared_handle );
+        }
+
+        // Initialize the base object only once per l10n_name and context.
+        if ( ! isset( self::$l10n_initialized[ $init_key ] ) ) {
+            wp_localize_script(
+                $shared_handle,
+                $this->l10n_name,
+                array(
+                    'pluginDirUrl' => plugins_url( '/', WWOF_PLUGIN_FILE ),
+                    'adminAjaxUrl' => admin_url( 'admin-ajax.php' ),
+                )
+            );
+            self::$l10n_initialized[ $init_key ] = true;
+        }
+
+        // Register and enqueue style if needed (per script handle for backward compatibility).
+        $base_handle = $this->script_handle;
         if ( is_admin() ) {
-            if ( ! wp_style_is( 'wwof-admin-style', 'registered' ) ) {
-                wp_register_style( 'wwof-admin-style', '', array(), WWOF::get_plugin_data()['Version'] );
+            if ( ! wp_style_is( "$base_handle-admin-style", 'registered' ) ) {
+                wp_register_style( "$base_handle-admin-style", '', array(), $plugin_version );
             }
-            if ( ! wp_style_is( 'wwof-admin-style' ) ) {
-                wp_enqueue_style( 'wwof-admin-style' );
-            }
-            if ( ! wp_script_is( 'wwof-admin-l10n', 'registered' ) ) {
-                wp_register_script(
-                    'wwof-admin-l10n',
-                    '',
-                    array( 'lodash' ),
-                    WWOF::get_plugin_data()['Version'],
-                    false
-                );
-            }
-            if ( ! wp_script_is( 'wwof-admin-l10n' ) ) {
-                wp_enqueue_script( 'wwof-admin-l10n' );
-                wp_localize_script(
-                    'wwof-admin-l10n',
-                    $this->l10n_name,
-                    array( 'pluginDirUrl' => plugins_url( '', WWOF_PLUGIN_FILE ) )
-                );
+            if ( ! wp_style_is( "$base_handle-admin-style" ) ) {
+                wp_enqueue_style( "$base_handle-admin-style" );
             }
         } else {
-            if ( ! wp_style_is( 'wwof-frontend-style', 'registered' ) ) {
-                wp_register_style( 'wwof-frontend-style', '', array(), WWOF::get_plugin_data()['Version'] );
+            if ( ! wp_style_is( "$base_handle-frontend-style", 'registered' ) ) {
+                wp_register_style( "$base_handle-frontend-style", '', array(), $plugin_version );
             }
-            if ( ! wp_style_is( 'wwof-frontend-style' ) ) {
-                wp_enqueue_style( 'wwof-frontend-style' );
-            }
-            if ( ! wp_script_is( 'wwof-frontend-l10n', 'registered' ) ) {
-                wp_register_script(
-                    'wwof-frontend-l10n',
-                    '',
-                    array( 'lodash' ),
-                    WWOF::get_plugin_data()['Version'],
-                    false
-                );
-            }
-            if ( ! wp_script_is( 'wwof-frontend-l10n' ) ) {
-                wp_enqueue_script( 'wwof-frontend-l10n' );
-                wp_localize_script(
-                    'wwof-frontend-l10n',
-                    $this->l10n_name,
-                    array( 'pluginDirUrl' => plugins_url( '', WWOF_PLUGIN_FILE ) )
-                );
+            if ( ! wp_style_is( "$base_handle-frontend-style" ) ) {
+                wp_enqueue_style( "$base_handle-frontend-style" );
             }
         }
-    }
-
-    /**
-     * Register only the app script.
-     *
-     * @return void
-     */
-    public function register() {
-
-        $this->register = true;
-
-        $this->enqueue();
     }
 
     /**
@@ -413,12 +402,14 @@ class Vite_App {
          */
         $this->parse_manifest_file();
 
-        self::global_l10n();
-
-        $this->print_react_refresh_runtime_script();
+        $this->global_l10n();
 
         $this->enqueue_scripts();
-        add_action( 'wp_head', array( $this, 'preload_imports' ), 20 );
+        if ( is_admin() ) {
+            add_action( 'admin_head', array( $this, 'preload_imports' ), 20 );
+        } else {
+            add_action( 'wp_head', array( $this, 'preload_imports' ), 20 );
+        }
     }
 
     /**
@@ -461,49 +452,6 @@ class Vite_App {
                 ),
                 '3.0'
             );
-        }
-    }
-
-    /**
-     * Print React-Refresh runtime script
-     *
-     * @since 1.0.0
-     * @return void
-     */
-    public function print_react_refresh_runtime_script() {
-
-        if ( ! $this->is_gutenberg || ! $this->is_hmr ) {
-            return;
-        }
-
-        $react_refresh_script = function () {
-
-            /***************************************************************************
-             * React refresh runtime script
-             ***************************************************************************
-             *
-             * The react refresh runtime script is loaded on hot module replacement context.
-             */
-            $react_refresh_runtime = sprintf(
-                '
-<script type="module">
-import RefreshRuntime from "%s@react-refresh"
-RefreshRuntime.injectIntoGlobalHook(window)
-window.$RefreshReg$ = () => {}
-window.$RefreshSig$ = () => (type) => type
-window.__vite_plugin_react_preamble_installed__ = true
-</script>',
-                esc_url( $this->base_url )
-            );
-
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-            echo $react_refresh_runtime;
-        };
-
-        if ( is_admin() ) {
-            add_action( 'admin_head', $react_refresh_script );
-        } else {
-            add_action( 'wp_head', $react_refresh_script );
         }
     }
 
@@ -644,35 +592,27 @@ window.__vite_plugin_react_preamble_installed__ = true
          *
          * Actually enqueue the main app script.
          */
-        if ( $this->register ) {
-            wp_register_script(
-                $this->script_handle,
-                $entry_file_url,
-                $this->dependencies,
-                $script_version,
-                true
-            );
-        } else {
-            wp_enqueue_script(
-                $this->script_handle,
-                $entry_file_url,
-                $this->dependencies,
-                $script_version,
-                true
-            );
-        }
+        wp_enqueue_script(
+            $this->script_handle,
+            $entry_file_url,
+            $this->dependencies,
+            $script_version,
+            true
+        );
 
         /**************************************************************************
          * Localize app script
          ***************************************************************************
          *
-         * Add localized data to the main app script.
+         * Add localized data to the main app script using the shared l10n handle.
          */
         if ( null !== $this->l10n ) {
-            $handle = is_admin() ? 'wwof-admin-l10n' : 'wwof-frontend-l10n';
+            $context       = is_admin() ? 'admin' : 'frontend';
+            $shared_handle = "wwof-$this->l10n_name-$context-l10n";
+            $l10n_name     = esc_html( $this->l10n_name );
             wp_add_inline_script(
-                $handle,
-                "window.$this->l10n_name = lodash.merge(window.$this->l10n_name, " .
+                $shared_handle,
+                "window.$l10n_name = lodash.merge(window.$l10n_name || {}, " .
                 wp_json_encode( $this->l10n ) . ');'
             );
         }
@@ -685,22 +625,11 @@ window.__vite_plugin_react_preamble_installed__ = true
          * wp-i18n as a dependency.
          */
         if ( in_array( 'wp-i18n', $this->dependencies, true ) ) {
-            wp_set_script_translations(
-                $this->script_handle,
+            $this->load_merged_script_translations(
                 'woocommerce-wholesale-order-form',
                 WWOF_PLUGIN_DIR_PATH . 'languages'
             );
         }
-
-        $this->enqueue_stylesheet();
-    }
-
-    /**
-     * Enqueue stylesheets.
-     *
-     * @return void
-     */
-    public function enqueue_stylesheet() {
 
         /**************************************************************************
          * Load main app style
@@ -714,44 +643,159 @@ window.__vite_plugin_react_preamble_installed__ = true
 
             if ( ! empty( $styles ) ) {
                 foreach ( $styles as $style ) {
-                    /***************************************************************************
-                     * Enqueue if already registered
-                     ***************************************************************************
-                     *
-                     * The second time this method is called, we assume that the style has to be
-                     * enqueued already so, we just enqueue it.
-                     */
-                    if ( $this->register && wp_style_is( $this->script_handle, 'registered' ) ) {
-                        wp_enqueue_style( $this->script_handle );
-                        continue;
-                    }
-
-                    if ( $this->register ) {
-                        wp_register_style(
-                            $this->script_handle,
-                            plugins_url( "dist/$style", WWOF_PLUGIN_FILE ),
-                            $this->style_dependencies,
-                            filemtime( WWOF_PLUGIN_DIR_PATH . "dist/$style" )
-                        );
-                    } else {
-                        wp_enqueue_style(
-                            $this->script_handle,
-                            plugins_url( "dist/$style", WWOF_PLUGIN_FILE ),
-                            $this->style_dependencies,
-                            filemtime( WWOF_PLUGIN_DIR_PATH . "dist/$style" )
-                        );
-                    }
+                    $style_handle = sanitize_title_with_dashes( basename( $style ) );
+                    wp_enqueue_style(
+                        $style_handle,
+                        plugins_url( "dist/$style", WWOF_PLUGIN_FILE ),
+                        $this->style_dependencies,
+                        filemtime( WWOF_PLUGIN_DIR_PATH . "dist/$style" )
+                    );
                 }
-            } elseif ( ! empty( $this->style_dependencies ) && ! $this->register ) {
+            } elseif ( ! empty( $this->style_dependencies ) ) {
                 foreach ( $this->style_dependencies as $style_dependency ) {
                     wp_enqueue_style( $style_dependency );
                 }
             }
-        } elseif ( ! empty( $this->style_dependencies ) && ! $this->register ) {
+        } elseif ( ! empty( $this->style_dependencies ) ) {
             foreach ( $this->style_dependencies as $style_dependency ) {
                 wp_enqueue_style( $style_dependency );
             }
         }
+    }
+
+    /**
+     * Load and merge all JSON translation files for the given text domain and current locale,
+     * then inject the merged translations via wp_add_inline_script().
+     *
+     * This replaces wp_set_script_translations() to solve two problems:
+     * 1. MD5 mismatch between source paths used by `wp i18n make-json` and built URLs used by WP runtime.
+     * 2. Strings in dynamically imported chunks get their own JSON files that wp_set_script_translations() ignores.
+     *
+     * By globbing all `{domain}-{locale}-*.json` files and merging them, every translated string
+     * (from entry files and code-split chunks) is available to wp.i18n.__() calls.
+     *
+     * @param string $domain                The text domain.
+     * @param string $plugin_languages_path Absolute path to the plugin's languages directory.
+     *
+     * @return void
+     * @since 3.0
+     */
+    protected function load_merged_script_translations( $domain, $plugin_languages_path ) {
+
+        $locale = determine_locale();
+
+        // When WPML's admin bar language switcher is used, determine_locale() may
+        // return the site default locale instead of the switched language. Check
+        // WPML's current language to get the correct locale for script translations.
+        $wpml_locale = WPML_Helper::get_current_locale();
+
+        if ( ! empty( $wpml_locale ) ) {
+            $locale = $wpml_locale;
+        }
+
+        // No translations needed for English.
+        if ( 'en_US' === $locale ) {
+            return;
+        }
+
+        $cache_key = "$domain:$locale";
+
+        // Build the merged JSON string if not already cached.
+        if ( ! isset( self::$merged_translations_cache[ $cache_key ] ) ) {
+
+            $pattern      = "{$domain}-{$locale}-*.json";
+            $all_messages = array();
+            $jed_header   = null;
+
+            // Scan both the plugin's languages directory and WP's global languages/plugins directory.
+            $search_dirs = array(
+                rtrim( $plugin_languages_path, '/' ),
+                rtrim( WP_LANG_DIR, '/' ) . '/plugins',
+            );
+
+            foreach ( $search_dirs as $dir ) {
+                if ( ! is_dir( $dir ) ) {
+                    continue;
+                }
+
+                //phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+                $files = @glob( "$dir/$pattern" );
+                if ( empty( $files ) ) {
+                    continue;
+                }
+
+                foreach ( $files as $file ) {
+                    //phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+                    $contents = file_get_contents( $file );
+                    if ( empty( $contents ) ) {
+                        continue;
+                    }
+
+                    $data = json_decode( $contents, true );
+                    if ( empty( $data['locale_data']['messages'] ) ) {
+                        continue;
+                    }
+
+                    $messages = $data['locale_data']['messages'];
+
+                    // Preserve the JED header from the first file that has one.
+                    if ( null === $jed_header && isset( $messages[''] ) ) {
+                        $jed_header = $messages[''];
+                    }
+
+                    // Remove the empty-string header key before merging to avoid overwriting.
+                    unset( $messages[''] );
+
+                    // Merge messages, earlier files take precedence.
+                    foreach ( $messages as $key => $value ) {
+                        if ( ! isset( $all_messages[ $key ] ) ) {
+                            $all_messages[ $key ] = $value;
+                        }
+                    }
+                }
+            }
+
+            if ( empty( $all_messages ) ) {
+                self::$merged_translations_cache[ $cache_key ] = false;
+
+                return;
+            }
+
+            // Re-add the JED header.
+            if ( null === $jed_header ) {
+                $jed_header = array(
+                    'domain' => $domain,
+                    'lang'   => $locale,
+                );
+            }
+            $all_messages[''] = $jed_header;
+
+            $jed_data = array(
+                'locale_data' => array(
+                    'messages' => $all_messages,
+                ),
+            );
+
+            self::$merged_translations_cache[ $cache_key ] = wp_json_encode( $jed_data );
+        }
+
+        // If no translations were found, bail.
+        if ( false === self::$merged_translations_cache[ $cache_key ] ) {
+            return;
+        }
+
+        $json   = self::$merged_translations_cache[ $cache_key ];
+        $output = <<<JS
+( function( domain, translations ) {
+	var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
+	if ( localeData ) {
+		localeData[""].domain = domain;
+		wp.i18n.setLocaleData( localeData, domain );
+	}
+} )( "$domain", $json );
+JS;
+
+        wp_add_inline_script( $this->script_handle, $output, 'before' );
     }
 
     /**
@@ -885,7 +929,7 @@ window.__vite_plugin_react_preamble_installed__ = true
              * attributes in production mode.
              */
             foreach ( $this->manifest[ $this->entry_file_path ]['css'] as $style ) {
-                if ( false !== strpos( $href, $style ) ) {
+                if ( str_contains( $href, $style ) ) {
                     $integrity = 'crossorigin="anonymous" ';
                     /**
                      * Filter to enable subresource integrity check.

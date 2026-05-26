@@ -1,23 +1,40 @@
-# Copyright (C) 2025 Rymera Web Co
+# #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+# Copyright (C) 2026 Rymera Web Co
 # This file is distributed under the GPL          v2 or later.
+# #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+# Copyright (C) 2026 
+# This file is distributed under the same license as the WooCommerce Wholesale Order Form plugin.
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: WooCommerce Wholesale Order Form 3.0.6.1\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/code\n"
+"#-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#\n"
+"Project-Id-Version: WooCommerce Wholesale Order Form 3.0.9.1\n"
+"Report-Msgid-Bugs-To: https://wholesalesuiteplugin.com/my-account/support/\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2025-03-12T02:10:39+00:00\n"
+"POT-Creation-Date: 2026-03-24T02:16:05+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.11.0\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: woocommerce-wholesale-order-form\n"
+"#-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#\n"
+"Project-Id-Version: WooCommerce Wholesale Order Form\n"
+"Report-Msgid-Bugs-To: https://wholesalesuiteplugin.com/my-account/support/\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-03-24T02:16:06+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: woocommerce-wholesale-order-form\n"
 
 #. Plugin Name of the plugin
 #: woocommerce-wholesale-order-form.bootstrap.php
-#: includes/Classes/License_Manager.php:165
-#: includes/Classes/License_Manager.php:177
+#: woocommerce-wholesale-order-form.php
 msgid "WooCommerce Wholesale Order Form"
 msgstr ""
 
@@ -42,40 +59,41 @@ msgid "https://rymera.com.au/"
 msgstr ""
 
 #. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
-#: bootstrap/App.php:172
+#: bootstrap/App.php:233
+#, php-format
 msgid "%1$sClick here to activate %3$s plugin &rarr;%2$s"
 msgstr ""
 
-#: bootstrap/App.php:184
+#: bootstrap/App.php:245
 msgid "Activate this plugin"
 msgstr ""
 
 #. translators: %1$s = opening <p> tag; %2$s = closing </p> tag; %3$s = WooCommerce Wholesale Order Form
-#: bootstrap/App.php:194
+#: bootstrap/App.php:255
+#, php-format
 msgid "%1$sUnable to activate %3$s plugin. Please install and activate WooCoomerce plugin first.%2$s"
 msgstr ""
 
 #. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
-#: bootstrap/App.php:205
+#: bootstrap/App.php:266
+#, php-format
 msgid "%1$sClick here to install %3$s plugin &rarr;%2$s"
 msgstr ""
 
-#: bootstrap/App.php:217
+#: bootstrap/App.php:278
 msgid "Install this plugin"
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = opening <p> tag; %4$s = closing </p> tag
-#: bootstrap/App.php:235
+#: bootstrap/App.php:290
+#, php-format
 msgid "%3$s%1$sWooCommerce Wholesale Order%2$s Form plugin missing dependency:%4$s"
 msgstr ""
 
 #. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
-#: bootstrap/App.php:257
+#: bootstrap/App.php:315
+#, php-format
 msgid "%1$sClick here to update WooCommerce Wholesale Prices Plugin &rarr;%2$s"
-msgstr ""
-
-#: bootstrap/App.php:299
-msgid "The class does not have a run method. Please make sure to extend the Abstract_Class class."
 msgstr ""
 
 #: constants.php:254
@@ -86,43 +104,30 @@ msgstr ""
 msgid "Custom Ordering (menu order) + Name"
 msgstr ""
 
-#: constants.php:256
-#: includes/I18n/order-form.php:178
+#: constants.php:256 includes/I18n/order-form-strings.php:315
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
 msgid "Name"
 msgstr ""
 
-#: constants.php:257
-#: includes/I18n/order-form.php:289
+#: constants.php:257 includes/I18n/order-form-strings.php:333
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
 msgid "Sort by Date"
 msgstr ""
 
-#: constants.php:258
-#: includes/I18n/order-form.php:283
+#: constants.php:258 includes/I18n/order-form-strings.php:271
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
 msgid "SKU"
 msgstr ""
 
 #: includes/Abstracts/Abstract_Shortcode.php:119
 msgid "You do not have permission to view this content."
-msgstr ""
-
-#: includes/Classes/License_Manager.php:173
-msgid "WooCommerce Wholesale Prices Premium"
-msgstr ""
-
-#: includes/Classes/License_Manager.php:181
-msgid "WooCommerce Wholesale Lead Capture"
-msgstr ""
-
-#: includes/Classes/License_Manager.php:187
-#: includes/Classes/Order_Forms_Admin_Page.php:52
-#: includes/Classes/Order_Forms_Admin_Page.php:53
-#: includes/I18n/order-form.php:212
-#: includes/Post_Types/Order_Form_Post_Type.php:34
-#: includes/Post_Types/Order_Form_Post_Type.php:49
-#: includes/Post_Types/Order_Form_Post_Type.php:51
-#: includes/Post_Types/Order_Form_Post_Type.php:53
-#: includes/Post_Types/Order_Form_Post_Type.php:65
-msgid "Order Forms"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:310
@@ -164,22 +169,22 @@ msgid "Failed to activate license. Failed to connect to license server. Please c
 msgstr ""
 
 #: includes/Classes/License_Manager.php:854
-#: includes/Classes/License_Manager.php:1281
+#: includes/Classes/License_Manager.php:1282
 msgid "Active"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:856
-#: includes/Classes/License_Manager.php:1284
+#: includes/Classes/License_Manager.php:1285
 msgid "Disabled"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:858
-#: includes/Classes/License_Manager.php:1283
+#: includes/Classes/License_Manager.php:1284
 msgid "Invalid"
 msgstr ""
 
 #: includes/Classes/License_Manager.php:860
-#: includes/Classes/License_Manager.php:1282
+#: includes/Classes/License_Manager.php:1283
 msgid "Expired"
 msgstr ""
 
@@ -187,184 +192,221 @@ msgstr ""
 msgid "Unlicensed"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1203
+#: includes/Classes/License_Manager.php:1204
 msgid "Failed To Save License Details"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1262
+#: includes/Classes/License_Manager.php:1263
 msgid "Oops! Forgot to activate your Wholesale Suite license?"
 msgstr ""
 
 #. Translators: %1$s - line break, %2$s - opening <a> tag, %3$s - closing </a> tag.
-#: includes/Classes/License_Manager.php:1266
+#: includes/Classes/License_Manager.php:1267
+#, php-format
 msgid "A valid license key is required for Wholesale Suite's premium plugins. But don't worry! It's super easy to get fully activated.%1$sSimply click here to enter your license and, once done, you'll be finished your setup.%1$sDon't have a license? %2$sClick here%3$s."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1274
+#: includes/Classes/License_Manager.php:1275
 msgid "Close"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1275
+#: includes/Classes/License_Manager.php:1276
 msgid "Enter License Key"
 msgstr ""
 
 #. Translators: %s - the plugin name.
-#: includes/Classes/License_Manager.php:1423
+#: includes/Classes/License_Manager.php:1424
+#, php-format
 msgid "Oops! Did you forget to enter your license for %s?"
 msgstr ""
 
 #. Translators: %s - the plugin name.
-#: includes/Classes/License_Manager.php:1429
+#: includes/Classes/License_Manager.php:1430
+#, php-format
 msgid "%1$sAction required!%2$s Enter your license for %3$s to continue."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1441
+#: includes/Classes/License_Manager.php:1442
 msgid "Enter your license to full activate Wholesale Suite and gain access to automatic updates, technical support, and premium features."
 msgstr ""
 
 #. Translators: %1$s - the purchase link opening tag, %2$s - the purchase link closing tag.
-#: includes/Classes/License_Manager.php:1445
+#: includes/Classes/License_Manager.php:1446
+#, php-format
 msgid "Don’t worry, your wholesale customers & orders completely safe and your premium wholesale features are still working. But you will need to enter a license key to continue using Wholesale Suite. If you don’t have a license, please %1$spurchase one to proceed%2$s."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1463
+#: includes/Classes/License_Manager.php:1464
 msgid "License Key:"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1473
+#: includes/Classes/License_Manager.php:1474
 msgid "License Email:"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1483
+#: includes/Classes/License_Manager.php:1484
 msgid "Activate Key"
 msgstr ""
 
 #. Translators: %1$s - the login link opening tag, %2$s - the login link closing tag.
-#: includes/Classes/License_Manager.php:1491
+#: includes/Classes/License_Manager.php:1492
+#, php-format
 msgid "Can’t find your key? %1$sLogin to your account%2$s."
 msgstr ""
 
 #. Translators: %s - the plugin name.
-#: includes/Classes/License_Manager.php:1545
+#: includes/Classes/License_Manager.php:1546
+#, php-format
 msgid "%1$sAction required!%2$s Your Wholesale Suite license is about to expire in %3$s days."
 msgstr ""
 
 #. Translators: %s is the license expiration date
-#: includes/Classes/License_Manager.php:1557
+#: includes/Classes/License_Manager.php:1558
+#, php-format
 msgid "Your Wholesale Suite license is about to expire in %1$s days and automatic renewals are turned off. The current license will expire on %2$s. Once expired, you won't have access to premium features, plugin updates, or support. To avoid interruptions simply reactivate your subscription."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1569
+#: includes/Classes/License_Manager.php:1570
 msgid "Login & Reactivate"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1572
-#: includes/Classes/License_Manager.php:1632
-#: includes/Classes/License_Manager.php:1698
-#: includes/Classes/License_Manager.php:1731
-#: includes/Classes/License_Manager.php:1762
+#: includes/Classes/License_Manager.php:1573
+#: includes/Classes/License_Manager.php:1633
+#: includes/Classes/License_Manager.php:1699
+#: includes/Classes/License_Manager.php:1732
+#: includes/Classes/License_Manager.php:1763
 msgid "Learn More"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1610
+#: includes/Classes/License_Manager.php:1611
 msgid "Oh no! Your Wholesale Suite license has expired!"
 msgstr ""
 
 #. Translators: %s is the license expiration date
-#: includes/Classes/License_Manager.php:1616
-#: includes/Classes/License_Manager.php:1716
+#: includes/Classes/License_Manager.php:1617
+#: includes/Classes/License_Manager.php:1717
+#, php-format
 msgid "Don’t worry, your wholesale customers & orders are completely safe and your premium wholesale features are still working. We’ve also extended premium feature functionality until %s, at which point functionality will become limited."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1624
+#: includes/Classes/License_Manager.php:1625
 msgid "Renew your Wholesale Suite license now to continue receiving automatic updates, technical support, and access to Wholesale Suite premium features."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1629
-#: includes/Classes/WP_Admin.php:118
-#: templates/admin/parts/settings/license/interstitial.php:80
+#: includes/Classes/License_Manager.php:1630 includes/Classes/WP_Admin.php:118
+#: templates/admin/parts/settings/license/interstitial.php:83
 msgid "Renew License"
 msgstr ""
 
 #. Translators: %1$s - span opening tag, %2$s - span closing tag.
-#: includes/Classes/License_Manager.php:1678
+#: includes/Classes/License_Manager.php:1679
+#, php-format
 msgid "%1$sUrgent!%2$s This Wholesale Suite license key has been disabled. This could be due to a number of reasons:"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1686
+#: includes/Classes/License_Manager.php:1687
 msgid "A refund or chargeback was initiated against this license key"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1687
+#: includes/Classes/License_Manager.php:1688
 msgid "The license key may have violated our Terms of Service"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1688
+#: includes/Classes/License_Manager.php:1689
 msgid "There may have been a malfunction with the license key and this is a false positive"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1690
+#: includes/Classes/License_Manager.php:1691
 msgid "Don’t worry, your wholesale customers & orders are completely safe and your premium wholesale features are still working for now, but a valid license is required to continue using Wholesale Suite."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1691
+#: includes/Classes/License_Manager.php:1692
 msgid "If you feel this is a mistake, please reach out to our support team immediately and we'll be happy to help."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1695
+#: includes/Classes/License_Manager.php:1696
 msgid "Contact Support"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1710
+#: includes/Classes/License_Manager.php:1711
 msgid "Oh no! Your Wholesale Suite license has failed to renew!"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1724
-#: includes/Classes/License_Manager.php:1755
+#: includes/Classes/License_Manager.php:1725
+#: includes/Classes/License_Manager.php:1756
 msgid "Login to your Wholesale Suite account to correct this issue to continue receiving automatic updates, technical support, and access to Wholesale Suite premium features."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1728
-#: includes/Classes/License_Manager.php:1759
+#: includes/Classes/License_Manager.php:1729
+#: includes/Classes/License_Manager.php:1760
 msgid "Login & Renew License"
 msgstr ""
 
 #. Translators: %1$s - span opening tag, %2$s - span closing tag.
-#: includes/Classes/License_Manager.php:1747
+#: includes/Classes/License_Manager.php:1748
+#, php-format
 msgid "%1$sAction required!%2$s Your license has failed to renew and is now disabled."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1754
+#: includes/Classes/License_Manager.php:1755
 msgid "An active Wholesale Suite license is required to continue receiving automatic updates, technical support, and access to Wholesale Suite premium features."
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1864
 #: includes/Classes/License_Manager.php:1865
-#: includes/Classes/WP_Admin.php:122
+#: includes/Classes/License_Manager.php:1866 includes/Classes/WP_Admin.php:122
 #: includes/Classes/WP_Admin.php:125
 msgid "License"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1907
 #: includes/Classes/License_Manager.php:1908
+#: includes/Classes/License_Manager.php:1909
 msgid "WWS License"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1950
+#: includes/Classes/License_Manager.php:1951
+#: includes/I18n/order-form-strings.php:337
+#: dist/apps/wwof/front/components/FormTable/Extras/SeeWholesalePrices-legacy.BEWsZUvd.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/SeeWholesalePrices.ClxA68yd.js:1
 msgid "Wholesale Prices"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1971
+#: includes/Classes/License_Manager.php:1972
 msgid "Wholesale Lead"
 msgstr ""
 
-#: includes/Classes/License_Manager.php:1992
+#: includes/Classes/License_Manager.php:1993
 #: templates/admin/order-forms-admin-page.php:13
 msgid "Wholesale Order Form"
 msgstr ""
 
-#: includes/Classes/Migrate_Form_Data.php:59
+#: includes/Classes/Migrate_Form_Data.php:58
 msgid "No forms found."
+msgstr ""
+
+#: includes/Classes/Migrate_Form_Data.php:200
+#: includes/Factories/Order_Form.php:312
+#: includes/Shortcodes/WWOF_Product_Listing.php:109
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Access Denied"
+msgstr ""
+
+#: includes/Classes/Migrate_Form_Data.php:201
+#: includes/Factories/Order_Form.php:313
+msgid "You do not have permission to view wholesale product listing."
+msgstr ""
+
+#: includes/Classes/Order_Forms_Admin_Page.php:52
+#: includes/Classes/Order_Forms_Admin_Page.php:53
+#: includes/I18n/order-form-strings.php:349
+#: includes/Post_Types/Order_Form_Post_Type.php:34
+#: includes/Post_Types/Order_Form_Post_Type.php:49
+#: includes/Post_Types/Order_Form_Post_Type.php:51
+#: includes/Post_Types/Order_Form_Post_Type.php:53
+#: includes/Post_Types/Order_Form_Post_Type.php:65
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Order Forms"
 msgstr ""
 
 #: includes/Classes/WP_Admin.php:131
@@ -373,6 +415,7 @@ msgstr ""
 
 #. translators: %d = number of order forms migrated
 #: includes/CLI/Cli.php:67
+#, php-format
 msgid "Migrated %d Order Form to v3."
 msgid_plural "%d Order Forms migrated to v3."
 msgstr[0] ""
@@ -396,11 +439,13 @@ msgstr ""
 
 #. translators: %s = given format
 #: includes/CLI/Cli.php:201
+#, php-format
 msgid "Invalid format %%y%s%%n."
 msgstr ""
 
 #. translators: %1$s = format; %2$s = file path in uploads dir
 #: includes/CLI/Cli.php:209
+#, php-format
 msgid "Order Forms exported to %1$s format in: %2$s"
 msgstr ""
 
@@ -410,6 +455,7 @@ msgstr ""
 
 #. translators: %1$s = opening <strong>; %2$s = closing </strong>
 #: includes/Factories/Migration_Wizard.php:89
+#, php-format
 msgid "Congrats! %1$sWholesale Order Form%2$s 2.0 introduces a new form builder, multiple forms, and lots of great new options making it more powerful than ever."
 msgstr ""
 
@@ -425,26 +471,27 @@ msgstr ""
 msgid "Start Migration Wizard"
 msgstr ""
 
-#: includes/Factories/Order_Form.php:187
+#: includes/Factories/Order_Form.php:195
 msgid "Invalid order form."
 msgstr ""
 
-#: includes/Factories/Order_Form.php:492
-#: includes/REST/Order_Form.php:163
+#: includes/Factories/Order_Form.php:540 includes/REST/Order_Form.php:179
 msgid "Form title is required."
 msgstr ""
 
-#: includes/Factories/Order_Form.php:498
+#: includes/Factories/Order_Form.php:546
 msgid "Form body is required."
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
 #: includes/Factories/Setup_Wizard.php:97
+#, php-format
 msgid "Congratulations! %1$sWholesale Order Forms%2$s plugin has been successfully installed and is ready to be set up."
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
 #: includes/Factories/Setup_Wizard.php:107
+#, php-format
 msgid "Get Started quickly by clicking %1$s\"Start Setup\"%2$s and we'll guide you through creating your first form."
 msgstr ""
 
@@ -456,1205 +503,2021 @@ msgstr ""
 msgid "Start Setup Wizard"
 msgstr ""
 
-#: includes/Factories/Vite_App.php:458
+#: includes/Factories/Vite_App.php:449
 msgid "Manifest file not found. Did you run the build script from package.json file?"
 msgstr ""
 
-#: includes/Factories/Vite_App.php:772
+#: includes/Factories/Vite_App.php:816
 msgid "Order Form Blocks"
+msgstr ""
+
+#: includes/Helpers/Database_Optimizer.php:181
+msgid "WWOF database indexes created successfully via scheduled action."
+msgstr ""
+
+#. translators: %s: error message
+#: includes/Helpers/Database_Optimizer.php:192
+#, php-format
+msgid "WWOF database index creation failed: %s"
+msgstr ""
+
+#: includes/Helpers/Database_Optimizer.php:218
+msgid "WWOF database index creation rescheduled for next hour due to failure."
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity; %4$s = formatted price
 #: includes/Helpers/WWPP.php:249
+#, php-format
 msgid "%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s or minimum order subtotal of %1$s%5$s%2$s is required to activate wholesale pricing in the cart."
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity; %4$s = formatted price
 #: includes/Helpers/WWPP.php:261
+#, php-format
 msgid "%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s and minimum order subtotal of %1$s%5$s%2$s is required to activate wholesale pricing in the cart."
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = minimum order quantity
 #: includes/Helpers/WWPP.php:274
+#, php-format
 msgid "%1$sNOTE:%2$s A minimum order quantity of %1$s%3$s%2$s is required to activate wholesale pricing in the cart."
 msgstr ""
 
 #. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = formatted price
 #: includes/Helpers/WWPP.php:284
+#, php-format
 msgid "%1$sNOTE:%2$s A minimum order subtotal of %1$s%3$s%2$s is required to activate wholesale pricing in the cart."
 msgstr ""
 
-#: includes/I18n/order-form.php:13
-#: includes/Shortcodes/WWOF_Product_Listing.php:93
-msgid "Access Denied"
-msgstr ""
-
-#: includes/I18n/order-form.php:14
-#: includes/Shortcodes/WWOF_Product_Listing.php:97
-msgid "You do not have permission to view this order form."
-msgstr ""
-
-#: includes/I18n/order-form.php:15
-msgid "Access Denied Message"
-msgstr ""
-
-#: includes/I18n/order-form.php:16
-msgid "Message to display to users who do not have permission to access the wholesale order form."
-msgstr ""
-
-#: includes/I18n/order-form.php:17
-msgid "Defaults to \"Access Denied\" if left blank."
-msgstr ""
-
-#: includes/I18n/order-form.php:18
-msgid "Defaults to \"You do not have permission to view this order form.\" if left blank."
-msgstr ""
-
-#: includes/I18n/order-form.php:19
-msgid "URL of the login page. Uses default WordPress login URL if left blank."
-msgstr ""
-
-#: includes/I18n/order-form.php:20
-msgid "Action"
-msgstr ""
-
-#: includes/I18n/order-form.php:21
-msgid "Add"
-msgstr ""
-
-#: includes/I18n/order-form.php:22
+#: includes/I18n/order-form-strings.php:25
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
 msgid "Add Form"
 msgstr ""
 
-#: includes/I18n/order-form.php:23
-msgid "Adding..."
-msgstr ""
-
-#: includes/I18n/order-form.php:24
-msgid "Adding products to cart..."
-msgstr ""
-
-#: includes/I18n/order-form.php:25
-msgid "Additional Note"
-msgstr ""
-
-#: includes/I18n/order-form.php:26
+#: includes/I18n/order-form-strings.php:26
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
 msgid "Add Row"
 msgstr ""
 
-#: includes/I18n/order-form.php:27
+#: includes/I18n/order-form-strings.php:27
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
 msgid "Add column to this row"
 msgstr ""
 
-#: includes/I18n/order-form.php:28
-msgid "Add Selected Products to Cart"
-msgstr ""
-
-#: includes/I18n/order-form.php:29
-msgid "Add Selected to Cart"
-msgstr ""
-
-#: includes/I18n/order-form.php:30
-msgid "Add to cart"
-msgstr ""
-
-#: includes/I18n/order-form.php:31
-msgid "Add to Cart Button"
-msgstr ""
-
-#: includes/I18n/order-form.php:32
-msgid "Add to Cart Checkbox"
-msgstr ""
-
-#: includes/I18n/order-form.php:33
-msgid "User Role Filter"
-msgstr ""
-
-#: includes/I18n/order-form.php:34
-msgid "Select User Role(s) to Allow Access"
-msgstr ""
-
-#: includes/I18n/order-form.php:35
-msgid "Allow Favourites"
-msgstr ""
-
-#: includes/I18n/order-form.php:36
-msgid "Allow users to add products to their favourites list."
-msgstr ""
-
-#: includes/I18n/order-form.php:37
-msgid "Allow Public Read"
-msgstr ""
-
-#: includes/I18n/order-form.php:38
-msgid "Allow order form access publicly."
-msgstr ""
-
-#: includes/I18n/order-form.php:39
-msgid "Ascending"
-msgstr ""
-
-#: includes/I18n/order-form.php:40
-msgid "Auto"
-msgstr ""
-
-#: includes/I18n/order-form.php:41
-msgid "Available on backorder"
-msgstr ""
-
-#: includes/I18n/order-form.php:42
-msgid "Box Width"
-msgstr ""
-
-#: includes/I18n/order-form.php:43
-msgid "Button Color"
-msgstr ""
-
-#: includes/I18n/order-form.php:44
-msgid "Button Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:45
-msgid "Button Text Color"
-msgstr ""
-
-#: includes/I18n/order-form.php:46
-msgid "Cancel"
-msgstr ""
-
-#: includes/I18n/order-form.php:47
-msgid "Cart Subtotal"
-msgstr ""
-
-#: includes/I18n/order-form.php:48
-msgid "Categories"
-msgstr ""
-
-#: includes/I18n/order-form.php:49
-msgid "Category Filter"
-msgstr ""
-
-#: includes/I18n/order-form.php:50
-msgid "Choose an option"
-msgstr ""
-
-#: includes/I18n/order-form.php:51
-msgid "Clear Button Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:52
-msgid "Clear Filters"
-msgstr ""
-
-#: includes/I18n/order-form.php:53
-msgid "Click Action"
-msgstr ""
-
-#: includes/I18n/order-form.php:54
-msgid "Column Heading Text"
-msgstr ""
-
-#. translators: %d = column number
-#: includes/I18n/order-form.php:56
-msgid "Column %d Settings"
-msgstr ""
-
-#: includes/I18n/order-form.php:57
-msgid "Column Settings"
-msgstr ""
-
-#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
-#: includes/I18n/order-form.php:59
-msgid "%1$sCombo%2$s &mdash; Recommended for products with large variations (more than 100 variations). With this option selected, variations more than 100 are lazy loaded on scroll down."
-msgstr ""
-
-#: includes/I18n/order-form.php:60
-msgid "Combo (Less Clicks/Faster)"
-msgstr ""
-
-#: includes/I18n/order-form.php:61
-msgid "Copied"
-msgstr ""
-
-#: includes/I18n/order-form.php:62
-msgid "Copy"
-msgstr ""
-
-#: includes/I18n/order-form.php:63
-msgid "Default Category"
-msgstr ""
-
-#. translators: %s = default site login url
-#: includes/I18n/order-form.php:65
-msgid "Default: %s"
-msgstr ""
-
-#: includes/I18n/order-form.php:66
-msgid "Delete"
-msgstr ""
-
-#: includes/I18n/order-form.php:67
-msgid "Delete Column"
-msgstr ""
-
-#: includes/I18n/order-form.php:68
-msgid "Are you sure you want to delete this column?"
-msgstr ""
-
-#: includes/I18n/order-form.php:69
-msgid "Deleted"
-msgstr ""
-
-#: includes/I18n/order-form.php:70
-msgid "Delete Element"
-msgstr ""
-
-#: includes/I18n/order-form.php:71
-msgid "Are you sure you want to delete this element?"
-msgstr ""
-
-#: includes/I18n/order-form.php:72
-msgid "Delete Form"
-msgstr ""
-
-#: includes/I18n/order-form.php:73
-msgid "Are you sure you want to delete this form(s)?"
-msgstr ""
-
-#: includes/I18n/order-form.php:74
-msgid "Delete Row"
-msgstr ""
-
-#: includes/I18n/order-form.php:75
-msgid "Are you sure you want to delete this row?"
-msgstr ""
-
-#: includes/I18n/order-form.php:76
-msgid "Cleanup Old Form Data"
-msgstr ""
-
-#: includes/I18n/order-form.php:77
-msgid "Welcome to version 3.0 of Wholesale Order Form! Your forms have automatically been migrated to the new version. Once you have confirmed everything is working, click below to clean up the old form data."
-msgstr ""
-
-#: includes/I18n/order-form.php:78
-msgid "Are you sure you want to delete V2 Form Data?"
-msgstr ""
-
-#: includes/I18n/order-form.php:79
-msgid "Deleting..."
-msgstr ""
-
-#: includes/I18n/order-form.php:80
-msgid "Descending"
-msgstr ""
-
-#: includes/I18n/order-form.php:81
-msgid "Description"
-msgstr ""
-
-#: includes/I18n/order-form.php:82
-msgid "Display Variation Dropdown"
-msgstr ""
-
-#: includes/I18n/order-form.php:83
-msgid "Add a variation dropdown below the product name."
-msgstr ""
-
-#: includes/I18n/order-form.php:84
-msgid "Done"
-msgstr ""
-
-#: includes/I18n/order-form.php:85
-msgid "Double click to edit"
-msgstr ""
-
-#: includes/I18n/order-form.php:86
-msgid "Draft"
-msgstr ""
-
-#: includes/I18n/order-form.php:87
-msgid "Drop Table Columns Here"
-msgstr ""
-
-#: includes/I18n/order-form.php:88
-msgid "Edit"
-msgstr ""
-
-#: includes/I18n/order-form.php:89
-msgid "Edit Form"
-msgstr ""
-
-#: includes/I18n/order-form.php:90
-msgid "Element Alignment"
-msgstr ""
-
-#: includes/I18n/order-form.php:91
-msgid "Element Settings"
-msgstr ""
-
-#: includes/I18n/order-form.php:92
-msgid "Element Width"
-msgstr ""
-
-#: includes/I18n/order-form.php:93
-msgid "Empty Cart"
-msgstr ""
-
-#: includes/I18n/order-form.php:94
-msgid "Empty Cart Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:95
+#: includes/I18n/order-form-strings.php:28
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody-legacy.CW4A3wti.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody.Dr2RpE8o.js:1
 msgid "Add columns to the form header to display products data."
 msgstr ""
 
-#: includes/I18n/order-form.php:96
-msgid "Enable Add To Cart Notification"
+#: includes/I18n/order-form-strings.php:29
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Are you sure you want to delete this column?"
 msgstr ""
 
-#: includes/I18n/order-form.php:97
-msgid "Adds a notification message when adding product(s) to cart."
+#: includes/I18n/order-form-strings.php:30
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Are you sure you want to delete this element?"
 msgstr ""
 
-#: includes/I18n/order-form.php:98
-msgid "Add to Cart Link Behavior"
+#: includes/I18n/order-form-strings.php:31
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Are you sure you want to delete this row?"
 msgstr ""
 
-#: includes/I18n/order-form.php:99
-msgid "Choose how the link will be opened when clicked."
-msgstr ""
-
-#: includes/I18n/order-form.php:100
-msgid "Open in new tab"
-msgstr ""
-
-#: includes/I18n/order-form.php:101
-msgid "Open in same tab"
-msgstr ""
-
-#: includes/I18n/order-form.php:102
-msgid "Enter form title"
-msgstr ""
-
-#: includes/I18n/order-form.php:103
-msgid "Enter meta key"
-msgstr ""
-
-#: includes/I18n/order-form.php:104
-msgid "Enter meta name"
-msgstr ""
-
-#: includes/I18n/order-form.php:105
-msgid "Enter a number"
-msgstr ""
-
-#: includes/I18n/order-form.php:106
-msgid "Enter Out of Stock Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:107
-msgid "Error"
-msgstr ""
-
-#: includes/I18n/order-form.php:108
-msgid "ERROR"
-msgstr ""
-
-#: includes/I18n/order-form.php:109
-msgid "excl. tax"
-msgstr ""
-
-#: includes/I18n/order-form.php:110
-msgid "Excluding Tax"
-msgstr ""
-
-#: includes/I18n/order-form.php:111
-msgid "Excluded Category"
-msgstr ""
-
-#: includes/I18n/order-form.php:112
-msgid "Exclude Products"
-msgstr ""
-
-#: includes/I18n/order-form.php:113
-msgid "Specify products to hide from the order form. Variations are included in the selection."
-msgstr ""
-
-#: includes/I18n/order-form.php:114
-msgid "Add to Favourites"
-msgstr ""
-
-#: includes/I18n/order-form.php:115
-msgid "Select Favourite Icon"
-msgstr ""
-
-#. translators: %s = field name
-#: includes/I18n/order-form.php:117
-msgid "%s Field Settings"
-msgstr ""
-
-#: includes/I18n/order-form.php:118
-msgid "Font Size"
-msgstr ""
-
-#: includes/I18n/order-form.php:119
-msgid "Form Body"
-msgstr ""
-
-#: includes/I18n/order-form.php:120
-msgid "Form Body Settings"
-msgstr ""
-
-#: includes/I18n/order-form.php:121
-msgid "Form successfully deleted."
-msgstr ""
-
-#: includes/I18n/order-form.php:122
-msgid "The form has been successfully deleted."
-msgstr ""
-
-#: includes/I18n/order-form.php:123
-msgid "Form Editor"
-msgstr ""
-
-#: includes/I18n/order-form.php:124
+#: includes/I18n/order-form-strings.php:32
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
 msgid "Click and drag the elements you want on your order form into position."
 msgstr ""
 
-#: includes/I18n/order-form.php:125
-msgid "Form Footer"
+#: includes/I18n/order-form-strings.php:33
+#: dist/common/ColumnHeadingText.vue_vue_type_script_setup_true_lang-legacy.Bn0ug-Hs.js:1
+#: dist/common/ColumnHeadingText.vue_vue_type_script_setup_true_lang.DXLuwDAy.js:1
+msgid "Column Heading Text"
 msgstr ""
 
-#: includes/I18n/order-form.php:126
-msgid "Form Footer Settings"
+#: includes/I18n/order-form-strings.php:34
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Column Settings"
 msgstr ""
 
-#: includes/I18n/order-form.php:127
-msgid "Form Header"
+#: includes/I18n/order-form-strings.php:35
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Delete Column"
 msgstr ""
 
-#: includes/I18n/order-form.php:128
-msgid "Form Header Settings"
+#: includes/I18n/order-form-strings.php:36
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Delete Element"
 msgstr ""
 
-#: includes/I18n/order-form.php:129
-msgid "This Order Form is in \"Draft\" status. It will only be visible to admin users."
+#: includes/I18n/order-form-strings.php:37
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+msgid "Delete Form"
 msgstr ""
 
-#: includes/I18n/order-form.php:130
-msgid "Form Pagination"
+#: includes/I18n/order-form-strings.php:38
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Delete Row"
 msgstr ""
 
-#: includes/I18n/order-form.php:131
-msgid "Form Permissions"
+#: includes/I18n/order-form-strings.php:39
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Double click to edit."
 msgstr ""
 
-#: includes/I18n/order-form.php:132
-msgid "Form Saved"
+#: includes/I18n/order-form-strings.php:40
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+msgid "Drop Table Columns Here"
 msgstr ""
 
-#: includes/I18n/order-form.php:133
-msgid "Your form has been saved successfully!"
+#: includes/I18n/order-form-strings.php:41
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Edit"
 msgstr ""
 
-#. translators: %1$s = "Form Header" or "Form Footer"
-#: includes/I18n/order-form.php:136
-msgid "Currently, set to NOT show %1$s section."
+#: includes/I18n/order-form-strings.php:42
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang-legacy.CUdZtFzv.js:1
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang.RR9Sdi6L.js:1
+msgid "Edit Form"
 msgstr ""
 
-#: includes/I18n/order-form.php:137
-msgid "This form can be found on the following locations."
+#: includes/I18n/order-form-strings.php:43
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/ElementAlignment-legacy.DTicIO-C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/ElementAlignment.C3bEfV64.js:1
+msgid "Element Alignment"
 msgstr ""
 
-#: includes/I18n/order-form.php:138
-msgid "Full Width"
+#: includes/I18n/order-form-strings.php:44
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Element Settings"
 msgstr ""
 
-#: includes/I18n/order-form.php:139
-msgid "Header/Footer Elements"
+#: includes/I18n/order-form-strings.php:45
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+msgid "Element Width"
 msgstr ""
 
-#: includes/I18n/order-form.php:140
-msgid "Height"
+#: includes/I18n/order-form-strings.php:46
+#: dist/common/MainForm.vue_vue_type_script_setup_true_lang-legacy.BinTjfdU.js:1
+#: dist/common/MainForm.vue_vue_type_script_setup_true_lang.Cf9qlL8J.js:1
+msgid "Enter form title"
 msgstr ""
 
-#: includes/I18n/order-form.php:141
-msgid "Hide Combo Variation Name Prefix"
+#: includes/I18n/order-form-strings.php:47
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody-legacy.CW4A3wti.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody.Dr2RpE8o.js:1
+msgid "Form Body Settings"
 msgstr ""
 
-#: includes/I18n/order-form.php:142
+#: includes/I18n/order-form-strings.php:48
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+msgid "Form Editor"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:49
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
+msgid "HEADER/FOOTER ELEMENTS"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:50
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
 msgid "Hide Form Title"
 msgstr ""
 
-#: includes/I18n/order-form.php:143
-msgid "Stops the form title from being displayed before the form."
-msgstr ""
-
-#: includes/I18n/order-form.php:144
-msgid "Image"
-msgstr ""
-
-#. translators: %s = image alt/name/index
-#: includes/I18n/order-form.php:146
-msgid "Image: %s"
-msgstr ""
-
-#: includes/I18n/order-form.php:147
-msgid "Image Click Action"
-msgstr ""
-
-#: includes/I18n/order-form.php:148
-msgid "Image Size"
-msgstr ""
-
-#: includes/I18n/order-form.php:149
-msgid "incl. tax"
-msgstr ""
-
-#: includes/I18n/order-form.php:150
-msgid "Including Tax"
-msgstr ""
-
-#: includes/I18n/order-form.php:151
-msgid "Included Category"
-msgstr ""
-
-#: includes/I18n/order-form.php:152
-msgid "Include Products"
-msgstr ""
-
-#: includes/I18n/order-form.php:153
-msgid "Only show this specific products in the order form. Variations are excluded in the selection."
-msgstr ""
-
-#: includes/I18n/order-form.php:154
-msgid "In stock"
-msgstr ""
-
-#: includes/I18n/order-form.php:155
-msgid "In Stock Amount"
-msgstr ""
-
-#: includes/I18n/order-form.php:156
-msgid "In Stock"
-msgstr ""
-
-#: includes/I18n/order-form.php:157
-msgid "Stock not sufficient"
-msgstr ""
-
-#: includes/I18n/order-form.php:158
-msgid "Key"
-msgstr ""
-
-#: includes/I18n/order-form.php:159
-msgid "More results are loaded into the page based on the user scrolling."
-msgstr ""
-
-#: includes/I18n/order-form.php:160
-msgid "Unable to find the element for lazy-loading."
-msgstr ""
-
-#: includes/I18n/order-form.php:161
-msgid "Lazy Loading"
-msgstr ""
-
-#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
-#: includes/I18n/order-form.php:163
-msgid "%1$sNote:%2$s If pagination element is added in the editor, this will be hidden in the frontend."
-msgstr ""
-
-#: includes/I18n/order-form.php:164
-msgid "Loading..."
-msgstr ""
-
-#: includes/I18n/order-form.php:165
-msgid "Locations"
-msgstr ""
-
-#: includes/I18n/order-form.php:166
-msgid "Login to see prices"
-msgstr ""
-
-#: includes/I18n/order-form.php:167
-msgid "Login URL"
-msgstr ""
-
-#. translators: %d = number of remaining items in stock
-#: includes/I18n/order-form.php:169
-msgid "Only %d left in stock"
-msgstr ""
-
-#: includes/I18n/order-form.php:170
-msgid "Margin"
-msgstr ""
-
-#: includes/I18n/order-form.php:171
-msgid "Max Characters"
-msgstr ""
-
-#: includes/I18n/order-form.php:172
-msgid "Leave blank to display the full short description text."
-msgstr ""
-
-#: includes/I18n/order-form.php:173
-msgid "Menu Order"
-msgstr ""
-
-#: includes/I18n/order-form.php:174
-msgid "Message"
-msgstr ""
-
-#: includes/I18n/order-form.php:175
-msgid "Migrated"
-msgstr ""
-
-#: includes/I18n/order-form.php:176
-msgid "Migrate V2 Form Data"
-msgstr ""
-
-#: includes/I18n/order-form.php:177
-msgid "Migrating..."
-msgstr ""
-
-#: includes/I18n/order-form.php:179
-msgid "Navigate to Single Product Page"
-msgstr ""
-
-#: includes/I18n/order-form.php:180
-msgid " Form(s) deleted."
-msgstr ""
-
-#: includes/I18n/order-form.php:181
-msgid "Your form(s) was successfully deleted."
-msgstr ""
-
-#. translators: %d = stock quantity
-#: includes/I18n/order-form.php:183
-msgid "%d in stock"
-msgstr ""
-
-#: includes/I18n/order-form.php:184
-msgid "No"
-msgstr ""
-
-#: includes/I18n/order-form.php:185
-msgid "You do not have permission to view wholesale product listing."
-msgstr ""
-
-#: includes/I18n/order-form.php:186
-msgid "No available options."
-msgstr ""
-
-#: includes/I18n/order-form.php:187
-msgid "None"
-msgstr ""
-
-#: includes/I18n/order-form.php:188
-msgid "No available style settings."
-msgstr ""
-
-#: includes/I18n/order-form.php:189
-msgid "Not Applicable"
-msgstr ""
-
-#: includes/I18n/order-form.php:190
-msgid "Notification Duration"
-msgstr ""
-
-#: includes/I18n/order-form.php:191
-msgid "Leave empty to use default. Default is 10 seconds."
-msgstr ""
-
-#. translators: %d = number of items added to cart
-#: includes/I18n/order-form.php:193
-msgid "%d product(s) added"
-msgstr ""
-
-#: includes/I18n/order-form.php:194
-msgid "Number"
-msgstr ""
-
-#. translators: %d = number of locations found
-#: includes/I18n/order-form.php:196
-msgid "%d page(s)"
-msgstr ""
-
-#. translators: %d = total number of products
-#: includes/I18n/order-form.php:198
-msgid "%d product(s)"
-msgstr ""
-
-#: includes/I18n/order-form.php:199
-msgid "OK"
-msgstr ""
-
-#: includes/I18n/order-form.php:200
-msgid "Only Show Favourites"
-msgstr ""
-
-#: includes/I18n/order-form.php:201
-msgid "Only show products on users favourites list."
-msgstr ""
-
-#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
-#: includes/I18n/order-form.php:203
-msgid "Please %1$slogin%2$s to view the form with your favourite products."
-msgstr ""
-
-#: includes/I18n/order-form.php:207
-msgid "Open In New Tab"
-msgstr ""
-
-#: includes/I18n/order-form.php:208
-msgid "Open the link in new tab."
-msgstr ""
-
-#: includes/I18n/order-form.php:209
-msgid "Options"
-msgstr ""
-
-#: includes/I18n/order-form.php:210
+#: includes/I18n/order-form-strings.php:51
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
 msgid "Order Form Elements"
 msgstr ""
 
-#: includes/I18n/order-form.php:211
-msgid "Order Form Name"
-msgstr ""
-
-#: includes/I18n/order-form.php:213
-msgid "Order Form Table"
-msgstr ""
-
-#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
-#: includes/I18n/order-form.php:215
-msgid "Below is a list of all the order forms for displaying products that you have on your store. Click each form to edit it's settings or add a new form using the %1$sAdd Form%2$s button below. Forms can be placed on pages via the given shortcode or via an editor block. Forms can be reused on multiple pages and you can also query what pages each form appears on."
-msgstr ""
-
-#: includes/I18n/order-form.php:216
-msgid "Out of stock"
-msgstr ""
-
-#: includes/I18n/order-form.php:217
-msgid "Out of Stock Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:218
-msgid "Padding"
-msgstr ""
-
-#: includes/I18n/order-form.php:219
-msgid "Pagination is hidden when \"Lazy Loading\" option is enabled."
-msgstr ""
-
-#: includes/I18n/order-form.php:220
-msgid "Requires the form title and table to be set first."
-msgstr ""
-
-#: includes/I18n/order-form.php:221
-msgid "Permission Options"
-msgstr ""
-
-#: includes/I18n/order-form.php:222
-msgid "Unable to save permissions. Please add at least one role to restrict."
-msgstr ""
-
-#: includes/I18n/order-form.php:223
-msgid "Placeholder"
-msgstr ""
-
-#: includes/I18n/order-form.php:224
-msgid "Please enter a search query."
-msgstr ""
-
-#: includes/I18n/order-form.php:225
-msgid "Popularity"
-msgstr ""
-
-#: includes/I18n/order-form.php:226
-msgid "Popularity Period"
-msgstr ""
-
-#: includes/I18n/order-form.php:227
-msgid "Pre-Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:228
-msgid "Price"
-msgstr ""
-
-#: includes/I18n/order-form.php:229
-msgid "Product Category"
-msgstr ""
-
-#: includes/I18n/order-form.php:230
-msgid "Product Count"
-msgstr ""
-
-#: includes/I18n/order-form.php:231
-msgid "Product ID"
-msgstr ""
-
-#: includes/I18n/order-form.php:232
-msgid "Product ID Click Action"
-msgstr ""
-
-#: includes/I18n/order-form.php:233
-msgid "ID"
-msgstr ""
-
-#: includes/I18n/order-form.php:234
-msgid "Product Image"
-msgstr ""
-
-#: includes/I18n/order-form.php:235
-msgid "Product Meta"
-msgstr ""
-
-#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
-#: includes/I18n/order-form.php:237
-msgid "Note: Meta key with underscore prefix (%1$s_%2$s) are private hence they will not be displayed."
-msgstr ""
-
-#: includes/I18n/order-form.php:238
-msgid "Meta key with underscore prefix are private hence, this will not work."
-msgstr ""
-
-#: includes/I18n/order-form.php:239
-msgid "Product Name"
-msgstr ""
-
-#: includes/I18n/order-form.php:240
-msgid "Product Name Click Action"
-msgstr ""
-
-#: includes/I18n/order-form.php:241
-msgid "Product Sorting"
-msgstr ""
-
-#: includes/I18n/order-form.php:242
-msgid "Product Sorting By"
-msgstr ""
-
-#: includes/I18n/order-form.php:243
-msgid "Products per page"
-msgstr ""
-
-#: includes/I18n/order-form.php:244
-msgid "Min: 1 &mdash; Max: 100"
-msgstr ""
-
-#: includes/I18n/order-form.php:245
+#: includes/I18n/order-form-strings.php:52
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
 msgid "Publish"
 msgstr ""
 
-#: includes/I18n/order-form.php:246
-msgid "Published"
-msgstr ""
-
-#: includes/I18n/order-form.php:247
-msgid "Quantity"
-msgstr ""
-
-#: includes/I18n/order-form.php:248
-msgid "Quantity Input"
-msgstr ""
-
-#: includes/I18n/order-form.php:249
-msgid "Remove from cart"
-msgstr ""
-
-#: includes/I18n/order-form.php:250
-msgid "Removing..."
-msgstr ""
-
-#: includes/I18n/order-form.php:251
+#: includes/I18n/order-form-strings.php:53
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
 msgid "Re-order Column"
 msgstr ""
 
-#: includes/I18n/order-form.php:252
+#: includes/I18n/order-form-strings.php:54
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
 msgid "Re-order Element"
 msgstr ""
 
-#: includes/I18n/order-form.php:253
+#: includes/I18n/order-form-strings.php:55
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
 msgid "Re-order Row"
 msgstr ""
 
-#: includes/I18n/order-form.php:254
-msgid "Row Settings"
+#: includes/I18n/order-form-strings.php:56
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Requires the form title and table to be set first."
 msgstr ""
 
-#: includes/I18n/order-form.php:255
-msgid "Displayed items include sample mappings for your main wholesale role. Users should only see the mapping for their role in the frontend."
+#: includes/I18n/order-form-strings.php:57
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/RowAlign-legacy.CYYgZvxH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/RowAlign.Bzu9bGSJ.js:1
+msgid "Row Alignment"
 msgstr ""
 
-#: includes/I18n/order-form.php:256
-msgid "Save"
+#: includes/I18n/order-form-strings.php:58
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Rows Settings"
 msgstr ""
 
-#: includes/I18n/order-form.php:257
-#: templates/admin/parts/settings/license/license-form.php:96
-msgid "Save Changes"
-msgstr ""
-
-#: includes/I18n/order-form.php:258
+#: includes/I18n/order-form-strings.php:59
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
 msgid "Save Draft"
 msgstr ""
 
-#: includes/I18n/order-form.php:259
+#: includes/I18n/order-form-strings.php:60
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
 msgid "Saving..."
 msgstr ""
 
-#: includes/I18n/order-form.php:260
-msgid "Search and Clear Buttons"
+#: includes/I18n/order-form-strings.php:61
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Stops the form title from being displayed before the form."
 msgstr ""
 
-#: includes/I18n/order-form.php:261
-msgid "Search Button Text"
-msgstr ""
-
-#: includes/I18n/order-form.php:262
-msgid "Allow searching by SKU"
-msgstr ""
-
-#: includes/I18n/order-form.php:263
-msgid "Search Input"
-msgstr ""
-
-#: includes/I18n/order-form.php:264
-msgid "Search Products"
-msgstr ""
-
-#. translators: %s = attribute name
-#: includes/I18n/order-form.php:266
-msgid "Select %s"
-msgstr ""
-
-#: includes/I18n/order-form.php:267
-msgid "Select Category"
-msgstr ""
-
-#: includes/I18n/order-form.php:268
-msgid "Settings"
-msgstr ""
-
-#: includes/I18n/order-form.php:269
-msgid "Shortcode"
-msgstr ""
-
-#: includes/I18n/order-form.php:270
-msgid "Short Description"
-msgstr ""
-
-#: includes/I18n/order-form.php:271
-msgid "Show Clear Button"
-msgstr ""
-
-#: includes/I18n/order-form.php:272
-msgid "Show a button to clear filters next to the search button."
-msgstr ""
-
-#: includes/I18n/order-form.php:273
-msgid "Show Form Footer"
-msgstr ""
-
-#: includes/I18n/order-form.php:274
-msgid "Show Form Header"
-msgstr ""
-
-#: includes/I18n/order-form.php:275
-msgid "Show Image Popup"
-msgstr ""
-
-#: includes/I18n/order-form.php:276
-msgid "Show Minimum Requirement Notice"
-msgstr ""
-
-#: includes/I18n/order-form.php:277
-msgid "Show wholesale minimum requirement notices above the search form"
-msgstr ""
-
-#: includes/I18n/order-form.php:278
-msgid "Show Product Details Popup"
-msgstr ""
-
-#: includes/I18n/order-form.php:279
-msgid "Show Variations Individually"
-msgstr ""
-
-#: includes/I18n/order-form.php:280
-msgid "Enabling this setting will list down each product variation individually and have its own row in the wholesale order form."
-msgstr ""
-
-#: includes/I18n/order-form.php:281
-msgid "Simplify Add to Cart Notices"
-msgstr ""
-
-#: includes/I18n/order-form.php:282
-msgid "Simplifies the \"Add to Cart Notices\" by displaying icons next to the \"Add to Cart\" button instead of showing popup/slide notifications."
-msgstr ""
-
-#: includes/I18n/order-form.php:284
-msgid "SKU Search"
-msgstr ""
-
-#: includes/I18n/order-form.php:285
-msgid "Smart Visibility"
-msgstr ""
-
-#: includes/I18n/order-form.php:286
-msgid "Hide column when no variable products detected"
-msgstr ""
-
-#: includes/I18n/order-form.php:287
-msgid "Sortable"
-msgstr ""
-
-#: includes/I18n/order-form.php:288
-msgid "Allow sorting the table by this column."
-msgstr ""
-
-#: includes/I18n/order-form.php:290
-msgid "Standard (One Box Per Attribute)"
-msgstr ""
-
-#. translators: %1$s opening <strong> tag; %2$s = closing </strong> tag
-#: includes/I18n/order-form.php:292
-msgid "%1$sStandard%2$s &mdash; Limitation is only up to 100 variations."
-msgstr ""
-
-#: includes/I18n/order-form.php:293
-msgid "Status"
-msgstr ""
-
-#: includes/I18n/order-form.php:294
-msgid "Styles"
-msgstr ""
-
-#: includes/I18n/order-form.php:295
-msgid "Submit on Change"
-msgstr ""
-
-#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
-#: includes/I18n/order-form.php:297
-msgid "Submit on %1$sENTER%2$s/%1$sRETURN%2$s"
-msgstr ""
-
-#: includes/I18n/order-form.php:298
-msgid "Subtotal: "
-msgstr ""
-
-#: includes/I18n/order-form.php:299
-msgid "Subtotal Suffix"
-msgstr ""
-
-#: includes/I18n/order-form.php:300
-msgid "Successfully added:"
-msgstr ""
-
-#: includes/I18n/order-form.php:301
-msgid "Table Alignment"
-msgstr ""
-
-#: includes/I18n/order-form.php:302
+#: includes/I18n/order-form-strings.php:62
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab-legacy.L2tB2MHa.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/EditFormTab.B2Lgx9cW.js:1
 msgid "TABLE ELEMENTS"
 msgstr ""
 
-#. translators: %s = field name
-#: includes/I18n/order-form.php:304
-msgid "Table %s Field Settings"
-msgstr ""
-
-#: includes/I18n/order-form.php:305
-msgid "Table Width"
-msgstr ""
-
-#: includes/I18n/order-form.php:306
-msgid "Tax Display"
-msgstr ""
-
-#: includes/I18n/order-form.php:307
+#: includes/I18n/order-form-strings.php:63
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
 msgid "Title"
 msgstr ""
 
-#. translators: %1$d = quantity of the item that was added; %2$d = total quantity of the item in the cart
-#: includes/I18n/order-form.php:309
-msgid "x %1$d = total %2$d item(s)"
+#: includes/I18n/order-form-strings.php:68
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Add to Cart Link Behavior"
 msgstr ""
 
-#: includes/I18n/order-form.php:310
-msgid "Update"
+#: includes/I18n/order-form-strings.php:69
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+msgid "Box Width"
 msgstr ""
 
-#: includes/I18n/order-form.php:311
-msgid "Used in pages:"
+#: includes/I18n/order-form-strings.php:70
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang-legacy.oHel0oNQ.js:1
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang.Bsg1dP4h.js:1
+msgid "Button Color"
 msgstr ""
 
-#: includes/I18n/order-form.php:312
-msgid "Variation Dropdown"
+#: includes/I18n/order-form-strings.php:71
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+#: dist/common/ButtonTextControl.vue_vue_type_script_setup_true_lang-legacy.DjOtO-jf.js:1
+#: dist/common/ButtonTextControl.vue_vue_type_script_setup_true_lang.DXfXljSp.js:1
+msgid "Button Text"
 msgstr ""
 
-#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
-#: includes/I18n/order-form.php:314
-msgid "%1$sWarning:%2$s Enabling this option might have significant impact on the speed of fetching and/or displaying results in the order form table especially if you have a large number of variations per product."
+#: includes/I18n/order-form-strings.php:72
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang-legacy.oHel0oNQ.js:1
+#: dist/common/ButtonColorPicker.vue_vue_type_script_setup_true_lang.Bsg1dP4h.js:1
+msgid "Button Text Color"
 msgstr ""
 
-#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
-#: includes/I18n/order-form.php:316
-msgid "%1$sIf you have products with variation option set to ANY, this will render confusing product items. In this case, we recommend disabling this option.%2$s"
+#: includes/I18n/order-form-strings.php:73
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Choose how the link will be opened when clicked."
 msgstr ""
 
-#: includes/I18n/order-form.php:317
-msgid "Confirm old form data cleanup"
+#: includes/I18n/order-form-strings.php:74
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+msgid "Clear Button Text"
 msgstr ""
 
-#: includes/I18n/order-form.php:318
+#: includes/I18n/order-form-strings.php:75
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang-legacy.RI6ROnN7.js:1
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang.JKZ3nttA.js:1
+msgid "Display Product Addons Totals"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:76
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang-legacy.yFX5xWZ1.js:1
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang.BL0jc-4y.js:1
+msgid "Display Variation Dropdown"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:77
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Empty Cart Text"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:78
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize-legacy.BjuG107e.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize.Bd1EIzDF.js:1
+msgid "Font Size"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:79
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:1
+msgid "Hide Combo Variation Name Prefix"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:80
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions-legacy.DPLRY-_U.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions.DDtNMHRi.js:1
+msgid "Hide column when no variable products detected"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:81
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Image Click Action"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:82
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Image Size"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:83
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions-legacy.Ci58G3zw.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions.C-Bxe-iP.js:1
+msgid "Max Characters"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:84
+#: dist/common/NoOptions.vue_vue_type_script_setup_true_lang-legacy.eYQydbUq.js:1
+#: dist/common/NoOptions.vue_vue_type_script_setup_true_lang.TCm1N7cq.js:1
+msgid "No available options."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:85
+#: dist/common/NoStyles.vue_vue_type_script_setup_true_lang-legacy.BWq7V_bh.js:1
+#: dist/common/NoStyles.vue_vue_type_script_setup_true_lang.-Cg6x9HV.js:1
+msgid "No available style settings."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:86
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Opens the link in new tab."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:87
+msgid "Placeholder"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:88
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions-legacy.DmzVeskh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions.nr36Is42.js:1
+msgid "Product ID Click Action"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:89
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions-legacy.CMnBcVrU.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions.-MAyqJWP.js:1
+msgid "Product Name Click Action"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:90
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+msgid "Search Button Text"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:91
+msgid "Show Clear Button"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:92
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+msgid "Show a button to clear filters next to the search button."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:93
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions-legacy.DPLRY-_U.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions.DDtNMHRi.js:1
+msgid "Smart Visibility"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:94
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang-legacy.CjQqf-cS.js:1
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang.Bt0lIOre.js:1
+msgid "Sortable"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:95
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+msgid "Styles"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:96
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CategoryFilterOptions-legacy.BNnOfXjc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CategoryFilterOptions.Dkj5Yhq0.js:1
+msgid "Submit on Change"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:97
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles-legacy.DDigMf0_.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles.gmgMlXZv.js:1
+msgid "Table Alignment"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:98
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles-legacy.DDigMf0_.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/FormBody/FormBodyStyles.gmgMlXZv.js:1
+msgid "Table Width"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:99
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:5
 msgid "Variation Style"
 msgstr ""
 
-#: includes/I18n/order-form.php:319
-msgid "View Cart"
+#: includes/I18n/order-form-strings.php:100
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang-legacy.yFX5xWZ1.js:1
+#: dist/common/VariationStyleControls.vue_vue_type_script_setup_true_lang.BL0jc-4y.js:1
+msgid "Add a variation dropdown below the product name."
 msgstr ""
 
-#: includes/I18n/order-form.php:320
-msgid "Virtual Table"
+#: includes/I18n/order-form-strings.php:101
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang-legacy.RI6ROnN7.js:1
+#: dist/common/ProductAddonsDisplayTotals.vue_vue_type_script_setup_true_lang.JKZ3nttA.js:1
+msgid "Add product addons totals calculation below the product addons options."
 msgstr ""
 
-#: includes/I18n/order-form.php:321
+#: includes/I18n/order-form-strings.php:102
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang-legacy.CjQqf-cS.js:1
+#: dist/common/SortableColumn.vue_vue_type_script_setup_true_lang.Bt0lIOre.js:1
+msgid "Allow sorting the table by this column."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:103
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions-legacy.Ci58G3zw.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions.C-Bxe-iP.js:1
+msgid "Leave blank to display the full short description text."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:108
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Allow Favourites"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:109
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Allow searching by SKU"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:110
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Allow searching by Tag"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:111
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Allow users to add products to their favourites."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:112
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Categories"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:113
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Default Category"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:114
+msgid "Enable Add to Cart Notification"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:115
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Enable exact keyword search by SKU"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:116
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
 msgid "Enable virtual table to improve rendering performance on very long lists."
 msgstr ""
 
-#: includes/I18n/order-form.php:322
-msgid "Virtual Table Height"
+#: includes/I18n/order-form-strings.php:117
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Enabling this setting will list down each product variation individually and have its own row in the wholesale order form."
 msgstr ""
 
-#: includes/I18n/order-form.php:323
+#: includes/I18n/order-form-strings.php:118
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Exact SKU Keyword Match"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:119
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Exclude Products"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:120
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Excluded Category"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:121
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Height"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:122
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
 msgid "Height of the virtual table."
 msgstr ""
 
-#: includes/I18n/order-form.php:324
-msgid "Wholesale Quantity Based Pricing Table"
+#: includes/I18n/order-form-strings.php:123
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Include Products"
 msgstr ""
 
-#: includes/I18n/order-form.php:325
-msgid "Width"
+#: includes/I18n/order-form-strings.php:124
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Included Category"
 msgstr ""
 
-#: includes/I18n/order-form.php:326
-msgid "WooCommerce Default"
+#: includes/I18n/order-form-strings.php:125
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Lazy Loading"
 msgstr ""
 
-#: includes/I18n/order-form.php:327
-msgid "Yes"
+#: includes/I18n/order-form-strings.php:126
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Leave empty to use default. Default is 10 seconds."
 msgstr ""
 
-#: includes/I18n/order-form.php:328
+#: includes/I18n/order-form-strings.php:127
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Min: 1 — Max: 100"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:128
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "More results are loaded into the page based on the user scrolling."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:129
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Notification Duration"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:130
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Only show this specific products in the order form. Variations are excluded in the selection."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:131
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Adds a notification message when adding product(s) to cart."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:132
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Popularity Period"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:133
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Priority Products"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:134
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Product Sorting"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:135
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Product Sorting By"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:136
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Products per page"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:137
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "SKU Search"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:138
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Select Favourite Icon"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:139
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Show Variations Individually"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:140
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Show products that have zero inventory."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:141
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Show this specific products at the top of the list in the order form. Variations are excluded in the selection."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:142
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show wholesale minimum requirement notices above the search form."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:143
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Simplify Add to Cart Notices"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:144
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Specify products to hide from the order form. Variations are included in the selection."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:145
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Subtotal Suffix"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:146
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+msgid "Tag Search"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:147
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Tax Display"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:148
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "User Role Filter"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:149
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Virtual Table"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:150
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Virtual Table Height"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:151
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
 msgid "Zero Inventory"
 msgstr ""
 
-#: includes/I18n/order-form.php:329
-msgid "Show products that have zero inventory."
+#: includes/I18n/order-form-strings.php:156
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab-legacy.CCTx-73B.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab.B3d3-7s2.js:1
+msgid "This form can be found on the following locations."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:157
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang-legacy.CROfTkav.js:1
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang.FnyypEjG.js:3
+msgid "Used in pages:"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:162
+msgid "Done"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:163
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+msgid "Update"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:168
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Access Denied Message"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:169
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Allow Public Read"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:170
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Allow order form access publicly."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:171
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Form Permissions"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:172
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Message"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:173
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Message to display to users who do not have permission to access the wholesale order form."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:174
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Permission Options"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:175
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Select User Role(s) to Allow Access"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:180
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+msgid "Add"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:181
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions-legacy.CLWFZ1ls.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddSelectedToCartButtonOptions.kWZKuto6.js:1
+msgid "Add Selected to Cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:182
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductName-legacy.ZGZ1W2g3.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductName.BUAoyyql.js:1
+msgid "Add to Favourite"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:183
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Add to cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:184
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+msgid "Adding products to cart..."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:185
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Adding..."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:186
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:1
+msgid "Available on backorder"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:187
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown-legacy.CExbwAVW.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown.SGJm2yqP.js:3
+msgid "Choose an option"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:188
+msgid "Delete"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:189
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Error"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:190
+#: dist/apps/wwof/front/components/FormTable/FormTable-legacy.CDBBUcQa.js:1
+#: dist/apps/wwof/front/components/FormTable/FormTable.AqAi6bqr.js:1
+msgid "No records found!"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:191
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/OnlyShowFavourites-legacy.BvSPi5r0.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/OnlyShowFavourites.D3Wdvn2Q.js:1
+msgid "Only show favourites"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:192
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Only show products on users favourites list."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:193
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody-legacy.CW4A3wti.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/FormBody.Dr2RpE8o.js:1
+msgid "Order Form Table"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:194
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Remove from cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:195
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Removing..."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:196
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton-legacy.CAqBe0Er.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton.DK7-fgUl.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput-legacy.CD1iQF7d.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput.tg2QRQZs.js:1
+msgid "Search Products"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:197
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess-legacy.YY45GKB9.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess.RWeNnLJL.js:3
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart-legacy.63VStZOp.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart.DyH4IEZX.js:1
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "View Cart"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d is the stock quantity.
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = stock quantity
+#: includes/I18n/order-form-strings.php:203
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:3
+#, php-format
+msgid "%d in stock"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:204
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:5
+msgid "Additional Note"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:205
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Dimensions"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:206
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:5
+msgid "In stock"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:207
+#: dist/apps/wwof/front/components/FormTable/Extras/LoginToSeePrices-legacy.BwLpHsLU.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/LoginToSeePrices.DWXa05rB.js:1
+msgid "Login to see prices"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:208
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Login URL"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:209
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "No"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:210
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "None"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:211
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductGtin-legacy.B68blyM3.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductGtin.DFRAoiKA.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductSku-legacy.wLhg7cLG.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductSku.DteXIiQP.js:1
+msgid "Not applicable"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d is the stock quantity remaining.
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of remaining items in stock
+#: includes/I18n/order-form-strings.php:213
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:5
+#, php-format
+msgid "Only %d left in stock"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:214
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:1
+msgid "Stock not sufficient"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:215
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Tags"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:216
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "URL of the login page. Uses default WordPress login URL if left blank."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:217
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "Weight"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:218
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions-legacy.CiXddtq4.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions.Dkby3451.js:1
+msgid "Wholesale Quantity Based Pricing Tables"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:219
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Width"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:220
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "cm"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:225
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+msgid "Enter Out of Stock Text"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:226
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+msgid "Out of Stock Text"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s: default value
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = default login url
+#: includes/I18n/order-form-strings.php:232
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+#, php-format
+msgid "Default: %s"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s: variation attribute name
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = attribute name
+#: includes/I18n/order-form-strings.php:234
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown-legacy.CExbwAVW.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/VariationDropdown.SGJm2yqP.js:3
+#, php-format
+msgid "Select %s"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$s: opening login link tag, %2$s: closing link tag
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s = opening <a> tag; %2$s = closing </a> tag
+#: includes/I18n/order-form-strings.php:236
+#: dist/apps/wwof/front/index-legacy.js:1 dist/apps/wwof/front/index.js:3
+#, php-format
+msgid "Please %1$slogin%2$s to view the form with your favourite products."
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$d: quantity, %2$d: total items
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of items
+#: includes/I18n/order-form-strings.php:238
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess-legacy.YY45GKB9.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/AddToCartSuccess.RWeNnLJL.js:3
+#, php-format
+msgid "x %1$d = total %2$d item(s)"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:239
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Pre-Text"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:240
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductPrice-legacy.Cy6os6ek.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/ProductPrice.C-YmcCZX.js:1
+msgid "Displayed items include sample mappings for your main wholesale role. Users should only see the mapping for their role in the frontend."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:245
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Confirm old form data cleanup"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:246
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Welcome to version 3.0 of Wholesale Order Form! Your forms have automatically been migrated to the new version. Once you have confirmed everything is working, click below to clean up the old form data."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:251
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Action"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:252
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton-legacy.eo6HO11P.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton.BuAiS_Ct.js:1
+msgid "Add To Cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:253
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Add to Cart Button"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:254
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Add to Cart Checkbox"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:255
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Cart Subtotal"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:256
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Category Filter"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:257
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Form Pagination"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:258
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "In Stock Amount"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:259
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Only Show Favourites"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:260
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductCategoryOptions-legacy.BzNjWX5p.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductCategoryOptions.2HFSLbLm.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Category"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:261
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Product Count"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:262
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions-legacy.DmzVeskh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductIdOptions.nr36Is42.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product ID"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:263
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Image"
+msgstr ""
+
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form-strings.php:264
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Meta"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:265
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions-legacy.CMnBcVrU.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductNameOptions.-MAyqJWP.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Product Name"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:266
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Quantity Input"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:267
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Search & Clear Buttons"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:268
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:1
+msgid "Search Form"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:269
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Search Input"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:270
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Short Description"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:272
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Variation Dropdown"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:277
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:1
+msgid "Form Body"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:278
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+msgid "Form Footer"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:279
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+msgid "Form Footer Settings"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:280
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+msgid "Form Header"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:281
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+msgid "Form Header Settings"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:282
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+msgid "Row Settings"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:283
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show Form Footer"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:284
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show Form Header"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d is the column number
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = column number
+#: includes/I18n/order-form-strings.php:286
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:5
+#, php-format
+msgid "Column %d Settings"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s is the field name
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = field name
+#: includes/I18n/order-form-strings.php:288
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+#, php-format
+msgid "%s Field Settings"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s is the table element name
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = field name
+#: includes/I18n/order-form-strings.php:290
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:3
+#, php-format
+msgid "Table %s Field Settings"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:295
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Ascending"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:296
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize-legacy.BjuG107e.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize.Bd1EIzDF.js:1
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang-legacy.B0A_QqB4.js:1
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang.DBUyE9lT.js:1
+msgid "Auto"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:297
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Cancel"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:298
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Click Action"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:299
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:1
+msgid "Combo (Less Clicks/Faster)"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:300
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Default"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:301
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Descending"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:302
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions-legacy.Ci58G3zw.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ShortDescriptionOptions.C-Bxe-iP.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Description"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:303
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Excluding Tax"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:304
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang-legacy.B0A_QqB4.js:1
+#: dist/common/TableWidth.vue_vue_type_script_setup_true_lang.DBUyE9lT.js:1
+msgid "Full Width"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:305
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "ID"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:306
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Image"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:307
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/InStockAmountOptions-legacy.BuhVEonL.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/InStockAmountOptions.BAE_-5hd.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "In Stock"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:308
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Including Tax"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:309
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Last 7 days"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:310
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Last 30 days"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:311
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Last 365 days"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:312
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab-legacy.CCTx-73B.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/LocationsTab.B3d3-7s2.js:1
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang-legacy.CUdZtFzv.js:1
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang.RR9Sdi6L.js:1
+msgid "Locations"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:313
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding-legacy.70zMeHtj.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding.D9-gL8Vd.js:1
+msgid "Margin"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:314
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Menu Order"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:316
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Navigate to Single Product Page"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:317
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth-legacy.BbwMtcTM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/BoxElementWidth.7deCDFqn.js:1
+msgid "Number"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:318
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "OK"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:319
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Open in new tab"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:320
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions-legacy.CJwAALPY.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/AddToCartButtonOptions.DdaSJGx7.js:1
+msgid "Open in same tab"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:321
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions-legacy.DPLRY-_U.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/VariationDropdownOptions.DDtNMHRi.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Options"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:322
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding-legacy.70zMeHtj.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/MarginPadding.D9-gL8Vd.js:1
+msgid "Padding"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:323
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "Popularity (default)"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:324
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions-legacy.CiXddtq4.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductPriceOptions.Dkby3451.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang-legacy.S75-atsQ.js:1
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang.mCPp5D5Q.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Price"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:325
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang-legacy.S75-atsQ.js:1
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang.mCPp5D5Q.js:1
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "Quantity"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:326
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang-legacy.S75-atsQ.js:1
+#: dist/common/QuantityBasedPricingTable.vue_vue_type_script_setup_true_lang.mCPp5D5Q.js:1
+msgid "Save"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:327
+#: templates/admin/parts/settings/license/license-form.php:96
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:3
+msgid "Save Changes"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:328
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter-legacy.ChjB_iWr.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter.DjiZQIP-.js:1
+msgid "Select Category"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:329
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer-legacy.B2tlvkvc.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/FormDrawer.Ct8-IVIm.js:7
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang-legacy.CUdZtFzv.js:1
+#: dist/common/PageSidebar.vue_vue_type_script_setup_true_lang.RR9Sdi6L.js:1
+msgid "Settings"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:330
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions-legacy.Iel8tmXZ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductImageOptions.ieGJyV-r.js:1
+msgid "Show Image Popup"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:331
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter-legacy.c_Wfa_9k.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Options/ShowFormHeaderFooter.DxdnPLjn.js:1
+msgid "Show Minimum Requirement Notice"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:332
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang-legacy.DWAQnkOP.js:1
+#: dist/common/ClickAction.vue_vue_type_script_setup_true_lang.DoWawM1y.js:1
+msgid "Show Product Details Popup"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:334
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:1
+msgid "Standard (One Box Per Attribute)"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:335
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Status"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:336
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:1
+msgid "WooCommerce Default"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:338
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns-legacy.DCHfG41M.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormBody/DraggableTableColumns.DLs_1m7m.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang-legacy.BbPHsiBi.js:1
+#: dist/common/FormHeaderFooterElement.vue_vue_type_script_setup_true_lang.ChKzii5a.js:1
+msgid "Yes"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$s is the opening <kbd> tag, %2$s is the closing </kbd> tag
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: includes/I18n/order-form-strings.php:340
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions-legacy.DajIOgtx.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchInputOptions.PMk_U_uY.js:3
+#, php-format
+msgid "Submit on %1$sENTER%2$s/%1$sRETURN%2$s"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %1$s is the opening <strong> tag, %2$s is the closing </strong> tag
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %1$s opening <strong> tag; %2$s = closing </strong> tag
+#: includes/I18n/order-form-strings.php:342
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:3
+#, php-format
+msgid "%1$sStandard%2$s &mdash; Limitation is only up to 100 variations."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:343
+msgid "Min: 1 &mdash; Max: 100"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:348
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Order Form Name"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:350
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Shortcode"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:351
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Duplicate"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:356
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+msgid "Add Selected Products To Cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:357
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Add Selected Products to Cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:358
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions-legacy.D67t8JS5.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/SearchButtonOptions.BMVIncGu.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton-legacy.CAqBe0Er.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton.DK7-fgUl.js:1
+msgid "Clear Filters"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:359
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Deleting..."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:360
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:3
+msgid "Empty Cart"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:361
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize-legacy.BjuG107e.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Styles/FontSize.Bd1EIzDF.js:1
+msgid "Enter a number"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:362
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "ERROR"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:363
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton-legacy.eo6HO11P.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton.BuAiS_Ct.js:1
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+msgid "ERROR:"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:364
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+msgid "Error adding to cart:"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:365
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Form saved"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:366
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter-legacy.ChjB_iWr.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CategoryFilter.DjiZQIP-.js:1
+msgid "Loading..."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:367
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions-legacy.C33W_jLh.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/QuantityInputOptions.Cp0ViSWt.js:1
+msgid "Out of Stock"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:368
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount-legacy.fwCXh-Cr.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/InStockAmount.MSdcj_JO.js:1
+#: dist/common/QuantityInput.vue_vue_type_script_setup_true_lang-legacy.nfr_XJGe.js:1
+#: dist/common/QuantityInput.vue_vue_type_script_setup_true_lang.wKMzdea8.js:1
+msgid "Out of stock"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:369
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton-legacy.CAqBe0Er.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchButton.DK7-fgUl.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput-legacy.CD1iQF7d.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/SearchInput.tg2QRQZs.js:1
+msgid "Please enter a search query."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:370
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton-legacy.UG-1A93p.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/AddSelectedToCartButton.CXlvG2kI.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton-legacy.eo6HO11P.js:1
+#: dist/apps/wwof/front/components/FormTable/Elements/AddToCartButton.BuAiS_Ct.js:1
+msgid "Successfully added:"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:371
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions-legacy.Du3r0Crt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/CartSubtotalOptions.B0nmpIuQ.js:1
+msgid "Subtotal: "
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:372
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Your form has been saved successfully!"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:373
+#: includes/Shortcodes/WWOF_Product_Listing.php:113
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "You do not have permission to view this order form."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:374
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:1
+msgid "(excl. tax)"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:375
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:1
+msgid "(incl. tax)"
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %s is the image alt text
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %s = image name
+#: includes/I18n/order-form-strings.php:377
+#: dist/common/ProductInfoModal-legacy.BUtrsTG6.js:1
+#: dist/common/ProductInfoModal.BeB2bdMA.js:3
+#, php-format
+msgid "Image: %s"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:378
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/FormPagination-legacy.BpZQ6MKl.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/FormPagination.BG8MKBCr.js:1
+msgid "Pagination is hidden when \"Lazy Loading\" option is enabled."
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:383
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Enter meta key"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:384
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Enter meta name"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:389
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Are you sure you want to delete V2 Form Data?"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:390
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Cleanup Old Form Data"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:391
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Deleted"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:392
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Migrate V2 Form Data"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:393
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Migrated"
+msgstr ""
+
+#: includes/I18n/order-form-strings.php:394
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Migrating..."
+msgstr ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d: number of products added to cart
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of items added to cart
+#: includes/I18n/order-form-strings.php:400
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart-legacy.63VStZOp.js:1
+#: dist/apps/wwof/front/components/FormTable/Extras/SimplifyViewCart.DyH4IEZX.js:3
+#, php-format
+msgid "%d product added."
+msgid_plural "%d products added."
+msgstr[0] ""
+msgstr[1] ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d: number of products
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = total number of products
+#: includes/I18n/order-form-strings.php:402
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/ProductCount-legacy.8b2AA9bn.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/ProductCount.DMzti5Jb.js:3
+#, php-format
+msgid "%d Product"
+msgid_plural "%d Products"
+msgstr[0] ""
+msgstr[1] ""
+
+#. #-#-#-#-#  woocommerce-wholesale-order-form.pot (WooCommerce Wholesale Order Form 3.0.9.1)  #-#-#-#-#
+#. translators: %d: number of pages
+#. #-#-#-#-#  js-strings.pot (WooCommerce Wholesale Order Form)  #-#-#-#-#
+#. translators: %d = number of locations found
+#: includes/I18n/order-form-strings.php:404
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang-legacy.CROfTkav.js:1
+#: dist/common/LocationsColumn.vue_vue_type_script_setup_true_lang.FnyypEjG.js:3
+#, php-format
+msgid "%d page"
+msgid_plural "%d pages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Integrations/WWP.php:104
+msgid "Database Optimization"
+msgstr ""
+
+#: includes/Integrations/WWP.php:125
+msgid "Scheduling database optimization."
+msgstr ""
+
+#: includes/Integrations/WWP.php:132
+msgid "Database optimization scheduled."
+msgstr ""
+
+#: includes/Integrations/WWP.php:138
+msgid "Database optimization scheduled successfully!"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/Integrations/WWP.php:145
+#, php-format
+msgid "Database optimization scheduling failed: %s"
+msgstr ""
+
+#. translators: %s: error message
+#: includes/Integrations/WWP.php:155
+#, php-format
+msgid "Failed to schedule database optimization: %s"
+msgstr ""
+
+#: includes/Integrations/WWP.php:194
+msgid "Optimization Complete"
+msgstr ""
+
+#: includes/Integrations/WWP.php:196
+msgid "Optimization Running..."
+msgstr ""
+
+#: includes/Integrations/WWP.php:198
+msgid "Optimize Database"
+msgstr ""
+
+#: includes/Integrations/WWP.php:213
+msgid "Database optimization has been completed successfully."
+msgstr ""
+
+#: includes/Integrations/WWP.php:215
+msgid "Database optimization is currently running. Please wait."
+msgstr ""
+
+#: includes/Integrations/WWP.php:217
+msgid "Click to schedule database optimization for improved performance."
 msgstr ""
 
 #: includes/Post_Types/Order_Form_Post_Type.php:50
@@ -1705,8 +2568,7 @@ msgstr ""
 msgid "Invalid notice key."
 msgstr ""
 
-#: includes/REST/Favourites.php:89
-#: includes/REST/Favourites.php:106
+#: includes/REST/Favourites.php:89 includes/REST/Favourites.php:106
 msgid "Product ID."
 msgstr ""
 
@@ -1742,23 +2604,31 @@ msgstr ""
 msgid "Something went wrong activating the license. Please contact plugin support."
 msgstr ""
 
-#: includes/REST/Order_Form.php:170
+#: includes/REST/Order_Form.php:186
 msgid "Order Form Table must have columns for display."
 msgstr ""
 
-#: includes/REST/Order_Form.php:218
+#: includes/REST/Order_Form.php:234
 msgid "Form could not be updated."
 msgstr ""
 
-#: includes/REST/Order_Form.php:568
+#: includes/REST/Order_Form.php:547
+msgid "Invalid form id"
+msgstr ""
+
+#: includes/REST/Order_Form.php:555
+msgid "Original form not found"
+msgstr ""
+
+#: includes/REST/Order_Form.php:639
 msgid "V2 Order Forms migrated to V3!"
 msgstr ""
 
-#: includes/REST/Order_Form.php:605
+#: includes/REST/Order_Form.php:676
 msgid "V2 Order Forms data deleted!"
 msgstr ""
 
-#: includes/REST/Order_Form.php:608
+#: includes/REST/Order_Form.php:679
 msgid "No V2 Order Forms found!"
 msgstr ""
 
@@ -1766,25 +2636,26 @@ msgstr ""
 msgid "The setup wizard has been dismissed."
 msgstr ""
 
-#: includes/Shortcodes/WWOF_Product_Listing.php:128
+#: includes/Shortcodes/WWOF_Product_Listing.php:144
 msgid "Logout and login here"
 msgstr ""
 
-#: includes/Shortcodes/WWOF_Product_Listing.php:129
+#: includes/Shortcodes/WWOF_Product_Listing.php:145
 msgid "Login Here"
 msgstr ""
 
-#: includes/Shortcodes/WWOF_Product_Listing.php:157
+#: includes/Shortcodes/WWOF_Product_Listing.php:173
 msgid "No order form ID specified."
 msgstr ""
 
-#: includes/Shortcodes/WWOF_Product_Listing.php:159
-#: includes/Shortcodes/WWOF_Product_Listing.php:166
+#: includes/Shortcodes/WWOF_Product_Listing.php:175
+#: includes/Shortcodes/WWOF_Product_Listing.php:182
 msgid "There is a config error on this form. Please contact the site administrator."
 msgstr ""
 
 #. translators: %d = order form ID given to [wwof_product_listing] shortcode
-#: includes/Shortcodes/WWOF_Product_Listing.php:164
+#: includes/Shortcodes/WWOF_Product_Listing.php:180
+#, php-format
 msgid "Order form ID %d does not exist!"
 msgstr ""
 
@@ -1849,16 +2720,19 @@ msgstr ""
 
 #. translators: %1$s and %2$s opening and closing strong tags respectively.
 #: templates/admin/parts/settings/license/interstitial.php:30
+#, php-format
 msgid "%1$sUrgent!%2$s Your Wholesale Suite license has expired!"
 msgstr ""
 
 #. translators: %1$s and %2$s opening and closing strong tags respectively.
 #: templates/admin/parts/settings/license/interstitial.php:40
+#, php-format
 msgid "%1$sUrgent!%2$s Your Wholesale Suite license is missing!"
 msgstr ""
 
 #. translators: %1$s and %2$s opening and closing strong tags respectively.
 #: templates/admin/parts/settings/license/interstitial.php:50
+#, php-format
 msgid "%1$sUrgent!%2$s Your Wholesale Suite license is disabled!"
 msgstr ""
 
@@ -1866,27 +2740,27 @@ msgstr ""
 msgid "Without an active license, your website front end will still continue to receive wholesale orders, leads and show wholesale pricing but premium functionality has been disabled until a valid license is entered."
 msgstr ""
 
-#: templates/admin/parts/settings/license/interstitial.php:72
+#: templates/admin/parts/settings/license/interstitial.php:75
 msgid "No license found"
 msgstr ""
 
-#: templates/admin/parts/settings/license/interstitial.php:82
+#: templates/admin/parts/settings/license/interstitial.php:85
 msgid "Enter License Now"
 msgstr ""
 
-#: templates/admin/parts/settings/license/interstitial.php:84
+#: templates/admin/parts/settings/license/interstitial.php:87
 msgid "Repurchase New License"
 msgstr ""
 
-#: templates/admin/parts/settings/license/interstitial.php:88
+#: templates/admin/parts/settings/license/interstitial.php:91
 msgid "Enter a new license"
 msgstr ""
 
-#: templates/admin/parts/settings/license/interstitial.php:89
+#: templates/admin/parts/settings/license/interstitial.php:92
 msgid "Refresh license status"
 msgstr ""
 
-#: templates/admin/parts/settings/license/interstitial.php:91
+#: templates/admin/parts/settings/license/interstitial.php:94
 msgid "Don’t have a license yet? Purchase here."
 msgstr ""
 
@@ -1896,6 +2770,7 @@ msgstr ""
 
 #. translators: %1$s = license expiration date; %2$s = <br> tag; %3$s = opening <strong> tag; %4$s = </strong> closing tag; %5$s = opening <a> tag; %6$s = closing </a> tag
 #: templates/admin/parts/settings/license/license-form.php:45
+#, php-format
 msgid "The entered license was purchased over 12 months ago and expired on %1$s.%2$sTo continue receiving support & updates please %3$s%5$sclick here to renew your license%6$s.%4$s"
 msgstr ""
 
@@ -1909,5 +2784,218 @@ msgstr ""
 
 #. translators: %s: current server PHP version
 #: woocommerce-wholesale-order-form.bootstrap.php:120
+#, php-format
 msgid "WooCommerce Wholesale Order Form plugin requires at least PHP 7.3 to work properly. Your server is currently using PHP %s."
+msgstr ""
+
+#. translators: %1$s = "Form Header" or "Form Footer"
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter-legacy.Cd5Q_qWM.js:1
+#: dist/apps/wwof/admin/components/FormEditor/MainForm/FormHeaderFooter.9VWKKDSA.js:3
+msgid "Currently, set to NOT show %1$s section."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Are you sure you want to delete this form?"
+msgid_plural "Are you sure you want to delete these forms?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Form successfully deleted."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader-legacy.DpOk1w6d.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageHeader/PageHeader.KIrTNQy-.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "The form has been successfully deleted."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange-legacy.TQ3iZWG0.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange.Cty2Ic6m.js:1
+msgid "Min Price"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange-legacy.TQ3iZWG0.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PriceRange.Cty2Ic6m.js:1
+msgid "Max Price"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "Min Price Placeholder"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "Max Price Placeholder"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "Step Increment"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions-legacy.4NUreLUt.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PriceRangeOptions.C3ndMdmQ.js:1
+msgid "The increment value for the price inputs."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PrintButton-legacy.D18mPg03.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/PrintButton.uKtrE_r0.js:1
+msgid "Print Order Form"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+msgid "Show Icon"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions-legacy.BNz3o3WH.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/PrintButtonOptions.0IfEMDJu.js:1
+msgid "Display a printer icon next to the button text."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Meta key with underscore prefix are private hence, this will not work."
+msgstr ""
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:1
+msgid "Note: Meta key with underscore prefix (%1$s_%2$s) are private hence they will not be displayed."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+msgid "Show Field Labels"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions-legacy.Z4lsQW5C.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/ProductMetaOptions.C9lWnLrc.js:3
+msgid "Display the label name for each product meta field."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:3
+msgid "%1$sNote:%2$s If pagination element is added in the editor, this will be hidden in the frontend."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:5
+msgid "%1$sWarning:%2$s Enabling this option might have significant impact on the speed of fetching and/or displaying results in the order form table especially if you have a large number of variations per product."
+msgstr ""
+
+#. translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "%1$sIf you have products with variation option set to ANY, this will render confusing product items. In this case, we recommend disabling this option%2$s."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab-legacy.BttgUC0u.js:1
+#: dist/apps/wwof/admin/components/FormEditor/PageSidebar/Tabs/SettingsTab.ntqzXp4N.js:7
+msgid "Simplifies the \"Add to Cart Notices\" by displaying icons next to the \"Add to Cart\" button instead of showing popup/slide notifications."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Are you sure you want to duplicate this form?"
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "Form successfully duplicated."
+msgstr ""
+
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn-legacy.v2g3YOkO.js:1
+#: dist/apps/wwof/admin/components/FormTable/Columns/ActionColumn.B6Mn3yLR.js:1
+msgid "The form has been successfully duplicated."
+msgstr ""
+
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Defaults to \"Access Denied\" if left blank."
+msgstr ""
+
+#: dist/apps/wwof/admin/pages/FormPermissions-legacy.D62hX6x-.js:1
+#: dist/apps/wwof/admin/pages/FormPermissions.T4bdufVB.js:1
+msgid "Defaults to \"You do not have permission to view this order form.\" if left blank."
+msgstr ""
+
+#. translators: %1$s = opening <code> tag; %2$s = closing </code> tag
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Below is a list of all the order forms for displaying products that you have on your store. Click each form to edit it's settings or add a new form using the %1$sAdd Form%2$s button below. Forms can be placed on pages via the given shortcode or via an editor block. Forms can be reused on multiple pages and you can also query what pages each form appears on."
+msgstr ""
+
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Form deleted"
+msgid_plural "Forms deleted"
+msgstr[0] ""
+msgstr[1] ""
+
+#: dist/apps/wwof/admin/pages/FormTable-legacy.B-Y3ymX8.js:1
+#: dist/apps/wwof/admin/pages/FormTable.BLemVCGs.js:3
+msgid "Your form was successfully deleted."
+msgid_plural "Your forms were successfully deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %1$s = pre-text setting value; %2$s = formatted amount; %3$s = tax suffix text
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal-legacy.B6U6Twxe.js:1
+#: dist/apps/wwof/front/components/FormHeaderFooterElement/CartSubtotal.QPJ3pd4a.js:3
+msgctxt "Price amount excluding tax"
+msgid "%1$s%2$s %3$s"
+msgstr ""
+
+#: dist/apps/wwof/front/index-legacy.js:1 dist/apps/wwof/front/index.js:1
+msgid "This Order Form is in \"Draft\" status. It will only be visible to admin users."
+msgstr ""
+
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Price Range"
+msgstr ""
+
+#: dist/common/header-footer-elements-legacy.CBFcyFxS.js:1
+#: dist/common/header-footer-elements.C7742U40.js:1
+msgid "Print Button"
+msgstr ""
+
+#: dist/common/index-legacy.B7DZQ705.js:1 dist/common/index.CfoH38oM.js:2
+msgid "Unable to find the element for lazy-loading."
+msgstr ""
+
+#: dist/common/table-elements-legacy.DCZdtjg9.js:1
+#: dist/common/table-elements.8WFkTtx_.js:1
+msgid "GTIN"
+msgstr ""
+
+#. translators: %1$s opening <strong> tag; %2$s = closing </strong> tag
+#: dist/common/VariationStyleSelect-legacy.DP_ITM--.js:1
+#: dist/common/VariationStyleSelect.6-vAqzQv.js:5
+msgid "%1$sCombo%2$s &mdash; Recommended for products with large variations (more than 100 variations). With this option selected, variations more than 100 are lazy loaded on scroll down."
+msgstr ""
+
+#: dist/vanilla/admin/notices/getting-started-legacy.js:1
+#: dist/vanilla/admin/notices/getting-started.js:1
+msgid "Something went wrong dismissing the getting started notice."
 msgstr ""

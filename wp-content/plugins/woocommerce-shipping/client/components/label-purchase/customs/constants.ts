@@ -1,5 +1,8 @@
 import { __ } from '@wordpress/i18n';
 
+// USPS Labels v3 enforces a 30-character maximum on customsForm/contents/itemDescription.
+export const MAX_ITEM_DESCRIPTION_LENGTH = 30;
+
 export const contentTypes = [
 	{
 		label: __( 'Merchandise', 'woocommerce-shipping' ),

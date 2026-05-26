@@ -132,8 +132,7 @@ abstract class Abstract_REST extends \WP_REST_Controller {
      * @return WP_Error|bool True if the request has read access, WP_Error object otherwise.
      */
     public function get_items_permissions_check( $request ) {
-
-        return true;
+        return current_user_can( 'read' );
     }
 
     /**
@@ -145,8 +144,7 @@ abstract class Abstract_REST extends \WP_REST_Controller {
      * @return WP_Error|bool True if the request has read access for the item, WP_Error object otherwise.
      */
     public function get_item_permissions_check( $request ) {
-
-        return true;
+        return current_user_can( 'read' );
     }
 
     /**

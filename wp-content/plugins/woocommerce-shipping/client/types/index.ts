@@ -6,11 +6,15 @@ import { WCShippingConfig } from './wcshipping-config.d';
 
 declare global {
 	interface Window {
-		WCShipping_Config: WCShippingConfig | WCShippingAnalyticsConfig;
+		WCShipping_Config: ( WCShippingConfig | WCShippingAnalyticsConfig ) & {
+			navigate?: ( params: any ) => void; // eslint-disable-line @typescript-eslint/no-explicit-any
+		};
 		MSStream: unknown;
 		wcTracks: WCTracks;
 		wcShippingSettings: WCShippingSettings;
 		wc?: WC;
+		// For UMD build of the shipping plugin
+		WCShipping_Plugin?: React.ComponentType;
 	}
 }
 
@@ -47,17 +51,18 @@ export * from './reduxe-helpers.d';
 export * from './available-packages.d';
 export * from './wpcom-connection.d';
 export * from './shipment-item.d';
+export * from './shipment-type.d';
 export * from './label-shipment-id-map.d';
+export * from './label-print-fulfillment-ref.d';
 export * from './store-notice.d';
 export * from './user-meta.d';
 export * from './constants.d';
-export * from './carrier-strategy.d';
-export * from './upsdap-strategy.d';
 export * from './payment-method.d';
 export * from './purchase-meta.d';
 export * from './purchase-settings.d';
 export * from './wcshipping-settings-config.d';
 export * from './weight-unit.d';
+export * from './dimension-unit.d';
 export * from './report-label.d';
 export * from './report-response.d';
 export * from './report-query.d';
@@ -66,4 +71,11 @@ export * from './label-rate-type.d';
 export * from './custom-package-type.d';
 export * from './shipment-date.d';
 export * from './request-extra-options.d';
+export * from './return-shipment-info.d';
+export * from './package-dimensions.d';
 export * from './promotion.d';
+export * from './shipments.d';
+export * from './scanform-types.d';
+export * from './site-settings.d';
+export * from './core-data.d';
+export * from './service-status.d';

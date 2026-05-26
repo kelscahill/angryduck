@@ -1,6 +1,4 @@
-import {
-	CUSTOM_BOX_ID_PREFIX,
-} from '../components/label-purchase/packages';
+import { CUSTOM_BOX_ID_PREFIX } from '../components/label-purchase/packages';
 import { CustomPackageType } from './package-type';
 
 export interface CustomPackage {

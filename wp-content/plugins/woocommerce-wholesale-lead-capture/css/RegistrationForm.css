@@ -31,6 +31,46 @@
     margin-right: 10px;
 }
 
+/* Bolder, more visible tickbox borders for the registration form Terms & Conditions checkbox. */
+#wwlc-registration-form .terms_conditions_checkbox input[ type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin: 0 10px 0 0;
+    border: 2px solid #333;
+    border-radius: 2px;
+    background-color: #fff;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 12px 12px;
+    cursor: pointer;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+#wwlc-registration-form .terms_conditions_checkbox input[ type="checkbox"]:checked {
+    background-color: #333;
+    border-color: #333;
+    background-image: url( "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M3 8.5l3.5 3.5L13 5'/></svg>" );
+}
+
+#wwlc-registration-form .terms_conditions_checkbox input[ type="checkbox"]:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 1px;
+}
+
+/* Keep the custom tickbox visible under Windows High Contrast / forced-colors. */
+@media (forced-colors: active) {
+    #wwlc-registration-form .terms_conditions_checkbox input[ type="checkbox"] {
+        border-color: CanvasText;
+    }
+
+    #wwlc-registration-form .terms_conditions_checkbox input[ type="checkbox"]:checked {
+        background-color: CanvasText;
+    }
+}
+
 #wwlc-registration-form .select2-container,
 #wwlc-registration-form .field-set select {
     min-width: 250px;
@@ -123,4 +163,49 @@
 a#log-in:after {
     content: "|";
     margin: 0 10px;
+}
+
+/*
+ * View password toggle (#481).
+ *
+ * WooCommerce's frontend script wraps each .woocommerce-Input[type="password"]
+ * in a .password-input span and appends a <button class="show-password-input">
+ * next to the input. WooCommerce's own icon is rendered via a webfont that
+ * isn't enqueued on WWLC pages, so this rule provides an inline SVG eye icon
+ * instead. Eye-open while type=password; eye-off (with line through) once
+ * WooCommerce's JS flips the input to type=text on click.
+ */
+#wwlc-registration-form .password-input,
+#wwlc-login-form .password-input {
+    position: relative;
+    display: block;
+}
+
+#wwlc-registration-form .show-password-input,
+#wwlc-login-form .show-password-input {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent center / 20px 20px no-repeat;
+    background-image: url( "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/><circle cx='12' cy='12' r='3'/></svg>" );
+    cursor: pointer;
+    opacity: 0.7;
+    transform: translateY(-50%);
+}
+
+#wwlc-registration-form .show-password-input:hover,
+#wwlc-registration-form .show-password-input:focus-visible,
+#wwlc-login-form .show-password-input:hover,
+#wwlc-login-form .show-password-input:focus-visible {
+    opacity: 1;
+}
+
+#wwlc-registration-form input[type="text"] + .show-password-input,
+#wwlc-login-form input[type="text"] + .show-password-input {
+    background-image: url( "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24'/><line x1='1' y1='1' x2='23' y2='23'/></svg>" );
 }

@@ -67,6 +67,7 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
          * @since 1.1.0
          * @since 1.6.3 Insert default value in the array.
          *                 Made the function access method from private to public since we need this function called in WWLC_Shortcode class
+         * @since 2.0.5 Register custom field labels and placeholders for WPML String Translation (#455).
          */
         public function _get_formatted_custom_fields() {
 
@@ -75,8 +76,15 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
 
             foreach ( $registration_form_custom_fields as $field_id => $custom_field ) {
 
+                if ( ! is_array( $custom_field ) ) {
+                    continue;
+                }
+
+                $raw_label       = isset( $custom_field['field_name'] ) ? (string) $custom_field['field_name'] : '';
+                $raw_placeholder = isset( $custom_field['field_placeholder'] ) ? (string) $custom_field['field_placeholder'] : '';
+
                 $formatted_registration_form_custom_fields[] = array(
-                    'label'         => $custom_field['field_name'],
+                    'label'         => self::translate_custom_field_string( $field_id, $raw_label, 'label' ),
                     'name'          => $field_id,
                     'id'            => $field_id,
                     'class'         => 'wwlc_registration_field form_field wwlc_custom_field ' . $custom_field['field_type'] . '_wwlc_custom_field',
@@ -88,13 +96,46 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
                     'field_order'   => $custom_field['field_order'],
                     'attributes'    => isset( $custom_field['attributes'] ) ? $custom_field['attributes'] : array(),
                     'options'       => isset( $custom_field['options'] ) ? $custom_field['options'] : array(),
-                    'placeholder'   => isset( $custom_field['field_placeholder'] ) ? $custom_field['field_placeholder'] : '',
+                    'placeholder'   => self::translate_custom_field_string( $field_id, $raw_placeholder, 'placeholder' ),
                     'default_value' => isset( $custom_field['default_value'] ) ? $custom_field['default_value'] : '',
                 );
 
             }
 
             return $formatted_registration_form_custom_fields;
+        }
+
+        /**
+         * Register a custom registration-field string with WPML and return its translated value.
+         *
+         * Custom field labels and placeholders are stored in a single wp_options entry, so
+         * source-code translation tools cannot find them. Each value is registered with WPML
+         * (idempotent) and run through the `wpml_translate_single_string` filter on read so
+         * secondary-language renders pick up the admin-supplied translation. Without WPML
+         * the filters are no-ops and the original value is returned unchanged.
+         *
+         * @param string $field_id The custom field id (used in the WPML string handle).
+         * @param string $value    The raw admin-supplied label / placeholder value.
+         * @param string $kind     Either 'label' or 'placeholder' — determines the WPML handle prefix.
+         *
+         * @return string The translated value, or the original if no translation exists.
+         *
+         * @since 2.0.5
+         */
+        public static function translate_custom_field_string( $field_id, $value, $kind ) {
+
+            $value = (string) $value;
+
+            if ( '' === $value ) {
+                return $value;
+            }
+
+            $domain = 'woocommerce-wholesale-lead-capture';
+            $name   = 'wwlc_custom_field_' . $kind . '_' . $field_id;
+
+            do_action( 'wpml_register_single_string', $domain, $name, $value );
+
+            return apply_filters( 'wpml_translate_single_string', $value, $domain, $name );
         }
 
         /**
@@ -353,12 +394,18 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
                 echo '<input class="input-hidden wwlc_form_field" type="hidden" name="wwlc_role" id="wwlc_role" value="' . esc_attr( $options['role'] ) . '">';
             }
 
-            if ( ! empty( $options['autoApprove'] ) ) {
-                echo '<input class="input-hidden wwlc_form_field" type="hidden" name="wwlc_auto_approve" id="wwlc_auto_approve" value="' . esc_attr( $options['autoApprove'] ) . '">';
+            // Store page ID for verification during form submission (important for AJAX requests).
+            if ( isset( $options['pageId'] ) ) {
+                echo '<input class="input-hidden wwlc_form_field" type="hidden" name="wwlc_page_id" id="wwlc_page_id" value="' . esc_attr( $options['pageId'] ) . '">';
             }
 
-            if ( ! empty( $options['autoLogin'] ) ) {
-                echo '<input class="input-hidden wwlc_form_field" type="hidden" name="wwlc_auto_login" id="wwlc_auto_login" value="' . esc_attr( $options['autoLogin'] ) . '">';
+            // Use secure nonce-based fields instead of direct values to prevent form manipulation.
+            if ( isset( $options['autoApproveNonce'] ) ) {
+                echo '<input class="input-hidden wwlc_form_field" type="hidden" name="wwlc_auto_approve_nonce" id="wwlc_auto_approve_nonce" value="' . esc_attr( $options['autoApproveNonce'] ) . '">';
+            }
+
+            if ( isset( $options['autoLoginNonce'] ) ) {
+                echo '<input class="input-hidden wwlc_form_field" type="hidden" name="wwlc_auto_login_nonce" id="wwlc_auto_login_nonce" value="' . esc_attr( $options['autoLoginNonce'] ) . '">';
             }
 
             echo '</form>';
@@ -374,6 +421,21 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
          * @since 1.10 Show an error that there pages in the trash that contains the login and registration shortcode
          */
         public function wwlc_create_lead_pages( $dummy_arg = null ) { // phpcs:ignore.
+
+            if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                check_ajax_referer( 'wwlc_create_lead_pages', '_wpnonce' );
+
+                if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                    wp_send_json(
+                        array(
+                            'status'        => 'failed',
+                            'error_message' => __( 'You do not have permission to perform this action.', 'woocommerce-wholesale-lead-capture' ),
+                        )
+                    );
+                }
+            } elseif ( ! current_user_can( 'manage_woocommerce' ) ) {
+                return false;
+            }
 
             $registration_page_creation_status = $this->wwlc_create_registration_page();
             $log_in_page_creation_status       = $this->wwlc_create_log_in_page();
@@ -735,6 +797,7 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
          * @since 1.7.3 Update the html tag used of class g-recaptcha from span to div
          * @since 1.7.4 Fix for WWLC-226. Modified how the recaptcha field html elements are displayed.
          *                 Note: since recaptcha is being added via js we can't seem to wrap it with any tags.
+         * @since 2.0.4.3 Add v3 score-based no-widget branch.
          *
          * @access public
          *
@@ -747,15 +810,19 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
         public function wwlc_recaptcha_field_type( $field, $key, $args, $value ) { // phpcs:ignore.
 
             $recaptcha_sitekey = get_option( 'wwlc_security_recaptcha_site_key' );
+            $recaptcha_type    = get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' );
 
-            if ( get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' ) === 'v2_im_not_a_robot' ) {
+            if ( 'v3_score_based' === $recaptcha_type ) {
+                // v3 is score-based and invisible — no widget to render.
+                return '';
+            } elseif ( 'v2_im_not_a_robot' === $recaptcha_type ) {
 
                 $container_class = esc_attr( implode( ' ', $args['class'] ) );
                 $field_html      = '<p><div id="%1$s" class="g-recaptcha form-row %2$s" data-sitekey="%3$s" data-callback="recaptchaCallback"></div></p>';
 
                 return sprintf( $field_html, $key, $container_class, $recaptcha_sitekey );
 
-            } elseif ( get_option( 'wwlc_security_recaptcha_type' ) === 'v2_invisible' ) {
+            } elseif ( 'v2_invisible' === $recaptcha_type ) {
                 // invisible recaptcha.
 
                 global $post;
@@ -830,8 +897,10 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
                 $field_container = '<p class="form-row %1$s" id="%2$s" data-sort="' . esc_attr( $sort ) . '">%3$s</p>';
                 $container_class = esc_attr( implode( ' ', $args['class'] ) );
                 $field_html      = '<label for="' . esc_attr( $args['id'] ) . '" class="' . esc_attr( implode( ' ', $args['label_class'] ) ) . '">' . $args['label'] . $required . '</label>';
-                $field_html     .= '<input type="password" class="input-text ' . esc_attr( implode( ' ', $args['input_class'] ) ) . '" name="' . esc_attr( $key ) . '" id="' . esc_attr( $args['id'] ) . '" placeholder="' . esc_attr( $args['placeholder'] ) . '"  value="' . esc_attr( $value ) . '" ' . implode( ' ', $attributes ) . ' />';
-                $field_html     .= '<span id="wwlc-password-strength" class="wwlc-password-strength"></span>';
+                // The 'woocommerce-Input' class is required so WooCommerce's frontend script
+                // wraps the input and renders the show/hide password toggle button (#481).
+                $field_html .= '<input type="password" class="input-text woocommerce-Input ' . esc_attr( implode( ' ', $args['input_class'] ) ) . '" name="' . esc_attr( $key ) . '" id="' . esc_attr( $args['id'] ) . '" placeholder="' . esc_attr( $args['placeholder'] ) . '"  value="' . esc_attr( $value ) . '" ' . implode( ' ', $attributes ) . ' />';
+                $field_html .= '<span id="wwlc-password-strength" class="wwlc-password-strength"></span>';
 
                 if ( get_option( 'wwlc_fields_enable_confirm_password_field' ) === 'yes' ) {
 
@@ -839,7 +908,7 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
                     $confirm_placeholder = get_option( 'wwlc_fields_confirm_password_field_placeholder' );
                     $field_html         .= '</p><p class="form-row ' . esc_attr( $args['id'] ) . '_confirm-field-set ' . esc_attr( $args['id'] ) . '_confirm form_field">';
                     $field_html         .= '<label for="' . esc_attr( $args['id'] ) . '_confirm" class="' . esc_attr( implode( ' ', $args['label_class'] ) ) . '">' . $confirm_label . '</label>';
-                    $field_html         .= '<input type="password" class="input-text ' . esc_attr( implode( ' ', $args['input_class'] ) ) . '" id="' . esc_attr( $args['id'] ) . '_confirm" placeholder="' . $confirm_placeholder . '">';
+                    $field_html         .= '<input type="password" class="input-text woocommerce-Input ' . esc_attr( implode( ' ', $args['input_class'] ) ) . '" id="' . esc_attr( $args['id'] ) . '_confirm" placeholder="' . esc_attr( $confirm_placeholder ) . '">';
 
                 }
 
@@ -930,6 +999,10 @@ if ( ! class_exists( 'WWLC_Forms' ) ) {
                 }
 
                 $field = array_shift( $args['recaptcha'] );
+
+                // Use a unique ID for the login form's reCAPTCHA to avoid duplicate IDs
+                // when both login and registration forms are on the same page.
+                $field['id'] = 'login_recaptcha_field';
 
                 woocommerce_form_field( $field['id'], $this->wwlc_reformat_field_args( $field ) );
 

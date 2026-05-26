@@ -83,13 +83,17 @@ export const formatDate = ( dateString:string, dateFormat = 'MMM. dd, yyyy') => 
 /**
  * Handles the response.
  *
+ * Intentionally does NOT set store.isLoading = false — callers must do that
+ * in their own finally block, after assigning the returned data to the store.
+ * Setting isLoading here would cause a premature render pass (race condition)
+ * where components read stale store state before the assignment completes.
+ *
  * @param response The response object.
  * @param store The pinia store.
  *
  * @returns mixed The response data.
 */
 export function handleResponse(response: any, store: any) {
-  store.isLoading = false;
   let responseData = null;
   if (response.error) {
     store.hasResults = false;

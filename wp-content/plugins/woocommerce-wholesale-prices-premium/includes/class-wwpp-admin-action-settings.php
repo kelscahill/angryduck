@@ -2836,6 +2836,168 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
         }
 
         /**
+         * Add Wholesale Sale Price Column
+         *
+         * @since 2.2.3
+         *
+         * @param array $columns Array of columns.
+         * @return array Filtered array of columns.
+         */
+        public function add_wholesale_price_sale_column_to_product_cpt_listing( $columns ) {
+            $all_keys    = array_keys( $columns );
+            $price_index = array_search( 'price', $all_keys ); //phpcs:ignore
+            return array_slice( $columns, 0, $price_index + 1, true ) + array( 'wholesale_sale_price' => __( 'Wholesale Sale price', 'woocommerce-wholesale-prices' ) ) + array_slice( $columns, $price_index + 1, null, true );
+        }
+
+        /**
+         * Add wholesale sale price column
+         *
+         * @param string $column  Current column.
+         * @param int    $post_id Product Id.
+         */
+        public function render_wholesale_sale_price_column( $column, $post_id ) {
+            switch ( $column ) {
+                case 'wholesale_sale_price':
+                    $all_wholesale_roles = $this->_all_wholesale_roles;
+                    /**
+                     * Get product object.
+                     *
+                     * @var WC_Product|WC_Product_Variable $product
+                     */
+                    $product              = wc_get_product( $post_id );
+                    $wholesale_price_text = trim( apply_filters( 'wwp_filter_wholesale_price_title_text', __( 'Wholesale Price:', 'woocommerce-wholesale-prices' ) ) );
+                    $is_tax_enabled       = get_option( 'woocommerce_prices_include_tax' );
+                    if ( 'variable' === $product->get_type() ) {
+                        foreach ( $product->get_available_variations() as $variation_product ) {
+                            foreach ( $all_wholesale_roles as $roleKey => $roleObject ) {
+                                $sale_price = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( $variation_product['variation_id'], array( $roleKey ) );
+
+                                if ( ! empty( $sale_price ) ) {
+                                    ?>
+                                            <div id="<?php echo esc_attr( $roleKey ); ?>_wholesale_price" class="wholesale_price">
+                                                <div class="wholesale_role"><b><?php echo wp_kses_post( $roleObject['roleName'] ); ?></b></div>
+                                                <?php echo $wholesale_price_text .' '.('yes' === $is_tax_enabled ? wp_kses_post( wc_price($sale_price['wholesale_sale_price_with_tax']) ) : wp_kses_post( wc_price($sale_price['wholesale_sale_price_with_no_tax']) ) );//phpcs:ignore ?>
+                                            </div>
+                                    <?php
+                                }
+                            }
+                        }
+                    } else {
+                        ?>
+                            <div class="wholesale_prices" id="wholesale_prices_<?php echo esc_attr( $post_id ); ?>">
+                                <style>ins { text-decoration: none !important; }</style>
+                                    <?php
+                                            foreach ( $all_wholesale_roles as $roleKey => $roleObject ) {
+                                                $sale_price = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( $post_id, array( $roleKey ) );
+
+                                                if ( ! empty( $sale_price ) ) {
+                                                    ?>
+                                                            <div id="<?php echo esc_attr( $roleKey ); ?>_wholesale_price" class="wholesale_price">
+                                                                <div class="wholesale_role"><b><?php echo wp_kses_post( $roleObject['roleName'] ); ?></b></div>
+                                                                <?php echo $wholesale_price_text .' '.('yes' === $is_tax_enabled ? wp_kses_post( wc_price($sale_price['wholesale_sale_price_with_tax']) ) : wp_kses_post( wc_price($sale_price['wholesale_sale_price_with_no_tax']) ) );//phpcs:ignore ?>
+                                                            </div>
+                                                    <?php
+                                                }
+                                            }
+                                    ?>
+                                </style>
+                            </div>
+                        <?php
+                    }
+                    break;
+                default:
+                    break;
+
+            }
+        }
+
+        /**
+         * Add wholesale sale price column styling.
+         */
+        public function add_wholesale_sale_price_column_styling() {
+            ?>
+                <style>  
+                    th#wholesale_sale_price {
+                        width: 15% !important;
+                    }
+                </style>
+            <?php
+        }
+
+        /**
+         * Register WWPP's allowed group action slugs on the WWP REST API allowlist.
+         *
+         * @since  2.0.9
+         * @access public
+         *
+         * @param array $actions Existing allowed group action slugs.
+         * @return array Modified allowed group action slugs.
+         */
+        public function register_allowed_group_actions( $actions ) {
+            $wwpp_group_actions = array(
+                // Tax exemption mapping.
+                'group_tax_exp_mapping_save',
+                'group_tax_exp_mapping_edit',
+                'group_tax_exp_mapping_delete',
+                // Tax class mapping.
+                'group_tax_cls_mapping_save',
+                'group_tax_cls_mapping_edit',
+                'group_tax_cls_mapping_delete',
+                // Shipping (non-zoned) mapping.
+                'group_shipping_nonzoned_mapping_save',
+                'group_shipping_nonzoned_mapping_edit',
+                'group_shipping_nonzoned_mapping_delete',
+                // General discount mapping.
+                'group_general_discount_mapping_save',
+                'group_general_discount_mapping_edit',
+                'group_general_discount_mapping_delete',
+                // General quantity mapping.
+                'group_general_quantity_mapping_save',
+                'group_general_quantity_mapping_edit',
+                'group_general_quantity_mapping_delete',
+                // General cart price discount mapping.
+                'group_general_cart_price_discount_mapping_save',
+                'group_general_cart_price_discount_mapping_edit',
+                'group_general_cart_price_discount_mapping_delete',
+                // Payment gateway mapping.
+                'group_payment_gateway_mapping_save',
+                'group_payment_gateway_mapping_edit',
+                'group_payment_gateway_mapping_delete',
+                // Payment gateway surcharge mapping.
+                'group_payment_gateway_surcharge_mapping_save',
+                'group_payment_gateway_surcharge_mapping_edit',
+                'group_payment_gateway_surcharge_mapping_delete',
+                // Wholesale role specific override mapping.
+                'group_wholesale_specific_override_mapping_save',
+                'group_wholesale_specific_override_mapping_edit',
+                'group_wholesale_specific_override_mapping_delete',
+            );
+
+            return array_merge( $actions, $wwpp_group_actions );
+        }
+
+        /**
+         * Register WWPP's allowed trigger action slugs on the WWP REST API allowlist.
+         *
+         * @since  2.0.9
+         * @access public
+         *
+         * @param array $actions Existing allowed trigger action slugs.
+         * @return array Modified allowed trigger action slugs.
+         */
+        public function register_allowed_trigger_actions( $actions ) {
+            $wwpp_trigger_actions = array(
+                'clear_var_prod_price_range_caching',
+                'clear_product_caching',
+                'clear_unused_product_meta',
+                'initialize_product_visibility_meta',
+                'force_fetch_update_data',
+            );
+
+            return array_merge( $actions, $wwpp_trigger_actions );
+        }
+
+        /**
          * Execute model.
          *
          * @since  2.0
@@ -2885,6 +3047,15 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
             add_action( 'wwp_trigger_clear_unused_product_meta', array( $this, 'clear_unused_product_meta' ) );
             add_action( 'wwp_trigger_initialize_product_visibility_meta', array( $this, 're_initialize_product_visibility_meta' ), 10, 1 );
             add_action( 'wwp_trigger_force_fetch_update_data', array( $this, 'force_fetch_update_data' ), 10, 1 );
+
+            // Register WWPP's allowed group and trigger actions on the WWP REST API allowlist.
+            add_filter( 'wwp_allowed_group_actions', array( $this, 'register_allowed_group_actions' ) );
+            add_filter( 'wwp_allowed_trigger_actions', array( $this, 'register_allowed_trigger_actions' ) );
+
+            // wholesale sale column.
+            add_filter( 'manage_product_posts_columns', array( $this, 'add_wholesale_price_sale_column_to_product_cpt_listing' ), 100, 1 );
+            add_action( 'manage_product_posts_custom_column', array( $this, 'render_wholesale_sale_price_column' ), 100, 2 );
+            add_action( 'admin_head', array( $this, 'add_wholesale_sale_price_column_styling' ) );
         }
     }
 }

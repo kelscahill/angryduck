@@ -40,6 +40,7 @@ class Rymera_Stripe extends Abstract_REST {
      * Register routes.
      *
      * @since 1.0.0
+     * @since 3.0.6 Register customer payment methods and setup intents routes.
      * @return void
      */
     public function register_routes() {
@@ -162,6 +163,56 @@ class Rymera_Stripe extends Abstract_REST {
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => array( $this, 'finalize_invoice_payment' ),
                 'permission_callback' => array( $this, 'create_item_permissions_check' ),
+            )
+        );
+
+        /***************************************************************************
+         * Register customer payment methods and setup intents routes
+         ***************************************************************************
+         *
+         * Here we register our plugin REST routes.
+         */
+        register_rest_route(
+            $this->namespace,
+            "/$this->rest_base/customer/payment-methods",
+            array(
+                array(
+                    'methods'             => WP_REST_Server::READABLE,
+                    'callback'            => array( $this, 'customer_payment_methods' ),
+                    'permission_callback' => array( $this, 'customer_permissions_check' ),
+                ),
+                array(
+                    'methods'             => WP_REST_Server::DELETABLE,
+                    'callback'            => array( $this, 'delete_customer_payment_methods' ),
+                    'permission_callback' => array( $this, 'customer_permissions_check' ),
+                ),
+            )
+        );
+        register_rest_route(
+            $this->namespace,
+            "/$this->rest_base/customers/(?P<customer_id>[^\/]+)/setup-intent",
+            array(
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => array( $this, 'create_customer_setup_intent' ),
+                'permission_callback' => array( $this, 'customer_permissions_check' ),
+            )
+        );
+        register_rest_route(
+            $this->namespace,
+            "/$this->rest_base/customers/(?P<customer_id>[^\/]+)/attach-payment-method",
+            array(
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => array( $this, 'attach_customer_payment_method' ),
+                'permission_callback' => array( $this, 'customer_permissions_check' ),
+            )
+        );
+        register_rest_route(
+            $this->namespace,
+            "/$this->rest_base/customers/(?P<customer_id>[^\/]+)/sync-payment-methods",
+            array(
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => array( $this, 'sync_customer_payment_methods' ),
+                'permission_callback' => array( $this, 'customer_permissions_check' ),
             )
         );
     }
@@ -688,5 +739,320 @@ class Rymera_Stripe extends Abstract_REST {
 
         $response = Stripe::instance()->finalize_invoice( $request->get_param( 'invoice_id' ) );
         return $this->rest_response( $response, $request );
+    }
+
+    /**
+     * Return current user's Stripe customer payment method stats.
+     *
+     * @param WP_REST_Request $request Request.
+     *
+     * @return WP_REST_Response|WP_Error
+     */
+    public function customer_payment_methods( $request ) {
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return new WP_Error( 'wpay_auth_required', __( 'Authentication required. You must be logged in to perform this action.', 'woocommerce-wholesale-payments' ), array( 'status' => 401 ) );
+        }
+
+        $customer_id = get_user_meta( $user_id, '_wpay_stripe_customer_id', true );
+        if ( empty( $customer_id ) ) {
+            $user     = get_userdata( $user_id );
+            $searched = Stripe::instance()->search_customer( array( 'email:' => $user->user_email ) );
+            if ( is_array( $searched ) && ! empty( $searched['data'][0]['id'] ) ) {
+                $customer_id = $searched['data'][0]['id'];
+                update_user_meta( $user_id, '_wpay_stripe_customer_id', $customer_id );
+            } else {
+                // Create a Stripe customer on demand for saving PM.
+                $created = Stripe::instance()->create_customer( $user->display_name, $user->user_email );
+                if ( ! is_wp_error( $created ) && ! empty( $created['id'] ) ) {
+                    $customer_id = $created['id'];
+                    update_user_meta( $user_id, '_wpay_stripe_customer_id', $customer_id );
+                }
+            }
+        }
+
+        $has_default = false;
+        $count       = 0;
+        if ( $customer_id ) {
+            $default_pm  = Stripe::instance()->customer_has_default_payment_method( $customer_id, $user_id );
+            $has_default = ! is_wp_error( $default_pm ) && ! empty( $default_pm );
+            $methods     = Stripe::instance()->list_payment_methods( $customer_id, 'card' );
+            if ( ! is_wp_error( $methods ) && isset( $methods['data'] ) ) {
+                $count = count( $methods['data'] );
+            }
+        }
+
+        return $this->rest_response(
+            array(
+                'customer_id'  => $customer_id,
+                'hasDefault'   => $has_default,
+                'methodsCount' => $count,
+                'publishable'  => WPay::get_token( 'publishable_key' ),
+                'mode'         => WPay::get_api_mode(),
+            ),
+            $request
+        );
+    }
+
+    /**
+     * Delete all payment methods for the current customer.
+     *
+     * @param WP_REST_Request $request The request object.
+     *
+     * @since 1.0.0
+     * @return WP_REST_Response|WP_Error
+     */
+    public function delete_customer_payment_methods( $request ) {
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return new WP_Error( 'wpay_auth_required', __( 'Authentication required. You must be logged in to perform this action.', 'woocommerce-wholesale-payments' ), array( 'status' => 401 ) );
+        }
+
+        // Get customer ID from user meta.
+        $customer_id = get_user_meta( $user_id, '_wpay_stripe_customer_id', true );
+
+        if ( empty( $customer_id ) ) {
+            // No customer ID means no payment methods to delete.
+            return $this->rest_response(
+                array(
+                    'success'        => true,
+                    'message'        => __( 'No payment methods found to delete.', 'woocommerce-wholesale-payments' ),
+                    'detached_count' => 0,
+                ),
+                $request
+            );
+        }
+
+        // Detach all payment methods from Stripe and WooCommerce.
+        $result = Stripe::instance()->detach_all_payment_methods( $customer_id, $user_id );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        // Clear payment method related user meta, but keep the customer ID.
+        // The customer ID should only be deleted if the Stripe customer itself is deleted,
+        // not when payment methods are detached. This prevents creating orphaned Stripe customers.
+        delete_user_meta( $user_id, '_wpay_default_payment_method' );
+        delete_user_meta( $user_id, '_stripe_default_payment_method' );
+        // Note: _wpay_stripe_customer_id and _stripe_customer_id are intentionally NOT deleted
+        // to maintain the relationship between WordPress users and Stripe customers.
+
+        return $this->rest_response(
+            array(
+                'success'        => true,
+                'message'        => sprintf(
+                    /* translators: %d: number of payment methods detached */
+                    __( 'Successfully deleted %d payment method(s).', 'woocommerce-wholesale-payments' ),
+                    $result['detached_count']
+                ),
+                'detached_count' => $result['detached_count'],
+            ),
+            $request
+        );
+    }
+
+    /**
+     * Create SetupIntent for a Stripe customer.
+     *
+     * @param WP_REST_Request $request Request.
+     *
+     * @return WP_REST_Response|WP_Error
+     */
+    public function create_customer_setup_intent( $request ) {
+        $customer_id = sanitize_text_field( $request->get_param( 'customer_id' ) );
+        if ( empty( $customer_id ) ) {
+            return new WP_Error( 'wpay_stripe_customer_id_not_found', __( 'Stripe customer ID not found.', 'woocommerce-wholesale-payments' ) );
+        }
+
+        // Verify customer ownership.
+        $ownership_check = $this->verify_customer_ownership( $customer_id );
+        if ( is_wp_error( $ownership_check ) ) {
+            return $ownership_check;
+        }
+
+        $intent = Stripe::instance()->create_setup_intent( $customer_id, array( 'card' ) );
+        return $this->rest_response( $intent, $request );
+    }
+
+    /**
+     * Attach a payment method to Stripe customer and set default.
+     *
+     * @param WP_REST_Request $request Request.
+     *
+     * @return WP_REST_Response|WP_Error
+     */
+    public function attach_customer_payment_method( $request ) {
+        $customer_id    = sanitize_text_field( $request->get_param( 'customer_id' ) );
+        $payment_method = sanitize_text_field( $request->get_param( 'payment_method' ) );
+        if ( empty( $payment_method ) ) {
+            $payment_method = sanitize_text_field( $request->get_param( 'payment_method_id' ) );
+        }
+        if ( empty( $customer_id ) || empty( $payment_method ) ) {
+            return new WP_Error( 'wpay_stripe_invalid_params', __( 'Invalid Stripe customer or payment method.', 'woocommerce-wholesale-payments' ) );
+        }
+
+        // Verify customer ownership.
+        $ownership_check = $this->verify_customer_ownership( $customer_id );
+        if ( is_wp_error( $ownership_check ) ) {
+            return $ownership_check;
+        }
+
+        // Get current user ID for token creation.
+        $user_id = get_current_user_id();
+        $result  = Stripe::instance()->attach_payment_method_to_customer( $customer_id, $payment_method, $user_id );
+
+        // If attachment succeeded but token creation failed, attempt sync.
+        if ( ! is_wp_error( $result ) && ! empty( $user_id ) ) {
+            if ( ! isset( $result['wc_token_id'] ) || empty( $result['wc_token_id'] ) ) {
+                $sync_result = Stripe::instance()->sync_payment_methods_to_woocommerce( $customer_id, $user_id );
+                if ( ! is_wp_error( $sync_result ) ) {
+                    // Update result with sync information.
+                    $result['sync_result'] = $sync_result;
+                }
+            }
+        }
+
+        return $this->rest_response( $result, $request );
+    }
+
+    /**
+     * Synchronize payment methods between Stripe and WooCommerce.
+     *
+     * @param WP_REST_Request $request Request.
+     *
+     * @return WP_REST_Response|WP_Error
+     */
+    public function sync_customer_payment_methods( $request ) {
+        $customer_id = sanitize_text_field( $request->get_param( 'customer_id' ) );
+        $user_id     = get_current_user_id();
+
+        if ( empty( $customer_id ) ) {
+            return new WP_Error( 'wpay_stripe_customer_id_not_found', __( 'Stripe customer ID not found.', 'woocommerce-wholesale-payments' ) );
+        }
+
+        // Verify customer ownership.
+        $ownership_check = $this->verify_customer_ownership( $customer_id );
+        if ( is_wp_error( $ownership_check ) ) {
+            return $ownership_check;
+        }
+
+        $result = Stripe::instance()->sync_payment_methods_to_woocommerce( $customer_id, $user_id );
+        return $this->rest_response( $result, $request );
+    }
+
+    /**
+     * Verify that the customer_id belongs to the current user.
+     *
+     * @param string $customer_id Stripe customer ID.
+     *
+     * @since 1.0.0
+     * @return true|WP_Error True if ownership is verified, WP_Error otherwise.
+     */
+    private function verify_customer_ownership( $customer_id ) {
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return new WP_Error(
+                'wpay_auth_required',
+                __( 'Authentication required.', 'woocommerce-wholesale-payments' ),
+                array( 'status' => 401 )
+            );
+        }
+
+        // Get the customer ID stored in user meta.
+        $user_customer_id = get_user_meta( $user_id, '_wpay_stripe_customer_id', true );
+
+        // If no customer ID is stored yet, verify ownership by checking Stripe customer email.
+        if ( empty( $user_customer_id ) ) {
+            // Fetch the customer from Stripe to verify ownership.
+            $stripe_customer = Stripe::instance()->get_customer( $customer_id );
+            if ( is_wp_error( $stripe_customer ) ) {
+                return new WP_Error(
+                    'wpay_customer_not_found',
+                    __( 'Stripe customer not found.', 'woocommerce-wholesale-payments' ),
+                    array( 'status' => 404 )
+                );
+            }
+
+            // Get the current user's email.
+            $user = get_userdata( $user_id );
+            if ( ! $user ) {
+                return new WP_Error(
+                    'wpay_user_not_found',
+                    __( 'User not found.', 'woocommerce-wholesale-payments' ),
+                    array( 'status' => 404 )
+                );
+            }
+
+            $user_email = $user->user_email;
+
+            // Verify the Stripe customer email matches the user's email.
+            if ( empty( $stripe_customer['email'] ) || $stripe_customer['email'] !== $user_email ) {
+                return new WP_Error(
+                    'wpay_customer_ownership_failed',
+                    __( 'You do not have permission to access this customer account.', 'woocommerce-wholesale-payments' ),
+                    array( 'status' => 403 )
+                );
+            }
+
+            // Customer ownership verified - store the customer ID for future requests.
+            update_user_meta( $user_id, '_wpay_stripe_customer_id', $customer_id );
+
+            return true;
+        }
+
+        // Verify the customer_id matches the user's stored customer_id.
+        if ( $customer_id !== $user_customer_id ) {
+            return new WP_Error(
+                'wpay_customer_ownership_failed',
+                __( 'You do not have permission to access this customer account.', 'woocommerce-wholesale-payments' ),
+                array( 'status' => 403 )
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if a given request has access to get a specific item.
+     * Overrides parent to require admin privileges for sensitive endpoints like Stripe account.
+     *
+     * @param WP_REST_Request $request Full data about the request.
+     *
+     * @since 1.0.0
+     * @return WP_Error|bool True if the request has read access for the item, WP_Error object otherwise.
+     */
+    public function get_item_permissions_check( $request ) {
+        // Require admin privileges for Stripe account endpoint (sensitive merchant data).
+        $route = $request->get_route();
+        if ( strpos( $route, '/account' ) !== false ) {
+            return current_user_can( 'manage_woocommerce' );
+        }
+
+        // Use parent's default permission check for other endpoints.
+        return parent::get_item_permissions_check( $request );
+    }
+
+    /**
+     * Checks if a given request has access to customer payment method operations.
+     * Allows authenticated customers to manage their own payment methods.
+     *
+     * @param WP_REST_Request $request Full data about the request.
+     *
+     * @since 1.0.0
+     * @return WP_Error|bool True if the request has access, WP_Error object otherwise.
+     */
+    public function customer_permissions_check( $request ) {
+        $user_id = get_current_user_id();
+        if ( ! $user_id ) {
+            return new WP_Error(
+                'wpay_auth_required',
+                __( 'Authentication required. You must be logged in to perform this action.', 'woocommerce-wholesale-payments' ),
+                array( 'status' => 401 )
+            );
+        }
+
+        // Allow authenticated customers to manage their payment methods.
+        return true;
     }
 }

@@ -66,6 +66,7 @@ class SettingsPage {
 	public function section_content() {
 		// Hiding the normal WC Settings section save button because we render an independent React app.
 		global $hide_save_button;
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- WooCommerce global.
 		$hide_save_button = true;
 
 		printf(
@@ -80,7 +81,7 @@ class SettingsPage {
 		$currency           = get_woocommerce_currency();
 
 		do_action(
-			'enqueue_woocommerce_shipping_script',
+			'wcshipping_enqueue_script',
 			'woocommerce-shipping-onboarding',
 			array(
 				'authReturnUrl'       => $this->get_wpcom_connection_redirect_url(),

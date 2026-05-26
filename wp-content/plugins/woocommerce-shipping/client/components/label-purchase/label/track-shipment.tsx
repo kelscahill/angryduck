@@ -1,7 +1,5 @@
-import { external } from '@wordpress/icons';
 import { __ } from '@wordpress/i18n';
-import { Icon } from '@wordpress/components';
-import { Link } from '@woocommerce/components';
+import { ExternalLink } from '@wordpress/components';
 import { Label } from 'types';
 import { trackingUrls } from './constants';
 import { Conditional } from '../../HOC';
@@ -30,15 +28,9 @@ export const TrackShipment = Conditional(
 	},
 	// @ts-expect-error // Conditional is written in js
 	( { trackingUrl }: { isBusy: boolean; trackingUrl: string } ) => (
-		<Link
-			href={ trackingUrl }
-			type="external"
-			target="_blank"
-			rel="noopener noreferrer"
-		>
+		<ExternalLink href={ trackingUrl }>
 			{ __( 'Track shipment', 'woocommerce-shipping' ) }
-			<Icon icon={ external } />
-		</Link>
+		</ExternalLink>
 	),
 	() => null
 );

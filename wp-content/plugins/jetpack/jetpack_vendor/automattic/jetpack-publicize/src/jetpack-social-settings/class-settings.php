@@ -16,6 +16,8 @@ use Automattic\Jetpack\Publicize\Social_Image_Generator\Templates;
  *      - Social Image Generator
  *      - UTM Settings
  *      - Social Notes
+ *
+ * @phan-constructor-used-for-side-effects
  */
 class Settings {
 	/**
@@ -47,27 +49,6 @@ class Settings {
 	const JETPACK_SOCIAL_NOTE_CPT_ENABLED   = 'jetpack-social-note';
 	const JETPACK_SOCIAL_SHOW_PRICING_PAGE  = 'jetpack-social_show_pricing_page';
 	const NOTES_FLUSH_REWRITE_RULES_FLUSHED = 'jetpack_social_rewrite_rules_flushed';
-
-	/**
-	 * Feature flags. Each item has 3 keys because of the naming conventions:
-	 * - flag_name: The name of the feature flag for the option check.
-	 * - feature_name: The name of the feature that enables the feature. Will be checked with Current_Plan.
-	 * - variable_name: The name of the variable that will be used in the front-end.
-	 *
-	 * @var array
-	 */
-	const FEATURE_FLAGS = array(
-		array(
-			'flag_name'     => 'editor_preview',
-			'feature_name'  => 'editor-preview',
-			'variable_name' => 'useEditorPreview',
-		),
-		array(
-			'flag_name'     => 'share_status',
-			'feature_name'  => 'share-status',
-			'variable_name' => 'useShareStatus',
-		),
-	);
 
 	/**
 	 * Whether the actions have been hooked into.
@@ -158,6 +139,9 @@ class Settings {
 								'type' => 'boolean',
 							),
 							'template'         => array(
+								'type' => 'string',
+							),
+							'font'             => array(
 								'type' => 'string',
 							),
 							'default_image_id' => array(
@@ -436,5 +420,20 @@ class Settings {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Get the default font.
+	 *
+	 * @return string
+	 */
+	public function sig_get_default_font() {
+		$this->migrate_old_option();
+		$sig_settings = get_option( self::OPTION_PREFIX . self::IMAGE_GENERATOR_SETTINGS );
+		if ( empty( $sig_settings ) || ! is_array( $sig_settings ) ) {
+			return '';
+		}
+
+		return $sig_settings['font'] ?? '';
 	}
 }

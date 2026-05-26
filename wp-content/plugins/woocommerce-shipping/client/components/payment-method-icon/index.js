@@ -48,8 +48,8 @@ const PaymentMethodIcon = ( { altText, type } ) => {
 			className={ className }
 			style={ logoStyle }
 			aria-label={
-				altText ||
-				ALT_TEXT[ type ] ||
+				altText ??
+				ALT_TEXT[ type ] ??
 				__( 'unknown payment', 'woocommerce-shipping' )
 			}
 		/>

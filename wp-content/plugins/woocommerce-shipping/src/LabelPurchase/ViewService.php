@@ -3,19 +3,23 @@
 namespace Automattic\WCShipping\LabelPurchase;
 
 use Automattic\WCShipping\Utils;
+use Automattic\WCShipping\Utilities\USPSTerritories;
 use WC_Order;
 use WC_Order_Item_Product;
 use Automattic\WCShipping\Connect\WC_Connect_Account_Settings;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Schemas_Store;
 use Automattic\WCShipping\Connect\WC_Connect_Utils;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 class ViewService {
 
 		/**
 		 * @var array Supported countries by USPS, see: https://webpmt.usps.gov/pmt010.cfm
 		 */
-	private $supported_countries = array( 'US', 'AS', 'PR', 'VI', 'GU', 'MP', 'UM', 'FM', 'MH' );
+	private $supported_countries = USPSTerritories::DOMESTIC_MAIL_TERRITORIES;
 
 	/**
 	 * @var array Supported currencies
@@ -336,19 +340,6 @@ class ViewService {
 	 */
 	public function is_supported_currency( string $currency_code ): bool {
 		return in_array( $currency_code, $this->supported_currencies, true );
-	}
-
-	/**
-	 * Check whether shipping label feature is enabled from WC Services setting.
-	 */
-	public function is_shipping_label_enabled(): bool {
-		$account_settings = $this->account_settings->get( true );
-
-		if ( isset( $account_settings['purchaseSettings']['enabled'] ) && is_bool( $account_settings['purchaseSettings']['enabled'] ) ) {
-			return $account_settings['purchaseSettings']['enabled'];
-		}
-
-		return true;
 	}
 
 	/**

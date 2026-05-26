@@ -140,11 +140,13 @@ class QueryBuilder {
 	 * @param bool  $is_exclude_applied_filters Whether to exclude the applied filters or not.
 	 */
 	public function get_final_frontend_query( $collection_args, $query, $page = 1, $is_exclude_applied_filters = false ) {
-		$product_ids = $query['post__in'] ?? array();
-		$offset      = $query['offset'] ?? 0;
-		$per_page    = $query['perPage'] ?? 9;
-		$order       = $query['order'] ?? 'asc';
-		$search      = $query['search'] ?? '';
+		$product_ids  = $query['post__in'] ?? array();
+		$offset_raw   = $query['offset'] ?? 0;
+		$per_page_raw = $query['perPage'] ?? null;
+		$offset       = is_numeric( $offset_raw ) ? max( 0, (int) $offset_raw ) : 0;
+		$per_page     = is_numeric( $per_page_raw ) ? max( 1, (int) $per_page_raw ) : 9;
+		$order        = $query['order'] ?? 'asc';
+		$search       = $query['search'] ?? '';
 
 		$common_query_values = array(
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
@@ -652,6 +654,66 @@ class QueryBuilder {
 	}
 
 	/**
+	 * Return a query that filters products by taxonomy terms.
+	 *
+	 * @since 10.6.0
+	 *
+	 * @return array
+	 */
+	private function get_filter_by_taxonomy_query() {
+
+		$container       = wc_get_container();
+		$params_handler  = $container->get( \Automattic\WooCommerce\Internal\ProductFilters\Params::class );
+		$taxonomy_params = $params_handler->get_param( 'taxonomy' );
+
+		if ( empty( $taxonomy_params ) ) {
+			return array();
+		}
+
+		$tax_queries = array();
+
+		foreach ( $taxonomy_params as $taxonomy_slug => $param_key ) {
+			$param_value = get_query_var( $param_key );
+
+			// Adding is_string check to avoid invalid query parameters for the taxonomy.
+			if ( ! is_string( $param_value ) || empty( $param_value ) ) {
+				continue;
+			}
+
+			// Define $term_values by exploding the string.
+			$term_values = explode( ',', $param_value );
+
+			// Sanitize and filter (removes empty strings).
+			$term_slugs = array_values( array_filter( array_map( 'sanitize_title', $term_values ) ) );
+
+			if ( empty( $term_slugs ) ) {
+				continue;
+			}
+
+			$tax_queries[] = array(
+				'taxonomy' => $taxonomy_slug,
+				'field'    => 'slug',
+				'terms'    => $term_slugs,
+				'operator' => 'IN',
+			);
+		}
+
+		if ( empty( $tax_queries ) ) {
+			return array();
+		}
+
+		return array(
+			// phpcs:ignore WordPress.DB.SlowDBQuery
+			'tax_query' => array(
+				array(
+					'relation' => 'AND',
+					...$tax_queries,
+				),
+			),
+		);
+	}
+
+	/**
 	 * Merge two array recursively but replace the non-array values instead of
 	 * merging them. The merging strategy:
 	 *
@@ -727,6 +789,7 @@ class QueryBuilder {
 			'attributes_filter'   => $this->get_filter_by_attributes_query(),
 			'stock_status_filter' => $this->get_filter_by_stock_status_query(),
 			'rating_filter'       => $this->get_filter_by_rating_query(),
+			'taxonomy_filter'     => $this->get_filter_by_taxonomy_query(),
 		);
 	}
 
@@ -1066,9 +1129,10 @@ class QueryBuilder {
 		}
 
 		if ( 'menu_order' === $orderby ) {
+			add_filter( 'posts_clauses', array( $this, 'add_menu_order_with_title_fallback_posts_clauses' ), 10, 2 );
 			return array(
-				'orderby' => 'menu_order',
-				'order'   => 'ASC',
+				'isProductCollection' => true,
+				'orderby'             => $orderby,
 			);
 		}
 
@@ -1206,5 +1270,34 @@ class QueryBuilder {
 		}
 
 		return array_values( array_unique( $post__in, SORT_NUMERIC ) );
+	}
+
+	/**
+	 * Add the `posts_clauses` filter to add menu order with title fallback sorting
+	 *
+	 * @param array    $clauses The list of clauses for the query.
+	 * @param WP_Query $query   The WP_Query instance.
+	 * @return array   Modified list of clauses.
+	 */
+	public function add_menu_order_with_title_fallback_posts_clauses( $clauses, $query ) {
+		$query_vars                  = $query->query_vars;
+		$is_product_collection_block = $query_vars['isProductCollection'] ?? false;
+
+		if ( ! $is_product_collection_block ) {
+			return $clauses;
+		}
+
+		$orderby = $query_vars['orderby'] ?? null;
+		if ( 'menu_order' !== $orderby ) {
+			return $clauses;
+		}
+
+		$is_ascending_order = ! isset( $query_vars['order'] ) || 'asc' === strtolower( $query_vars['order'] );
+
+		$clauses['orderby'] = $is_ascending_order ?
+			'menu_order ASC, post_title ASC' :
+			'menu_order DESC, post_title DESC';
+
+		return $clauses;
 	}
 }

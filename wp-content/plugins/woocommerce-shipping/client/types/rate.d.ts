@@ -8,7 +8,6 @@ export interface Rate {
 	freePickup: boolean;
 	insurance: number;
 	isSelected: boolean;
-	listRate: number;
 	rate: number;
 	rateId: string;
 	retailRate: number;
@@ -16,10 +15,14 @@ export interface Rate {
 	shipmentId: string;
 	title: string;
 	tracking: boolean;
+	deliveryDays?: number;
+	deliveryDate?: string;
+	deliveryDateGuaranteed?: boolean;
 	caveats?: Array< string >;
 	type?: SnakeToCamelCase< LabelRateType >;
 	extraOptions?: RateExtraOptions; // extra options are the options that are added to the rate, added when saved to the order
 	baseRate?: number; // base rate is the rate without any extra options, added when saved to the order
+	isReturn?: boolean; // whether this is a return shipment
 	promoId?: string;
 }
 

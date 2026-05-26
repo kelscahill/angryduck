@@ -155,7 +155,14 @@ final class WWLC_Helper_Functions {
         }
 
         // Get first user with wholesale role.
-        $users = get_users( array( 'role' => $wwlc_role ) );
+        $users = get_users(
+            array(
+                'role'    => $wwlc_role,
+                'number'  => 1,  // Get the first user with wholesale role only.
+                'orderby' => 'ID',
+                'order'   => 'ASC',
+            )
+        );
         return ! empty( $users ) ? $users[0] : null;
     }
 
@@ -171,6 +178,8 @@ final class WWLC_Helper_Functions {
         $lead_roles = array(
             WWLC_UNAPPROVED_ROLE,
             WWLC_REJECTED_ROLE,
+            'customer',
+            'subscriber',
             get_option( 'wwlc_general_new_lead_role', 'wholesale_customer' ),
         );
 

@@ -1,0 +1,1 @@
+import{d as o,f as s,o as a,O as e,N as l,u as m}from"./hooks.C8Kwl4hr.js";const n=o({__name:"NoOptions",setup:o=>(o,n)=>(a(),s("p",null,[e("em",null,l(m(wp.i18n.__)("No available options.","woocommerce-wholesale-order-form")),1)]))});export{n as _};

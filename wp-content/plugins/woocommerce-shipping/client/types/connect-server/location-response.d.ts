@@ -13,6 +13,12 @@ export interface LocationResponse {
 	country: string;
 	name?: string;
 	address?: string;
-	is_verified?: bool;
-	default_address?: bool;
+	is_verified?: boolean;
+	default_address?: boolean;
+	default_return_address?: boolean;
+	/**
+	 * Only used in conjunction with the v2 endpoint for now.
+	 * It specifies if the address has been approved by the merchant.
+	 */
+	is_approved?: boolean;
 }

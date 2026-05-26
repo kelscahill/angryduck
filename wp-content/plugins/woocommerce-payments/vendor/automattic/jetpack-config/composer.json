@@ -7,7 +7,7 @@
 		"php": ">=7.2"
 	},
 	"require-dev": {
-		"automattic/jetpack-changelogger": "^6.0.0",
+		"automattic/jetpack-changelogger": "^6.0.5",
 		"automattic/jetpack-connection": "@dev",
 		"automattic/jetpack-import": "@dev",
 		"automattic/jetpack-jitm": "@dev",
@@ -18,8 +18,8 @@
 		"automattic/jetpack-stats-admin": "@dev",
 		"automattic/jetpack-sync": "@dev",
 		"automattic/jetpack-videopress": "@dev",
+		"automattic/jetpack-account-protection": "@dev",
 		"automattic/jetpack-waf": "@dev",
-		"automattic/jetpack-wordads": "@dev",
 		"automattic/jetpack-yoast-promo": "@dev"
 	},
 	"suggest": {
@@ -40,22 +40,22 @@
 			"link-template": "https://github.com/Automattic/jetpack-config/compare/v${old}...v${new}"
 		},
 		"branch-alias": {
-			"dev-trunk": "3.0.x-dev"
+			"dev-trunk": "3.1.x-dev"
 		},
 		"dependencies": {
 			"test-only": [
+				"packages/account-protection",
 				"packages/connection",
 				"packages/import",
 				"packages/jitm",
 				"packages/post-list",
 				"packages/publicize",
 				"packages/search",
-				"packages/stats",
 				"packages/stats-admin",
+				"packages/stats",
 				"packages/sync",
 				"packages/videopress",
 				"packages/waf",
-				"packages/wordads",
 				"packages/yoast-promo"
 			]
 		}

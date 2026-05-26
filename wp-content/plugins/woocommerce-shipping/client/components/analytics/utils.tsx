@@ -1,7 +1,8 @@
 import { dateI18n } from '@wordpress/date';
 import { ReportLabel } from 'types';
 import CurrencyFactory from '@woocommerce/currency';
-import { Link } from '@woocommerce/components';
+import { Link } from 'components/wc';
+import { ExternalLink } from '@wordpress/components';
 import { trackingUrls } from 'components/label-purchase/label/constants';
 
 export const mapRowToTableData =
@@ -37,15 +38,13 @@ export const mapRowToTableData =
 					item.carrierId &&
 					item.tracking &&
 					trackingUrls[ item.carrierId ] ? (
-						<Link
+						<ExternalLink
 							href={ trackingUrls[ item.carrierId ](
 								item.tracking
 							) }
-							target="_blank"
-							type="external"
 						>
 							{ item.tracking }
-						</Link>
+						</ExternalLink>
 					) : (
 						item.tracking
 					),

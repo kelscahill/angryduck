@@ -1,0 +1,1 @@
+import{C as s,s as e,K as o}from"./hooks.C8Kwl4hr.js";import{u as r}from"./responsiveObserve.CHEfQfam.js";function u(){const u=e({});let a=null;const n=r();return s(()=>{a=n.value.subscribe(s=>{u.value=s})}),o(()=>{n.value.unsubscribe(a)}),u}export{u};

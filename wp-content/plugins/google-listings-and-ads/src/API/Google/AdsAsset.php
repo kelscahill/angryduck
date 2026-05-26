@@ -6,16 +6,17 @@ namespace Automattic\WooCommerce\GoogleListingsAndAds\API\Google;
 use Automattic\WooCommerce\GoogleListingsAndAds\Google\Ads\GoogleAdsClient;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareTrait;
 use Automattic\WooCommerce\GoogleListingsAndAds\Options\OptionsAwareInterface;
-use Google\Ads\GoogleAds\V18\Services\GoogleAdsRow;
-use Google\Ads\GoogleAds\V18\Enums\AssetTypeEnum\AssetType;
-use Google\Ads\GoogleAds\V18\Resources\Asset;
-use Google\Ads\GoogleAds\V18\Services\AssetOperation;
-use Google\Ads\GoogleAds\V18\Services\MutateGoogleAdsRequest;
-use Google\Ads\GoogleAds\V18\Services\MutateOperation;
-use Google\Ads\GoogleAds\Util\V18\ResourceNames;
-use Google\Ads\GoogleAds\V18\Common\TextAsset;
-use Google\Ads\GoogleAds\V18\Common\ImageAsset;
-use Google\Ads\GoogleAds\V18\Common\CallToActionAsset;
+use Google\Ads\GoogleAds\V23\Services\GoogleAdsRow;
+use Google\Ads\GoogleAds\V23\Enums\AssetTypeEnum\AssetType;
+use Google\Ads\GoogleAds\V23\Resources\Asset;
+use Google\Ads\GoogleAds\V23\Services\AssetOperation;
+use Google\Ads\GoogleAds\V23\Services\MutateGoogleAdsRequest;
+use Google\Ads\GoogleAds\V23\Services\MutateOperation;
+use Google\Ads\GoogleAds\Util\V23\ResourceNames;
+use Google\Ads\GoogleAds\V23\Common\TextAsset;
+use Google\Ads\GoogleAds\V23\Common\ImageAsset;
+use Google\Ads\GoogleAds\V23\Common\CallToActionAsset;
+use Google\Ads\GoogleAds\V23\Common\YoutubeVideoAsset;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WP;
 use Google\ApiCore\ApiException;
 use Exception;
@@ -114,6 +115,8 @@ class AdsAsset implements OptionsAwareInterface {
 			case AssetFieldType::DESCRIPTION:
 			case AssetFieldType::BUSINESS_NAME:
 				return AssetType::TEXT;
+			case AssetFieldType::YOUTUBE_VIDEO:
+				return AssetType::YOUTUBE_VIDEO;
 			default:
 				throw new Exception( 'Asset Field type not supported' );
 		}
@@ -238,12 +241,50 @@ class AdsAsset implements OptionsAwareInterface {
 			case AssetType::TEXT:
 				$asset->setTextAsset( new TextAsset( [ 'text' => $data['content'] ] ) );
 				break;
+			case AssetType::YOUTUBE_VIDEO:
+				$asset->setYoutubeVideoAsset( new YoutubeVideoAsset( [ 'youtube_video_id' => $data['content'] ] ) );
+				break;
 			default:
 				throw new Exception( 'Asset type not supported' );
 		}
 
 		$operation = ( new AssetOperation() )->setCreate( $asset );
 		return ( new MutateOperation() )->setAssetOperation( $operation );
+	}
+
+	/**
+	 * Returns an array of operations to create multiple assets.
+	 *
+	 * @param array $assets An array of assets, each containing content and field_type keys
+	 * @return array An array of MutateOperation
+	 */
+	public function create_operations( array $assets ): array {
+		if ( empty( $assets ) ) {
+			return [];
+		}
+
+		$operations  = [];
+		$image_types = [
+			AssetFieldType::LOGO,
+			AssetFieldType::MARKETING_IMAGE,
+			AssetFieldType::SQUARE_MARKETING_IMAGE,
+			AssetFieldType::PORTRAIT_MARKETING_IMAGE,
+		];
+
+		foreach ( $assets as $asset ) {
+			// For image assets, fetch the image data.
+			if ( in_array( $asset['field_type'], $image_types, true ) ) {
+				$image_data    = $this->get_image_data( $asset['content'] );
+				$asset['body'] = $image_data['body'];
+			}
+
+			$operations[] = $this->create_operation(
+				$asset,
+				self::$temporary_id--
+			);
+		}
+
+		return $operations;
 	}
 
 	/**
@@ -268,6 +309,8 @@ class AdsAsset implements OptionsAwareInterface {
 					return CallToActionType::UNSPECIFIED;
 				}
 				return CallToActionType::label( $asset->getCallToActionAsset()->getCallToAction() );
+			case AssetType::YOUTUBE_VIDEO:
+				return $asset->getYoutubeVideoAsset()->getYoutubeVideoId();
 			default:
 				return '';
 		}

@@ -159,130 +159,26 @@ class App {
         $missing_required_plugins = WWOF::missing_required_plugins();
         $wwof_plugin_data         = WWOF::get_plugin_data();
 
-        $admin_notice = null;
+        // If there are missing required plugins, schedule admin notice creation for later.
         if ( ! empty( $missing_required_plugins ) ) {
-
-            $required_plugins = array();
-            foreach ( $missing_required_plugins as $missing_required_plugin ) {
-                $plugin_file = WP_PLUGIN_DIR . "/{$missing_required_plugin['plugin-base']}";
-                if ( file_exists( $plugin_file ) ) {
-                    $plugin_data = get_plugin_data( $plugin_file, false, false );
-
-                    $required_plugins[] = sprintf(/* translators: %1$s = opening <a> tag; %2$s = closing </a> tag */
-                        esc_html__(
-                            '%1$sClick here to activate %3$s plugin &rarr;%2$s',
-                            'woocommerce-wholesale-order-form'
-                        ),
-                        sprintf(
-                            '<a href="%s" title="%s">',
-                            wp_nonce_url(
-                                self_admin_url(
-                                    'plugins.php?action=activate&plugin='
-                                ) . $missing_required_plugin['plugin-base'],
-                                'activate-plugin_' . $missing_required_plugin['plugin-base']
-                            ),
-                            esc_attr__( 'Activate this plugin', 'woocommerce-wholesale-order-form' )
-                        ),
-                        '</a>',
-                        $plugin_data['Name']
-                    );
-                } else {
-
-                    $message = '';
-                    if ( false !== strpos( $missing_required_plugin['plugin-base'], 'woocommerce.php' ) ) {
-                        $message .= sprintf(/* translators: %1$s = opening <p> tag; %2$s = closing </p> tag; %3$s = WooCommerce Wholesale Order Form */
-                            esc_html__(
-                                '%1$sUnable to activate %3$s plugin. Please install and activate WooCoomerce plugin first.%2$s',
-                                'woocommerce-wholesale-order-form'
-                            ),
-                            '<p>',
-                            '</p>',
-                            $wwof_plugin_data['Name']
-                        );
-                    }
-
-                    $message .= sprintf(/* translators: %1$s = opening <a> tag; %2$s = closing </a> tag */
-                        esc_html__(
-                            '%1$sClick here to install %3$s plugin &rarr;%2$s',
-                            'woocommerce-wholesale-order-form'
-                        ),
-                        sprintf(
-                            '<a href="%s" title="%s">',
-                            wp_nonce_url(
-                                self_admin_url(
-                                    'update.php?action=install-plugin&plugin='
-                                ) . $missing_required_plugin['plugin-key'],
-                                'install-plugin_' . $missing_required_plugin['plugin-key']
-                            ),
-                            esc_attr__( 'Install this plugin', 'woocommerce-wholesale-order-form' )
-                        ),
-                        '</a>',
-                        $missing_required_plugin['plugin-name']
-                    );
-
-                    $required_plugins[] = $message;
-                }
-            }
-
-            /***************************************************************************
-             * Required plugins admin notice
-             ***************************************************************************
-             *
-             * We display an admin notice for the missing required plugins.
-             */
-            $admin_notice = new Admin_Notice(
-                sprintf(/* translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = opening <p> tag; %4$s = closing </p> tag */
-                    esc_html__(
-                        '%3$s%1$sWooCommerce Wholesale Order%2$s Form plugin missing dependency:%4$s',
-                        'woocommerce-wholesale-order-form'
-                    ),
-                    '<strong>',
-                    '</strong>',
-                    '<p>',
-                    '</p>'
-                ) . '<p>' . implode( '</p><p>', $required_plugins ) . '</p>',
-                'error',
-                'html'
-            );
-        } elseif ( version_compare( $wwp_plugin_data['Version'], '2.1.3', '<' ) ) {
-            /***************************************************************************
-             * WWP is active but not the required version
-             ***************************************************************************
-             *
-             * We display an admin notice if the required version of WWP is lower than
-             * the required version.
-             */
-            $admin_notice = new Admin_Notice(
-                sprintf(/* translators: %1$s = opening <a> tag; %2$s = closing </a> tag */
-                    esc_html__(
-                        '%1$sClick here to update WooCommerce Wholesale Prices Plugin &rarr;%2$s',
-                        'woocommerce-wholesale-order-form'
-                    ),
-                    sprintf(
-                        '<a href="%s">',
-                        wp_nonce_url(
-                            self_admin_url( 'update.php?action=upgrade-plugin&plugin=' ) . $wwp_plugin_file,
-                            'upgrade-plugin_' . $wwp_plugin_file
-                        )
-                    ),
-                    '</a>'
-                ),
-                'error',
-                'html'
-            );
+            add_action( 'admin_notices', array( $this, 'show_missing_plugins_notice' ) );
+            return; // Don't load the plugin if dependencies are missing.
         }
 
-        /***************************************************************************
-         * Required plugins check failed
-         ***************************************************************************
-         *
-         * If the required plugins check failed we display an admin notice and bail.
-         */
-        if ( null !== $admin_notice ) {
-            $admin_notice->run();
+        // Check WWP version after dependencies are confirmed.
+        $wwp_plugin_file = 'woocommerce-wholesale-prices/woocommerce-wholesale-prices.bootstrap.php';
+        $wwp_plugin_data = get_plugin_data(
+            WP_PLUGIN_DIR . "/$wwp_plugin_file",
+            false,
+            false
+        );
 
-            return;
+        if ( version_compare( $wwp_plugin_data['Version'], '2.1.3', '<' ) ) {
+            add_action( 'admin_notices', array( $this, 'show_wwp_version_notice' ) );
+            return; // Don't load the plugin if WWP version is too old.
         }
+
+        // Dependencies are met, continue with plugin initialization.
 
         /***************************************************************************
          * Call run() method on all registered classes
@@ -296,10 +192,7 @@ class App {
             if ( ! method_exists( $object, 'run' ) ) {
                 _doing_it_wrong(
                     __METHOD__,
-                    esc_html__(
-                        'The class does not have a run method. Please make sure to extend the Abstract_Class class.',
-                        'woocommerce-wholesale-order-form'
-                    ),
+                    'The class does not have a run method. Please make sure to extend the Abstract_Class class.',
                     esc_html( $wwof_plugin_data['Version'] )
                 );
                 continue;
@@ -314,6 +207,127 @@ class App {
             );
             $this->objects[ $class_object ]->run();
         }
+    }
+
+    /**
+     * Show admin notice for missing required plugins.
+     *
+     * @since 3.0
+     */
+    public function show_missing_plugins_notice() {
+
+        $missing_required_plugins = WWOF::missing_required_plugins();
+        $wwof_plugin_data         = WWOF::get_plugin_data();
+
+        if ( empty( $missing_required_plugins ) ) {
+            return;
+        }
+
+        $required_plugins = array();
+        foreach ( $missing_required_plugins as $missing_required_plugin ) {
+            $plugin_file = WP_PLUGIN_DIR . "/{$missing_required_plugin['plugin-base']}";
+            if ( file_exists( $plugin_file ) ) {
+                $plugin_data = get_plugin_data( $plugin_file, false, false );
+
+                $required_plugins[] = sprintf(/* translators: %1$s = opening <a> tag; %2$s = closing </a> tag */
+                    esc_html__(
+                        '%1$sClick here to activate %3$s plugin &rarr;%2$s',
+                        'woocommerce-wholesale-order-form'
+                    ),
+                    sprintf(
+                        '<a href="%s" title="%s">',
+                        wp_nonce_url(
+                            self_admin_url(
+                                'plugins.php?action=activate&plugin='
+                            ) . $missing_required_plugin['plugin-base'],
+                            'activate-plugin_' . $missing_required_plugin['plugin-base']
+                        ),
+                        esc_attr__( 'Activate this plugin', 'woocommerce-wholesale-order-form' )
+                    ),
+                    '</a>',
+                    $plugin_data['Name']
+                );
+            } else {
+
+                $message = '';
+                if ( false !== strpos( $missing_required_plugin['plugin-base'], 'woocommerce.php' ) ) {
+                    $message .= sprintf(/* translators: %1$s = opening <p> tag; %2$s = closing </p> tag; %3$s = WooCommerce Wholesale Order Form */
+                        esc_html__(
+                            '%1$sUnable to activate %3$s plugin. Please install and activate WooCoomerce plugin first.%2$s',
+                            'woocommerce-wholesale-order-form'
+                        ),
+                        '<p>',
+                        '</p>',
+                        $wwof_plugin_data['Name']
+                    );
+                }
+
+                $message .= sprintf(/* translators: %1$s = opening <a> tag; %2$s = closing </a> tag */
+                    esc_html__(
+                        '%1$sClick here to install %3$s plugin &rarr;%2$s',
+                        'woocommerce-wholesale-order-form'
+                    ),
+                    sprintf(
+                        '<a href="%s" title="%s">',
+                        wp_nonce_url(
+                            self_admin_url(
+                                'update.php?action=install-plugin&plugin='
+                            ) . $missing_required_plugin['plugin-key'],
+                            'install-plugin_' . $missing_required_plugin['plugin-key']
+                        ),
+                        esc_attr__( 'Install this plugin', 'woocommerce-wholesale-order-form' )
+                    ),
+                    '</a>',
+                    $missing_required_plugin['plugin-name']
+                );
+
+                $required_plugins[] = $message;
+            }
+        }
+
+        $admin_notice = new Admin_Notice(
+            sprintf(/* translators: %1$s = opening <strong> tag; %2$s = closing </strong> tag; %3$s = opening <p> tag; %4$s = closing </p> tag */
+                esc_html__(
+                    '%3$s%1$sWooCommerce Wholesale Order%2$s Form plugin missing dependency:%4$s',
+                    'woocommerce-wholesale-order-form'
+                ),
+                '<strong>',
+                '</strong>',
+                '<p>',
+                '</p>'
+            ) . '<p>' . implode( '</p><p>', $required_plugins ) . '</p>',
+            'error',
+            'html'
+        );
+    }
+
+    /**
+     * Show admin notice for WWP version requirement.
+     *
+     * @since 3.0
+     */
+    public function show_wwp_version_notice() {
+
+        $wwp_plugin_file = 'woocommerce-wholesale-prices/woocommerce-wholesale-prices.bootstrap.php';
+
+        $admin_notice = new Admin_Notice(
+            sprintf(/* translators: %1$s = opening <a> tag; %2$s = closing </a> tag */
+                esc_html__(
+                    '%1$sClick here to update WooCommerce Wholesale Prices Plugin &rarr;%2$s',
+                    'woocommerce-wholesale-order-form'
+                ),
+                sprintf(
+                    '<a href="%s">',
+                    wp_nonce_url(
+                        self_admin_url( 'update.php?action=upgrade-plugin&plugin=' ) . $wwp_plugin_file,
+                        'upgrade-plugin_' . $wwp_plugin_file
+                    )
+                ),
+                '</a>'
+            ),
+            'error',
+            'html'
+        );
     }
 
     /**

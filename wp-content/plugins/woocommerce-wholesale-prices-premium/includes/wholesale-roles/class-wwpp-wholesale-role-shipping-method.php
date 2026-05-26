@@ -446,7 +446,9 @@ class WWPP_Wholesale_Role_Shipping_Method {
             wp_die();
         }
 
-        $zone_id          = (int) sanitize_key( $_POST['zone_id'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $zone_id          = isset( $_POST['zone_id'] ) ? (int) sanitize_key( $_POST['zone_id'] ) : 0;
         $shipping_zone    = WC_Shipping_Zones::get_zone( $zone_id );
         $shipping_methods = array();
 
@@ -489,7 +491,9 @@ class WWPP_Wholesale_Role_Shipping_Method {
             wp_die();
         }
 
-        $mapping                = WWPP_Helper_Functions::sanitize_array( $_POST['mapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $mapping                = isset( $_POST['mapping'] ) ? WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $wholesale_zone_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_SHIPPING_ZONE_METHOD_MAPPING, array() );
 
         if ( $this->_check_if_mapping_exists( $mapping, $wholesale_zone_mapping ) !== false ) {
@@ -550,8 +554,10 @@ class WWPP_Wholesale_Role_Shipping_Method {
             wp_die();
         }
 
-        $index                  = sanitize_key( $_POST['index'] );
-        $mapping                = WWPP_Helper_Functions::sanitize_array( $_POST['mapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $index                  = isset( $_POST['index'] ) ? sanitize_key( wp_unslash( $_POST['index'] ) ) : '';
+        $mapping                = isset( $_POST['mapping'] ) ? WWPP_Helper_Functions::sanitize_array( wp_unslash( $_POST['mapping'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         $wholesale_zone_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_SHIPPING_ZONE_METHOD_MAPPING, array() );
         $mapping_exists_check   = $this->_check_if_mapping_exists( $mapping, $wholesale_zone_mapping );
 
@@ -611,7 +617,9 @@ class WWPP_Wholesale_Role_Shipping_Method {
             wp_die();
         }
 
-        $index                  = sanitize_key( $_POST['index'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $index                  = isset( $_POST['index'] ) ? sanitize_key( wp_unslash( $_POST['index'] ) ) : '';
         $wholesale_zone_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_SHIPPING_ZONE_METHOD_MAPPING, array() );
 
         if ( ! array_key_exists( $index, $wholesale_zone_mapping ) ) {

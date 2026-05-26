@@ -1,10 +1,14 @@
 <?php
 namespace Automattic\WCShipping\Connect;
 
-use Automattic\WCShipping\Carrier\CarrierStrategyService;
 use Automattic\WCShipping\DOM\Manipulation as DOM_Manipulation;
+use Automattic\WCShipping\FeatureFlags\FeatureFlags;
 use Automattic\WCShipping\OriginAddresses\OriginAddressService;
 use Automattic\WCShipping\Utils;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 class WC_Connect_Settings_Pages {
 	/**
@@ -35,18 +39,12 @@ class WC_Connect_Settings_Pages {
 	protected string $id;
 	protected string $label;
 
-	/**
-	 * @var CarrierStrategyService
-	 */
-	protected $carrier_strategy_service;
-
 	public function __construct(
 		WC_Connect_API_Client $api_client,
 		WC_Connect_Service_Schemas_Store $service_schemas_store,
 		OriginAddressService $origin_address_service,
 		WC_Connect_Service_Settings_Store $settings_store,
-		WC_Connect_Payment_Methods_Store $payment_methods_store,
-		CarrierStrategyService $carrier_strategy_service
+		WC_Connect_Payment_Methods_Store $payment_methods_store
 	) {
 		$this->id                     = 'connect';
 		$this->label                  = _x( 'WooCommerce Shipping', 'The WooCommerce Shipping brandname', 'woocommerce-shipping' );
@@ -58,8 +56,6 @@ class WC_Connect_Settings_Pages {
 			$settings_store,
 			$payment_methods_store
 		);
-
-		$this->carrier_strategy_service = $carrier_strategy_service;
 
 		self::register_wc_section();
 		add_action( 'wcshipping_render_wc_settings_page', array( $this, 'output_shipping_settings_screen' ) );
@@ -120,6 +116,7 @@ class WC_Connect_Settings_Pages {
 	public function output_shipping_settings_screen() {
 		// hiding the save button because the react container has its own.
 		global $hide_save_button;
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- WooCommerce global.
 		$hide_save_button = true;
 
 		if ( WC_Connect_Jetpack::is_offline_mode() ) {
@@ -164,9 +161,15 @@ class WC_Connect_Settings_Pages {
 		$extra_args['continents']         = $this->continents->get();
 		$extra_args['constants']          = Utils::get_constants_for_js();
 		$extra_args['accountSettings']    = $this->account_settings->get();
-		$extra_args['carrier_strategies'] = $this->carrier_strategy_service->get_strategies();
+		$extra_args['carrier_strategies'] = array(
+			'upsdap' => array(
+				'origin_address' => array(),
+			),
+		);
+		$extra_args['scanFormEnabled']    = FeatureFlags::is_scanform_enabled();
+
 		DOM_Manipulation::create_root_script_element( 'woocommerce-shipping-settings' );
 
-		do_action( 'enqueue_woocommerce_shipping_script', 'woocommerce-shipping-settings', $extra_args );
+		do_action( 'wcshipping_enqueue_script', 'woocommerce-shipping-settings', $extra_args );
 	}
 }

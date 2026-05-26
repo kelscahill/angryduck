@@ -359,8 +359,63 @@ class WPay_Emails extends Abstract_Class {
     public function handle_order_status_change( $order_id, $old_status, $new_status ) {
         $order = wc_get_order( $order_id );
 
-        if ( ! $order || $order->get_payment_method() !== 'wpay' ) {
+        if ( ! $order || $order->get_payment_method() !== \RymeraWebCo\WPay\Payment_Gateway\WC_Wholesale_Payments::instance()->id ) {
             return;
+        }
+
+        $is_deferred = 'yes' === $order->get_meta( '_wpay_schedule_deferred' );
+
+        // Activate deferred invoices on completion.
+        if ( 'completed' === $new_status && $is_deferred ) {
+            $auto_charge = 'yes' === $order->get_meta( '_wpay_auto_charge' );
+
+            if ( $auto_charge ) {
+                $result = \RymeraWebCo\WPay\Helpers\WPAY_Invoices::create_deferred_invoices( $order_id );
+            } else {
+                $result = $this->finalize_deferred_invoice( $order_id );
+            }
+
+            // Schedule email reminders from completion time.
+            if ( ! is_wp_error( $result ) ) {
+                $plan_json = $order->get_meta( '_wpay_plan' );
+                $plan_data = json_decode( $plan_json, true );
+
+                if ( ! empty( $plan_data ) ) {
+                    $payment_plan = new \RymeraWebCo\WPay\Factories\Payment_Plan( $plan_data );
+                    \RymeraWebCo\WPay\Schedulers\WPay_Email_Scheduler::schedule_order_reminders_on_creation( $order_id, $payment_plan );
+                }
+
+                $order->add_order_note(
+                    __( 'Payment plan schedule activated — invoices created from order completion date.', 'woocommerce-wholesale-payments' )
+                );
+            }
+
+            // Return early — don't clear the reminders we just scheduled.
+            return;
+        }
+
+        // Clean up deferred orders on cancellation/refund.
+        if ( in_array( $new_status, array( 'cancelled', 'refunded' ), true ) && $is_deferred ) {
+            $auto_charge = 'yes' === $order->get_meta( '_wpay_auto_charge' );
+
+            if ( $auto_charge ) {
+                // Auto-charge: no DB rows exist, just clean up meta.
+                $order->delete_meta_data( '_wpay_schedule_deferred' );
+                $order->delete_meta_data( '_wpay_deferred_breakdown' );
+                $order->save_meta_data();
+            } else {
+                // Non-auto-charge: delete the draft Stripe invoice.
+                $invoice_id = $order->get_meta( '_wpay_stripe_invoice_id' );
+                if ( ! empty( $invoice_id ) ) {
+                    \RymeraWebCo\WPay\Helpers\Stripe::instance()->delete_invoice( $invoice_id );
+                }
+                $order->delete_meta_data( '_wpay_schedule_deferred' );
+                $order->save_meta_data();
+            }
+
+            $order->add_order_note(
+                __( 'Deferred payment plan schedule cancelled.', 'woocommerce-wholesale-payments' )
+            );
         }
 
         // Clear reminders if order is completed, cancelled, or refunded.
@@ -375,6 +430,64 @@ class WPay_Emails extends Abstract_Class {
     }
 
     /**
+     * Finalize a deferred non-auto-charge Stripe invoice on order completion.
+     *
+     * When a non-auto-charge order with deferred scheduling is marked as completed,
+     * this method finalizes the draft Stripe invoice. Stripe interprets days_until_due
+     * relative to finalization time, so due dates automatically anchor to completion.
+     *
+     * @since 1.0.6
+     *
+     * @param int $order_id The WooCommerce order ID.
+     * @return true|\WP_Error True on success, WP_Error on failure.
+     */
+    private function finalize_deferred_invoice( $order_id ) {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return new \WP_Error( 'invalid_order', __( 'Order not found.', 'woocommerce-wholesale-payments' ) );
+        }
+
+        $invoice_id = $order->get_meta( '_wpay_stripe_invoice_id' );
+
+        if ( empty( $invoice_id ) ) {
+            $error = new \WP_Error( 'no_invoice', __( 'Deferred invoice finalization failed: no invoice ID found.', 'woocommerce-wholesale-payments' ) );
+            $order->add_order_note( $error->get_error_message() );
+            return $error;
+        }
+
+        $finalize_response = \RymeraWebCo\WPay\Helpers\Stripe::instance()->finalize_invoice( $invoice_id );
+
+        if ( is_wp_error( $finalize_response ) ) {
+            // If finalization fails, the invoice may already be finalized (e.g., by Stripe auto_advance).
+            // Fetch the current invoice state from Stripe and proceed if it's no longer a draft.
+            $current_invoice = \RymeraWebCo\WPay\Helpers\Stripe::instance()->get_invoice( $invoice_id );
+            if ( ! is_wp_error( $current_invoice ) && isset( $current_invoice['status'] ) && 'draft' !== $current_invoice['status'] ) {
+                $finalize_response = $current_invoice;
+            } else {
+                $order->add_order_note(
+                    sprintf(
+                        /* translators: %s = error message */
+                        __( 'Failed to finalize deferred invoice: %s', 'woocommerce-wholesale-payments' ),
+                        $finalize_response->get_error_message()
+                    )
+                );
+                return $finalize_response;
+            }
+        }
+
+        // Update order meta with finalized invoice data.
+        $order->update_meta_data( '_wpay_stripe_invoice', $finalize_response );
+        $order->update_meta_data(
+            '_wpay_stripe_invoice_status',
+            \RymeraWebCo\WPay\Helpers\WPay::get_invoice_payment_progress_status( $finalize_response, 'status' )
+        );
+        $order->delete_meta_data( '_wpay_schedule_deferred' );
+        $order->save_meta_data();
+
+        return true;
+    }
+
+    /**
      * Handle order updates to reschedule reminders if payment details changed.
      *
      * @since 1.0.4
@@ -384,7 +497,7 @@ class WPay_Emails extends Abstract_Class {
     public function handle_order_update( $order_id ) {
         $order = wc_get_order( $order_id );
 
-        if ( ! $order || $order->get_payment_method() !== 'wpay' ) {
+        if ( ! $order || $order->get_payment_method() !== \RymeraWebCo\WPay\Payment_Gateway\WC_Wholesale_Payments::instance()->id ) {
             return;
         }
 

@@ -16,7 +16,7 @@ export const ModalHeader = ( { closeModal, orderId } ) => (
 		<h3>{ __( 'Create shipping label', 'woocommerce-shipping' ) }</h3>
 		<span>
 			{ sprintf(
-				/* translators: %s: order ID */
+				/* translators: %d: order ID */
 				__( 'Order %d', 'woocommerce-shipping' ),
 				orderId
 			) }

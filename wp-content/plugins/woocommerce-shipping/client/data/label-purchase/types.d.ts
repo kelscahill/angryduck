@@ -33,6 +33,7 @@ export interface LabelPurchaseSuccessAction extends Action {
 			string,
 			ReturnType< typeof getPreparedDestination >
 		>;
+		packageDimensions?: Record< string, unknown >;
 	};
 	error?: Record< string, LabelPurchaseError >;
 }
@@ -88,6 +89,10 @@ export interface OrderStatusUpdatedFailedAction extends Action {
 
 export interface RatesResetAction extends SimpleAction {
 	type: RATES_RESET;
+}
+
+export interface StateResetAction extends SimpleAction {
+	type: typeof STATE_RESET;
 }
 
 export type LabelPurchaseActions =

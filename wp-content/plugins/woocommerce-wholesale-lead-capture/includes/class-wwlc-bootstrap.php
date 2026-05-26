@@ -338,11 +338,13 @@ if ( ! class_exists( 'WWLC_Bootstrap' ) ) {
                 return;
             }
 
-            $unused_metas = $wpdb->get_col( "SELECT umeta_id FROM $wpdb->usermeta WHERE meta_key LIKE '%wwlc_password%'" );
+            $like_pattern = '%' . $wpdb->esc_like( 'wwlc_password' ) . '%';
+            $unused_metas = $wpdb->get_col( $wpdb->prepare( "SELECT umeta_id FROM $wpdb->usermeta WHERE meta_key LIKE %s", $like_pattern ) );
 
             if ( is_array( $unused_metas ) && ! empty( $unused_metas ) ) {
-                $unused_metas_string = implode( ',', $unused_metas );
-                $wpdb->query( $wpdb->prepare( "DELETE from $wpdb->usermeta WHERE umeta_id IN ( %s )", $unused_metas_string ) );
+                $unused_metas = array_map( 'absint', $unused_metas );
+                $placeholders = implode( ', ', array_fill( 0, count( $unused_metas ), '%d' ) );
+                $wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->usermeta WHERE umeta_id IN ( $placeholders )", $unused_metas ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
             }
         }
 
@@ -456,6 +458,9 @@ if ( ! class_exists( 'WWLC_Bootstrap' ) ) {
                 wp_mkdir_p( $temp_upload['dir'] );
             }
 
+            // Protect directory from direct web access.
+            wwlc_protect_upload_directory( $temp_upload['dir'] );
+
             // Setup the params and pass back.
             $upload_dir_params['path'] = $temp_upload['dir'];
             $upload_dir_params['url']  = $temp_upload['url'];
@@ -516,7 +521,13 @@ if ( ! class_exists( 'WWLC_Bootstrap' ) ) {
                 $custom_fields = get_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS );
 
                 if ( ! is_array( $custom_fields ) && ! empty( $custom_fields ) ) {
-                    update_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, unserialize( base64_decode( $custom_fields ) ) ); //phpcs:ignore
+                    $decoded = base64_decode( $custom_fields, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+                    if ( false !== $decoded ) {
+                        $unserialized = maybe_unserialize( $decoded );
+                        if ( is_array( $unserialized ) ) {
+                            update_option( WWLC_OPTION_REGISTRATION_FORM_CUSTOM_FIELDS, $unserialized );
+                        }
+                    }
                 }
 
                 if ( is_multisite() ) {

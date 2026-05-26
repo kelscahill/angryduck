@@ -7,6 +7,12 @@
 
 namespace Automattic\WCShipping\Integrations;
 
+use Automattic\WCShipping\Utils;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Class WooCommerceShipmentTracking
  *
@@ -41,7 +47,7 @@ class WooCommerceShipmentTracking {
 		}
 
 		// To avoid conflicts with the WC Shipment Tracking carriers/providers and to make life easier we will use custom defined ones.
-		$tracking_url = self::get_tracking_url( $carrier ) . $tracking_number;
+		$tracking_url = Utils::get_tracking_url( $carrier, $tracking_number );
 
 		if ( self::is_st_installed() ) {
 			self::add_tracking_using_st_installed_functions( $order_id, $tracking_number, $carrier, $tracking_url );
@@ -153,24 +159,6 @@ class WooCommerceShipmentTracking {
 		\wc_st_add_tracking_number( $order_id, $tracking_number, $carrier, null, $tracking_url );
 	}
 
-	/**
-	 * Get the tracking URL for a carrier based on their ID.
-	 *
-	 * @param string $carrier Carrier ID.
-	 *
-	 * @return string
-	 */
-	public static function get_tracking_url( $carrier ) {
-		$tracking_urls = array(
-			'ups'        => 'https://www.ups.com/track?tracknum=',
-			'upsdap'     => 'https://www.ups.com/track?tracknum=',
-			'usps'       => 'https://tools.usps.com/go/TrackConfirmAction?tLabels=',
-			'fedex'      => 'https://www.fedex.com/apps/fedextrack/?tracknumbers=',
-			'dhlexpress' => 'https://www.dhl.com/en/express/tracking.html?AWB=',
-		);
-
-		return isset( $tracking_urls[ $carrier ] ) ? $tracking_urls[ $carrier ] : '';
-	}
 
 	/**
 	 * Modify tracking data stored erroneously due to previous a bug.
@@ -213,7 +201,7 @@ class WooCommerceShipmentTracking {
 			}
 
 			// If we get to this point then we have a label, lets update the url.
-			$tracking_item['custom_tracking_link'] = self::get_tracking_url( $label['carrier_id'] ) . $label['tracking'];
+			$tracking_item['custom_tracking_link'] = Utils::get_tracking_url( $label['carrier_id'], $label['tracking'] );
 		}
 
 		return $value;

@@ -10,7 +10,7 @@ import { OriginAddress } from 'types';
 import { AddressVerifiedIcon } from '../../address-verified-icon';
 import { useLabelPurchaseContext } from 'context/label-purchase';
 import { check, Icon } from '@wordpress/icons';
-import { Link } from '@woocommerce/components';
+import { Link } from 'components/wc';
 import { ADDRESS_TYPES } from 'data/constants';
 
 interface ShipFromOptionProps {
@@ -54,15 +54,15 @@ export const ShipFromOption = ( {
 			<Flex gap={ 2 } direction="column">
 				<sub>
 					{ ! address.defaultAddress
-						? address.name
+						? address.name ?? ''
 						: sprintf(
 								// translators: %1$s a user defined name for the address.
 								_x(
-									'%1$s (Default)',
+									'%1$s (Default Origin)',
 									'Origin address',
 									'woocommerce-shipping'
 								),
-								address.name
+								address.name ?? ''
 						  ) }
 				</sub>
 				<Text truncate={ false }>{ addressToString( address ) }</Text>

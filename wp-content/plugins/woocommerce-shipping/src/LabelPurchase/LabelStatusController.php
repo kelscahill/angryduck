@@ -4,9 +4,11 @@ namespace Automattic\WCShipping\LabelPurchase;
 
 use Automattic\WCShipping\Connect\WC_Connect_Logger;
 use Automattic\WCShipping\WCShippingRESTController;
+use Automattic\WCShipping\Fulfillments\ShippingFulfillmentsDataStore;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Server;
+use Automattic\WCShipping\Utils;
 
 class LabelStatusController extends WCShippingRESTController {
 
@@ -21,9 +23,19 @@ class LabelStatusController extends WCShippingRESTController {
 	 */
 	protected $logger;
 
-	public function __construct( LabelPurchaseService $label_service, WC_Connect_Logger $logger ) {
-		$this->label_service = $label_service;
-		$this->logger        = $logger;
+	/**
+	 * @var ShippingFulfillmentsDataStore
+	 */
+	protected $shipping_fulfillments_data_store;
+
+	public function __construct(
+		LabelPurchaseService $label_service,
+		WC_Connect_Logger $logger,
+		ShippingFulfillmentsDataStore $shipping_fulfillments_data_store
+	) {
+		$this->label_service                    = $label_service;
+		$this->logger                           = $logger;
+		$this->shipping_fulfillments_data_store = $shipping_fulfillments_data_store;
 	}
 
 	/**

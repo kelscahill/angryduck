@@ -122,11 +122,11 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                                 'option_' . $option,
                                 function ( $value, $option ) {
 
-                                if ( isset( $_POST[ $option ] ) && strcmp( $_POST[ $option ], $value ) != 0 ) { // phpcs:ignore.
-                                    return $_POST[ $option ]; // phpcs:ignore.
-                                }
+                                    if ( isset( $_POST[ $option ] ) && strcmp( $_POST[ $option ], $value ) !== 0 ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                        return wp_kses_post( wp_unslash( $_POST[ $option ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                                    }
 
-                                return $value;
+                                    return $value;
                                 },
                                 90,
                                 2
@@ -156,12 +156,12 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
             $settings = $this->get_settings( $current_section );
 
             // Filter wysiwyg content so it gets stored properly after sanitization.
-            if ( ! empty( $_POST['EmailContent'] ) && isset( $_POST['EmailContent'] ) ) { // phpcs:ignore.
+            if ( ! empty( $_POST['EmailContent'] ) && isset( $_POST['EmailContent'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
-                foreach ( $_POST['EmailContent'] as $index => $content ) { // phpcs:ignore.
-
-                    $_POST[ $index ] = htmlentities( wpautop( $content ) );
-
+                foreach ( $_POST['EmailContent'] as $index => $content ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                    $sanitized_key = sanitize_key( $index );
+                    // phpcs:ignore WordPress.Security.NonceVerification.Missing
+                    $_POST[ $sanitized_key ] = wp_kses_post( wpautop( wp_unslash( $content ) ) );
                 }
             }
 
@@ -199,7 +199,8 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
             global $wpdb;
             $email_options = array();
 
-            $strings = $wpdb->get_results( "SELECT name FROM {$wpdb->prefix}icl_strings s WHERE name LIKE 'wwlc_emails_%'" );
+            $like_pattern = $wpdb->esc_like( 'wwlc_emails_' ) . '%';
+            $strings      = $wpdb->get_results( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}icl_strings s WHERE name LIKE %s", $like_pattern ) );
 
             if ( $strings ) {
                 foreach ( $strings as $option ) {
@@ -410,10 +411,11 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
          * @since 1.7.0 WWLC-201 : Add support for WPML plugin by querying the $allPages options with the default language.
          * @since 1.7.1 Remove {password} template tag on admin email settings description, and added it on the new user email template description.
          * @since 1.8.0 We now store the page id rather than the page url.
+         * @since 2.0.5 Delegate page-option building to WWLC_Admin_Settings::all_page_options() to eliminate DRY violation.
          */
         private function _get_general_section_settings() {
             // Get all user roles.
-            global $wp_roles, $sitepress;
+            global $wp_roles;
 
             if ( ! isset( $wp_roles ) ) {
                 $wp_roles = new WP_Roles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -429,28 +431,10 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                 unset( $allUserRoles['shop_manager'] );
             }
 
-            // WPML support: change the language back to the default language.
-            if ( is_object( $sitepress ) ) {
-                $sitepress->switch_lang( $sitepress->get_default_language() );
-            }
-
-            // Get all pages.
-            $allPages     = array(
-				''       => __( 'Select a Page', 'woocommerce-wholesale-lead-capture' ),
-				'custom' => __( '--- Custom Link ---', 'woocommerce-wholesale-lead-capture' ),
-			);
-            $allPagesList = get_pages();
-
-            if ( $allPagesList ) {
-                foreach ( $allPagesList as $page ) {
-                    $allPages[ $page->ID ] = $page->post_title;
-                }
-            }
-
-            // WPML support: change the language back to the current language.
-            if ( is_object( $sitepress ) ) {
-                $sitepress->switch_lang( ICL_LANGUAGE_CODE );
-            }
+            // Delegate to WWLC_Admin_Settings::all_page_options() which handles WPML
+            // default-language resolution so page titles are shown even when the admin
+            // UI is switched to a secondary language.
+            $allPages = WWLC_Admin_Settings::instance()->all_page_options();
 
             return array(
 
@@ -484,9 +468,10 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                 ),
 
                 array(
-                    'type' => 'checkbox',
-                    'desc' => __( 'Allow logged-in admin and shop managers to view registration page', 'woocommerce-wholesale-lead-capture' ),
-                    'id'   => 'wwlc_enable_admin_registration_page_view',
+                    'type'    => 'checkbox',
+                    'desc'    => __( 'Allow logged-in admin and shop managers to view registration page', 'woocommerce-wholesale-lead-capture' ),
+                    'id'      => 'wwlc_enable_admin_registration_page_view',
+                    'default' => 'no',
                 ),
 
                 array(
@@ -1109,7 +1094,7 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                 array(
                     'title' => __( 'Enable Recaptcha', 'woocommerce-wholesale-lead-capture' ),
                     'type'  => 'checkbox',
-                    'desc'  => __( 'If checked, this will add the recaptcha field on the registration form. You can get your Recaptcha keys by going to <a href="https://www.google.com/recaptcha/">https://www.google.com/recaptcha/</a>', 'woocommerce-wholesale-lead-capture' ),
+                    'desc'  => __( 'If checked, this will add the recaptcha field on the registration form. You can get your Recaptcha keys by going to <a href="https://cloud.google.com/security/products/recaptcha">https://cloud.google.com/security/products/recaptcha</a>', 'woocommerce-wholesale-lead-capture' ),
                     'id'    => 'wwlc_security_enable_recaptcha',
                 ),
 
@@ -1121,6 +1106,7 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                     'options' => array(
                         'v2_im_not_a_robot' => __( 'V2 I\'m not a robot', 'woocommerce-wholesale-lead-capture' ),
                         'v2_invisible'      => __( 'V2 Invisible', 'woocommerce-wholesale-lead-capture' ),
+                        'v3_score_based'    => __( 'V3 Score-based', 'woocommerce-wholesale-lead-capture' ),
                     ),
                     'css'     => 'min-width: 200px',
                 ),
@@ -1139,6 +1125,20 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                     'desc'  => '',
                     'id'    => 'wwlc_security_recaptcha_secret_key',
                     'css'   => 'width:300px;',
+                ),
+
+                array(
+                    'title'             => __( 'Recaptcha v3 score threshold', 'woocommerce-wholesale-lead-capture' ),
+                    'type'              => 'number',
+                    'desc'              => __( 'Minimum score (0.0 – 1.0) required to pass verification when reCAPTCHA type is V3 Score-based. Lower values are more permissive; higher values are stricter. Default 0.5.', 'woocommerce-wholesale-lead-capture' ),
+                    'id'                => 'wwlc_security_recaptcha_v3_score_threshold',
+                    'default'           => '0.5',
+                    'custom_attributes' => array(
+                        'min'  => '0',
+                        'max'  => '1',
+                        'step' => '0.1',
+                    ),
+                    'css'               => 'width:100px;',
                 ),
 
                 array(
@@ -1416,12 +1416,16 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                         <tbody>
 
                 <?php
-                if ( $custom_fields ) {
+                if ( is_array( $custom_fields ) && $custom_fields ) {
 
                 $itemNumber = 0;
 
                 foreach ( $custom_fields as $custom_field_id => $custom_field ) {
                     ++$itemNumber;
+
+                    if ( ! is_array( $custom_field ) ) {
+                        continue;
+                    }
 
                     if ( 'hidden' === $custom_field['field_type'] ) {
                         $custom_field['default_value']     = $custom_field['field_placeholder'];
@@ -1633,7 +1637,7 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                     $tooltip = WC_Admin_Settings::get_field_description( $field );
                 }
 
-                if ( isset( $field['placeholder'] ) && isset( $field['order'] ) || 'terms' === $key ) {
+                if ( ( isset( $field['placeholder'] ) && isset( $field['order'] ) ) || 'terms' === $key ) {
                     ?>
                     <tr valign="top">
                         <td scope="row" class="titledesc">
@@ -1888,9 +1892,7 @@ if ( ! class_exists( 'WWLC_Settings' ) ) {
                 }
             }
         }
-
     }
-
 }
 
 return new WWLC_Settings();

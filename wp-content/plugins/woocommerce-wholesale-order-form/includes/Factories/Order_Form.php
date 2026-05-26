@@ -145,6 +145,14 @@ class Order_Form {
     public $post_type;
 
     /**
+     * In-memory memoization cache for expensive computations.
+     *
+     * @since 3.0
+     * @var array
+     */
+    private static $memoization_cache = array();
+
+    /**
      * Constructor.
      *
      * @param string $context Either 'view' or 'edit'.
@@ -287,8 +295,6 @@ class Order_Form {
             'form_footer'
         );
 
-        $i18n = require WWOF_PLUGIN_DIR_PATH . 'includes/I18n/order-form.php';
-
         /***************************************************************************
          * General Form Settings
          ***************************************************************************
@@ -303,8 +309,8 @@ class Order_Form {
             'permissions'                => array(
                 'allowedUserRoles' => array(),
                 'allowPublicRead'  => 'yes',
-                'noAccessTitle'    => $i18n['accessDenied'],
-                'noAccessMessage'  => $i18n['noAccessMessage'],
+                'noAccessTitle'    => __( 'Access Denied', 'woocommerce-wholesale-order-form' ),
+                'noAccessMessage'  => __( 'You do not have permission to view wholesale product listing.', 'woocommerce-wholesale-order-form' ),
                 'noAccessLoginUrl' => wp_login_url(),
             ),
             'hideFormTitle'              => 'no',
@@ -322,6 +328,7 @@ class Order_Form {
             'showZeroInventory'          => 'no',
             'simplifyAddToCartNotices'   => 'yes',
             'includeProducts'            => array(),
+            'priorityProducts'           => array(),
             'excludeProducts'            => array(),
             'defaultCategory'            => null,
             'includedCategories'         => array(),
@@ -330,7 +337,12 @@ class Order_Form {
 
         $this->settings = array_filter( (array) get_post_meta( $post->ID, 'settings', true ) );
 
-        $this->settings['permissions'] = wp_parse_args( $this->settings['permissions'], $general_settings_defaults['permissions'] );
+        if ( ! isset( $this->settings['permissions'] ) ) {
+            $this->settings['permissions'] = $general_settings_defaults['permissions'];
+        } else {
+            $this->settings['permissions'] = wp_parse_args( $this->settings['permissions'], $general_settings_defaults['permissions'] );
+        }
+
         /**
          * Filter form settings meta.
          *
@@ -453,13 +465,43 @@ class Order_Form {
 
         global $wpdb;
 
-        $results = $wpdb->get_results(
+        // Use memoization for locations to avoid repeated expensive searches within the same request.
+        $locations_memo_key = 'locations_' . $this->ID;
+
+        if ( ! isset( self::$memoization_cache[ $locations_memo_key ] ) ) {
+            // Fallback to object cache if not in memory.
+            $locations_cache_key = 'wwof_form_locations_' . $this->ID;
+            $cached_locations    = wp_cache_get( $locations_cache_key, 'wwof_queries' );
+
+            if ( false !== $cached_locations ) {
+                self::$memoization_cache[ $locations_memo_key ] = $cached_locations;
+                $this->locations                                = $cached_locations;
+                return;
+            }
+        } else {
+            $this->locations = self::$memoization_cache[ $locations_memo_key ];
+            return;
+        }
+
+        // Optimize query by using proper indexing and limiting search scope.
+        $shortcode_pattern = sprintf( '[wwof_product_listing id="%d"]', $this->ID );
+        $escaped_pattern   = $wpdb->esc_like( $shortcode_pattern );
+
+        /**
+         * Use SARGABLE query pattern: search for exact shortcode pattern first, then filter.
+         * This allows better use of indexes on post_content.
+         * Optimize by using a more specific search pattern that can leverage indexes better.
+         */
+        $shortcode_id = $this->ID;
+        $results      = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT p.ID, p.post_title FROM $wpdb->posts p
-                          WHERE p.post_content LIKE %s AND p.post_type IN ( 'page' , 'post' ) AND p.post_status = 'publish'",
-                '%' . $wpdb->esc_like(
-                    sprintf( '[wwof_product_listing id="%d"]', $this->ID )
-                ) . '%'
+                "SELECT p.ID, p.post_title
+                FROM $wpdb->posts p
+                WHERE p.post_content LIKE %s
+                AND p.post_type IN ( 'page' , 'post' )
+                AND p.post_status = 'publish'
+                ORDER BY p.post_type ASC, p.post_title ASC",
+                '%wwof_product_listing id="' . $shortcode_id . '"%'
             )
         );
 
@@ -476,6 +518,12 @@ class Order_Form {
 
             $this->locations = array_unique( $this->locations, SORT_REGULAR );
         }
+
+        // Cache locations for 1 hour since they don't change frequently.
+        wp_cache_set( $locations_cache_key, $this->locations, 'wwof_queries', 3600 );
+
+        // Store in memory for this request.
+        self::$memoization_cache[ $locations_memo_key ] = $this->locations;
     }
 
     /**
@@ -589,17 +637,83 @@ class Order_Form {
     }
 
     /**
-     * Check if the form is set to only show favourites.
+     * Check if the order form only shows favorites.
      *
      * @since 3.0.5
      * @return bool
      */
     public function only_show_favourites() {
 
-        $only_show_favourites = filter_input( INPUT_GET, 'only_show_favourites', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
-        $only_show_favourites = wc_string_to_bool( $only_show_favourites );
-        $only_show_favourites = ! empty( $only_show_favourites ) ? 'yes' : $this->get_settings( 'onlyShowFavourites' );
+        $only_show_favorites = filter_input( INPUT_GET, 'only_show_favourites', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+        $only_show_favorites = ! empty( $only_show_favorites ) ? 'yes' : $this->get_settings( 'onlyShowFavourites' );
 
-        return $this->allow_favourites() && 'yes' === $only_show_favourites;
+        return 'yes' === $only_show_favorites;
+    }
+
+    /**
+     * Get the specified setting value from the header.
+     *
+     * @param string $setting_key The header settings.
+     *
+     * @return array|string|integer|float
+     */
+    public function get_form_header_setting_from_meta_data( $setting_key ) {
+        $settings                 = $this->flatten_setting_data( $this->form_header['rows'] ?? array() );
+        $setting_keys_with_values = array();
+
+        foreach ( $settings as $setting ) {
+            if ( isset( $setting['styles'] ) && ! empty( $setting['styles'] ) ) {
+                array_push( $setting_keys_with_values, $setting['styles'] );
+            }
+            if ( isset( $setting['options'] ) && ! empty( $setting['options'] ) ) {
+                array_push( $setting_keys_with_values, $setting['options'] );
+            }
+        }
+
+        foreach ( $setting_keys_with_values as $setting ) {
+            if ( ! empty( $setting[ $setting_key ] ) ) {
+                return $setting[ $setting_key ];
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Recursively flatten the settings values
+     *
+     * @param array $settings The settings of form.
+     *
+     * @return array
+     */
+    private function flatten_setting_data( $settings ) {
+        $payload = array();
+
+        foreach ( $settings as $key => $setting ) {
+            if ( isset( $setting['settings'] ) ) {
+                $setting['settings']['id'] = $setting['id'];
+                array_push( $payload, $setting['settings'] );
+            }
+
+            if ( isset( $setting['columns'] ) ) {
+                $payload = array( ...$payload, ...$this->flatten_setting_data( $setting['columns'] ) );
+            }
+
+            if ( isset( $setting['fields'] ) ) {
+                $payload = array( ...$payload, ...$this->flatten_setting_data( $setting['fields'] ) );
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Clear the memoization cache.
+     *
+     * @since 3.0
+     * @return void
+     */
+    public static function clear_memoization_cache() {
+        self::$memoization_cache = array();
     }
 }

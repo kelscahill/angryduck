@@ -8,4 +8,7 @@ export interface AddressState extends object {
 		addresses: OriginAddress[];
 	};
 	storeOrigin: Pick< OriginAddress, 'country' | 'state' >;
+	isMainOriginInSyncWithStore: boolean;
+	formattedStoreAddress: string;
+	storeAddressDraft?: OriginAddress | null;
 }

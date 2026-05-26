@@ -19,15 +19,23 @@
         $permission_cap_settings = 'manage_woocommerce';
     }
     $checkbox_default_settings = ( array_key_exists( 'mailchimp_checkbox_defaults', $options ) && ! is_null( $options['mailchimp_checkbox_defaults'] ) ) ? $options['mailchimp_checkbox_defaults'] : 'check';
-	$is_has_wc_checkout_block = has_block( 'woocommerce/checkout', (int) $checkout_page_id );
+    // has_block() pulls the full post + parses block markup every call —
+    // cheap after the first read per request but worth memoizing here
+    // because the store_info tab has multiple block-aware branches that
+    // would otherwise re-parse.
+    static $is_has_wc_checkout_block_cache = null;
+    if ( $is_has_wc_checkout_block_cache === null ) {
+        $is_has_wc_checkout_block_cache = has_block( 'woocommerce/checkout', (int) $checkout_page_id );
+    }
+    $is_has_wc_checkout_block = $is_has_wc_checkout_block_cache;
 
     $default_opt_in_settings = array(
         [ 'label' => esc_html__( 'Checked by default', 'mailchimp-for-woocommerce' ), 'value' => 'check' ],
         [ 'label' => esc_html__( 'Unchecked by default', 'mailchimp-for-woocommerce' ), 'value' => 'uncheck' ],
     );
 
-    $opt_in_settings = apply_filters('mailchimp_checkout_opt_in_options', $default_opt_in_settings);;
-?>
+    $opt_in_settings = apply_filters('mailchimp_checkout_opt_in_options', $default_opt_in_settings);
+    ?>
 <input type="hidden" name="mailchimp_active_settings_tab" value="<?php echo MC_WC_STORE_INFO_TAB; ?>"/>
 <input type="hidden" value="<?php echo ( esc_attr( isset( $current_currency_data ) ? $current_currency . ' | ' . $current_currency_data['name'] : $current_currency ) ); ?>" disabled/>
 	<input type="hidden" value="<?php echo esc_attr( mailchimp_get_timezone( true ) ); ?>" disabled/>
@@ -135,6 +143,22 @@
                     <?php echo esc_html( __( 'Leave it blank to use language translation files (.po / .mo), translating the string: "Subscribe to our newsletter".', 'mailchimp-for-woocommerce' ) ); ?>
                 </p>
             </div>
+
+            <?php if (Mailchimp_Sms_Consent::isEligibleCountry() && MailChimp_Sms_Consent::isSmsProgramActive()): ?>
+            <div class="mc-wc-input-wrapper">
+                <div class="mc-wc-checkbox">
+                    <label class="mc-wc-checkbox-label fw-700">
+                        <input type="checkbox" name="<?php echo esc_attr( $this->plugin_name ); ?>[mailchimp_sms_consent_enabled]" value="1" <?php if ($options['mailchimp_sms_consent_enabled']) { echo "checked"; } ?>>
+                        <?php esc_html_e( 'SMS consent checkbox', 'mailchimp-for-woocommerce' ); ?>&nbsp;<span style="background-color: #E4E5E7; padding: 2px 8px 2px 8px; gap: 4px; border-radius: 4px;">BETA</span>
+                    </label>
+                </div>
+                <p class="description">
+                    Add a checkbox and a phone number field to checkout to allow users to opt-in to SMS marketing. The text associated with this consent is not editable.
+                </p>
+            </div>
+
+            <?php endif; ?>
+
         <?php endif; ?>
     </div>
 

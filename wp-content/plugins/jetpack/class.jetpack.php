@@ -7,6 +7,7 @@
  * @package automattic/jetpack
  */
 
+use Automattic\Jetpack\Activity_Log\Jetpack_Activity_Log as Activity_Log_Init;
 use Automattic\Jetpack\Assets;
 use Automattic\Jetpack\Boost_Speed_Score\Speed_Score;
 use Automattic\Jetpack\Config;
@@ -27,6 +28,7 @@ use Automattic\Jetpack\Identity_Crisis;
 use Automattic\Jetpack\Licensing;
 use Automattic\Jetpack\Modules;
 use Automattic\Jetpack\My_Jetpack\Initializer as My_Jetpack_Initializer;
+use Automattic\Jetpack\Newsletter\Reader_Link;
 use Automattic\Jetpack\Paths;
 use Automattic\Jetpack\Plugin\Deprecate;
 use Automattic\Jetpack\Plugin\Tracking as Plugin_Tracking;
@@ -39,6 +41,11 @@ use Automattic\Jetpack\Sync\Health;
 use Automattic\Jetpack\Sync\Sender;
 use Automattic\Jetpack\Terms_Of_Service;
 use Automattic\Jetpack\Tracking;
+use Automattic\Woocommerce_Analytics;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
 
 /*
 Options:
@@ -514,6 +521,11 @@ class Jetpack {
 					} // Should we have some type of fallback if something fails here?
 				}
 
+				// Set the newsletter send default option for existing sites.
+				if ( false === get_option( 'wpcom_newsletter_send_default' ) ) {
+					add_option( 'wpcom_newsletter_send_default', 1 );
+				}
+
 				if ( did_action( 'wp_loaded' ) ) {
 					self::upgrade_on_load();
 				} else {
@@ -694,6 +706,7 @@ class Jetpack {
 		// After a successful connection.
 		add_action( 'jetpack_site_registered', array( $this, 'activate_default_modules_on_site_register' ) );
 		add_action( 'jetpack_site_registered', array( $this, 'handle_unique_registrations_stats' ) );
+		add_action( 'jetpack_site_registered', array( Reader_Link::class, 'activate_on_connection' ), 9 );
 
 		// Actions for Manager::authorize().
 		add_action( 'jetpack_authorize_starting', array( $this, 'authorize_starting' ) );
@@ -741,6 +754,9 @@ class Jetpack {
 		// Add 5-star
 		add_filter( 'plugin_row_meta', array( $this, 'add_5_star_review_link' ), 10, 2 );
 		add_action( 'init', array( Deprecate::class, 'instance' ) );
+
+		// Register Jetpack module management abilities (WordPress Abilities API, WP 6.9+).
+		\Automattic\Jetpack\Plugin\Abilities\Modules_Abilities::init();
 	}
 
 	/**
@@ -854,6 +870,7 @@ class Jetpack {
 	public function late_initialization() {
 		add_action( 'after_setup_theme', array( 'Jetpack', 'load_modules' ), -2 );
 		My_Jetpack_Initializer::init();
+		Activity_Log_Init::initialize();
 
 		// Initialize Boost Speed Score
 		new Speed_Score( array(), 'jetpack-dashboard' );
@@ -1496,9 +1513,6 @@ class Jetpack {
 			$notice = __( 'The WP_LOCAL_DEV constant is defined in wp-config.php or elsewhere.', 'jetpack' );
 		} elseif ( $status->is_local_site() ) {
 			$notice = __( 'The site URL is a known local development environment URL (e.g. http://localhost).', 'jetpack' );
-			/** This filter is documented in packages/status/src/class-status.php */
-		} elseif ( has_filter( 'jetpack_development_mode' ) && apply_filters( 'jetpack_development_mode', false ) ) { // This is a deprecated filter name.
-			$notice = __( 'The jetpack_development_mode filter is set to true.', 'jetpack' );
 		} elseif ( get_option( 'jetpack_offline_mode' ) ) {
 			$notice = __( 'The jetpack_offline_mode option is set to true.', 'jetpack' );
 		} else {
@@ -1885,6 +1899,8 @@ class Jetpack {
 		 * @param bool true Should Twitter Card Meta tags be disabled. Default to true.
 		 */
 		if ( ! apply_filters( 'jetpack_disable_twitter_cards', false ) ) {
+			// @todo Remove this require once the deprecated Jetpack_Twitter_Cards wrapper has been removed.
+			// Twitter Cards functionality now lives in the jetpack-post-media package (Automattic\Jetpack\Post_Media\Twitter_Cards).
 			require_once JETPACK__PLUGIN_DIR . 'class.jetpack-twitter-cards.php';
 		}
 	}
@@ -2619,6 +2635,10 @@ p {
 			Sync_Actions::do_only_first_initial_sync();
 		}
 
+		if ( ! defined( 'WC_ANALYTICS' ) && class_exists( 'Automattic\Woocommerce_Analytics' ) ) {
+			Woocommerce_Analytics::maybe_add_proxy_speed_module();
+		}
+
 		self::plugin_initialize();
 	}
 
@@ -2799,6 +2819,10 @@ p {
 			self::disconnect();
 			Jetpack_Options::delete_option( 'version' );
 		}
+
+		if ( ! defined( 'WC_ANALYTICS' ) && class_exists( 'Automattic\Woocommerce_Analytics' ) ) {
+			Woocommerce_Analytics::maybe_remove_proxy_speed_module();
+		}
 	}
 
 	/**
@@ -2828,7 +2852,7 @@ p {
 	}
 
 	/**
-	 * Happens after a successfull disconnection.
+	 * Happens after a successful disconnection.
 	 *
 	 * @static
 	 */
@@ -3024,7 +3048,7 @@ p {
 		}
 
 		if ( $encode ) {
-			return wp_json_encode( $data );
+			return wp_json_encode( $data, JSON_UNESCAPED_SLASHES );
 		}
 
 		return $data;
@@ -3105,6 +3129,7 @@ p {
 			// Upgrade: 1.1 -> 1.1.1
 			// Check and see if host can verify the Jetpack servers' SSL certificate.
 			$args = array();
+			// @phan-suppress-next-line PhanAccessMethodInternal -- Phan is correct, but the usage is intentional.
 			Client::_wp_remote_request( self::connection()->api_url( 'test' ), $args, true );
 		}
 
@@ -3304,16 +3329,15 @@ p {
 				$status_code = 400;
 			}
 
-			status_header( $status_code );
-			die( wp_json_encode( (object) compact( 'error', 'error_description' ) ) );
+			wp_send_json( (object) compact( 'error', 'error_description' ), $status_code, JSON_UNESCAPED_SLASHES );
 		}
 
-		status_header( 200 );
 		if ( true === $response ) {
+			status_header( 200 );
 			exit( 0 );
 		}
 
-		die( wp_json_encode( (object) $response ) );
+		wp_send_json( (object) $response, 200, JSON_UNESCAPED_SLASHES );
 	}
 
 	/**
@@ -3433,7 +3457,7 @@ p {
 					'meta' => (array) wp_get_attachment_metadata( $post_id ),
 				);
 
-				return (array) array( $response );
+				return array( $response );
 			}
 
 			$attachment_id = media_handle_upload(
@@ -3521,7 +3545,7 @@ p {
 
 			// Add objects to be passed to the initial state of the app.
 			// Use wp_add_inline_script instead of wp_localize_script, see https://core.trac.wordpress.org/ticket/25280.
-			wp_add_inline_script( 'jetpack-plugins-page-js', 'var Initial_State=JSON.parse(decodeURIComponent("' . rawurlencode( wp_json_encode( Jetpack_Redux_State_Helper::get_minimal_state() ) ) . '"));', 'before' );
+			wp_add_inline_script( 'jetpack-plugins-page-js', 'var Initial_State=' . wp_json_encode( Jetpack_Redux_State_Helper::get_minimal_state(), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . ';', 'before' );
 
 			add_action( 'admin_footer', array( $this, 'jetpack_plugin_portal_containers' ) );
 		}
@@ -4440,7 +4464,9 @@ endif;
 			array(
 				'enabled' => $result,
 				'message' => get_transient( 'jetpack_https_test_message' ),
-			)
+			),
+			null, // @phan-suppress-current-line PhanTypeMismatchArgumentProbablyReal -- It takes null, but its phpdoc only says int.
+			JSON_UNESCAPED_SLASHES
 		);
 	}
 
@@ -4572,6 +4598,7 @@ endif;
 	 */
 	public static function permit_ssl( $force_recheck = false ) {
 		// Do some fancy tests to see if ssl is being supported.
+		$ssl = false;
 		if ( ! $force_recheck ) {
 			$ssl = get_transient( 'jetpack_https_test' );
 		}
@@ -4643,16 +4670,16 @@ endif;
 			jQuery( document ).ready( function( $ ) {
 				$( '#jetpack-recheck-ssl-button' ).click( function( e ) {
 					var $this = $( this );
-					$this.html( <?php echo wp_json_encode( __( 'Checking', 'jetpack' ) ); ?> );
+					$this.html( <?php echo wp_json_encode( esc_html__( 'Checking', 'jetpack' ), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ); ?> );
 					$( '#jetpack-recheck-ssl-output' ).html( '' );
 					e.preventDefault();
-					var data = { action: 'jetpack-recheck-ssl', 'ajax-nonce': <?php echo wp_json_encode( $ajax_nonce ); ?> };
+					var data = { action: 'jetpack-recheck-ssl', 'ajax-nonce': <?php echo wp_json_encode( $ajax_nonce, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ); ?> };
 					$.post( ajaxurl, data )
 					.done( function( response ) {
 						if ( response.enabled ) {
 							$( '#jetpack-ssl-warning' ).hide();
 						} else {
-							this.html( <?php echo wp_json_encode( __( 'Try again', 'jetpack' ) ); ?> );
+							this.html( <?php echo wp_json_encode( esc_html__( 'Try again', 'jetpack' ), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ); ?> );
 							$( '#jetpack-recheck-ssl-output' ).html( 'SSL Failed: ' + response.message );
 						}
 					}.bind( $this ) );
@@ -5108,7 +5135,7 @@ endif;
 	 * @return mixed
 	 */
 	public static function set_suffix_on_min( $src, $handle ) {
-		if ( ! str_contains( $src, '.min.css' ) ) {
+		if ( ! is_string( $src ) || ! str_contains( $src, '.min.css' ) ) {
 			return $src;
 		}
 
@@ -5800,11 +5827,18 @@ endif;
 	}
 
 	/**
-	 * Returns a boolean for whether backups UI should be displayed or not.
+	 * Whether UI for backups should be displayed.
+	 *
+	 * On WPCom platforms this is gated on the backups-self-serve site feature.
+	 * On self-hosted Jetpack sites it falls back to the jetpack_show_backups filter.
 	 *
 	 * @return bool Should backups UI be displayed?
 	 */
 	public static function show_backups_ui() {
+		if ( ( new \Automattic\Jetpack\Status\Host() )->is_wpcom_platform() ) {
+			return function_exists( 'wpcom_site_has_feature' ) && wpcom_site_has_feature( 'backups-self-serve' );
+		}
+
 		/**
 		 * Whether UI for backups should be displayed.
 		 *
@@ -5813,6 +5847,22 @@ endif;
 		 * @param bool $show_backups Should UI for backups be displayed? True by default.
 		 */
 		return self::is_plugin_active( 'vaultpress/vaultpress.php' ) || apply_filters( 'jetpack_show_backups', true );
+	}
+
+	/**
+	 * Whether UI for security scanning should be displayed.
+	 *
+	 * On WPCom platforms this is gated on the scan-self-serve site feature.
+	 * On self-hosted Jetpack sites it always returns true.
+	 *
+	 * @return bool Should scan UI be displayed?
+	 */
+	public static function show_scan_ui() {
+		if ( ( new \Automattic\Jetpack\Status\Host() )->is_wpcom_platform() ) {
+			return function_exists( 'wpcom_site_has_feature' ) && wpcom_site_has_feature( 'scan-self-serve' );
+		}
+
+		return true;
 	}
 
 	/**

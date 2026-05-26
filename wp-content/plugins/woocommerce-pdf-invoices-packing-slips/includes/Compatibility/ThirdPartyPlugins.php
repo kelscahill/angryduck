@@ -69,6 +69,9 @@ class ThirdPartyPlugins {
 
 		add_filter( 'woocommerce_hpos_admin_search_filters', array( $this, 'hpos_admin_search_filters' ) );
 		add_filter( 'woocommerce_shop_order_list_table_prepare_items_query_args', array( $this, 'invoice_number_query_args' ) );
+		
+		// Dokan vendor compatibility
+		add_filter( 'wpo_ips_edi_cii_seller_data', array( $this, 'edi_dokan_vendor_data' ), 10, 2 );
 	}
 
 	/**
@@ -95,7 +98,13 @@ class ThirdPartyPlugins {
 	}
 
 	/**
-	 * Removes documents meta from WooCommerce Subscriptions renewal order
+	 * Adjusts meta data during WooCommerce Subscriptions renewal/resubscribe order creation.
+	 *
+	 * @param array      $meta       Meta data being copied to the renewal order.
+	 * @param \WC_Order  $to_order   The renewal/resubscribe order being created.
+	 * @param \WC_Order  $from_order The parent/original order the renewal is based on.
+	 *
+	 * @return array Filtered meta data to be applied to the renewal order.
 	 */
 	public function wcs_renewal_order_meta( $meta, $to_order, $from_order ) {
 		if ( empty( $meta ) ) {
@@ -130,6 +139,23 @@ class ThirdPartyPlugins {
 			if ( in_array( $meta_key, $documents_meta, true ) ) {
 				unset( $meta[ $key ] );
 			}
+		}
+
+		// Copy parent order meta into renewal order.
+		$keys_to_copy = array(
+			'_peppol_endpoint_eas',
+			'_peppol_endpoint_id',
+			'_wpo_ips_checkout_field',
+		);
+
+		foreach ( $keys_to_copy as $key ) {
+			$value = $from_order->get_meta( $key, true );
+
+			if ( '' === $value || null === $value ) {
+				continue;
+			}
+
+			$meta[ $key ] = $value;
 		}
 
 		return $meta;
@@ -348,11 +374,11 @@ class ThirdPartyPlugins {
 	 * Aelia Currency Switcher compatibility
 	 * Applies decimal & Thousand separator settings
 	 */
-	function aelia_currency_formatting( $document_type, $document ) {
+	public function aelia_currency_formatting( $document_type, $document ) {
 		add_filter( 'wc_price_args', array( $this, 'aelia_currency_price_args' ), 10, 1 );
 	}
 
-	function aelia_currency_price_args( $args ) {
+	public function aelia_currency_price_args( $args ) {
 		if ( !empty( $args['currency'] ) && class_exists("\\Aelia\\WC\\CurrencySwitcher\\WC_Aelia_CurrencySwitcher") ) {
 			$cs_settings = \Aelia\WC\CurrencySwitcher\WC_Aelia_CurrencySwitcher::settings();
 			$args['decimal_separator'] = $cs_settings->get_currency_decimal_separator( $args['currency'] );
@@ -364,14 +390,14 @@ class ThirdPartyPlugins {
 	/**
 	 * Avoid double images from German Market: remove filter
 	 */
-	function remove_wgm_thumbnails( $document_type, $document ) {
+	public function remove_wgm_thumbnails( $document_type, $document ) {
 		remove_filter( 'woocommerce_order_item_name', array( 'WGM_Product', 'add_thumbnail_to_order' ), 100, 3 );
 	}
 
 	/**
 	 * Restore above
 	 */
-	function restore_wgm_thumbnails( $document_type, $document ) {
+	public function restore_wgm_thumbnails( $document_type, $document ) {
 		if ( is_callable( array( 'WGM_Product', 'add_thumbnail_to_order' ) ) && get_option( 'german_market_product_images_in_order', 'off' ) == 'on' ) {
 			add_filter( 'woocommerce_order_item_name', array( 'WGM_Product', 'add_thumbnail_to_order' ), 100, 3 );
 		}
@@ -384,7 +410,7 @@ class ThirdPartyPlugins {
 	 *
 	 * @return array
 	 */
-	function hpos_admin_search_filters( array $options ): array {
+	public function hpos_admin_search_filters( array $options ): array {
 		if ( WPO_WCPDF()->admin->invoice_number_search_enabled() ) {
 			$all = $options['all'];
 			unset( $options['all'] );
@@ -402,7 +428,7 @@ class ThirdPartyPlugins {
 	 *
 	 * @return array
 	 */
-	function invoice_number_query_args( array $order_query_args ): array {
+	public function invoice_number_query_args( array $order_query_args ): array {
 		if ( isset( $order_query_args['search_filter'] ) && 'invoice_numbers' === $order_query_args['search_filter'] && ! empty( $order_query_args['s'] ) ) {
 			$invoice_numbers = explode( ',', $order_query_args['s'] );
 			$invoice_numbers = array_map( function ( $number ) {
@@ -421,6 +447,108 @@ class ThirdPartyPlugins {
 
 		return $order_query_args;
 	}
+	
+	/**
+	 * Filter callback to add Dokan vendor data as seller/supplier data for CII and UBL documents.
+	 *
+	 * @param array  $data
+	 * @param object $handler
+	 * @return array
+	 */
+	public function edi_dokan_vendor_data( array $data, object $handler ): array {
+		// Dokan not active, bail out.
+		if ( ! function_exists( 'dokan_get_seller_id_by_order' ) || ! function_exists( 'dokan_get_store_info' ) || ! function_exists( 'dokan' ) ) {
+			return $data;
+		}
+
+		// Try to get the order from the handler.
+		if ( empty( $handler ) || ! isset( $handler->document ) || empty( $handler->document->order ) ) {
+			return $data;
+		}
+
+		$order_id = $handler->document->order->get_id();
+		if ( ! $order_id ) {
+			return $data;
+		}
+
+		// Get Dokan vendor ID.
+		$vendor_id = dokan_get_seller_id_by_order( $order_id );
+		if ( ! $vendor_id ) {
+			return $data;
+		}
+
+		$vendor = dokan()->vendor->get( $vendor_id );
+		if ( ! $vendor ) {
+			return $data;
+		}
+
+		// Shop name.
+		$shop_name = $vendor->get_shop_name();
+		if ( ! empty( $shop_name ) ) {
+			$shop_name = wpo_ips_edi_sanitize_string( $shop_name );
+
+			if ( array_key_exists( 'name', $data ) ) {
+				$data['name'] = $shop_name; // CII
+			}
+
+			if ( array_key_exists( 'company', $data ) ) {
+				$data['company'] = $shop_name; // UBL
+			}
+		}
+
+		// Address.
+		$store_info = dokan_get_store_info( $vendor_id );
+		$address    = isset( $store_info['address'] ) && is_array( $store_info['address'] ) ? $store_info['address'] : array();
+
+		if ( ! empty( $address['zip'] ) && array_key_exists( 'postcode', $data ) ) {
+			$data['postcode'] = wpo_ips_edi_sanitize_string( $address['zip'] );
+		}
+
+		if ( ! empty( $address['street_1'] ) ) {
+			$address_line = wpo_ips_edi_sanitize_string( $address['street_1'] );
+
+			if ( array_key_exists( 'address_line', $data ) ) {
+				$data['address_line'] = $address_line; // CII
+			}
+
+			if ( array_key_exists( 'address_line_1', $data ) ) {
+				$data['address_line_1'] = $address_line; // UBL
+			}
+		}
+
+		if ( ! empty( $address['city'] ) && array_key_exists( 'city', $data ) ) {
+			$data['city'] = wpo_ips_edi_sanitize_string( $address['city'] );
+		}
+
+		if ( ! empty( $address['country'] ) && array_key_exists( 'country_code', $data ) ) {
+			$data['country_code'] = wpo_ips_edi_sanitize_string( $address['country'] );
+		}
+
+		// VAT number.
+		if ( array_key_exists( 'vat_number', $data ) ) {
+			$vat_number = get_user_meta( $vendor_id, 'dokan_vat_number', true );
+			if ( ! empty( $vat_number ) ) {
+				$data['vat_number'] = $vat_number;
+			}
+		}
+
+		// CoC number (UBL only, if supported by Dokan).
+		if ( array_key_exists( 'coc_number', $data ) ) {
+			$coc_number = get_user_meta( $vendor_id, 'dokan_coc_number', true );
+
+			if ( empty( $coc_number ) ) {
+				// fallback if another plugin stores it differently
+				$coc_number = get_user_meta( $vendor_id, 'coc_number', true );
+			}
+
+			if ( ! empty( $coc_number ) ) {
+				$data['coc_number'] = $coc_number;
+			}
+		}
+
+		return $data;
+	}
+	
 }
 
 

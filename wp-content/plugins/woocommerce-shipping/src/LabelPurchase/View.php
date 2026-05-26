@@ -2,7 +2,6 @@
 
 namespace Automattic\WCShipping\LabelPurchase;
 
-use Automattic\WCShipping\Carrier\CarrierStrategyService;
 use Automattic\WCShipping\Connect\WC_Connect_Account_Settings;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Schemas_Store;
@@ -17,8 +16,12 @@ use Automattic\WCShipping\Connect\WC_Connect_Jetpack;
 use Automattic\WCShipping\OriginAddresses\OriginAddressService;
 use Automattic\WCShipping\Shipments\ShipmentsService;
 use Automattic\WCShipping\DOM\Manipulation as DOM_Manipilation;
+use Automattic\WCShipping\FeatureFlags\FeatureFlags;
 use Automattic\WCShipping\Promo\PromoService;
 use Automattic\WCShipping\Utils;
+use Automattic\WCShipping\Fulfillments\FulfillmentsService;
+use Automattic\WCShipping\Fulfillments\ShippingFulfillmentsDataStore;
+
 use WC_Order;
 use WC_Order_Item;
 use WC_Order_Item_Shipping;
@@ -73,14 +76,24 @@ class View {
 	private $view_service;
 
 	/**
-	 * @var CarrierStrategyService
-	 */
-	private $carrier_service;
-
-	/**
 	 * @var PromoService
 	 */
 	private $promo_service;
+
+	/**
+	 * @var AddressNormalizationService
+	 */
+	private $address_normalization_service;
+
+	/**
+	 * @var FulfillmentsService
+	 */
+	private $fulfillments_service;
+
+	/**
+	 * @var ShippingFulfillmentsDataStore
+	 */
+	private $shipping_fulfillments_data_store;
 
 	public function __construct(
 		WC_Connect_API_Client $api_client,
@@ -90,24 +103,28 @@ class View {
 		ShipmentsService $shipments_service,
 		OriginAddressService $origin_address_service,
 		ViewService $view_service,
-		CarrierStrategyService $carrier_service,
 		WC_Connect_Account_Settings $account_settings,
-		PromoService $promo_service
+		PromoService $promo_service,
+		AddressNormalizationService $address_normalization_service,
+		FulfillmentsService $fulfillments_service,
+		ShippingFulfillmentsDataStore $shipping_fulfillments_data_store
 	) {
-		$this->api_client             = $api_client;
-		$this->settings_store         = $settings_store;
-		$this->service_schemas_store  = $service_schemas_store;
-		$this->account_settings       = $account_settings;
-		$this->package_settings       = new WC_Connect_Package_Settings(
+		$this->api_client                       = $api_client;
+		$this->settings_store                   = $settings_store;
+		$this->service_schemas_store            = $service_schemas_store;
+		$this->account_settings                 = $account_settings;
+		$this->package_settings                 = new WC_Connect_Package_Settings(
 			$settings_store,
 			$service_schemas_store
 		);
-		$this->continents             = new WC_Connect_Continents();
-		$this->shipments_service      = $shipments_service;
-		$this->origin_address_service = $origin_address_service;
-		$this->view_service           = $view_service;
-		$this->carrier_service        = $carrier_service;
-		$this->promo_service          = $promo_service;
+		$this->continents                       = new WC_Connect_Continents();
+		$this->shipments_service                = $shipments_service;
+		$this->origin_address_service           = $origin_address_service;
+		$this->view_service                     = $view_service;
+		$this->promo_service                    = $promo_service;
+		$this->address_normalization_service    = $address_normalization_service;
+		$this->fulfillments_service             = $fulfillments_service;
+		$this->shipping_fulfillments_data_store = $shipping_fulfillments_data_store;
 	}
 
 	public function is_order_dhl_express_eligible(): bool {
@@ -139,10 +156,19 @@ class View {
 			return array();
 		}
 
-		$order_id         = $order->get_id();
-		$purchased_labels = $this->ensure_purchased_labels_have_shipment_ids(
-			$this->settings_store->get_label_order_meta_data( $order_id )
-		);
+		$order_id = $order->get_id();
+
+		if ( Utils::should_use_fulfillment_api() ) {
+			$existing_fulfillments = $this->shipping_fulfillments_data_store->read_fulfillments( WC_Order::class, "$order_id" );
+			$purchased_labels      = array();
+			foreach ( $existing_fulfillments as $fulfillment ) {
+				$purchased_labels = array_merge( $purchased_labels, $fulfillment->get_labels() );
+			}
+		} else {
+			$purchased_labels = $this->ensure_purchased_labels_have_shipment_ids(
+				$this->settings_store->get_label_order_meta_data( $order_id )
+			);
+		}
 
 		return array(
 			'orderId'            => $order_id,
@@ -179,19 +205,25 @@ class View {
 		}
 
 		// If Jetpack connection manager failed to retrieve data.
-		if ( ! WC_Connect_Jetpack::get_connection_owner_wpcom_data() ) {
+		/**
+		 * Filter the connected WPCOM owner data used by the shipping-label metabox.
+		 *
+		 * Internal hook used by WooCommerce Shipping test/bootstrap infrastructure.
+		 * It is not designed for third-party plugin integrations and may change or
+		 * be removed in future releases without notice.
+		 *
+		 * @internal
+		 *
+		 * @param array|false $connected_owner_data Connection owner data from Jetpack.
+		 */
+		$connected_owner_data = apply_filters(
+			'wcshipping_connection_owner_wpcom_data',
+			WC_Connect_Jetpack::get_connection_owner_wpcom_data()
+		);
+		if ( ! $connected_owner_data ) {
 			return new WP_Error(
 				'wcshipping_banner_jetpack_connection_failed',
 				__( 'Unable to retrieve WordPress connection data. Please try reconnecting your WordPress connection.', 'woocommerce-shipping' )
-			);
-		}
-
-		// Return an error if shipping labels has been disabled for the account.
-		// This could e.g. be used to differentiate between showing errors or just hiding the box.
-		if ( ! $this->view_service->is_shipping_label_enabled() ) {
-			return new WP_Error(
-				'wcshipping_banner_disabled',
-				__( 'Shipping labels has been disabled for your account.', 'woocommerce-shipping' )
 			);
 		}
 
@@ -245,16 +277,49 @@ class View {
 		$package_settings = $this->package_settings->get( apply_filters( 'wcshipping_features_supported_by_store', array() ) );
 		$label_data       = $this->get_label_payload( $order->get_id() );
 
-		// Get shipments data.
-		$shipments_data            = $this->shipments_service->get_order_shipments_data( $order->get_id() );
-		$shipments_json            = wp_json_encode( (object) $shipments_data['shipments'] );
-		$autogenerated_from_labels = $shipments_data['autogenerated_from_labels'];
+		/**
+		 * When using fulfillment api, autogenerated_from_labels is always empty.
+		 * It was first introduced to generate missing shipments for single labels, as for single labels, we didn't create shipments.
+		 * But with the fulfillment api, we create fulfillment for a single label, so we don't need to generate missing shipments.
+		 */
+		$autogenerated_from_labels = array();
+		if ( Utils::should_use_fulfillment_api() ) {
+			$fulfillments   = $this->fulfillments_service->get_order_fulfillments_as_shipments( $order->get_id() );
+			$shipments_json = wp_json_encode( (object) $fulfillments );
+		} else {
+			// Get shipments data.
+			$shipments_data            = $this->shipments_service->get_order_shipments_data( $order->get_id() );
+			$shipments_json            = wp_json_encode( (object) $shipments_data['shipments'] );
+			$autogenerated_from_labels = $shipments_data['autogenerated_from_labels'];
+		}
+
+		/**
+		 * Filter the account settings payload passed to the shipping-label UI.
+		 *
+		 * Internal hook used by WooCommerce Shipping test/bootstrap infrastructure.
+		 * It is not designed for third-party plugin integrations and may change or
+		 * be removed in future releases without notice.
+		 *
+		 * @internal
+		 *
+		 * @param array|null                                          $account_settings_payload Optional override payload.
+		 * @param \Automattic\WCShipping\Connect\WC_Connect_Settings_Store $settings_store Current settings store instance.
+		 */
+		$account_settings_payload = apply_filters(
+			'wcshipping_account_settings_payload',
+			null,
+			$this->settings_store
+		);
+
+		if ( ! is_array( $account_settings_payload ) ) {
+			$account_settings_payload = $this->account_settings->get( true );
+		}
 
 		$payload = apply_filters(
 			'wcshipping_meta_box_payload',
 			array(
 				'order'                               => $this->view_service->get_order_data( $order ),
-				'accountSettings'                     => $this->account_settings->get( true ),
+				'accountSettings'                     => $account_settings_payload,
 				'promotion'                           => $this->promo_service->get_promotion(),
 				'packagesSettings'                    => array(
 					'schema'   => array(
@@ -270,13 +335,20 @@ class View {
 				'continents'                          => $this->continents->get(),
 				'eu_countries'                        => WC()->countries->get_european_union_countries(),
 				'items'                               => $items_count,
-				'is_destination_verified'             => (bool) $this->settings_store->is_destination_address_normalized( $order->get_id() ),
+				'is_destination_verified'             => $this->address_normalization_service->is_destination_address_normalized( $order->get_id() ),
 				'is_origin_verified'                  => (bool) $this->settings_store->is_origin_address_normalized(),
 				'shipments'                           => $shipments_json,
 				'shipments_autogenerated_from_labels' => $autogenerated_from_labels,
 				'origin_addresses'                    => $this->origin_address_service->get_origin_addresses(),
+				'is_main_origin_in_sync_with_store'   => $this->origin_address_service->is_main_origin_address_in_sync_with_store(),
+				'formatted_store_address'             => $this->origin_address_service->get_formatted_store_address(),
+				'store_address_draft'                 => $this->origin_address_service->get_store_details_origin_address_draft(),
 				'constants'                           => Utils::get_constants_for_js(),
-				'carrier_strategies'                  => $this->carrier_service->get_strategies(),
+				'carrier_strategies'                  => array(
+					'upsdap' => array(
+						'origin_address' => array(),
+					),
+				),
 				/**
 				 * Filter the custom fulfillment summary message displayed in the shipping meta box.
 				 *
@@ -292,6 +364,8 @@ class View {
 				 * @return string The modified fulfillment summary message.
 				 */
 				'custom_fulfillment_summary'          => apply_filters( 'wcshipping_fulfillment_summary', '', $order->get_id(), $label_data ),
+				'should_use_fulfillment_api'          => Utils::should_use_fulfillment_api(),
+				'bulk_labels_enabled'                 => FeatureFlags::is_bulk_labels_enabled(),
 			),
 			$args,
 			$order,
@@ -321,11 +395,11 @@ class View {
 		switch ( $context ) {
 			case 'shipping_label':
 				DOM_Manipilation::create_root_script_element( 'woocommerce-shipping-shipping-label', $context );
-				do_action( 'enqueue_woocommerce_shipping_script', 'woocommerce-shipping-create-shipping-label', $payload, $context );
+				do_action( 'wcshipping_enqueue_script', 'woocommerce-shipping-create-shipping-label', $payload, $context );
 				break;
 			case 'shipment_tracking':
 				DOM_Manipilation::create_root_script_element( 'woocommerce-shipping-shipping-label', $context );
-				do_action( 'enqueue_woocommerce_shipping_script', 'woocommerce-shipping-shipment-tracking', $payload, $context );
+				do_action( 'wcshipping_enqueue_script', 'woocommerce-shipping-shipment-tracking', $payload, $context );
 				break;
 		}
 	}
@@ -561,6 +635,7 @@ class View {
 		$selected_destination = $order->get_meta( LabelPurchaseService::SELECTED_DESTINATION_KEY );
 		$customs_information  = $order->get_meta( LabelPurchaseService::CUSTOMS_INFORMATION );
 		$shipment_dates       = $order->get_meta( LabelPurchaseService::SHIPMENT_DATES );
+		$package_dimensions   = $order->get_meta( LabelPurchaseService::PACKAGE_DIMENSIONS );
 		$destination          = $this->get_destination_address( $order );
 
 		if ( ! $destination['country'] ) {
@@ -594,7 +669,7 @@ class View {
 			$customs_information = $this->view_service->remove_customs_information_for_refunds( $purchased_labels, $customs_information );
 		}
 
-		$destination_normalized = (bool) $this->settings_store->is_destination_address_normalized( $order_id );
+		$destination_normalized = $this->address_normalization_service->is_destination_address_normalized( $order_id );
 
 		$data = compact(
 			'is_packed',
@@ -605,7 +680,8 @@ class View {
 			'selected_origin',
 			'selected_destination',
 			'customs_information',
-			'shipment_dates'
+			'shipment_dates',
+			'package_dimensions'
 		);
 
 		$data['order_id'] = $order_id;

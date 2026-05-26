@@ -9,6 +9,10 @@ require __DIR__ . '/base.php';
 use Automattic\Jetpack\Connection\Tokens;
 use Automattic\Jetpack\Status\Host;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Main Comments class
  *
@@ -693,7 +697,6 @@ HTML;
 		<!DOCTYPE html>
 		<html>
 		<head>
-		<link rel="preload" as="image" href="https://jetpack.wordpress.com/wp-admin/images/spinner.gif"> <!-- Preload the spinner image -->
 		<meta charset="utf-8">
 		<title><?php echo esc_html__( 'Submitting Comment', 'jetpack' ); ?></title>
 		<style type="text/css">
@@ -707,10 +710,20 @@ HTML;
 				overflow: hidden;
 				color: #333;
 			}
+			.jetpack-comment-spinner {
+				display: table-cell;
+				vertical-align: middle;
+				text-align: center;
+			}
 		</style>
 		</head>
 		<body>
-		<img src="https://jetpack.wordpress.com/wp-admin/images/spinner.gif" >
+		<div class="jetpack-comment-spinner">
+			<?php
+			require_once JETPACK__PLUGIN_DIR . '_inc/lib/class-jetpack-spinner.php';
+			echo Jetpack_Spinner::render( 28 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG markup.
+			?>
+		</div>
 		<form id="jetpack-remote-comment-post-form" action="<?php echo esc_url( get_site_url() ); ?>/wp-comments-post.php?for=jetpack&only_once=true" method="POST">
 			<?php foreach ( $comment_data as $key => $val ) : ?>
 				<input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $val ); ?>" />
@@ -789,7 +802,7 @@ HTML;
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$is_current_user_subscribed = (bool) isset( $_POST['is_current_user_subscribed'] ) ? filter_var( wp_unslash( $_POST['is_current_user_subscribed'] ) ) : null;
+		$is_current_user_subscribed = isset( $_POST['is_current_user_subscribed'] ) ? filter_var( wp_unslash( $_POST['is_current_user_subscribed'] ) ) : null;
 
 		// Atomic sites with jetpack_verbum_subscription_modal option enabled
 		$modal_enabled = ( new Host() )->is_woa_site() && get_option( 'jetpack_verbum_subscription_modal', true );
@@ -830,7 +843,7 @@ HTML;
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$is_current_user_subscribed = (bool) isset( $_POST['is_current_user_subscribed'] ) ? filter_var( wp_unslash( $_POST['is_current_user_subscribed'] ) ) : null;
+		$is_current_user_subscribed = isset( $_POST['is_current_user_subscribed'] ) ? filter_var( wp_unslash( $_POST['is_current_user_subscribed'] ) ) : null;
 
 		if ( $is_current_user_subscribed ) {
 			$tracking_event = 'hidden_already_subscribed';
@@ -1029,10 +1042,10 @@ HTML;
 		</h3>
 		<script type="text/javascript">
 			try {
-				window.parent.location.href = <?php echo wp_json_encode( $url ); ?>;
+				window.parent.location.href = <?php echo wp_json_encode( $url, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
 				window.parent.location.reload( true );
 			} catch (e) {
-				window.location.href = <?php echo wp_json_encode( $url ); ?>;
+				window.location.href = <?php echo wp_json_encode( $url, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
 				window.location.reload( true );
 			}
 			ellipsis = document.getElementById('ellipsis');
@@ -1057,7 +1070,7 @@ HTML;
 				window.parent.postMessage(
 					{
 						type: 'subscriptionModalShow',
-						data: <?php echo wp_json_encode( $this->get_subscription_modal_data_to_parent( $url ) ); ?>,
+						data: <?php echo wp_json_encode( $this->get_subscription_modal_data_to_parent( $url ), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ); ?>,
 					},
 					window.location.origin
 				);

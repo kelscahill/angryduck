@@ -7,6 +7,7 @@
 
 use RymeraWebCo\WWOF\Helpers\Site_Ground_Optimizer as SGO;
 use RymeraWebCo\WWOF\Integrations\Aelia;
+use RymeraWebCo\WWOF\Integrations\FunnelKit_Cart;
 use RymeraWebCo\WWOF\Integrations\Site_Ground_Optimizer;
 use RymeraWebCo\WWOF\Integrations\WC;
 use RymeraWebCo\WWOF\Integrations\WP_Rocket;
@@ -27,5 +28,6 @@ return array_filter(
         new Site_Ground_Optimizer(),
         new WP_Rocket(),
         new Product_Addons(),
+        new FunnelKit_Cart(),
     ),
 );

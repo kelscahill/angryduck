@@ -7,6 +7,10 @@
 
 namespace Automattic\Jetpack\Extensions\Premium_Content\Subscription_Service;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit( 0 );
+}
+
 /**
  * Class WPCOM_Offline_Subscription_Service
  *
@@ -151,6 +155,9 @@ class WPCOM_Online_Subscription_Service extends Jetpack_Token_Subscription_Servi
 			) {
 				$subscriptions[ $subscription['product_id'] ]           = new \stdClass();
 				$subscriptions[ $subscription['product_id'] ]->end_date = empty( $subscription['end_date'] ) ? gmdate( 'Y-m-d H:i:s', ( time() + 365 * 24 * 3600 ) ) : $subscription['end_date'];
+				if ( ! empty( $subscription['is_comp'] ) ) {
+					$subscriptions[ $subscription['product_id'] ]->is_comp = true;
+				}
 			}
 		}
 		return $subscriptions;

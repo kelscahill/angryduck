@@ -7,7 +7,6 @@
 
 namespace Automattic\WCShipping\LabelPurchase;
 
-use Automattic\WCShipping\Carrier\UPSDAP\UPSDAPCarrierStrategyService;
 use Automattic\WCShipping\Exceptions\RESTRequestException;
 use Automattic\WCShipping\OriginAddresses\OriginAddressService;
 use Automattic\WCShipping\WCShippingRESTController;
@@ -49,12 +48,10 @@ class AddressRESTController extends WCShippingRESTController {
 	 */
 	public function __construct(
 		AddressNormalizationService $normalization_service,
-		OriginAddressService $origin_address_service,
-		UPSDAPCarrierStrategyService $upsdap_carrier_service
+		OriginAddressService $origin_address_service
 	) {
 		$this->normalization_service  = $normalization_service;
 		$this->origin_address_service = $origin_address_service;
-		$this->upsdap_carrier_service = $upsdap_carrier_service;
 	}
 
 	/**
@@ -149,7 +146,24 @@ class AddressRESTController extends WCShippingRESTController {
 			return rest_ensure_response( $error->get_error_response() );
 		}
 
-		return rest_ensure_response( $this->normalization_service->update_origin_address( $origin ) );
+		$clear_store_address_drift = (bool) $request->get_param( 'clearStoreAddressDrift' );
+
+		/**
+		 * Always set is_approved to true when updating an origin address.
+		 * Note: is_verified indicates whether the verified address is being used.
+		 */
+		$origin = array_merge(
+			$origin,
+			array( 'is_approved' => true )
+		);
+
+		$response = $this->normalization_service->update_origin_address( $origin );
+
+		if ( $clear_store_address_drift && ! is_wp_error( $response ) && ! empty( $response['success'] ) ) {
+			$this->origin_address_service->mark_main_origin_store_address_in_sync();
+		}
+
+		return rest_ensure_response( $response );
 	}
 
 	/**

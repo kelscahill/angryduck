@@ -15,12 +15,12 @@ use Automattic\WooCommerce\GoogleListingsAndAds\PluginHelper;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WC;
 use Automattic\WooCommerce\GoogleListingsAndAds\Proxies\WP;
 use Automattic\WooCommerce\GoogleListingsAndAds\Utility\DateTimeUtility;
+use Automattic\WooCommerce\GoogleListingsAndAds\Utility\ISOUtility;
 use Automattic\WooCommerce\GoogleListingsAndAds\Value\TosAccepted;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\GuzzleHttp\Client;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\ContainerExceptionInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Container\NotFoundExceptionInterface;
 use Automattic\WooCommerce\GoogleListingsAndAds\Vendor\Psr\Http\Client\ClientExceptionInterface;
-use DateTime;
 use Exception;
 
 defined( 'ABSPATH' ) || exit;
@@ -33,6 +33,7 @@ defined( 'ABSPATH' ) || exit;
  * - Client
  * - DateTimeUtility
  * - GoogleHelper
+ * - ISOUtility
  * - Merchant
  * - WC
  * - WP
@@ -128,13 +129,22 @@ class Middleware implements ContainerAwareInterface, OptionsAwareInterface {
 		try {
 			/** @var Client $client */
 			$client = $this->container->get( Client::class );
+
+			/** @var ISOUtility $iso_utility */
+			$iso_utility = $this->container->get( ISOUtility::class );
+
+			/** @var WP $wp */
+			$wp = $this->container->get( WP::class );
+
 			$result = $client->post(
 				$this->get_manager_url( 'create-merchant' ),
 				[
 					'body' => wp_json_encode(
 						[
-							'name'       => $name,
-							'websiteUrl' => $site_url,
+							'name'         => $name,
+							'websiteUrl'   => $site_url,
+							'timeZone'     => $this->get_site_timezone_string(),
+							'languageCode' => $iso_utility->wp_locale_to_bcp47( $wp->get_user_locale() ),
 						]
 					),
 				]
@@ -155,16 +165,23 @@ class Middleware implements ContainerAwareInterface, OptionsAwareInterface {
 		} catch ( ClientExceptionInterface $e ) {
 			$message = $this->client_exception_message( $e, __( 'Error creating account', 'google-listings-and-ads' ) );
 
-			if ( preg_match( '/terms?.* are|is not allowed/', $message ) ) {
+			// Content API for Shopping: Invalid account name terms.
+			// Merchant API: Account name validation failed.
+			if ( preg_match( '/terms?.* are|is not allowed/', $message ) ||
+				preg_match( '/the account did not pass validation/i', $message ) ) {
 				throw InvalidTerm::contains_invalid_terms( $name );
 			}
 
+			$site_url = $this->strip_url_protocol( esc_url_raw( $this->get_site_url() ) );
+
+			// Content API for Shopping: Invalid top-level domain name.
 			if ( strpos( $message, 'URL ends with an invalid top-level domain name' ) !== false ) {
-				throw InvalidDomainName::create_account_failed_invalid_top_level_domain_name(
-					$this->strip_url_protocol(
-						esc_url_raw( $this->get_site_url() )
-					)
-				);
+				throw InvalidDomainName::create_account_failed_invalid_top_level_domain_name( $site_url );
+			}
+
+			// Merchant API: Invalid homepage URL.
+			if ( strpos( $message, 'Unable to set homepage URL' ) !== false ) {
+				throw InvalidDomainName::create_account_failed_invalid_homepage_url( $site_url );
 			}
 
 			do_action( 'woocommerce_gla_guzzle_client_exception', $e, __METHOD__ );
@@ -475,6 +492,20 @@ class Middleware implements ContainerAwareInterface, OptionsAwareInterface {
 	}
 
 	/**
+	 * Get the server endpoint URL
+	 *
+	 * @since 3.2.0
+	 *
+	 * @param string $name Resource name.
+	 *
+	 * @return string
+	 */
+	protected function get_server_url( string $name = '' ): string {
+		$url = $this->container->get( 'connect_server_root' );
+		return $name ? trailingslashit( $url ) . $name : $url;
+	}
+
+	/**
 	 * Get the Google Shopping Data Integration auth endpoint URL
 	 *
 	 * @return string
@@ -502,9 +533,24 @@ class Middleware implements ContainerAwareInterface, OptionsAwareInterface {
 	 * @return string
 	 */
 	protected function get_sdi_endpoint(): string {
+		/**
+		 * Reason for using `rawurlencode` to encode the site URL:
+		 *
+		 * This plugin doesn't natively support linking a Google Merchant
+		 * Center account and the Google Shopping Data Integration API using a
+		 * merchant URL with paths. However, some merchants still use the
+		 * plugin's WP filter `woocommerce_gla_site_url` to achieve this.
+		 *
+		 * However, a site URL containing paths will cause API routing errors
+		 * if it's not encoded, due to the unexpected appearance of `/`.
+		 * For example, when the URL is 'wp.test/ja/shop',
+		 * `[...]/merchants/wp.test/ja/shop/account:connect` will cause an API error.
+		 * The encoded `[...]/merchants/wp.test%2Fja%2Fshop/account:connect` will
+		 * point to the correct route.
+		*/
 		return $this->container->get( 'connect_server_root' )
 			. 'google/google-sdi/v1/credentials/partners/WOO_COMMERCE/merchants/'
-			. $this->strip_url_protocol( $this->get_site_url() )
+			. rawurlencode( $this->strip_url_protocol( $this->get_site_url() ) )
 			. '/';
 	}
 
@@ -573,11 +619,7 @@ class Middleware implements ContainerAwareInterface, OptionsAwareInterface {
 	 * @return string
 	 */
 	protected function default_account_name(): string {
-		return sprintf(
-			/* translators: 1: current date in the format Y-m-d */
-			__( 'Account %1$s', 'google-listings-and-ads' ),
-			( new DateTime() )->format( 'Y-m-d' )
-		);
+		return 'Account ' . gmdate( 'dMy' );
 	}
 
 	/**
@@ -663,6 +705,130 @@ class Middleware implements ContainerAwareInterface, OptionsAwareInterface {
 
 			throw new Exception(
 				$this->client_exception_message( $e, __( 'Error authenticating Google Partner APP.', 'google-listings-and-ads' ) ),
+				$e->getCode()
+			);
+		}
+	}
+
+	/**
+	 * Fetch incentive credits from the Google Ads API.
+	 *
+	 * @since 3.2.0
+	 *
+	 * @return array The incentive credits data.
+	 * @throws Exception When an error occurs during the request.
+	 */
+	public function get_incentive_credits(): array {
+		$country = $this->container->get( WC::class )->get_base_country();
+
+		try {
+			/** @var Client $client */
+			$client = $this->container->get( Client::class );
+
+			// Send GET request to the incentive credits endpoint using the stores base country.
+			$result = $client->get(
+				$this->get_server_url( 'google/ads/incentive-credits' ),
+				[
+					'query' => [
+						'countries' => $country,
+					],
+				]
+			);
+
+			$response = json_decode( $result->getBody()->getContents(), true );
+
+			if ( 200 !== $result->getStatusCode() ) {
+				do_action( 'woocommerce_gla_guzzle_invalid_response', $response, __METHOD__ );
+				$error = $response['message'] ?? __( 'Invalid response when fetching incentive credits.', 'google-listings-and-ads' );
+				throw new Exception( $error, $result->getStatusCode() );
+			}
+
+			if ( ! empty( $response['offers'] ) && is_array( $response['offers'] ) ) {
+				$offers               = $response['offers'];
+				$ads_currency         = $this->container->get( Ads::class )->get_ads_currency();
+				$store_currency       = $this->container->get( WC::class )->get_woocommerce_currency();
+				$ads_currency_index   = -1;
+				$store_currency_index = -1;
+				$index_key            = -1;
+
+				// Loop through all offers and locate Ads currency and store currency as a fallback.
+				foreach ( $offers as $index => $offer ) {
+					if ( $offer['currency'] === $ads_currency ) {
+						$ads_currency_index = $index;
+					}
+					if ( $offer['currency'] === $store_currency ) {
+						$store_currency_index = $index;
+					}
+				}
+
+				// Ads account currency is prioritized.
+				if ( $ads_currency_index !== -1 ) {
+					$index_key = $ads_currency_index;
+				} elseif ( $store_currency_index !== -1 ) {
+					$index_key = $store_currency_index;
+				} else {
+					$index_key = array_key_first( $offers );
+				}
+
+				// Include Ads account currency in the response.
+				$offers[ $index_key ]['ads_currency'] = $ads_currency;
+				return $offers[ $index_key ];
+			}
+
+			return [];
+		} catch ( ClientExceptionInterface $e ) {
+			do_action( 'woocommerce_gla_guzzle_client_exception', $e, __METHOD__ );
+
+			throw new Exception(
+				$this->client_exception_message( $e, __( 'Error fetching incentive credits.', 'google-listings-and-ads' ) ),
+				$e->getCode()
+			);
+		}
+	}
+
+	/**
+	 * Return the MCA ID for the WooCommerce Connect Server.
+	 *
+	 * @return int Positive MCA ID.
+	 * @throws Exception When the HTTP response is invalid, mcaId is missing, or mcaId is not a positive integer.
+	 */
+	public function get_wcs_mca_id(): int {
+		try {
+			/** @var Client $client */
+			$client   = $this->container->get( Client::class );
+			$result   = $client->get( $this->get_manager_url( 'mca' ) );
+			$response = json_decode( $result->getBody()->getContents(), true );
+
+			if ( 200 !== $result->getStatusCode() || ! is_array( $response ) || ! isset( $response['mcaId'] ) ) {
+				throw new Exception(
+					__( 'Invalid response when retrieving MCA ID from WooCommerce Connect Server.', 'google-listings-and-ads' ),
+					$result->getStatusCode()
+				);
+			}
+
+			$mca_id = filter_var(
+				$response['mcaId'],
+				FILTER_VALIDATE_INT,
+				[
+					'options' => [
+						'min_range' => 1,
+					],
+				]
+			);
+
+			if ( false === $mca_id ) {
+				throw new Exception(
+					__( 'Invalid response when retrieving MCA ID from WooCommerce Connect Server.', 'google-listings-and-ads' ),
+					$result->getStatusCode()
+				);
+			}
+
+			return $mca_id;
+		} catch ( ClientExceptionInterface $e ) {
+			do_action( 'woocommerce_gla_guzzle_client_exception', $e, __METHOD__ );
+
+			throw new Exception(
+				$this->client_exception_message( $e, __( 'Error retrieving MCA ID from WooCommerce Connect Server', 'google-listings-and-ads' ) ),
 				$e->getCode()
 			);
 		}

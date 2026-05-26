@@ -136,10 +136,20 @@ defined( 'ABSPATH' ) || exit;
 
 			<div class="variable_pricing">
 				<?php
+
+				$tax_label = '';
+				if ( wc_tax_enabled() ) {
+					$tax_text  = wc_prices_include_tax()
+						? __( 'incl. tax', 'woocommerce' )
+						: __( 'ex. tax', 'woocommerce' );
+					$tax_label = ' (' . $tax_text . ')';
+				}
+
 				$label = sprintf(
-					/* translators: %s: currency symbol */
-					__( 'Regular price (%s)', 'woocommerce' ),
-					get_woocommerce_currency_symbol()
+					/* translators: 1: currency symbol, 2: tax label (prefixed with space if present) */
+					__( 'Regular price (%1$s%2$s)', 'woocommerce' ),
+					get_woocommerce_currency_symbol(),
+					$tax_label ? ' ' . $tax_label : ''
 				);
 
 				woocommerce_wp_text_input(
@@ -155,9 +165,10 @@ defined( 'ABSPATH' ) || exit;
 				);
 
 				$label = sprintf(
-					/* translators: %s: currency symbol */
-					__( 'Sale price (%s)', 'woocommerce' ),
-					get_woocommerce_currency_symbol()
+					/* translators: 1: currency symbol, 2: tax label (prefixed with space if present) */
+					__( 'Sale price (%1$s%2$s)', 'woocommerce' ),
+					get_woocommerce_currency_symbol(),
+					$tax_label ? ' ' . $tax_label : ''
 				);
 
 				woocommerce_wp_text_input(
@@ -236,7 +247,7 @@ defined( 'ABSPATH' ) || exit;
 			<?php endif; ?>
 
 			<?php if ( 'yes' === get_option( 'woocommerce_manage_stock' ) ) : ?>
-				<div class="show_if_variation_manage_stock" style="display: none;">
+				<div class="show_if_variation_manage_stock form-row form-row-full" style="display: none;">
 					<?php
 					woocommerce_wp_text_input(
 						array(

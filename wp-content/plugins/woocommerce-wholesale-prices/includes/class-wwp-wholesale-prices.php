@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Model that houses the logic of wholesale prices.
  *
  * @since 1.3.0
+ * @since 2.2.8 Recalculate cart totals on woocommerce_add_to_cart for wholesale customers (issue #549). Add cart null-guard and re-entrancy guard on the recalc.
  */
 class WWP_Wholesale_Prices {
 
@@ -41,6 +42,33 @@ class WWP_Wholesale_Prices {
      * @var WWP_Wholesale_Roles
      */
     private $_wwp_wholesale_roles;
+
+    /**
+     * Wholesale role key stored for use in posts_clauses filter callback.
+     *
+     * @since  2.2.8
+     * @access private
+     * @var string
+     */
+    private $wholesale_price_filter_role_key = '';
+
+    /**
+     * Minimum wholesale price stored for use in posts_clauses filter callback.
+     *
+     * @since  2.2.8
+     * @access private
+     * @var float
+     */
+    private $wholesale_price_filter_min = 0;
+
+    /**
+     * Maximum wholesale price stored for use in posts_clauses filter callback.
+     *
+     * @since  2.2.8
+     * @access private
+     * @var float
+     */
+    private $wholesale_price_filter_max = 0;
 
     /*
     |--------------------------------------------------------------------------
@@ -531,7 +559,7 @@ class WWP_Wholesale_Prices {
             // For wholesale price display suffix.
             $extra_args['base_price'] = $base_price;
 
-            if ( strpos( $wc_price_suffix, '{price_including_tax}' ) !== false ) {
+            if ( str_contains( $wc_price_suffix, '{price_including_tax}' ) ) {
 
                 $wholesale_price_incl_tax = WWP_Helper_Functions::wwp_formatted_price(
                     WWP_Helper_Functions::wwp_get_price_including_tax(
@@ -546,7 +574,7 @@ class WWP_Wholesale_Prices {
 
             }
 
-            if ( strpos( $wc_price_suffix, '{price_excluding_tax}' ) !== false ) {
+            if ( str_contains( $wc_price_suffix, '{price_excluding_tax}' ) ) {
 
                 $wholesale_price_excl_tax = WWP_Helper_Functions::wwp_formatted_price(
                     WWP_Helper_Functions::wwp_get_price_excluding_tax(
@@ -593,7 +621,7 @@ class WWP_Wholesale_Prices {
             // If get price html is called from rest api request, then get wholesale role from request.
             // The wholesale role verification is done in the rest api request.
             if ( WC()->is_rest_api_request() ) {
-                $user_wholesale_role = isset( $_REQUEST['wholesale_role'] ) ? array( $_REQUEST['wholesale_role'] ) : $this->_wwp_wholesale_roles->getUserWholesaleRole(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                $user_wholesale_role = isset( $_REQUEST['wholesale_role'] ) ? array( sanitize_text_field( wp_unslash( $_REQUEST['wholesale_role'] ) ) ) : $this->_wwp_wholesale_roles->getUserWholesaleRole(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
             } else {
                 $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
             }
@@ -721,7 +749,7 @@ class WWP_Wholesale_Prices {
                         $wholesale_price = WWP_Helper_Functions::wwp_formatted_price( $min_price ) . ' - ' . WWP_Helper_Functions::wwp_formatted_price( $max_price );
                         $wc_price_suffix = get_option( 'woocommerce_price_display_suffix' );
 
-                        if ( strpos( $wc_price_suffix, '{price_including_tax}' ) === false && strpos( $wc_price_suffix, '{price_excluding_tax}' ) === false && ! $return_wholesale_price_only ) {
+                        if ( ! str_contains( $wc_price_suffix, '{price_including_tax}' ) && ! str_contains( $wc_price_suffix, '{price_excluding_tax}' ) && ! $return_wholesale_price_only ) {
 
                             $wsprice          = ! empty( $max_wholesale_price_without_taxing ) ? $max_wholesale_price_without_taxing : null;
                             $wholesale_price .= self::get_wholesale_price_suffix( $product, $user_wholesale_role, $wsprice, $return_wholesale_price_only, $extra_args );
@@ -860,6 +888,7 @@ class WWP_Wholesale_Prices {
                 array(
                     'simple',
                     'variation',
+                    'subscription',
                 ),
                 true
             ) ) {
@@ -1002,6 +1031,109 @@ class WWP_Wholesale_Prices {
     }
 
     /**
+     * Force cart totals recalculation when a wholesale customer adds a product to the cart.
+     *
+     * WooCommerce's WC_Cart::add_to_cart() does not invoke calculate_totals() before firing the
+     * woocommerce_add_to_cart action, so cart item line totals (line_subtotal, line_total,
+     * line_tax) are NULL at that point and the cart item's product data still reflects the
+     * regular price (the wholesale price is normally applied via woocommerce_before_calculate_totals).
+     * Third-party plugins that capture cart state on woocommerce_add_to_cart - such as FunnelKit
+     * Automations abandoned cart tracking - therefore see empty/zero values for wholesale customers.
+     *
+     * Hooking at priority 1 and triggering calculate_totals here runs the
+     * woocommerce_before_calculate_totals chain so wholesale prices are applied, and populates
+     * each cart item's line totals before any later listener on woocommerce_add_to_cart runs.
+     * The work is limited to wholesale customers to keep regular customers unaffected.
+     *
+     * Two defensive guards short-circuit the recalc:
+     * 1. WC()->cart null-guard - the woocommerce_add_to_cart action normally fires from inside
+     *    WC_Cart::add_to_cart() (so the cart exists), but a third-party plugin can invoke the
+     *    action manually without a session-loaded cart. Calling calculate_totals() on a missing
+     *    cart would fatal.
+     * 2. Re-entrancy guard - if a plugin's listener on the calculate_totals chain itself calls
+     *    WC_Cart::add_to_cart() (e.g. an auto-add upsell on woocommerce_before_calculate_totals),
+     *    triggering another calculate_totals() from within the chain risks corrupted state or
+     *    infinite recursion. Skip in that case.
+     *
+     * Also removes WC core's priority-20 calculate_totals callback (re-attached after our pass via
+     * the one-shot restore_wc_core_calculate_totals_hook) so wholesale add_to_cart only triggers
+     * a single recalc instead of two.
+     *
+     * @since  2.2.8 Force cart totals recalculation on woocommerce_add_to_cart for wholesale customers (issue #549). Includes WC()->cart null-guard and re-entrancy guard against recursive calculate_totals chains.
+     * @access public
+     *
+     * @return void
+     */
+    public function recalculate_cart_totals_for_wholesale_customer_on_add_to_cart() {
+
+        if ( empty( $this->_wwp_wholesale_roles->getUserWholesaleRole() ) ) {
+            return;
+        }
+
+        if ( ! ( WC()->cart instanceof WC_Cart ) ) {
+            return;
+        }
+
+        if (
+            doing_action( 'woocommerce_before_calculate_totals' ) ||
+            doing_action( 'woocommerce_after_calculate_totals' ) ||
+            doing_action( 'woocommerce_calculate_totals' )
+        ) {
+            return;
+        }
+
+        $removed_core_recalc = remove_action(
+            'woocommerce_add_to_cart',
+            array( WC()->cart, 'calculate_totals' ),
+            20
+        );
+
+        // Queue the restore before calling recalc so an exception unwinding
+        // out of the calculate_totals chain still leaves the restore registered
+        // for the next dispatch - the prio-20 callback gets re-attached then
+        // and the cart resumes recalculating instead of staying broken until
+        // the page reloads.
+        if ( $removed_core_recalc ) {
+            add_action(
+                'woocommerce_add_to_cart',
+                array( $this, 'restore_wc_core_calculate_totals_hook' ),
+                21,
+                0
+            );
+        }
+
+        $this->recalculate_cart_totals();
+    }
+
+    /**
+     * Re-attach WC core's priority-20 calculate_totals hook after our priority-1 dedup removed it.
+     *
+     * Self-removes so it only fires once per dispatch.
+     *
+     * @since  2.2.8
+     * @access public
+     *
+     * @return void
+     */
+    public function restore_wc_core_calculate_totals_hook() {
+
+        if ( WC()->cart instanceof WC_Cart ) {
+            add_action(
+                'woocommerce_add_to_cart',
+                array( WC()->cart, 'calculate_totals' ),
+                20,
+                0
+            );
+        }
+
+        remove_action(
+            'woocommerce_add_to_cart',
+            array( $this, 'restore_wc_core_calculate_totals_hook' ),
+            21
+        );
+    }
+
+    /**
      * Apply taxing accordingly to wholesale prices on shop page.
      * We will handle tax application to wholesale prices only on WWP if WWPP is not present.
      * If WWPP is present lets allow WWPP to handle this instead.
@@ -1128,9 +1260,7 @@ class WWP_Wholesale_Prices {
                         }
 
                         // Wholesale role key with uppercase letter fix.
-                        $pos = strpos( $meta['key'], strtolower( $role_key ) );
-
-                        if ( false !== $pos ) {
+                        if ( str_contains( $meta['key'], strtolower( $role_key ) ) ) {
                             $data['meta_data'][ $key ]['key'] = str_replace( strtolower( $role_key ), $role_key, $meta['key'] );
                         }
                     }
@@ -1208,7 +1338,13 @@ class WWP_Wholesale_Prices {
      * Therefore when wholesale user visits cart/checkout pages, we check if 'Disable Coupons For Wholesale Users' is
      * enabled. If so then we remove coupons to the cart.
      *
+     * Hooked into:
+     * - woocommerce_before_cart / woocommerce_before_checkout_form (legacy shortcode pages)
+     * - woocommerce_load_cart_from_session (block-based cart/checkout — fires on every cart-from-session load)
+     *
      * @since  1.11
+     * @since  2.2.8 Added empty-coupon guard, explicit calculate_totals()/set_session() to ensure the
+     *               cleared coupon list is persisted on block-based pages that don't fire the legacy hooks.
      * @access public
      */
     public function remove_coupons_for_wholesale_users_when_necessary() {
@@ -1217,7 +1353,12 @@ class WWP_Wholesale_Prices {
         $user_wholesale_role = ( is_array( $user_wholesale_role ) && ! empty( $user_wholesale_role ) ) ? $user_wholesale_role[0] : '';
 
         if ( get_option( 'wwpp_settings_disable_coupons_for_wholesale_users' ) === 'yes' && ! empty( $user_wholesale_role ) ) {
-            WC()->cart->remove_coupons();
+            $applied_coupons = WC()->cart->get_applied_coupons();
+            if ( ! empty( $applied_coupons ) ) {
+                WC()->cart->remove_coupons();
+                WC()->cart->calculate_totals();
+                WC()->cart->set_session();
+            }
         }
     }
 
@@ -1355,10 +1496,17 @@ class WWP_Wholesale_Prices {
      */
     public function display_replacement_message() {
 
+        $allowed_html = array(
+            'a' => array(
+                'href'  => array(),
+                'class' => array(),
+            ),
+        );
+
         $hide_price_and_add_to_cart_button = apply_filters( 'wwp_hide_price_and_add_to_cart_button', ! is_user_logged_in() && get_option( 'wwp_hide_price_add_to_cart' ) === 'yes' ? true : false );
 
         if ( $hide_price_and_add_to_cart_button ) {
-            echo $this->get_price_and_add_to_cart_replacement_message(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            echo wp_kses( $this->get_price_and_add_to_cart_replacement_message(), $allowed_html );
         }
     }
 
@@ -1481,16 +1629,17 @@ class WWP_Wholesale_Prices {
      * @return void
      */
     public function wc_cart_item_block_wwp_data() {
-
-        woocommerce_store_api_register_endpoint_data(
-            array(
-                'endpoint'        => CartItemSchema::IDENTIFIER,
-                'namespace'       => 'rymera_wwp',
-                'data_callback'   => array( $this, 'get_cart_block_item_wwp_data' ),
-                'schema_callback' => array( $this, 'get_cart_block_item_wwp_schema' ),
-                'schema_type'     => ARRAY_A,
-            )
-        );
+        if ( function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
+            woocommerce_store_api_register_endpoint_data(
+                array(
+                    'endpoint'        => CartItemSchema::IDENTIFIER,
+                    'namespace'       => 'rymera_wwp',
+                    'data_callback'   => array( $this, 'get_cart_block_item_wwp_data' ),
+                    'schema_callback' => array( $this, 'get_cart_block_item_wwp_schema' ),
+                    'schema_type'     => ARRAY_A,
+                )
+            );
+        }
     }
 
     /**
@@ -1540,7 +1689,7 @@ class WWP_Wholesale_Prices {
             wp_enqueue_script( 'wwp-cart-checkout-block-js', WWP_JS_URL . 'frontend/cart-checkout-block.js', array( 'jquery', 'wp-element', 'wc-blocks-checkout' ), $wc_wholesale_prices::VERSION, true );
 
 			if ( get_option( 'wwpp_settings_hide_original_price', null ) === 'yes' ) {
-				$css = <<<CSS
+				$css = <<<'CSS'
 .wwp-wholesale-priced .price del.wc-block-components-product-price__regular {
   display: none;
 }
@@ -1553,52 +1702,6 @@ CSS;
 		}
 	}
 
-    /**
-     * Customize the posts clauses.
-     *
-     * @param array    $clauses Clauses.
-     * @param WP_Query $query WP_Query object.
-     *
-     * @since 2.2.3
-     * @return array
-     */
-    public function posts_clauses( $clauses, $query ) {
-        global $wpdb;
-
-        if ( ! $query->is_main_query() ) {
-            return $clauses;
-        }
-
-        $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
-
-        // phpcs:disable WordPress.Security.NonceVerification.Recommended
-        $min_price = isset( $_GET['min_price'] ) ? floatval( wp_unslash( $_GET['min_price'] ) ) : 1;
-        $max_price = isset( $_GET['max_price'] ) ? floatval( wp_unslash( $_GET['max_price'] ) ) : 0;
-        // phpcs:enable WordPress.Security.NonceVerification.Recommended
-
-        if ( ! empty( $user_wholesale_role ) && $max_price > 0 ) {
-            // Join post meta table.
-            $clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} ON {$wpdb->posts}.ID = {$wpdb->postmeta}.post_id ";
-
-            // Where post meta is wholesale price.
-            $wwp_clause = $wpdb->prepare(
-                ' AND (wp_posts.post_type = %s AND wp_posts.post_status = %s) ',
-                'product',
-                'publish',
-            );
-
-            $wwp_clause .= $wpdb->prepare(
-                " AND {$wpdb->postmeta}.meta_key = %s AND {$wpdb->postmeta}.meta_value BETWEEN %f AND %f ",
-                $user_wholesale_role[0] . '_wholesale_price',
-                $min_price,
-                $max_price
-            );
-
-            $clauses['where'] = $wwp_clause;
-        }
-
-        return $clauses;
-    }
 
     /**
      * Register the options for translation.
@@ -1663,12 +1766,671 @@ CSS;
     }
 
     /**
+     * Get the general discount percentage for a wholesale role.
+     *
+     * General discounts are configured in WWPP and stored as an option mapping
+     * wholesale roles to percentage discounts. This helper retrieves the discount
+     * for the given role, returning 0 if none is set or if WWPP is not active.
+     *
+     * @since 2.2.7
+     *
+     * @param string $wholesale_role The wholesale role key.
+     *
+     * @return float The discount percentage, or 0 if none set.
+     */
+    public static function get_general_discount_for_role( $wholesale_role ) {
+
+        $discount_mapping = get_option( 'wwpp_option_wholesale_role_general_discount_mapping', array() );
+
+        if ( ! empty( $discount_mapping ) && is_array( $discount_mapping ) && isset( $discount_mapping[ $wholesale_role ] ) ) {
+            return (float) $discount_mapping[ $wholesale_role ];
+        }
+
+        return 0;
+    }
+
+    /**
+     * Build the wholesale price filter meta query for a given role and price range.
+     *
+     * Constructs an OR meta query matching products with per-product wholesale prices,
+     * variable product wholesale prices, and (if a general discount is set) products
+     * whose retail price falls within the reverse-calculated range. Also provides a
+     * filter hook for premium plugins (e.g. WWPP) to add category-level conditions.
+     *
+     * @since 2.2.7
+     *
+     * @param string $role_key  The sanitized wholesale role key.
+     * @param float  $min_price The minimum wholesale price to filter.
+     * @param float  $max_price The maximum wholesale price to filter.
+     *
+     * @return array The meta query array.
+     */
+    private function build_wholesale_price_filter_meta_query( $role_key, $min_price, $max_price ) {
+
+        $meta_key     = $role_key . '_wholesale_price';
+        $meta_key_min = $role_key . '_min_wholesale_price';
+
+        $meta_query = array(
+            'relation' => 'OR',
+            array(
+                'key'     => $meta_key,
+                'value'   => array( $min_price, $max_price ),
+                'compare' => 'BETWEEN',
+                'type'    => 'NUMERIC',
+            ),
+            array(
+                'relation' => 'AND',
+                array(
+                    'key'     => $role_key . '_min_wholesale_price',
+                    'value'   => $max_price,
+                    'compare' => '<=',
+                    'type'    => 'DECIMAL(10,2)',
+                ),
+                array(
+                    'key'     => $role_key . '_max_wholesale_price',
+                    'value'   => $min_price,
+                    'compare' => '>=',
+                    'type'    => 'DECIMAL(10,2)',
+                ),
+            ),
+        );
+
+        // Include products that receive wholesale pricing via general discount rules.
+        $general_discount = self::get_general_discount_for_role( $role_key );
+
+        if ( $general_discount > 0 ) {
+            // Reverse-calculate: wholesale = retail * (1 - discount/100)
+            // Therefore:         retail    = wholesale / (1 - discount/100).
+            $multiplier = 1 - ( $general_discount / 100 );
+
+            // Guard against 100% discount (division by zero).
+            if ( $multiplier > 0 ) {
+                $adjusted_min = $min_price / $multiplier;
+                $adjusted_max = $max_price / $multiplier;
+
+                $meta_query[] = array(
+                    'relation' => 'AND',
+                    array(
+                        'key'     => '_price',
+                        'value'   => array( $adjusted_min, $adjusted_max ),
+                        'compare' => 'BETWEEN',
+                        'type'    => 'DECIMAL(10,2)',
+                    ),
+                    array(
+                        'key'     => $meta_key,
+                        'compare' => 'NOT EXISTS',
+                    ),
+                    array(
+                        'key'     => $meta_key_min,
+                        'compare' => 'NOT EXISTS',
+                    ),
+                );
+            }
+        }
+
+        /**
+         * Filter the wholesale price filter meta query.
+         *
+         * Allows premium plugins (e.g. WWPP) to add conditions for category-level
+         * wholesale pricing or other custom pricing rules.
+         *
+         * @since 2.2.7
+         *
+         * @param array  $meta_query The meta query array with OR relation.
+         * @param string $role_key   The wholesale role key.
+         * @param float  $min_price  The minimum wholesale price filter value.
+         * @param float  $max_price  The maximum wholesale price filter value.
+         */
+        return apply_filters( 'wwp_wholesale_price_filter_meta_query', $meta_query, $role_key, $min_price, $max_price );
+    }
+
+    /**
+     * Configure Maximum/Minimum Values for WooCommerce Products Shortcode for Compatibility with the HUSKY – Products Filter Professional for WooCommerce Plugin.
+     *
+     * @since 2.2.7 Added general discount and category-level wholesale price filtering support.
+     *
+     * @param array  $query WordPress query object.
+     * @param array  $atts  attributes set for woocommerce.
+     * @param string $type  post_type for woocoomerce which is 'post_type'.
+     *
+     * @return array
+     */
+    public function woocommerce_shortcode_products_query( $query, $atts, $type ) { //phpcs:ignore
+        $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
+
+        // if the user has a wholesale role and the min and max price is set, then add the meta query to the query.
+        if ( ! empty( $user_wholesale_role ) && isset( $_GET['min_price'] ) && isset( $_GET['max_price'] ) ) { //phpcs:ignore
+            $min_price = isset( $_GET['min_price'] ) ? $this->absfloat( sanitize_text_field( wp_unslash( $_GET['min_price'] ) ) ) : 1; //phpcs:ignore
+            $max_price = isset( $_GET['max_price'] ) ? $this->absfloat( sanitize_text_field( wp_unslash( $_GET['max_price'] ) ) ) : 0; //phpcs:ignore
+
+            // Validate wholesale role.
+            $role_key                       = sanitize_key( $user_wholesale_role[0] );
+            $all_registered_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+
+            if ( ! isset( $all_registered_wholesale_roles[ $role_key ] ) ) {
+                return $query;
+            }
+
+            $query['meta_query'] = $this->build_wholesale_price_filter_meta_query( $role_key, $min_price, $max_price ); //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+        }
+        return $query;
+    }
+
+
+    /**
+     * Convert into float.
+     *
+     * @since 2.2.5
+     *
+     * @param int|string $value The subject value.
+     *
+     * @return float
+     */
+    private function absfloat( $value ) {
+        $float = floatval( $value );
+        return $float >= 0 ? $float : 0;
+    }
+
+    /**
+     * Hook into WooCommerce product queries for wholesale-aware price filtering.
+     *
+     * When a wholesale customer uses the price filter widget, WooCommerce's default
+     * `product_query_post_clauses` filter compares against retail prices from the
+     * `wc_product_meta_lookup` table, excluding products that only have wholesale prices.
+     * This method disables WooCommerce's retail-price clause via the
+     * `woocommerce_enable_post_clause_filtering` filter — preserving attribute filtering,
+     * price sorting, and rating filtering that also live in
+     * `product_query_post_clauses()` — and registers our own SQL-based
+     * `posts_clauses` callback that understands wholesale pricing.
+     *
+     * @since 2.2.8 Replaced meta_query approach with direct SQL posts_clauses for correct
+     *              wholesale price filtering against the lookup table.
+     * @since 2.2.7 Added general discount and category-level wholesale price filtering support.
+     *
+     * @param object $product_query WooCommerce product query object.
+     * @param object $wc_object     WooCommerce query object.
+     *
+     * @return void
+     */
+    public function woocommerce_product_query_meta_query( $product_query, $wc_object ) { //phpcs:ignore
+        $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
+
+        if ( ! empty( $user_wholesale_role ) && isset( $_GET['min_price'] ) && isset( $_GET['max_price'] ) ) { //phpcs:ignore
+            $min_price = isset( $_GET['min_price'] ) ? $this->absfloat( sanitize_text_field( wp_unslash( $_GET['min_price'] ) ) ) : 1; //phpcs:ignore
+            $max_price = isset( $_GET['max_price'] ) ? $this->absfloat( sanitize_text_field( wp_unslash( $_GET['max_price'] ) ) ) : 0; //phpcs:ignore
+
+            // Validate wholesale role.
+            $role_key                       = sanitize_key( $user_wholesale_role[0] );
+            $all_registered_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+
+            if ( ! isset( $all_registered_wholesale_roles[ $role_key ] ) ) {
+                return;
+            }
+
+            // Disable WooCommerce's retail-price-based clause inside price_filter_post_clauses()
+            // while preserving attribute filtering, price sorting, and rating filtering that
+            // also live in product_query_post_clauses().
+            add_filter( 'woocommerce_enable_post_clause_filtering', '__return_false' );
+
+            // Store filter state on the instance so our posts_clauses callback can access it.
+            $this->wholesale_price_filter_role_key = $role_key;
+            $this->wholesale_price_filter_min      = $min_price;
+            $this->wholesale_price_filter_max      = $max_price;
+
+            // Register our wholesale-aware posts_clauses filter.
+            add_filter( 'posts_clauses', array( $this, 'wholesale_price_filter_post_clauses' ), 10, 2 );
+        }
+    }
+
+    /**
+     * Build the posts_clauses WHERE fragment for wholesale price filtering.
+     *
+     * Appends an AND (...OR...) clause that matches products satisfying ANY of:
+     *   1. Simple products whose per-product wholesale price falls within the range.
+     *   2. Variable products whose wholesale price range overlaps the filter range.
+     *   3. Products with no per-product wholesale price that receive a general role
+     *      discount whose reverse-calculated retail price falls within the range
+     *      (only when a general discount is configured for the role).
+     *
+     * Self-removes from the posts_clauses filter after executing to prevent stale
+     * state if subsequent queries fire posts_clauses.
+     *
+     * @since 2.2.8
+     *
+     * @param array    $args     SQL clause fragments (where, join, orderby, etc.).
+     * @param WP_Query $wp_query The current WP_Query instance.
+     *
+     * @return array Modified clause fragments.
+     */
+    public function wholesale_price_filter_post_clauses( $args, $wp_query ) {
+        global $wpdb;
+
+        // Self-remove to prevent stale state if subsequent queries fire posts_clauses.
+        remove_filter( 'posts_clauses', array( $this, 'wholesale_price_filter_post_clauses' ), 10 );
+
+        // Mirror WooCommerce's own guard: only run on queries that opted in.
+        if ( ! $wp_query->is_main_query() ) {
+            return $args;
+        }
+
+        $role_key  = $this->wholesale_price_filter_role_key;
+        $min_price = $this->wholesale_price_filter_min;
+        $max_price = $this->wholesale_price_filter_max;
+
+        // Reset instance state to prevent stale data on any unexpected re-entry.
+        $this->wholesale_price_filter_role_key = '';
+        $this->wholesale_price_filter_min      = 0;
+        $this->wholesale_price_filter_max      = 0;
+
+        // Meta key components — role_key is already sanitized via sanitize_key().
+        // No esc_sql() needed here; $wpdb->prepare() with %s handles escaping.
+        $meta_key_simple  = $role_key . '_wholesale_price';
+        $meta_key_var_min = $role_key . '_min_wholesale_price';
+        $meta_key_var_max = $role_key . '_max_wholesale_price';
+
+        // Condition 1: Simple products with a per-product wholesale price in range.
+        $condition1 = $wpdb->prepare(
+            "EXISTS (
+                SELECT 1 FROM {$wpdb->postmeta} wwp_pm
+                WHERE wwp_pm.post_id = {$wpdb->posts}.ID
+                AND wwp_pm.meta_key = %s
+                AND wwp_pm.meta_value + 0 BETWEEN %f AND %f
+            )",
+            $meta_key_simple,
+            $min_price,
+            $max_price
+        );
+
+        // Condition 2: Variable products whose wholesale price range overlaps the filter range.
+        // The range [stored_min, stored_max] overlaps [min_price, max_price] when
+        // stored_min <= max_price AND stored_max >= min_price.
+        $condition2 = $wpdb->prepare(
+            "EXISTS (
+                SELECT 1 FROM {$wpdb->postmeta} wwp_vmin
+                INNER JOIN {$wpdb->postmeta} wwp_vmax
+                    ON wwp_vmin.post_id = wwp_vmax.post_id
+                WHERE wwp_vmin.post_id = {$wpdb->posts}.ID
+                AND wwp_vmin.meta_key = %s
+                AND wwp_vmax.meta_key = %s
+                AND wwp_vmin.meta_value + 0 <= %f
+                AND wwp_vmax.meta_value + 0 >= %f
+            )",
+            $meta_key_var_min,
+            $meta_key_var_max,
+            $max_price,
+            $min_price
+        );
+
+        $conditions = array( $condition1, $condition2 );
+
+        // Condition 3: Products with no per-product wholesale price that benefit from a
+        // general role discount. Reverse-calculate the retail range that maps onto the
+        // requested wholesale range and match against the lookup table.
+        $general_discount = self::get_general_discount_for_role( $role_key );
+
+        if ( $general_discount > 0 ) {
+            $multiplier = 1 - ( $general_discount / 100 );
+
+            // Guard against 100% discount (division by zero).
+            if ( $multiplier > 0 ) {
+                $adjusted_min = $min_price / $multiplier;
+                $adjusted_max = $max_price / $multiplier;
+
+                $condition3 = $wpdb->prepare(
+                    "EXISTS (
+                        SELECT 1 FROM {$wpdb->prefix}wc_product_meta_lookup wc_lookup
+                        WHERE wc_lookup.product_id = {$wpdb->posts}.ID
+                        AND NOT ( %f < wc_lookup.min_price OR %f > wc_lookup.max_price )
+                        AND NOT EXISTS (
+                            SELECT 1 FROM {$wpdb->postmeta} wwp_excl
+                            WHERE wwp_excl.post_id = {$wpdb->posts}.ID
+                            AND wwp_excl.meta_key IN ( %s, %s )
+                        )
+                    )",
+                    $adjusted_max,
+                    $adjusted_min,
+                    $meta_key_simple,
+                    $meta_key_var_min
+                );
+
+                $conditions[] = $condition3;
+            }
+        }
+
+        $sql = '( ' . implode( ' OR ', $conditions ) . ' )';
+
+        /**
+         * Filter the wholesale price filter SQL fragment appended to posts_clauses.
+         *
+         * Allows premium plugins (e.g. WWPP) to extend the WHERE condition with
+         * additional OR clauses for category-level wholesale pricing or other custom rules.
+         *
+         * @warning The returned value is appended verbatim to the SQL WHERE clause.
+         *          Callers MUST use $wpdb->prepare() for all dynamic values to prevent
+         *          SQL injection.
+         *
+         * @since 2.2.8
+         *
+         * @param string $sql       The SQL OR-group string (without leading AND).
+         * @param string $role_key  The wholesale role key.
+         * @param float  $min_price The minimum wholesale price filter value.
+         * @param float  $max_price The maximum wholesale price filter value.
+         */
+        $sql = apply_filters( 'wwp_wholesale_price_filter_post_clauses', $sql, $role_key, $min_price, $max_price );
+
+        $args['where'] .= " AND {$sql}";
+
+        return $args;
+    }
+
+    /**
+     * Filter the minimum price for the WooCommerce price filter widget to use wholesale prices.
+     *
+     * When a wholesale customer views the shop, the price filter widget slider should
+     * reflect wholesale price ranges instead of retail prices.
+     *
+     * @since 2.2.7
+     *
+     * @param float $min_price The minimum price from WooCommerce.
+     *
+     * @return float The wholesale minimum price, or the original if no wholesale role.
+     */
+    public function wholesale_price_filter_widget_min_amount( $min_price ) {
+        return $this->get_wholesale_price_for_filter( $min_price, 'MIN' );
+    }
+
+    /**
+     * Filter the maximum price for the WooCommerce price filter widget to use wholesale prices.
+     *
+     * When a wholesale customer views the shop, the price filter widget slider should
+     * reflect wholesale price ranges instead of retail prices.
+     *
+     * @since 2.2.7
+     *
+     * @param float $max_price The maximum price from WooCommerce.
+     *
+     * @return float The wholesale maximum price, or the original if no wholesale role.
+     */
+    public function wholesale_price_filter_widget_max_amount( $max_price ) {
+        return $this->get_wholesale_price_for_filter( $max_price, 'MAX' );
+    }
+
+    /**
+     * Get the wholesale price for the price filter widget.
+     *
+     * Validates the current user's wholesale role and returns the appropriate
+     * wholesale price range value, falling back to the original price.
+     *
+     * @since 2.2.7
+     *
+     * @param float  $fallback_price The default price from WooCommerce.
+     * @param string $aggregate      'MIN' or 'MAX'.
+     *
+     * @return float The wholesale price, or the fallback if no wholesale role.
+     */
+    private function get_wholesale_price_for_filter( $fallback_price, $aggregate ) {
+
+        $user_wholesale_role = $this->_wwp_wholesale_roles->getUserWholesaleRole();
+
+        if ( empty( $user_wholesale_role ) ) {
+            return $fallback_price;
+        }
+
+        $role_key                       = sanitize_key( $user_wholesale_role[0] );
+        $all_registered_wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+
+        if ( ! isset( $all_registered_wholesale_roles[ $role_key ] ) ) {
+            return $fallback_price;
+        }
+
+        $wholesale_price = $this->get_wholesale_price_range_value( $role_key, $aggregate );
+
+        return null !== $wholesale_price ? $wholesale_price : $fallback_price;
+    }
+
+    /**
+     * Get the minimum or maximum wholesale price across all published products for a role.
+     *
+     * Considers per-product wholesale prices, variable product wholesale prices,
+     * and general discount applied to retail prices.
+     *
+     * @since 2.2.7
+     *
+     * @param string $role_key  The wholesale role key.
+     * @param string $aggregate 'MIN' or 'MAX'.
+     *
+     * @return float|null The aggregated price, or null if no wholesale prices found.
+     */
+    private function get_wholesale_price_range_value( $role_key, $aggregate ) {
+
+        $cache_key = 'wwp_price_range_' . $role_key . '_' . strtolower( $aggregate );
+        $cached    = get_transient( $cache_key );
+
+        if ( false !== $cached ) {
+            return $cached;
+        }
+
+        global $wpdb;
+
+        $is_max   = 'MAX' === strtoupper( $aggregate );
+        $sql_func = $is_max ? 'MAX' : 'MIN';
+        $meta_key = $role_key . '_wholesale_price';
+
+        // Get min/max per-product wholesale price.
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $per_product_price = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT {$sql_func}(CAST(pm.meta_value AS DECIMAL(10,2)))
+                FROM {$wpdb->postmeta} pm
+                INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                WHERE pm.meta_key = %s
+                AND pm.meta_value > 0
+                AND p.post_status = 'publish'",
+                $meta_key
+            )
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+        $prices = array();
+
+        if ( null !== $per_product_price ) {
+            $prices[] = (float) $per_product_price;
+        }
+
+        // Also consider retail prices with general discount applied.
+        $general_discount = self::get_general_discount_for_role( $role_key );
+
+        if ( $general_discount > 0 ) {
+            $multiplier = 1 - ( $general_discount / 100 );
+
+            if ( $multiplier > 0 ) {
+                // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+                $retail_price = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT {$sql_func}(CAST(pm.meta_value AS DECIMAL(10,2)))
+                        FROM {$wpdb->postmeta} pm
+                        INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+                        WHERE pm.meta_key = %s
+                        AND pm.meta_value > 0
+                        AND p.post_status = 'publish'",
+                        '_price'
+                    )
+                );
+                // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+                if ( null !== $retail_price ) {
+                    $prices[] = (float) $retail_price * $multiplier;
+                }
+            }
+        }
+
+        /**
+         * Filter the wholesale price range values for the price filter widget.
+         *
+         * Allows premium plugins to include category-level or other custom pricing.
+         *
+         * @since 2.2.7
+         *
+         * @param array  $prices    Array of candidate prices.
+         * @param string $role_key  The wholesale role key.
+         * @param string $aggregate 'MIN' or 'MAX'.
+         */
+        $prices = apply_filters( 'wwp_wholesale_price_filter_widget_prices', $prices, $role_key, $aggregate );
+
+        if ( empty( $prices ) ) {
+            return null;
+        }
+
+        $result = 'MIN' === $aggregate ? min( $prices ) : max( $prices );
+
+        set_transient( $cache_key, $result, HOUR_IN_SECONDS );
+
+        return $result;
+    }
+
+    /**
+     * Clear cached wholesale price range transients.
+     *
+     * Called when products are saved or wholesale prices are updated,
+     * ensuring the price filter widget reflects current data.
+     *
+     * @since 2.2.7
+     *
+     * @return void
+     */
+    public static function clear_wholesale_price_range_cache() {
+
+        $wholesale_roles = WWP_Wholesale_Roles::getInstance();
+        $all_roles       = $wholesale_roles->getAllRegisteredWholesaleRoles();
+
+        foreach ( array_keys( $all_roles ) as $role_key ) {
+            delete_transient( 'wwp_price_range_' . $role_key . '_min' );
+            delete_transient( 'wwp_price_range_' . $role_key . '_max' );
+        }
+    }
+
+    /**
+     * Migrate variable products to store per-role min/max wholesale price meta.
+     *
+     * Runs once on `init` (guarded by the `wwp_variable_price_range_version` option).
+     * Iterates all variable products that previously stored variation IDs under the
+     * `_variations_with_wholesale_price` meta key and replaces that data with
+     * computed `_min_wholesale_price` / `_max_wholesale_price` values per wholesale
+     * role, enabling the range-overlap price filter query introduced in 2.2.8.
+     *
+     * @since  2.2.8
+     * @access public
+     *
+     * @return void
+     */
+    public function migrate_variable_product_wholesale_price_range() {
+
+        if ( get_option( 'wwp_variable_price_range_version' ) ) {
+            return;
+        }
+
+        $wholesale_roles = $this->_wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+
+        if ( empty( $wholesale_roles ) ) {
+            update_option( 'wwp_variable_price_range_version', '1.0' );
+            return;
+        }
+
+        $page  = 1;
+        $limit = 50;
+
+        do {
+            $variable_products = wc_get_products(
+                array(
+                    'type'   => 'variable',
+                    'limit'  => $limit,
+                    'page'   => $page,
+                    'return' => 'objects',
+                )
+            );
+
+            if ( empty( $variable_products ) ) {
+                break;
+            }
+
+            foreach ( $variable_products as $variable_product ) {
+                $children = $variable_product->get_children();
+
+                if ( empty( $children ) ) {
+                    continue;
+                }
+
+                $wholesale_prices_per_role = WWP_Helper_Functions::get_wholesale_prices_per_role_from_variations( $children, $wholesale_roles );
+
+                $needs_save = false;
+
+                foreach ( $wholesale_roles as $role_key => $role ) {
+                    if ( ! empty( $wholesale_prices_per_role[ $role_key ] ) ) {
+                        $prices = $wholesale_prices_per_role[ $role_key ];
+                        $variable_product->update_meta_data( $role_key . '_have_wholesale_price', 'yes' );
+                        $variable_product->update_meta_data( $role_key . '_min_wholesale_price', min( $prices ) );
+                        $variable_product->update_meta_data( $role_key . '_max_wholesale_price', max( $prices ) );
+                        $needs_save = true;
+                    } else {
+                        $variable_product->update_meta_data( $role_key . '_have_wholesale_price', 'no' );
+                        $variable_product->delete_meta_data( $role_key . '_min_wholesale_price' );
+                        $variable_product->delete_meta_data( $role_key . '_max_wholesale_price' );
+                        $needs_save = true;
+                    }
+                }
+
+                if ( $needs_save ) {
+                    $variable_product->save_meta_data();
+                }
+            }
+
+            $fetched = count( $variable_products );
+            ++$page;
+        } while ( $fetched === $limit );
+
+        update_option( 'wwp_variable_price_range_version', '1.0' );
+    }
+
+    /**
+     * Schedule the wholesale price range migration via Action Scheduler.
+     *
+     * Schedules a single async action `wwp_migrate_variable_price_range` using
+     * Action Scheduler so the migration runs in the background rather than
+     * blocking the `init` hook. If Action Scheduler is unavailable (e.g. WooCommerce
+     * is not yet loaded), the migration is run synchronously as a fallback.
+     *
+     * @since  2.2.8
+     * @access public
+     *
+     * @return void
+     */
+    public function schedule_wholesale_price_range_migration() {
+
+        if ( get_option( 'wwp_variable_price_range_version' ) ) {
+            return;
+        }
+
+        if ( ! function_exists( 'as_schedule_single_action' ) ) {
+            // Fallback: run synchronously if Action Scheduler is not available.
+            $this->migrate_variable_product_wholesale_price_range();
+            return;
+        }
+
+        if ( ! as_has_scheduled_action( 'wwp_migrate_variable_price_range' ) ) {
+            as_schedule_single_action( time(), 'wwp_migrate_variable_price_range' );
+        }
+    }
+
+    /**
      * Execute model.
      *
      * @since  1.5.0
      * @access public
      */
     public function run() {
+
+        add_action( 'init', array( $this, 'schedule_wholesale_price_range_migration' ) );
+        add_action( 'wwp_migrate_variable_price_range', array( $this, 'migrate_variable_product_wholesale_price_range' ) );
 
         // Apply wholesale price to archive and single product pages
         // On WC 3.x series, includes variation products.
@@ -1684,6 +2446,24 @@ CSS;
             10,
             1
         );
+
+        add_action(
+            'woocommerce_add_to_cart',
+            array(
+                $this,
+                'recalculate_cart_totals_for_wholesale_customer_on_add_to_cart',
+            ),
+            1,
+            0
+        );
+
+        $is_divi = WWP_Helper_Functions::is_theme_active( 'divi' )
+            || WWP_Helper_Functions::is_plugin_active( 'divi-builder/divi-builder.php' );
+
+        if ( $is_divi ) { // run this only for divi related themes, child themes, or the standalone Divi Builder plugin (issue #768).
+            // this is called when cart/cart.php is called anywhere(this solves the divi theme builder issue-#768).
+            add_action( 'woocommerce_cart_loaded_from_session', array( $this, 'apply_product_wholesale_price_to_cart' ), 10, 1 );
+        }
 
         // We need to recalculate cart on loading widget cart to properly sync the cart item prices.
         add_action( 'woocommerce_before_mini_cart', array( $this, 'recalculate_cart_totals' ) );
@@ -1731,6 +2511,10 @@ CSS;
                 'remove_coupons_for_wholesale_users_when_necessary',
             )
         );
+
+        // Block-based cart/checkout don't fire woocommerce_before_cart / woocommerce_before_checkout_form,
+        // so hook the lower-level cart-loaded action to cover that case (see issue #880).
+        add_action( 'woocommerce_load_cart_from_session', array( $this, 'remove_coupons_for_wholesale_users_when_necessary' ) );
 
         // Filter the product price to hide the original price for wholesale users.
         add_filter( 'wwp_product_original_price', array( $this, 'filter_product_original_price_visibility' ), 10, 5 );
@@ -1786,8 +2570,19 @@ CSS;
         add_action( 'wp_enqueue_scripts', array( $this, 'wc_cart_block_price_html' ), 20 );
         add_action( 'woocommerce_blocks_loaded', array( $this, 'wc_cart_item_block_wwp_data' ) );
 
-        // WooCommerce Filter.
-        add_filter( 'posts_clauses', array( $this, 'posts_clauses' ), 99, 2 );
+        // For products queried using the WooCommerce Query class, ensure compatibility with the HUSKY – WooCommerce Products Filter plugin, Filter Products by Price.
+        add_action( 'woocommerce_product_query', array( $this, 'woocommerce_product_query_meta_query' ), 99999, 2 );
+
+        // Modify WooCommerce Shortcode Filtering for Compatibility with the HUSKY – WooCommerce Products Filter Plugin, Filter Products by Price.
+        add_filter( 'woocommerce_shortcode_products_query', array( $this, 'woocommerce_shortcode_products_query' ), 99999, 3 );
+
+        // Adjust price filter widget min/max range to use wholesale prices for wholesale customers.
+        add_filter( 'woocommerce_price_filter_widget_min_amount', array( $this, 'wholesale_price_filter_widget_min_amount' ), 10, 1 );
+        add_filter( 'woocommerce_price_filter_widget_max_amount', array( $this, 'wholesale_price_filter_widget_max_amount' ), 10, 1 );
+
+        // Clear wholesale price range cache when products are updated.
+        add_action( 'woocommerce_update_product', array( __CLASS__, 'clear_wholesale_price_range_cache' ) );
+        add_action( 'update_option_wwpp_option_wholesale_role_general_discount_mapping', array( __CLASS__, 'clear_wholesale_price_range_cache' ) );
 
         // Register the option for translation.
         add_filter( 'pre_update_option', array( $this, 'wwp_wpml_translatable_options' ), 100, 2 );

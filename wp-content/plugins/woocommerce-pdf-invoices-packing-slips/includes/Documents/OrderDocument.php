@@ -155,16 +155,13 @@ abstract class OrderDocument {
 	}
 
 	public function get_order_settings() {
-		$order_settings = array();
-
-		if ( ! empty( $this->order ) ) {
-			$order_settings = $this->order->get_meta( "_wcpdf_{$this->slug}_settings" );
-			if ( ! empty( $order_settings ) && ! is_array( $order_settings ) ) {
-				$order_settings = maybe_unserialize( $order_settings );
-			}
+		if ( empty( $this->order ) ) {
+			return array();
 		}
 
-		return $order_settings;
+		$order_settings = $this->order->get_meta( "_wcpdf_{$this->slug}_settings" );
+
+		return is_array( $order_settings ) ? $order_settings : array();
 	}
 
 	public function get_settings( $latest = false, $output_format = 'pdf' ) {
@@ -215,7 +212,16 @@ abstract class OrderDocument {
 				// this is either the first time the document is generated, or historical settings are disabled
 				// in both cases, we store the document settings
 				// exclude non historical settings from being saved in order meta
-				$this->order->update_meta_data( "_wcpdf_{$this->slug}_settings", array_diff_key( (array) $settings, array_flip( $this->get_non_historical_settings() ) ) );
+				$settings_to_store = is_array( $settings ) ? $settings : array();
+				$settings_to_store = array_diff_key(
+					$settings_to_store,
+					array_flip( $this->get_non_historical_settings() )
+				);
+
+				$this->order->update_meta_data(
+					"_wcpdf_{$this->slug}_settings",
+					$this->sanitize_settings_for_storage( $settings_to_store )
+				);
 
 				if ( 'invoice' === $this->slug ) {
 					if ( isset( $settings['display_date'] ) && 'order_date' === $settings['display_date'] ) {
@@ -254,7 +260,9 @@ abstract class OrderDocument {
 	 */
 	public function initiate_number( bool $force_new_number = false ) {
 		$semaphore       = new Semaphore( "initiate_{$this->slug}_number" );
-		$document_number = $force_new_number ? null : ( $this->exists() ? $this->get_data( 'number' ) : null );
+		$document_number = $force_new_number
+			? null
+			: ( $this->exists() ? $this->get_data( 'number' ) : null );
 		$document_number = apply_filters( 'wpo_wcpdf_initiate_number', $document_number, $this );
 
 		if ( ! empty( $document_number ) ) {
@@ -353,7 +361,6 @@ abstract class OrderDocument {
 		return apply_filters( 'wpo_wcpdf_non_historical_settings', array(
 			'enabled',
 			'attach_to_email_ids',
-			'ubl_format',
 			'disable_for_statuses',
 			'number_format', // this is stored in the number data already!
 			'my_account_buttons',
@@ -362,7 +369,6 @@ abstract class OrderDocument {
 			'invoice_date_column',
 			'paper_size',
 			'font_subsetting',
-			'include_encrypted_pdf',
 		), $this );
 	}
 
@@ -378,9 +384,9 @@ abstract class OrderDocument {
 		$non_historical_settings = $this->get_non_historical_settings();
 
 		if ( in_array( $key, $non_historical_settings ) && isset( $latest_settings ) ) {
-			$setting = isset( $latest_settings[$key] ) ? $latest_settings[$key] : $default;
+			$setting = isset( $latest_settings[ $key ] ) ? $latest_settings[ $key ] : $default;
 		} else {
-			$setting = isset( $settings[$key] ) ? $settings[$key] : $default;
+			$setting = isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
 		}
 
 		return $setting;
@@ -397,20 +403,10 @@ abstract class OrderDocument {
 	}
 
 	public function is_enabled( $output_format = 'pdf' ) {
-		$is_enabled = $this->get_setting( 'enabled', false, $output_format );
+		$output_format = ( 'xml' === $output_format ) ? 'pdf' : $output_format; // currently not using separated settings for EDI
+		$is_enabled    = $this->get_setting( 'enabled', false, $output_format );
 
 		return apply_filters( 'wpo_wcpdf_document_is_enabled', $is_enabled, $this->type, $output_format );
-	}
-
-	/**
-	 * Get the UBL format
-	 *
-	 * @return string|false
-	 */
-	public function get_ubl_format() {
-		$ubl_format = $this->get_setting( 'ubl_format', false, 'ubl' );
-
-		return apply_filters( 'wpo_wcpdf_document_ubl_format', $ubl_format, $this );
 	}
 
 	public function get_hook_prefix() {
@@ -421,9 +417,10 @@ abstract class OrderDocument {
 		$number = $order->get_meta( "_wcpdf_{$this->slug}_number_data" );
 		// fallback to legacy data for number
 		if ( empty( $number ) ) {
-			$number = $order->get_meta( "_wcpdf_{$this->slug}_number" );
+			$number           = $order->get_meta( "_wcpdf_{$this->slug}_number" );
 			$formatted_number = $order->get_meta( "_wcpdf_formatted_{$this->slug}_number" );
-			if (!empty($formatted_number)) {
+
+			if ( ! empty( $formatted_number ) ) {
 				$number = compact( 'number', 'formatted_number' );
 			}
 		}
@@ -458,26 +455,26 @@ abstract class OrderDocument {
 		foreach ( $this->data as $key => $value ) {
 			if ( empty( $value ) ) {
 				$order->delete_meta_data( "_wcpdf_{$this->slug}_{$key}" );
-				if ( $key == 'date' ) {
+				if ( 'date' === $key ) {
 					$order->delete_meta_data( "_wcpdf_{$this->slug}_{$key}_formatted" );
-				} elseif ( $key == 'number' ) {
+				} elseif ( 'number' === $key ) {
 					$order->delete_meta_data( "_wcpdf_{$this->slug}_{$key}_data" );
 					// deleting the number = deleting the document, so also delete document settings
 					$order->delete_meta_data( "_wcpdf_{$this->slug}_settings" );
-				} elseif ( $key == 'notes' || $key == 'display_date') {
+				} elseif ( 'notes' === $key || 'display_date' === $key ) {
 					$order->delete_meta_data( "_wcpdf_{$this->slug}_{$key}" );
 				}
 
 			} else {
-				if ( $key == 'date' ) {
+				if ( 'date' === $key ) {
 					// store dates as timestamp and formatted as mysql time
 					$order->update_meta_data( "_wcpdf_{$this->slug}_{$key}", $value->getTimestamp() );
 					$order->update_meta_data( "_wcpdf_{$this->slug}_{$key}_formatted", $value->date( 'Y-m-d H:i:s' ) );
-				} elseif ( $key == 'number' ) {
+				} elseif ( 'number' === $key ) {
 					// store both formatted number and number data
 					$order->update_meta_data( "_wcpdf_{$this->slug}_{$key}", $value->formatted_number );
 					$order->update_meta_data( "_wcpdf_{$this->slug}_{$key}_data", $value->to_array() );
-				} elseif ( $key == 'notes' || $key == 'display_date' ) {
+				} elseif ( 'notes' === $key || 'display_date' === $key ) {
 					// store notes
 					$order->update_meta_data( "_wcpdf_{$this->slug}_{$key}", $value );
 				}
@@ -539,9 +536,10 @@ abstract class OrderDocument {
 			$order     = wc_get_order( $order->get_parent_id() );
 		}
 
-		// ubl
-		if ( $this->is_enabled( 'ubl' ) && wcpdf_is_ubl_available() ) {
-			wpo_ips_ubl_save_order_taxes( $order );
+		// EDI
+		if ( $this->is_enabled( 'xml' ) && wpo_ips_edi_is_available() ) {
+			wpo_ips_edi_save_order_taxes( $order );
+			wpo_ips_edi_maybe_save_order_peppol_data( $order );
 		}
 
 		$note = $refund_id ? sprintf(
@@ -584,6 +582,42 @@ abstract class OrderDocument {
 		return apply_filters( 'wpo_wcpdf_document_is_allowed', $allowed, $this );
 	}
 
+	/**
+	 * Check if document is allowed to be displayed on the My Account page.
+	 *
+	 * @param string $default
+	 * @param string $output_format
+	 * @return bool
+	 */
+	public function is_allowed_in_my_account( string $default = '', string $output_format = 'pdf' ): bool {
+		$allowed = false;
+
+		if ( $this->is_enabled() ) {
+			$button_setting = $this->get_setting( 'my_account_buttons', $default, $output_format );
+
+			switch ( $button_setting ) {
+				case 'available':
+					$allowed = $this->exists();
+					break;
+				case 'always':
+					$allowed = true;
+					break;
+				case 'custom':
+					$allowed_statuses = $this->get_setting( 'my_account_restrict', array(), $output_format );
+					$order_status     = is_callable( array( $this->order, 'get_status' ) )
+						? $this->order->get_status()
+						: false;
+
+					$allowed = ! empty( $allowed_statuses )
+						&& $order_status
+						&& in_array( $order_status, array_keys( $allowed_statuses ), true );
+					break;
+			}
+		}
+
+		return apply_filters( 'wpo_ips_document_is_allowed_in_my_account', $allowed, $default, $output_format, $this );
+	}
+
 	public function exists() {
 		return !empty( $this->data['date'] );
 	}
@@ -604,19 +638,20 @@ abstract class OrderDocument {
 
 	public function get_data( $key, $document_type = '', $order = null, $context = 'view' ) {
 		$document_type = empty( $document_type ) ? $this->type : $document_type;
-		$order = empty( $order ) ? $this->order : $order;
+		$order         = empty( $order ) ? $this->order : $order;
 
 		// redirect get_data call for linked documents
-		if ( $document_type != $this->type ) {
-			if ( !isset( $this->linked_documents[ $document_type ] ) ) {
+		if ( $document_type !== $this->type ) {
+			if ( ! isset( $this->linked_documents[ $document_type ] ) ) {
 				// always assume parent for documents linked to credit notes
-				if ($this->type == 'credit-note') {
+				if ( 'credit-note' === $this->type ) {
 					$order = $this->get_refund_parent( $order );
 				}
 				// order is not loaded to avoid overhead - we pass this by reference directly to the read_data method instead
 				$this->linked_documents[ $document_type ] = wcpdf_get_document( $document_type, null );
 				$this->linked_documents[ $document_type ]->read_data( $order );
 			}
+
 			return $this->linked_documents[ $document_type ]->get_data( $key, $document_type );
 		}
 
@@ -1079,8 +1114,10 @@ abstract class OrderDocument {
 
 	public function set_data( $data, $order ) {
 		$order = empty( $order ) ? $this->order : $order;
-		foreach ($data as $key => $value) {
+
+		foreach ( $data as $key => $value ) {
 			$setter = "set_$key";
+
 			if ( is_callable( array( $this, $setter ) ) ) {
 				$this->$setter( $value, $order );
 			} else {
@@ -1093,7 +1130,7 @@ abstract class OrderDocument {
 		$order = empty( $order ) ? $this->order : $order;
 		try {
 			if ( empty( $value ) ) {
-				$this->data[ 'date' ] = null;
+				$this->data['date'] = null;
 				return;
 			}
 
@@ -1120,7 +1157,7 @@ abstract class OrderDocument {
 				$datetime->set_utc_offset( wc_timezone_offset() );
 			}
 
-			$this->data[ 'date' ] = $datetime;
+			$this->data['date'] = $datetime;
 		} catch ( \Exception $e ) {
 			wcpdf_log_error( $e->getMessage() );
 		} catch ( \Error $e ) {
@@ -1132,7 +1169,11 @@ abstract class OrderDocument {
 	public function set_number( $value, $order = null ) {
 		$order = empty( $order ) ? $this->order : $order;
 
-		$value = maybe_unserialize( $value ); // fix incorrectly stored meta
+		// Ignore incorrectly stored serialized meta and only handle expected value types.
+		if ( is_string( $value ) && is_serialized( $value ) ) {
+			wcpdf_log_error( "Unexpected serialized string found for document number meta. Ignoring value. Meta value: {$value}" );
+			$value = null;
+		}
 
 		if ( is_array( $value ) ) {
 			$filtered_value = array_filter( $value );
@@ -1145,13 +1186,13 @@ abstract class OrderDocument {
 			$document_number = $value;
 		} elseif ( is_array( $value ) ) {
 			// WCPDF 2.0 number data as array
-			$document_number = new DocumentNumber( $value, $this->get_number_settings(), $this, $order  );
+			$document_number = new DocumentNumber( $value, $this->get_number_settings(), $this, $order );
 		} else {
 			// plain number
 			$document_number = new DocumentNumber( $value, $this->get_number_settings(), $this, $order );
 		}
 
-		$this->data[ 'number' ] = $document_number;
+		$this->data['number'] = $document_number;
 	}
 
 	public function set_notes( $value, $order = null ) {
@@ -1159,11 +1200,11 @@ abstract class OrderDocument {
 
 		try {
 			if ( empty( $value ) ) {
-				$this->data[ 'notes' ] = null;
+				$this->data['notes'] = null;
 				return;
 			}
 
-			$this->data[ 'notes' ] = $value;
+			$this->data['notes'] = $value;
 		} catch ( \Exception $e ) {
 			wcpdf_log_error( $e->getMessage() );
 		} catch ( \Error $e ) {
@@ -1273,8 +1314,12 @@ abstract class OrderDocument {
 		if ( $attachment_id > 0 ) {
 			$company         = $this->get_shop_name();
 			$attachment_src  = wp_get_attachment_image_url( $attachment_id, 'full' );
-			$attachment_path = wp_normalize_path( realpath( get_attached_file( $attachment_id ) ) );
-			$src             = apply_filters( 'wpo_wcpdf_use_path', true ) ? $attachment_path : $attachment_src;
+			$attachment_file = get_attached_file( $attachment_id );
+			$attachment_path = $attachment_file ? wp_normalize_path( realpath( $attachment_file ) ) : '';
+
+			$use_path = apply_filters( 'wpo_wcpdf_use_path', true );
+
+			$src = ( $use_path && ! empty( $attachment_path ) ) ? $attachment_path : $attachment_src;
 
 			if ( empty( $src ) ) {
 				wcpdf_log_error( 'Header logo file not found.', 'critical' );
@@ -1282,7 +1327,7 @@ abstract class OrderDocument {
 			}
 
 			// fix URLs using path
-			if ( ! apply_filters( 'wpo_wcpdf_use_path', true ) && false !== strpos( $src, 'http' ) && false !== strpos( $src, WP_CONTENT_DIR ) ) {
+			if ( ! $use_path && false !== strpos( $src, 'http' ) && false !== strpos( $src, WP_CONTENT_DIR ) ) {
 				$path = preg_replace( '/^https?:\/\//', '', $src ); // removes http(s)://
 				$src  = str_replace( trailingslashit( WP_CONTENT_DIR ), trailingslashit( WP_CONTENT_URL ), $path ); // replaces path with URL
 			}
@@ -1292,8 +1337,16 @@ abstract class OrderDocument {
 				return;
 			}
 
-			$img_src     = isset( WPO_WCPDF()->settings->debug_settings['embed_images'] ) ? wpo_wcpdf_get_image_src_in_base64( $src ) : $src;
-			$img_element = sprintf( '<img src="%1$s" alt="%2$s"/>', wpo_wcpdf_escape_url_path_or_base64( $img_src ), esc_attr( $company ) );
+			$img_src     = isset( WPO_WCPDF()->settings->debug_settings['embed_images'] )
+				? wpo_wcpdf_get_image_src_in_base64( $src )
+				: $src;
+
+			$img_element = sprintf(
+				'<img src="%1$s" alt="%2$s"/>',
+				wpo_wcpdf_escape_url_path_or_base64( $img_src ),
+				esc_attr( $company )
+			);
+
 			$img_element = apply_filters( 'wpo_wcpdf_header_logo_img_element', $img_element, $attachment_id, $this );
 
 			echo $img_element; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -1327,7 +1380,19 @@ abstract class OrderDocument {
 
 		// legacy filters
 		if ( in_array( $settings_key, array( 'shop_name', 'footer', 'extra_1', 'extra_2', 'extra_3' ) ) ) {
-			$text = apply_filters_deprecated( "wpo_wcpdf_{$settings_key}", array( $text, $this ), '4.5.0', "wpo_wcpdf_{$settings_key}_settings_text" );
+			$text = apply_filters_deprecated(
+				"wpo_wcpdf_{$settings_key}",
+				array( $text, $this ),
+				'4.5.0',
+				"wpo_wcpdf_{$settings_key}_settings_text"
+			);
+		} elseif ( 'shop_address' === $settings_key ) {
+			$text = apply_filters_deprecated(
+				'wpo_wcpdf_shop_address_settings_text',
+				array( $text, $this ),
+				'4.6.0',
+				'wpo_wcpdf_get_shop_address'
+			);
 		}
 
 		return apply_filters( "wpo_wcpdf_{$settings_key}_settings_text", $text, $this );
@@ -1367,81 +1432,81 @@ abstract class OrderDocument {
 	/**
 	 * Return/Show shop/company address line 1 if provided.
 	 */
-	function get_shop_address_line_1(): string {
+	public function get_shop_address_line_1(): string {
 		return $this->get_settings_text( 'shop_address_line_1' );
 	}
-	function shop_address_line_1(): void {
+	public function shop_address_line_1(): void {
 		echo esc_html( $this->get_shop_address_line_1() );
 	}
 
 	/**
 	 * Return/Show shop/company address line 2 if provided.
 	 */
-	function get_shop_address_line_2(): string {
+	public function get_shop_address_line_2(): string {
 		return $this->get_settings_text( 'shop_address_line_2' );
 	}
-	function shop_address_line_2(): void {
+	public function shop_address_line_2(): void {
 		echo esc_html( $this->get_shop_address_line_2() );
 	}
 
 	/**
 	 * Return/Show shop/company address country if provided.
 	 */
-	function get_shop_address_country(): string {
+	public function get_shop_address_country(): string {
 		return wpo_wcpdf_get_country_name_from_code( $this->get_shop_address_country_code() );
 	}
-	function shop_address_country(): void {
+	public function shop_address_country(): void {
 		echo esc_html( $this->get_shop_address_country() );
 	}
 
 	/**
 	 * Return/Show shop/company address country code if provided.
 	 */
-	function get_shop_address_country_code(): string {
-		return $this->get_settings_text( 'shop_address_country' );
+	public function get_shop_address_country_code(): string {
+		return $this->get_settings_text( 'shop_address_country', '', false );
 	}
-	function shop_address_country_code(): void {
+	public function shop_address_country_code(): void {
 		echo esc_html( $this->get_shop_address_country_code() );
 	}
 
 	/**
 	 * Return/Show shop/company address state if provided.
 	 */
-	function get_shop_address_state(): string {
+	public function get_shop_address_state(): string {
 		return $this->get_settings_text( 'shop_address_state' );
 	}
-	function shop_address_state(): void {
+	public function shop_address_state(): void {
 		echo esc_html( $this->get_shop_address_state() );
 	}
 
 	/**
 	 * Return/Show shop/company address city if provided.
 	 */
-	function get_shop_address_city(): string {
+	public function get_shop_address_city(): string {
 		return $this->get_settings_text( 'shop_address_city' );
 	}
-	function shop_address_city(): void {
+	public function shop_address_city(): void {
 		echo esc_html( $this->get_shop_address_city() );
 	}
 
 	/**
 	 * Return/Show shop/company address postcode if provided.
 	 */
-	function get_shop_address_postcode(): string {
+	public function get_shop_address_postcode(): string {
 		return $this->get_settings_text( 'shop_address_postcode' );
 	}
-	function shop_address_postcode(): void {
+	public function shop_address_postcode(): void {
 		echo esc_html( $this->get_shop_address_postcode() );
 	}
 
 	/**
 	 * Return/Show shop/company address additional info if provided.
 	 */
-	function get_shop_address_additional(): string {
+	public function get_shop_address_additional(): string {
 		return $this->get_settings_text( 'shop_address_additional' );
 	}
-	function shop_address_additional(): void {
-		echo esc_html( $this->get_shop_address_additional() );
+	public function shop_address_additional(): void {
+		echo wp_kses_post( $this->get_shop_address_additional() );
 	}
 
 	/**
@@ -1453,22 +1518,24 @@ abstract class OrderDocument {
 		if ( $this->use_historical_settings() && ! empty( $address ) ) {
 			return $address;
 		}
-		
+
 		// Otherwise, build the address from individual fields
-		$country_code = $this->get_settings_text( 'shop_address_country', '', false );
-		$address      = array(
-			'address_1'  => $this->get_settings_text( 'shop_address_line_1', '', false ),
-			'address_2'  => $this->get_settings_text( 'shop_address_line_2', '', false ),
-			'city'       => $this->get_settings_text( 'shop_address_city', '', false ),
-			'postcode'   => $this->get_settings_text( 'shop_address_postcode', '', false ),
-			'state'      => $this->get_settings_text( 'shop_address_state', '', false ),
-			'country'    => wpo_wcpdf_get_country_name_from_code(
-				$this->get_settings_text( 'shop_address_country', '', false )
-			),
-			'additional' => $this->get_settings_text( 'shop_address_additional', '', false ),
+		$address = array(
+			'address_1'    => $this->get_settings_text( 'shop_address_line_1', '', false ),
+			'address_2'    => $this->get_settings_text( 'shop_address_line_2', '', false ),
+			'city'         => $this->get_settings_text( 'shop_address_city', '', false ),
+			'postcode'     => $this->get_settings_text( 'shop_address_postcode', '', false ),
+			'state_code'   => $this->get_settings_text( 'shop_address_state', '', false ),
+			'country_code' => $this->get_settings_text( 'shop_address_country', '', false ),
+			'additional'   => $this->get_settings_text( 'shop_address_additional', '', false ),
 		);
-		
-		return wpo_wcpdf_format_country_address( $country_code, $address );
+
+		return apply_filters(
+			'wpo_wcpdf_get_shop_address',
+			wpo_wcpdf_format_address( $address ),
+			$address,
+			$this
+		);
 	}
 	public function shop_address() {
 		echo esc_html( apply_filters( 'wpo_wcpdf_shop_address', $this->get_shop_address(), $this ) );
@@ -1482,6 +1549,16 @@ abstract class OrderDocument {
 	}
 	public function shop_phone_number() {
 		echo esc_html( $this->get_shop_phone_number() );
+	}
+
+	/**
+	 * Return/Show shop/company email address if provided.
+	 */
+	public function get_shop_email_address() {
+		return $this->get_settings_text( 'shop_email_address', '', false );
+	}
+	public function shop_email_address() {
+		echo esc_html( $this->get_shop_email_address() );
 	}
 
 	/**
@@ -1557,7 +1634,7 @@ abstract class OrderDocument {
 
 		// temporarily apply filters that need to be removed again after the pdf is generated
 		$pdf_filters = apply_filters( 'wpo_wcpdf_pdf_filters', array(), $this );
-		$this->add_filters( $pdf_filters );
+		\wpo_ips_add_filters( $pdf_filters );
 
 		$pdf_settings = array(
 			'paper_size'		=> apply_filters( 'wpo_wcpdf_paper_format', $this->get_setting( 'paper_size', 'A4' ), $this->get_type(), $this ),
@@ -1570,7 +1647,7 @@ abstract class OrderDocument {
 		do_action( 'wpo_wcpdf_after_pdf', $this->get_type(), $this );
 
 		// remove temporary filters
-		$this->remove_filters( $pdf_filters );
+		\wpo_ips_remove_filters( $pdf_filters );
 
 		do_action( 'wpo_wcpdf_pdf_created', $pdf, $this );
 
@@ -1598,7 +1675,7 @@ abstract class OrderDocument {
 	public function get_html( $args = array() ) {
 		// temporarily apply filters that need to be removed again after the html is generated
 		$html_filters = apply_filters( 'wpo_wcpdf_html_filters', array(), $this );
-		$this->add_filters( $html_filters );
+		\wpo_ips_add_filters( $html_filters );
 
 		do_action( 'wpo_wcpdf_before_html', $this->get_type(), $this );
 
@@ -1608,7 +1685,7 @@ abstract class OrderDocument {
 		$args = $args + $default_args;
 
 		$html = $this->render_template( $this->locate_template_file( "{$this->type}.php" ), array(
-				'order' => $this->order,
+				'order'    => $this->order,
 				'order_id' => $this->order_id,
 			)
 		);
@@ -1625,7 +1702,7 @@ abstract class OrderDocument {
 		do_action( 'wpo_wcpdf_after_html', $this->get_type(), $this );
 
 		// remove temporary filters
-		$this->remove_filters( $html_filters );
+		\wpo_ips_remove_filters( $html_filters );
 
 		return apply_filters( 'wpo_wcpdf_get_html', $html, $this );
 	}
@@ -1641,14 +1718,14 @@ abstract class OrderDocument {
 		echo $this->get_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
-	public function preview_ubl() {
+	public function preview_xml() {
 		// get last settings
-		$this->settings = $this->get_settings( true, 'ubl' );
+		$this->settings = $this->get_settings( true );
 
-		return $this->output_ubl( true );
+		return $this->output_xml( true );
 	}
 
-	public function output_ubl( $contents_only = false ) {
+	public function output_xml( $contents_only = false ) {
 		$document = $contents_only ? $this : wcpdf_get_document( $this->get_type(), $this->order, true );
 
 		if ( ! $document ) {
@@ -1656,7 +1733,7 @@ abstract class OrderDocument {
 			exit();
 		}
 
-		$filename_or_contents = wpo_ips_write_ubl_file( $document, false, $contents_only );
+		$filename_or_contents = wpo_ips_edi_write_file( $document, false, $contents_only );
 
 		if ( ! $filename_or_contents ) {
 			wcpdf_log_error( 'Error writing UBL file!', 'error' );
@@ -1670,13 +1747,22 @@ abstract class OrderDocument {
 		$quoted = sprintf( '"%s"', addcslashes( basename( $filename_or_contents ), '"\\' ) );
 		$size   = filesize( $filename_or_contents );
 
-		wcpdf_ubl_headers( $quoted, $size );
+		wpo_ips_edi_file_headers( $quoted, $size );
 
-		ob_clean();
-		flush();
+		// Disable output compression.
+		@ini_set( 'zlib.output_compression', 'Off' ); // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged
+
+		// Clear all output buffers to prevent stray bytes/newlines before the XML declaration.
+		while ( ob_get_level() ) {
+			ob_end_clean();
+		}
 
 		if ( WPO_WCPDF()->file_system->exists( $filename_or_contents ) ) {
-			echo WPO_WCPDF()->file_system->get_contents( $filename_or_contents ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			$sent = WPO_WCPDF()->file_system->output_file( $filename_or_contents );
+			if ( false === $sent ) {
+				wcpdf_log_error( sprintf( 'Could not output XML file (%s)', $filename_or_contents ), 'critical' );
+			}
+
 			wp_delete_file( $filename_or_contents );
 		}
 
@@ -2165,26 +2251,39 @@ abstract class OrderDocument {
 	}
 
 	protected function add_filters( $filters ) {
-		foreach ( $filters as $filter ) {
-			$filter = $this->normalize_filter_args( $filter );
-			add_filter( $filter['hook_name'], $filter['callback'], $filter['priority'], $filter['accepted_args'] );
-		}
+		\wcpdf_deprecated_function( __FUNCTION__, '5.0.0', 'wpo_ips_add_filters' );
+		return wpo_ips_add_filters( $filters );
 	}
 
 	protected function remove_filters( $filters ) {
-		foreach ( $filters as $filter ) {
-			$filter = $this->normalize_filter_args( $filter );
-			remove_filter( $filter['hook_name'], $filter['callback'], $filter['priority'] );
-		}
+		\wcpdf_deprecated_function( __FUNCTION__, '5.0.0', 'wpo_ips_remove_filters' );
+		return wpo_ips_remove_filters( $filters );
 	}
 
 	protected function normalize_filter_args( $filter ) {
-		$filter = array_values( $filter );
-		$hook_name = $filter[0];
-		$callback = $filter[1];
-		$priority = isset( $filter[2] ) ? $filter[2] : 10;
-		$accepted_args = isset( $filter[3] ) ? $filter[3] : 1;
-		return compact( 'hook_name', 'callback', 'priority', 'accepted_args' );
+		\wcpdf_deprecated_function( __FUNCTION__, '5.0.0', 'wpo_ips_normalize_filter_args' );
+		return wpo_ips_normalize_filter_args( $filter );
+	}
+
+	/**
+	 * Recursively sanitize settings for storage by removing any objects or resources, which cannot be stored in the database.
+	 *
+	 * @param array $settings
+	 * @return array
+	 */
+	protected function sanitize_settings_for_storage( array $settings ): array {
+		foreach ( $settings as $key => $value ) {
+			if ( is_array( $value ) ) {
+				$settings[ $key ] = $this->sanitize_settings_for_storage( $value );
+				continue;
+			}
+
+			if ( is_object( $value ) || is_resource( $value ) ) {
+				unset( $settings[ $key ] );
+			}
+		}
+
+		return $settings;
 	}
 
 }

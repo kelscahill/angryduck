@@ -162,7 +162,7 @@ class License_Manager extends Abstract_Class {
         $this->_software_key                = 'WWOF';
         $this->_priority                    = 20;
         $this->_plugin_slug                 = 'woocommerce-wholesale-order-form';
-        $this->_plugin_name                 = __( 'WooCommerce Wholesale Order Form', 'woocommerce-wholesale-order-form' );
+        $this->_plugin_name                 = 'WooCommerce Wholesale Order Form';
         $this->_slmw_server_url             = constant( 'WWS_SLMW_SERVER_URL' );
         $this->_license_settings_url        = is_multisite() ? network_admin_url( 'admin.php?page=wws-ms-license-settings' ) : admin_url( 'admin.php?page=wws-license-settings' );
         $this->_plugin_license_settings_url = $this->_license_settings_url . '&tab=' . strtolower( $this->_software_key );
@@ -170,21 +170,21 @@ class License_Manager extends Abstract_Class {
         $this->_check_endpoint              = $this->_slmw_server_url . '/wp-json/slmw/v1/license/check';
         $this->_plugin_list                 = array(
             'WWPP' => array(
-                'name' => __( 'WooCommerce Wholesale Prices Premium', 'woocommerce-wholesale-order-form' ),
+                'name' => 'WooCommerce Wholesale Prices Premium',
                 'slug' => 'woocommerce-wholesale-prices-premium',
             ),
             'WWOF' => array(
-                'name' => __( 'WooCommerce Wholesale Order Form', 'woocommerce-wholesale-order-form' ),
+                'name' => 'WooCommerce Wholesale Order Form',
                 'slug' => 'woocommerce-wholesale-order-form',
             ),
             'WWLC' => array(
-                'name' => __( 'WooCommerce Wholesale Lead Capture', 'woocommerce-wholesale-order-form' ),
+                'name' => 'WooCommerce Wholesale Lead Capture',
                 'slug' => 'woocommerce-wholesale-lead-capture',
             ),
         );
         $this->_plugin_submenus             = array(
             'order-forms' => array(
-                'title'    => __( 'Order Forms', 'woocommerce-wholesale-order-form' ),
+                'title'    => 'Order Forms',
                 'callback' => '',
                 'position' => 3,
                 'toplevel' => false,
@@ -875,7 +875,7 @@ class License_Manager extends Abstract_Class {
      */
     public function get_plugin_name( $software_key ) {
 
-        return $this->_plugin_list[ $software_key ]['name'];
+        return $this->_plugin_list[ $software_key ]['name'] ?? '';
     }
 
     /**
@@ -927,17 +927,18 @@ class License_Manager extends Abstract_Class {
 
     /**
      * Check license status.
-     * If $interval is set, then check if license is expired and within 14 days or more than 14 days.
+     * If $interval is set, then check if license is expired and within 2 days or more than 2 days.
      *
      * @param string $status              The status to check if license is expired. Available values are 'expired',
      *                                    'nolicense', 'disabled'. Default is empty string.
-     * @param string $interval            The interval to check if license is expired and within 14 days or more than
-     *                                    14 days. Available values are 'within 14 days' and 'more than 14 days'.
+     * @param string $interval            The interval to check if license is expired and within 2 days or more than
+     *                                    2 days. Available values are 'within 2 days' and 'more than 2 days'.
      *                                    Default is empty string.
      * @param string $subscription_status The returns to return. Available values are 'boolean' and 'array'. Default is
      *                                    'boolean'.
      *
      * @since  3.0.4
+     * @since  3.0.7 Change interval to check if license is expired and within 2 days or more than 2 days.
      * @access public
      *
      * @return bool
@@ -955,7 +956,7 @@ class License_Manager extends Abstract_Class {
                     $expiration_datetime  = new \WC_DateTime( $expiration_timestamp, new \DateTimeZone( 'UTC' ) );
                     $now                  = new \WC_DateTime( 'now', new \DateTimeZone( 'UTC' ) );
                     $days_before_expiry   = $expiration_datetime->diff( $now )->days;
-                    $license_status       = $days_before_expiry < 14;
+                    $license_status       = $days_before_expiry < 2;
                 }
                 break;
             case 'expired':
@@ -971,12 +972,12 @@ class License_Manager extends Abstract_Class {
                     if ( ! empty( $interval ) && $license_status ) {
                         $days_after_expiry = $expiration_datetime->diff( $now )->days;
 
-                        if ( 'within 14 days' === $interval ) {
-                            // If license is expired and days after expiry is less than or equal to 14 days, then return true.
-                            $license_status = $days_after_expiry < 14;
-                        } elseif ( 'more than 14 days' === $interval ) {
-                            // If license is expired and days after expiry is more than 14 days, then return true.
-                            $license_status = $days_after_expiry >= 14;
+                        if ( 'within 2 days' === $interval ) {
+                            // If license is expired and days after expiry is less than or equal to 2 days, then return true.
+                            $license_status = $days_after_expiry < 2;
+                        } elseif ( 'more than 2 days' === $interval ) {
+                            // If license is expired and days after expiry is more than 2 days, then return true.
+                            $license_status = $days_after_expiry >= 2;
                         }
                     }
                 }
@@ -995,18 +996,18 @@ class License_Manager extends Abstract_Class {
                         $now                 = new \WC_DateTime( 'now', new \DateTimeZone( 'UTC' ) );
                         $days_after_check    = $last_check_datetime->diff( $now )->days;
 
-                        if ( 'more than 3 days' === $interval ) {
-                            // If license is no license and days after expiry is more than 3 days, then return true.
-                            $license_status = $days_after_check >= 3;
-                        } elseif ( 'within 7 days' === $interval ) {
-                            // If license is no license and days after expiry is less than or equal to 7 days, then return true.
-                            $license_status = $days_after_check < 7;
-                        } elseif ( 'within 7-14 days' === $interval ) {
-                            // If license is no license and days after expiry is more than 7 days and less than or equal to 14 days, then return true.
-                            $license_status = $days_after_check >= 7 && $days_after_check < 14;
-                        } elseif ( 'more than 14 days' === $interval ) {
-                            // If license is no license and days after expiry is more than 14 days, then return true.
-                            $license_status = $days_after_check >= 14;
+                        if ( 'more than 1 days' === $interval ) {
+                            // If license is no license and days after expiry is more than 1 days, then return true.
+                            $license_status = $days_after_check >= 1;
+                        } elseif ( 'within 1 days' === $interval ) {
+                            // If license is no license and days after expiry is less than or equal to 1 days, then return true.
+                            $license_status = $days_after_check < 1;
+                        } elseif ( 'within 1-2 days' === $interval ) {
+                            // If license is no license and days after expiry is more than 1 days and less than or equal to 2 days, then return true.
+                            $license_status = $days_after_check >= 1 && $days_after_check < 2;
+                        } elseif ( 'more than 2 days' === $interval ) {
+                            // If license is no license and days after expiry is more than 2 days, then return true.
+                            $license_status = $days_after_check >= 2;
                         }
                     }
                 }
@@ -1028,12 +1029,12 @@ class License_Manager extends Abstract_Class {
                             $now                 = new \WC_DateTime( 'now', new \DateTimeZone( 'UTC' ) );
                             $days_after_check    = $last_check_datetime->diff( $now )->days;
 
-                            if ( 'within 7 days' === $interval ) {
-                                // If license is disabled and days after expiry is less than or equal to 7 days, then return true.
-                                $license_status = $days_after_check < 7;
-                            } elseif ( 'more than 7 days' === $interval ) {
-                                // If license is disabled and days after expiry is more than 7 days, then return true.
-                                $license_status = $days_after_check >= 7;
+                            if ( 'within 1 days' === $interval ) {
+                                // If license is disabled and days after expiry is less than or equal to 1 days, then return true.
+                                $license_status = $days_after_check < 1;
+                            } elseif ( 'more than 1 days' === $interval ) {
+                                // If license is disabled and days after expiry is more than 1 days, then return true.
+                                $license_status = $days_after_check >= 1;
                             }
                         }
                     }
@@ -1132,13 +1133,13 @@ class License_Manager extends Abstract_Class {
 
         $show_interstitial = false;
 
-        if ( $this->is_license_status( 'nolicense', 'more than 14 days' ) ) {
+        if ( $this->is_license_status( 'nolicense', 'more than 2 days' ) ) {
             $show_interstitial = 'nolicense';
-        } elseif ( $this->is_license_status( 'expired', 'more than 14 days' ) ) {
+        } elseif ( $this->is_license_status( 'expired', 'more than 2 days' ) ) {
             $show_interstitial = 'expired';
         } elseif (
-            $this->is_license_status( 'disabled', 'more than 7 days', 'active' ) ||
-            $this->is_license_status( 'disabled', 'more than 7 days', 'pending-cancel' ) ||
+            $this->is_license_status( 'disabled', 'more than 1 days', 'active' ) ||
+            $this->is_license_status( 'disabled', 'more than 1 days', 'pending-cancel' ) ||
             $this->is_license_status( 'disabled', '', 'cancelled' )
         ) {
             $show_interstitial = 'disabled';
@@ -1327,7 +1328,7 @@ class License_Manager extends Abstract_Class {
                  */
                 do_action( 'wws_pre_expiry_license_notice', $this->_software_key, $license_data );
             }
-        } elseif ( $this->is_license_status( 'expired', 'within 14 days' ) && $this->maybe_show_license_notice( 'expired' ) ) {
+        } elseif ( $this->is_license_status( 'expired', 'within 2 days' ) && $this->maybe_show_license_notice( 'expired' ) ) {
             if ( ! did_action( 'wws_expired_license_notice' ) ) {
                 /**
                  * Expired license notice action.
@@ -1392,22 +1393,22 @@ class License_Manager extends Abstract_Class {
             );
 
             $nolicense_status = '';
-            if ( $this->is_license_status( 'nolicense', 'within 7 days' ) ) {
-                $nolicense_status = 'within 7 days';
-            } elseif ( $this->is_license_status( 'nolicense', 'within 7-14 days' ) ) {
-                $nolicense_status = 'within 7-14 days';
+            if ( $this->is_license_status( 'nolicense', 'within 1 days' ) ) {
+                $nolicense_status = 'within 1 days';
+            } elseif ( $this->is_license_status( 'nolicense', 'within 1-2 days' ) ) {
+                $nolicense_status = 'within 1-2 days';
             }
 
             $notice_class = array(
                 'notice',
-                'within 7 days' === $nolicense_status ? 'notice-info-2' : '',
-                'within 7-14 days' === $nolicense_status ? 'notice-error' : '',
+                'within 1 days' === $nolicense_status ? 'notice-info-2' : '',
+                'within 1-2 days' === $nolicense_status ? 'notice-error' : '',
                 $is_dismissable,
                 'wws-license-notice',
                 strtolower( $this->_software_key ) . '-license-notice',
             );
 
-            if ( 'within 7 days' === $nolicense_status || 'within 7-14 days' === $nolicense_status ) {
+            if ( 'within 1 days' === $nolicense_status || 'within 1-2 days' === $nolicense_status ) {
                 ?>
                 <div
                     class="<?php echo esc_attr( implode( ' ', $notice_class ) ); ?>"
@@ -1417,13 +1418,13 @@ class License_Manager extends Abstract_Class {
                     <p>
                         <strong>
                             <?php
-                            if ( 'within 7 days' === $nolicense_status ) {
+                            if ( 'within 1 days' === $nolicense_status ) {
                                 printf(
                                 // Translators: %s - the plugin name.
                                     esc_html__( 'Oops! Did you forget to enter your license for %s?', 'woocommerce-wholesale-order-form' ),
                                     esc_html( $this->_plugin_name )
                                 );
-                            } elseif ( 'within 7-14 days' === $nolicense_status ) {
+                            } elseif ( 'within 1-2 days' === $nolicense_status ) {
                                 printf(
                                 // Translators: %s - the plugin name.
                                     esc_html__( '%1$sAction required!%2$s Enter your license for %3$s to continue.', 'woocommerce-wholesale-order-form' ),
@@ -1437,9 +1438,9 @@ class License_Manager extends Abstract_Class {
                     </p>
                     <p>
                         <?php
-                        if ( 'within 7 days' === $nolicense_status ) {
+                        if ( 'within 1 days' === $nolicense_status ) {
                             esc_html_e( 'Enter your license to full activate Wholesale Suite and gain access to automatic updates, technical support, and premium features.', 'woocommerce-wholesale-order-form' );
-                        } elseif ( 'within 7-14 days' === $nolicense_status ) {
+                        } elseif ( 'within 1-2 days' === $nolicense_status ) {
                             printf(
                             // Translators: %1$s - the purchase link opening tag, %2$s - the purchase link closing tag.
                                 esc_html__( 'Don’t worry, your wholesale customers & orders completely safe and your premium wholesale features are still working. But you will need to enter a license key to continue using Wholesale Suite. If you don’t have a license, please %1$spurchase one to proceed%2$s.', 'woocommerce-wholesale-order-form' ),
@@ -1617,7 +1618,7 @@ class License_Manager extends Abstract_Class {
                             'Don’t worry, your wholesale customers & orders are completely safe and your premium wholesale features are still working. We’ve also extended premium feature functionality until %s, at which point functionality will become limited.',
                             'woocommerce-wholesale-order-form'
                         ),
-                        esc_html( Datetime::convert_datetime_to_site_standard_format( $license_data['expiration_timestamp'], wc_date_format(), '14 days' ) ) // Outputs plus 14 days from the license expiration date.
+                        esc_html( Datetime::convert_datetime_to_site_standard_format( $license_data['expiration_timestamp'], wc_date_format(), '2 days' ) ) // Outputs plus 2 days from the license expiration date.
                     );
                     ?>
                 </p>
@@ -1663,7 +1664,7 @@ class License_Manager extends Abstract_Class {
             $renew_link      = add_query_arg( $disabled_notice_utm_args, $license_data['management_url'] );
             $learn_more_link = add_query_arg( $disabled_notice_utm_args, 'https://wholesalesuiteplugin.com/kb/what-happens-if-my-license-expires/' );
 
-            if ( $this->is_license_status( 'disabled', 'within 7 days', 'active' ) || $this->is_license_status( 'disabled', 'within 7 days', 'pending-cancel' ) ) {
+            if ( $this->is_license_status( 'disabled', 'within 1 days', 'active' ) || $this->is_license_status( 'disabled', 'within 1 days', 'pending-cancel' ) ) {
                 ?>
                 <div
                     class="notice notice-error wws-license-notice <?php echo esc_attr( $is_dismissable ) . ' ' . esc_attr( strtolower( $this->_software_key ) ); ?>-license-notice"
@@ -1699,7 +1700,7 @@ class License_Manager extends Abstract_Class {
                     </p>
                 </div>
                 <?php
-            } elseif ( $this->is_license_status( 'disabled', 'within 7 days', 'on-hold' ) ) {
+            } elseif ( $this->is_license_status( 'disabled', 'within 1 days', 'on-hold' ) ) {
                 ?>
                 <div
                     class="notice notice-error wws-license-notice <?php echo esc_attr( $is_dismissable ) . ' ' . esc_attr( strtolower( $this->_software_key ) ); ?>-license-notice"
@@ -1717,7 +1718,7 @@ class License_Manager extends Abstract_Class {
                                 'Don’t worry, your wholesale customers & orders are completely safe and your premium wholesale features are still working. We’ve also extended premium feature functionality until %s, at which point functionality will become limited.',
                                 'woocommerce-wholesale-order-form'
                             ),
-                            esc_html( Datetime::convert_datetime_to_site_standard_format( gmdate( 'Y-m-d H:i:s', $this->get_last_license_check() ), wc_date_format(), '30 days' ) ) // Outputs plus 14 days from the license expiration date.
+                            esc_html( Datetime::convert_datetime_to_site_standard_format( gmdate( 'Y-m-d H:i:s', $this->get_last_license_check() ), wc_date_format(), '30 days' ) ) // Outputs plus 2 days from the license expiration date.
                         );
                         ?>
                     </p>
@@ -1732,7 +1733,7 @@ class License_Manager extends Abstract_Class {
                     </p>
                 </div>
                 <?php
-            } elseif ( $this->is_license_status( 'disabled', 'more than 7 days', 'on-hold' ) ) {
+            } elseif ( $this->is_license_status( 'disabled', 'more than 1 days', 'on-hold' ) ) {
                 ?>
                 <div
                     class="notice notice-error wws-license-notice <?php echo esc_attr( $is_dismissable ) . ' ' . esc_attr( strtolower( $this->_software_key ) ); ?>-license-notice"

@@ -3,15 +3,20 @@ import { ANALYTICS_FETCH_LABELS_SUCCESS } from './action-types';
 import { Label } from 'types';
 
 export interface AnalyticsState {
-	data: Record<string, {
-		rows: ReportLabel[];
-		meta: {
-			totalCount: number;
-			totalCost: number;
-			totalRefunds: number;
-			pages: number;
-		};
-	} > | undefined;
+	data:
+		| Record<
+				string,
+				{
+					rows: ReportLabel[];
+					meta: {
+						totalCount: number;
+						totalCost: number;
+						totalRefunds: number;
+						pages: number;
+					};
+				}
+		  >
+		| undefined;
 }
 
 export interface AnalyticsFetchLabelsAction extends Action {
@@ -28,6 +33,6 @@ export interface AnalyticsFetchLabelsAction extends Action {
 			};
 		};
 	};
-};
+}
 
 export type AnalyticsActions = AnalyticsFetchLabelsAction;

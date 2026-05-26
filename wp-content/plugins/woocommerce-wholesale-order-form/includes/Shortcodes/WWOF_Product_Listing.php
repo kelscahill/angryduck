@@ -13,6 +13,8 @@ use RymeraWebCo\WWOF\Helpers\WWLC;
 use RymeraWebCo\WWOF\Helpers\WWOF;
 use RymeraWebCo\WWOF\Factories\Vite_App;
 use RymeraWebCo\WWOF\Traits\Singleton_Trait;
+use stdClass;
+
 
 /**
  * WWOF_Product_Listing class.
@@ -30,6 +32,20 @@ class WWOF_Product_Listing extends Abstract_Shortcode {
      * @var WWOF_Product_Listing $instance object
      */
     protected static $instance;
+
+    /**
+     * Breakdance shortcode element class name constant.
+     *
+     * @since 3.1.0
+     */
+    const BREAKDANCE_SHORTCODE_CLASS = 'EssentialElements\Shortcode';
+
+    /**
+     * Maximum recursion depth for Breakdance data traversal.
+     *
+     * @since 3.1.0
+     */
+    const MAX_RECURSION_DEPTH = 50;
 
     /**
      * Initialize the shortcode class.
@@ -170,8 +186,9 @@ class WWOF_Product_Listing extends Abstract_Shortcode {
         $hash = '-' . mb_substr( md5( wp_json_encode( $this->attributes ) . "-$form_count" ), 0, 8 );
 
         return sprintf(
-            '<div id="order-form-app%s" class="order-form-app app-root" data-form-id="%d"></div>',
+            '<div id="order-form-app%s" class="order-form-app app-root" data-form-id="%d" data-wwof-form="1" data-wwof-form-id="%d" data-testid="wwof-form"></div>',
             $hash,
+            esc_attr( $this->attributes['id'] ),
             esc_attr( $this->attributes['id'] )
         );
     }
@@ -202,25 +219,34 @@ class WWOF_Product_Listing extends Abstract_Shortcode {
          * @since 3.0
          */
         $form_posts = apply_filters( 'wwof_force_load_form_posts', array() );
-        if ( ! empty( $form_posts ) || has_shortcode( get_the_content(), $this->tag ) || has_shortcode( get_post_field( 'post_content' ), $this->tag ) ) {
+
+        // Check if Breakdance is active using Breakdance-specific function check.
+        $is_breakdance_active = function_exists( 'Breakdance\Data\get_meta' );
+
+        $form_shortcodes = array();
+
+        if ( $is_breakdance_active ) {
+            $breakdance_meta = \Breakdance\Data\get_meta( get_the_ID(), '_breakdance_data', true );
+            $breakdance_tree = array();
+            if ( ! empty( $breakdance_meta ) && isset( $breakdance_meta['tree_json_string'] ) ) {
+                $decoded_data = json_decode( $breakdance_meta['tree_json_string'] );
+                // Ensure we always pass an array, even if json_decode returns null.
+                $breakdance_tree = is_object( $decoded_data ) ? $decoded_data : array();
+            }
+            $form_shortcodes = $this->get_shortcodes_on_breakdance_builder( $breakdance_tree );
+        }
+
+        if ( ! empty( $form_posts ) || has_shortcode( get_the_content(), $this->tag ) || has_shortcode( get_post_field( 'post_content' ), $this->tag ) || ( $is_breakdance_active && ! empty( $form_shortcodes ) ) ) {
             if ( ! empty( $form_posts ) ) {
                 $form_posts = (array) $form_posts;
+            } elseif ( $is_breakdance_active && ! empty( $form_shortcodes ) ) {
+                // Process Breakdance shortcodes.
+                foreach ( $form_shortcodes as $form_shortcode ) {
+                    $form_posts = $this->parse_shortcode_attributes( $form_shortcode, $form_posts );
+                }
             } else {
-                $pattern = get_shortcode_regex( array( $this->tag ) );
-                preg_match_all( '/' . $pattern . '/', get_the_content(), $matches );
-                if ( empty( $matches[3] ) ) {
-                    preg_match_all( '/' . $pattern . '/', get_post_field( 'post_content' ), $matches );
-                }
-                if ( ! empty( $matches[3] ) ) {
-                    foreach ( $matches[3] as $att ) {
-                        $atts = ! empty( $att ) ? shortcode_parse_atts( $att ) : false;
-                        if ( ! empty( $atts['id'] ) ) {
-                            $form_post = get_post( $atts['id'] );
-
-                            $form_posts[ $atts['id'] ] = $form_post ? Order_Form::get_instance( $form_post ) : array();
-                        }
-                    }
-                }
+                // Process regular shortcodes from post content.
+                $form_posts = $this->parse_shortcode_attributes( get_the_content(), $form_posts );
             }
 
             if ( ! empty( $form_posts ) ) {
@@ -256,5 +282,104 @@ class WWOF_Product_Listing extends Abstract_Shortcode {
                 do_action( "wwof_enqueue_{$this->tag}_sc_script" );
             }
         }
+    }
+
+    /**
+     * Parse shortcode attributes from content and populate form posts array.
+     *
+     * @since 3.1.0
+     * @param string $content The content to search for shortcodes.
+     * @param array  $form_posts Existing form posts array to populate.
+     * @return array Form posts array with parsed shortcodes.
+     */
+    protected function parse_shortcode_attributes( $content, $form_posts = array() ) {
+
+        $pattern = get_shortcode_regex( array( $this->tag ) );
+        preg_match_all( '/' . $pattern . '/', $content, $matches );
+
+        // Fallback to post_content if no matches found in provided content.
+        if ( empty( $matches[3] ) ) {
+            preg_match_all( '/' . $pattern . '/', get_post_field( 'post_content' ), $matches );
+        }
+
+        if ( ! empty( $matches[3] ) ) {
+            foreach ( $matches[3] as $att ) {
+                $atts = ! empty( $att ) ? shortcode_parse_atts( $att ) : false;
+                if ( ! empty( $atts['id'] ) ) {
+                    $form_post = get_post( $atts['id'] );
+                    // Validate post type to ensure security.
+                    if ( $form_post && Order_Form::POST_TYPE === $form_post->post_type ) {
+                        $form_posts[ $atts['id'] ] = Order_Form::get_instance( $form_post );
+                    }
+                }
+            }
+        }
+
+        return $form_posts;
+    }
+
+    /**
+     * Get the shortcodes on breakdance builder
+     *
+     * @since 3.1.0
+     * @param array|object $datas The shortcode on breakdance shortcode element.
+     * @param string       $shortcode_string The shortcode string to search for. Defaults to shortcode tag.
+     * @param array        $shortcodes The shortcodes that are found.
+     * @param int          $depth Current recursion depth to prevent infinite recursion.
+     * @return array Shortcodes of wwof_form.
+     */
+    public function get_shortcodes_on_breakdance_builder( $datas = array(), $shortcode_string = null, $shortcodes = array(), $depth = 0 ) {
+
+        // Prevent infinite recursion by limiting depth.
+        if ( $depth >= self::MAX_RECURSION_DEPTH ) {
+            return $shortcodes;
+        }
+
+        // Use shortcode tag as default if not provided.
+        if ( null === $shortcode_string ) {
+            $shortcode_string = $this->tag;
+        }
+
+        // Check PHP version compatibility once before the loop.
+        $has_str_contains = function_exists( 'str_contains' );
+
+        foreach ( $datas as $data ) {
+            if ( ! is_object( $data ) ) {
+                continue;
+            }
+
+            $object = property_exists( $data, 'data' ) ? $data->data : new stdClass();
+            $type   = is_object( $object ) && isset( $object->type ) ? $object->type : '';
+
+            $shortcode = '';
+
+            if ( is_object( $object ) && property_exists( $object, 'properties' ) ) {
+                $properties = $object->properties;
+                if ( is_object( $properties ) && property_exists( $properties, 'content' ) ) {
+                    $content = $properties->content;
+                    if ( is_object( $content ) && property_exists( $content, 'shortcode' ) ) {
+                        $shortcode_obj = $content->shortcode;
+                        if ( is_object( $shortcode_obj ) && property_exists( $shortcode_obj, 'full_shortcode' ) ) {
+                            $shortcode = $shortcode_obj->full_shortcode;
+                        }
+                    }
+                }
+            }
+
+            // Use class constant instead of magic string.
+            $has_shortcode = $has_str_contains
+                ? str_contains( $shortcode, $shortcode_string )
+                : false !== strpos( $shortcode, $shortcode_string );
+
+            if ( self::BREAKDANCE_SHORTCODE_CLASS === $type && $has_shortcode ) {
+                $shortcodes[] = $shortcode;
+            }
+
+            if ( is_object( $data ) && property_exists( $data, 'children' ) && ! empty( $data->children ) ) {
+                $shortcodes = array_merge( $shortcodes, $this->get_shortcodes_on_breakdance_builder( $data->children, $shortcode_string, array(), $depth + 1 ) );
+            }
+        }
+
+        return $shortcodes;
     }
 }

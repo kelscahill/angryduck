@@ -113,7 +113,7 @@ if ( ! class_exists( 'WWP_Bootstrap' ) ) {
                 if ( $network_wide ) {
 
                     // get ids of all sites.
-                    $blog_ids = $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" );
+                    $blog_ids = get_sites( array( 'fields' => 'ids' ) );
 
                     foreach ( $blog_ids as $blog_id ) {
 
@@ -233,7 +233,7 @@ if ( ! class_exists( 'WWP_Bootstrap' ) ) {
                 if ( $network_wide ) {
 
                     // get ids of all sites.
-                    $blog_ids = $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" );
+                    $blog_ids = get_sites( array( 'fields' => 'ids' ) );
 
                     foreach ( $blog_ids as $blog_id ) {
 
@@ -414,7 +414,7 @@ if ( ! class_exists( 'WWP_Bootstrap' ) ) {
          * @access public
          */
         public function wwp_getting_started_notice_hide() {
-            if ( ! wp_doing_ajax() || ! wp_verify_nonce( $_POST['nonce'], 'wwp_getting_started_nonce' ) ) {
+            if ( ! WWP_Helper_Functions::verify_ajax_nonce( 'wwp_getting_started_nonce' ) ) {
                 // Security check failure.
                 return;
             }

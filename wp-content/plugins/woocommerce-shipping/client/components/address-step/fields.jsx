@@ -35,15 +35,13 @@ export const AddressFields = withBoundary(
 
 		const getProps = ( key, props ) => {
 			// "Props" is an optional argument which is why we have a fallback to get input props.
-			if ( ! props ) {
-				props = getInputProps( key );
-			}
+			props ??= getInputProps( key );
 
 			// Mutate the props object to display input errors.
-			if ( validationErrors[ key ] || errors[ key ] ) {
+			if ( validationErrors[ key ] ?? errors[ key ] ) {
 				return {
 					...props,
-					help: validationErrors[ key ] || errors[ key ],
+					help: validationErrors[ key ] ?? errors[ key ],
 					className: 'has-error',
 				};
 			}
@@ -125,6 +123,10 @@ export const AddressFields = withBoundary(
 													'woocommerce-shipping'
 											  )
 									}
+									placeholder={ __(
+										'e.g., +1 (212) 555–0123 or 2125550123',
+										'woocommerce-shipping'
+									) }
 									disabled={ isUpdating }
 									required={ isPhoneAndEmailRequired }
 									// Opting into the new styles for margin bottom
@@ -143,6 +145,7 @@ export const AddressFields = withBoundary(
 							'country',
 							getSelectControlProps( 'country' )
 						) }
+						// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- boolean OR is intentional
 						disabled={ isUpdating || ! allowChangeCountry }
 						required
 						// Opting into the new styles for margin bottom
@@ -210,24 +213,44 @@ export const AddressFields = withBoundary(
 							</FlexBlock>
 						</Flex>
 						{ group === ADDRESS_TYPES.ORIGIN && (
-							<Flex>
-								<FlexBlock>
-									<CheckboxControl
-										label={ __(
-											'Save as default origin address',
-											'woocommerce-shipping'
-										) }
-										disabled={ isUpdating }
-										{ ...getProps(
-											'defaultAddress',
-											getCheckboxControlProps(
-												'defaultAddress'
-											)
-										) }
-										__nextHasNoMarginBottom={ true }
-									/>
-								</FlexBlock>
-							</Flex>
+							<>
+								<Flex>
+									<FlexBlock>
+										<CheckboxControl
+											label={ __(
+												'Save as default sender address',
+												'woocommerce-shipping'
+											) }
+											disabled={ isUpdating }
+											{ ...getProps(
+												'defaultAddress',
+												getCheckboxControlProps(
+													'defaultAddress'
+												)
+											) }
+											__nextHasNoMarginBottom={ true }
+										/>
+									</FlexBlock>
+								</Flex>
+								<Flex>
+									<FlexBlock>
+										<CheckboxControl
+											label={ __(
+												'Save as default return address',
+												'woocommerce-shipping'
+											) }
+											disabled={ isUpdating }
+											{ ...getProps(
+												'defaultReturnAddress',
+												getCheckboxControlProps(
+													'defaultReturnAddress'
+												)
+											) }
+											__nextHasNoMarginBottom={ true }
+										/>
+									</FlexBlock>
+								</Flex>
+							</>
 						) }
 					</FlexItem>
 				</Flex>

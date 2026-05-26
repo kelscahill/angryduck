@@ -140,7 +140,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 $post_type = $_GET['post_type']; // phpcs:ignore
             }
 
-            if ( strpos( $handle, 'wwpp-wholesale-roles-page' ) !== false ) {
+            if ( str_contains( $handle, 'wwpp-wholesale-roles-page' ) ) {
                 // Wholesale roles page CSS.
                 wp_enqueue_style( 'wwpp_toastr_css', WWPP_JS_URL . 'lib/toastr/toastr.min.css', array(), $this->_wwpp_current_version, 'all' );
                 wp_enqueue_style( 'wwpp_roles_page_css', WWPP_CSS_URL . 'wwp-back-end-wholesale-roles.css', array(), $this->_wwpp_current_version, 'all' );
@@ -317,8 +317,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_cpt_product_listing_admin_main_js', WWPP_JS_URL . 'app/wwpp-cpt-product-listing-admin-main.js', array( 'jquery' ), $this->_wwpp_current_version, false );
             }
-
-            if ( ( ( 'post-new.php' === $handle || 'post.php' === $handle ) && 'shop_order' === $post_type ) || 'woocommerce_page_wc-orders' === $screen->id ) {
+            if ( ( ( 'post-new.php' === $handle || 'post.php' === $handle ) && 'shop_order' === $post_type ) || 'woocommerce_page_wc-orders' === $screen->id || 'woocommerce_page_wc-orders--shop_subscription' === $screen->id ) {
                 $inline_script = '
                     (function($) {
                         function getQueryParams(data) {

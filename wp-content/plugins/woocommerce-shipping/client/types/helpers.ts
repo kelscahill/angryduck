@@ -8,7 +8,7 @@ export type SnakeToCamelCase< S extends string | number | symbol > =
 		: S;
 
 export type CamelCaseType<
-	InputType extends Record< string, unknown > | object
+	InputType extends Record< string, unknown > | object,
 > = {
 	[ K in keyof InputType as SnakeToCamelCase< K > ]: InputType[ K ];
 };

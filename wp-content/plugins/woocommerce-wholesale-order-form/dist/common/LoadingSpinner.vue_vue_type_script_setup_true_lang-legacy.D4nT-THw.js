@@ -1,0 +1,1 @@
+System.register(["./hooks-legacy.BRKQHcMP.js","./index-legacy.Cqpki-sd.js"],function(e,n){"use strict";var t,i,r,s,o,c,u;return{setters:[e=>{t=e.d,i=e.h,r=e.aq,s=e.l,o=e.o,c=e.u},e=>{u=e.S}],execute:function(){e("_",t({__name:"LoadingSpinner",setup(e){const n=i(r,{style:{fontSize:"24px"},spin:!0});return(e,t)=>(o(),s(c(u),{indicator:c(n)},null,8,["indicator"]))}}))}}});

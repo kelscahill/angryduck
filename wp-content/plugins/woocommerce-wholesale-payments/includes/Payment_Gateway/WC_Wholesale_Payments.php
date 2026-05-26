@@ -41,6 +41,14 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
     protected static $instance;
 
     /**
+     * Flag indicating the order should be placed on hold due to overdue balance.
+     *
+     * @since 1.0.6
+     * @var bool
+     */
+    private $overdue_on_hold = false;
+
+    /**
      * Constructor.
      *
      * @since 1.0.0
@@ -135,6 +143,59 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
     }
 
     /**
+     * Get the overdue restriction action for a given user.
+     *
+     * Returns the restriction action ('block', 'on_hold') if the user has overdue
+     * invoices exceeding the configured threshold, or false if no restriction applies.
+     *
+     * @param int $user_id WordPress user ID.
+     *
+     * @since 1.0.6
+     * @return string|false The restriction action or false if no restriction.
+     */
+    private function get_overdue_restriction( $user_id ) {
+        if ( 'yes' !== get_option( 'wpay_overdue_restriction_enabled', 'no' ) ) {
+            return false;
+        }
+
+        if ( empty( $user_id ) ) {
+            return false;
+        }
+
+        $days_threshold = absint( get_option( 'wpay_overdue_days_threshold', 0 ) );
+
+        if ( ! WPAY_Invoices::customer_has_overdue_invoices( $user_id, $days_threshold ) ) {
+            return false;
+        }
+
+        return get_option( 'wpay_overdue_restriction_action', 'on_hold' );
+    }
+
+    /**
+     * Check if a credit limit restriction applies to the given user.
+     *
+     * @param int $user_id WordPress user ID.
+     *
+     * @since 1.0.6
+     * @return string|false The restriction action ('block' or 'on_hold'), or false if none.
+     */
+    public function get_credit_limit_restriction( $user_id ) {
+        if ( ! $user_id ) {
+            return false;
+        }
+
+        if ( 'yes' !== get_option( 'wpay_credit_limit_enabled', 'no' ) ) {
+            return false;
+        }
+
+        if ( ! WPAY_Invoices::customer_exceeds_credit_limit( $user_id ) ) {
+            return false;
+        }
+
+        return get_option( 'wpay_credit_limit_behavior', 'block' );
+    }
+
+    /**
      * Check if gateway is available.
      *
      * @since 1.0.0
@@ -149,6 +210,15 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
 
             $payment_plans = $this->get_applicable_payment_plans( $total );
             $is_available  = ! empty( $payment_plans );
+        }
+
+        // Check overdue restriction — block action hides the gateway entirely.
+        if ( $is_available && 'block' === $this->get_overdue_restriction( get_current_user_id() ) ) {
+            $is_available = false;
+        }
+
+        if ( $is_available && 'block' === $this->get_credit_limit_restriction( get_current_user_id() ) ) {
+            $is_available = false;
         }
 
         return $is_available;
@@ -249,6 +319,13 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
             )
         );
 
+        // Check if the customer has overdue invoices for on_hold action (block hides gateway via is_available).
+        $has_overdue_balance = false !== $this->get_overdue_restriction( get_current_user_id() );
+
+        $credit_limit_notice = ( 'on_hold' === $this->get_credit_limit_restriction( get_current_user_id() ) )
+            ? WPAY_Invoices::get_credit_limit_notice_message()
+            : '';
+
         require_once Helper::locate_front_template_part( 'payment-fields' );
     }
 
@@ -287,9 +364,17 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
      * @param int $order_id Order ID.
      *
      * @since 1.0.0
+     * @since 1.0.6 Added functionality: Check if customer has WooCommerce payment tokens for this gateway.
+     *            Synchronize Stripe payment methods with WooCommerce tokens.
+     *            Check if customer has default payment method and WooCommerce tokens.
+     *            Create a WooCommerce payment token from Stripe payment method data.
      * @return array|void
      */
     public function process_payment( $order_id ) {
+
+        // Reset per-invocation state to prevent stale values from prior calls in the same request
+        // (e.g. Action Scheduler bulk processing, subscription renewals, admin-created orders).
+        $this->overdue_on_hold = false;
 
         // Get nonce from request.
         $checkout_nonce = filter_input( INPUT_POST, 'woocommerce-process-checkout-nonce', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
@@ -373,6 +458,34 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
         $customer_id_meta_key = '_wpay_stripe_customer_id';
         $order_description    = '';
 
+        /***************************************************************************
+         * Check overdue restriction
+         ***************************************************************************
+         *
+         * Uses the order's customer ID (not get_current_user_id()) to correctly
+         * handle admin-created orders on behalf of customers.
+         *
+         * @since 1.0.6
+         */
+        $restriction_action = $this->get_overdue_restriction( $order->get_customer_id() );
+        if ( 'block' === $restriction_action ) {
+            // Context: process_payment() block action — prevents order submission entirely.
+            // Intentionally different wording from on_hold notices (payment-fields.php, wpay-payment-method.js).
+            wc_add_notice(
+                __( 'You have an outstanding overdue balance. Please pay your overdue invoices before placing a new order with a payment plan.', 'woocommerce-wholesale-payments' ),
+                'error'
+            );
+
+            if ( $is_checkout ) {
+                return $redirect_fail;
+            } else {
+                wp_safe_redirect( $redirect );
+                exit;
+            }
+        } elseif ( 'on_hold' === $restriction_action ) {
+            $this->overdue_on_hold = true;
+        }
+
         // Check if auto-charge is enabled.
         $auto_charge = WPAY_Invoices::check_auto_charge( $payment_plan );
 
@@ -387,34 +500,111 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
         $order->update_meta_data( '_wpay_plan', $payment_plan->to_json() );
         $order->save_meta_data();
 
+        // Determine if payment plan schedule should be deferred to order completion.
+        $schedule_start = get_option( 'wpay_payment_plan_start_date', 'order_date' );
+        $order->update_meta_data( '_wpay_schedule_start_date', $schedule_start );
+
+        $is_deferred                 = 'completed_date' === $schedule_start;
+        $is_deferred_auto_charge     = $is_deferred && $auto_charge;
+        $is_deferred_non_auto_charge = $is_deferred && ! $auto_charge;
+
         /***************************************************************************
          * Check if customer id exists for this order
          ***************************************************************************
          *
          * We check if the customer id already exists for this order.
          */
+        // Get user ID from order for token operations (use get_customer_id() consistently).
+        $user_id = $order->get_customer_id();
+
         $customer_id = $order->get_meta( $customer_id_meta_key );
         if ( ! $customer_id ) {
             /***************************************************************************
-             * Check if customer already exists in Stripe
+             * Check if customer ID exists in user meta (from integrated payment flow)
              ***************************************************************************
              *
-             * We check if the customer already exists in Stripe. If not, we create a
-             * new customer.
+             * First check if the user already has a customer ID stored in user meta
+             * (this would be set by the integrated payment method capture flow).
              */
-            $search_customer = Stripe::instance()->search_customer( array( 'email' => $order->get_billing_email() ) );
-
-            $customer = array();
-            if ( is_array( $search_customer ) && empty( $search_customer['data'] ) ) {
-                $customer = Stripe::instance()->create_customer(
-                    $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
-                    $order->get_billing_email()
-                );
-            } elseif ( is_array( $search_customer ) && ! empty( $search_customer['data'] ) ) {
-                $customer = $search_customer['data'][0];
+            if ( $user_id ) {
+                $customer_id = get_user_meta( $user_id, '_wpay_stripe_customer_id', true );
             }
 
-            $customer_id = isset( $customer['id'] ) ? $customer['id'] : null;
+            if ( ! $customer_id ) {
+                /***************************************************************************
+                 * Check if customer already exists in Stripe
+                 ***************************************************************************
+                 *
+                 * We check if the customer already exists in Stripe. If not, we create a
+                 * new customer.
+                 */
+                $search_customer = Stripe::instance()->search_customer( array( 'email' => $order->get_billing_email() ) );
+
+                // Check if search returned an error.
+                if ( is_wp_error( $search_customer ) ) {
+                    wc_add_notice(
+                        sprintf(
+                            /* translators: %s = Stripe API error message */
+                            __( 'Payment error: Unable to verify customer in Stripe. %s', 'woocommerce-wholesale-payments' ),
+                            $search_customer->get_error_message()
+                        ),
+                        'error'
+                    );
+
+                    if ( $is_checkout ) {
+                        return $redirect_fail;
+                    } else {
+                        wp_safe_redirect( $redirect );
+                        exit;
+                    }
+                }
+
+                $customer = array();
+                if ( is_array( $search_customer ) && empty( $search_customer['data'] ) ) {
+                    $customer = Stripe::instance()->create_customer(
+                        $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+                        $order->get_billing_email()
+                    );
+
+                    // Check if creation returned an error.
+                    if ( is_wp_error( $customer ) ) {
+                        wc_add_notice(
+                            sprintf(
+                                /* translators: %s = Stripe API error message */
+                                __( 'Payment error: Unable to create customer in Stripe. %s', 'woocommerce-wholesale-payments' ),
+                                $customer->get_error_message()
+                            ),
+                            'error'
+                        );
+
+                        if ( $is_checkout ) {
+                            return $redirect_fail;
+                        } else {
+                            wp_safe_redirect( $redirect );
+                            exit;
+                        }
+                    }
+                } elseif ( is_array( $search_customer ) && ! empty( $search_customer['data'] ) ) {
+                    $customer = $search_customer['data'][0];
+                }
+
+                $customer_id = isset( $customer['id'] ) ? $customer['id'] : null;
+
+                // Validate customer_id was successfully obtained.
+                if ( empty( $customer_id ) ) {
+                    wc_add_notice(
+                        __( 'Payment error: Unable to obtain customer ID from Stripe. Please contact the store manager.', 'woocommerce-wholesale-payments' ),
+                        'error'
+                    );
+
+                    if ( $is_checkout ) {
+                        return $redirect_fail;
+                    } else {
+                        wp_safe_redirect( $redirect );
+                        exit;
+                    }
+                }
+            }
 
             /***************************************************************************
              * Record Stripe customer ID to order meta
@@ -425,6 +615,11 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
             if ( $customer_id ) {
                 $order->update_meta_data( $customer_id_meta_key, $customer_id );
                 $order->save_meta_data();
+
+                // Also ensure it's stored in user meta for future orders.
+                if ( $user_id && ! get_user_meta( $user_id, '_wpay_stripe_customer_id', true ) ) {
+                    update_user_meta( $user_id, '_wpay_stripe_customer_id', $customer_id );
+                }
             }
         }
 
@@ -437,6 +632,96 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
          * We check if there's already a Stripe invoice associated for this order.
          */
         $invoice_id = $order->get_meta( $invoice_id_meta_key );
+
+        // If invoice already exists and auto-charge is enabled, retrieve breakdown IDs from order meta.
+        if ( $invoice_id && $auto_charge ) {
+            $breakdown_ids = $order->get_meta( '_wpay_invoice_breakdown' );
+            if ( ! is_array( $breakdown_ids ) ) {
+                $breakdown_ids = array();
+            }
+        }
+
+        /***************************************************************************
+         * Require default payment method for auto-charge plans
+         * **************************************************************************
+         *
+         * If auto-charge is enabled for the selected plan, ensure the Stripe
+         * customer has a default payment method set.
+         *
+         * Check for wpay_pm_attached flag: If JavaScript just attached a payment
+         * method during checkout, trust it and skip the Stripe API check to avoid
+         * timing/synchronization issues.
+         */
+        if ( $auto_charge && ! empty( $customer_id ) ) {
+            // Check if payment method was just attached by frontend JavaScript.
+            // For classic checkout: check POST parameter.
+            // For WooCommerce Blocks: check session flag, POST array directly, and payment_data.
+            $pm_attached_post     = filter_input( INPUT_POST, 'wpay_pm_attached', FILTER_VALIDATE_BOOLEAN );
+            $pm_attached_post_raw = filter_input( INPUT_POST, 'wpay_pm_attached', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE );
+            // filter_input returns null when input doesn't exist, false when it exists but is falsy.
+            if ( null === $pm_attached_post_raw ) {
+                $pm_attached_post_raw = false;
+            }
+            $pm_attached_session = \RymeraWebCo\WPay\Integrations\WPay_Block::wpay_get_pm_attached_flag();
+
+            // Check payment_data from Blocks checkout REST API.
+            // Blocks checkout converts paymentData object into payment_data array format.
+            $pm_attached_payment_data = false;
+            if ( ! $pm_attached_post && ! $pm_attached_post_raw && ! $pm_attached_session ) {
+                // Blocks checkout sends payment_data as array in REST request.
+                // Use filter_input with FILTER_REQUIRE_ARRAY to safely access nested array data.
+                $payment_data_raw = filter_input( INPUT_POST, 'payment_data', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
+                if ( is_array( $payment_data_raw ) ) {
+                    foreach ( $payment_data_raw as $data ) {
+                        if (
+                            isset( $data['key'], $data['value'] ) &&
+                            'wpay_pm_attached' === $data['key']
+                        ) {
+                            $pm_attached_payment_data = filter_var( $data['value'], FILTER_VALIDATE_BOOLEAN );
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $pm_attached = $pm_attached_post || $pm_attached_post_raw || $pm_attached_session || $pm_attached_payment_data;
+
+            // Skip validation if frontend confirmed payment method was just attached.
+            if ( ! $pm_attached ) {
+                $has_default_pm = Stripe::instance()->customer_has_default_payment_method( $customer_id, $user_id );
+
+                if ( is_wp_error( $has_default_pm ) ) {
+                    wc_add_notice( $has_default_pm->get_error_message(), 'error' );
+
+                    if ( $is_checkout ) {
+                        return $redirect_fail;
+                    } else {
+                        wp_safe_redirect( $redirect );
+                        exit;
+                    }
+                }
+
+                if ( empty( $has_default_pm ) ) {
+                    $payment_methods_url = wc_get_account_endpoint_url( 'payment-methods' );
+                    $message             = sprintf(
+                        /* translators: %s = My Account payment methods URL */
+                        __( 'Auto-charge requires a saved payment method. Please <a href="%s">add a payment method</a> first, then try again.', 'woocommerce-wholesale-payments' ),
+                        esc_url( $payment_methods_url )
+                    );
+                    wc_add_notice( $message, 'error' );
+
+                    if ( $is_checkout ) {
+                        return $redirect_fail;
+                    } else {
+                        wp_safe_redirect( $redirect );
+                        exit;
+                    }
+                }
+            } else {
+                // Clear the session flag after using it.
+                \RymeraWebCo\WPay\Integrations\WPay_Block::wpay_clear_pm_attached_flag();
+            }
+        }
         if ( ! $invoice_id ) {
             $amounts_due      = array();
             $fixed_items      = array();
@@ -533,13 +818,13 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
 
                 $amounts_due[ $i ] = $amount_args;
 
-                if ( $auto_charge ) {
+                if ( $auto_charge && ! $is_deferred_auto_charge ) {
                     // Save breakdown to wpay table per line item.
                     $breakdown_ids[] = WPAY_Invoices::add_invoice_breakdown( $customer_id, $i, $order_id, $amount_args );
                 }
             }
 
-            if ( $auto_charge ) {
+            if ( $auto_charge && ! $is_deferred_auto_charge ) {
                 $order->update_meta_data( '_wpay_invoice_breakdown', $breakdown_ids );
             }
 
@@ -555,14 +840,16 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
             }
 
             /***************************************************************************
-             * Create Stripe invoice
+             * Validate Stripe customer ID before creating invoice
              ***************************************************************************
              *
-             * We create the Stripe invoice with the payload for this order.
+             * As a fail-safe, ensure customer_id exists before attempting invoice creation.
              */
-            $invoice_response = Stripe::instance()->create_invoice( $customer_id, $amounts_due, $auto_charge );
-            if ( is_wp_error( $invoice_response ) ) {
-                wc_add_notice( $invoice_response->get_error_message(), 'error' );
+            if ( empty( $customer_id ) ) {
+                wc_add_notice(
+                    __( 'Payment error: Customer ID not found. Please contact the store manager.', 'woocommerce-wholesale-payments' ),
+                    'error'
+                );
 
                 if ( $is_checkout ) {
                     return $redirect_fail;
@@ -572,157 +859,201 @@ class WC_Wholesale_Payments extends WC_Payment_Gateway {
                 }
             }
 
-            $invoice_id = $invoice_response['id'];
+            if ( $is_deferred_auto_charge ) {
+                /***************************************************************************
+                 * Defer auto-charge invoice creation until order completion
+                 ***************************************************************************
+                 *
+                 * When "Completed Date" is selected, we skip invoice row insertion and
+                 * Stripe invoice creation at checkout. The breakdown data is stored in
+                 * order meta and replayed when the order is marked as completed.
+                 *
+                 * @since 1.0.6
+                 */
+                $order->update_meta_data( '_wpay_schedule_deferred', 'yes' );
+                $order->update_meta_data( '_wpay_deferred_breakdown', $amounts_due );
+                $order->save_meta_data();
 
-            /***************************************************************************
-             * Record Stripe invoice ID to order meta
-             ***************************************************************************
-             *
-             * We record the Stripe invoice ID to the order meta.
-             */
-            if ( $auto_charge ) {
-                $order_total_in_cents = isset( $amounts_due[0]['amount'] ) ? $amounts_due[0]['amount'] : $order_total_in_cents; // get the first amounts due.
-                $order_description    = isset( $amounts_due[0]['description'] ) ? $amounts_due[0]['description'] : '';
-                $invoice_ids          = array( $invoice_id );
-
-                $order->update_meta_data( $invoice_id_meta_key, $invoice_ids );
+                $order->add_order_note(
+                    __( 'Payment plan schedule deferred — installments will begin when this order is marked as completed.', 'woocommerce-wholesale-payments' )
+                );
             } else {
-                $order->update_meta_data( $invoice_id_meta_key, $invoice_id );
-            }
+                /***************************************************************************
+                 * Create Stripe invoice
+                 ***************************************************************************
+                 *
+                 * We create the Stripe invoice with the payload for this order.
+                 */
+                $invoice_response = Stripe::instance()->create_invoice( $customer_id, $amounts_due, $auto_charge, $is_deferred_non_auto_charge );
+                if ( is_wp_error( $invoice_response ) ) {
+                    wc_add_notice( $invoice_response->get_error_message(), 'error' );
 
-            $order->save_meta_data();
-        }
+                    if ( $is_checkout ) {
+                        return $redirect_fail;
+                    } else {
+                        wp_safe_redirect( $redirect );
+                        exit;
+                    }
+                }
 
-        $invoice_item_id_meta_key = '_wpay_stripe_invoice_item_id';
+                $invoice_id = $invoice_response['id'];
 
-        /***************************************************************************
-         * Check Stripe invoice item
-         ***************************************************************************
-         *
-         * We check if there's already a Stripe invoice item associated for this
-         * order.
-         */
-        $invoice_item_id = $order->get_meta( $invoice_item_id_meta_key );
-        if ( ! $invoice_item_id ) {
-            /***************************************************************************
-             * Add Stripe invoice item
-             ***************************************************************************
-             *
-             * We add the Stripe invoice item for this order.
-             */
-            $invoice_item = Stripe::instance()->add_invoice_item(
-                $customer_id,
-                $invoice_id,
-                $order_total_in_cents,
-                $order_description
-            );
-            if ( is_wp_error( $invoice_item ) ) {
-                wc_add_notice( $invoice_item->get_error_message(), 'error' );
-
-                if ( $is_checkout ) {
-                    return $redirect_fail;
+                /***************************************************************************
+                 * Record Stripe invoice ID to order meta
+                 ***************************************************************************
+                 *
+                 * We record the Stripe invoice ID to the order meta.
+                 */
+                if ( $auto_charge ) {
+                    $invoice_ids = array( $invoice_id );
+                    $order->update_meta_data( $invoice_id_meta_key, $invoice_ids );
                 } else {
-                    wp_safe_redirect( $redirect );
-                    exit;
+                    $order->update_meta_data( $invoice_id_meta_key, $invoice_id );
+                }
+
+                if ( $is_deferred_non_auto_charge ) {
+                    $order->update_meta_data( '_wpay_schedule_deferred', 'yes' );
+                }
+
+                $order->save_meta_data();
+            }
+        }
+
+        /***************************************************************************
+         * Get finalized invoice data from response
+         ***************************************************************************
+         *
+         * The create_invoice() method already finalizes non-auto-charge invoices
+         * and adds all invoice items internally. For auto-charge invoices, they
+         * remain in draft state and will be auto-finalized by Stripe when charged.
+         *
+         * If invoice already existed, retrieve it from Stripe instead of using
+         * the response from create_invoice().
+         */
+        if ( ! $is_deferred_auto_charge ) {
+            if ( isset( $invoice_response ) ) {
+                // Invoice was just created, use the response.
+                $finalized = $invoice_response;
+            } else {
+                // Invoice already existed, retrieve it from Stripe.
+                // Handle both string (non-auto-charge) and array (auto-charge) invoice IDs.
+                $invoice_id_to_fetch = is_array( $invoice_id ) ? $invoice_id[0] : $invoice_id;
+                $finalized           = Stripe::instance()->get_invoice( $invoice_id_to_fetch );
+                if ( is_wp_error( $finalized ) ) {
+                    wc_add_notice( $finalized->get_error_message(), 'error' );
+
+                    if ( $is_checkout ) {
+                        return $redirect_fail;
+                    } else {
+                        wp_safe_redirect( $redirect );
+                        exit;
+                    }
                 }
             }
+        }
 
-            $invoice_item_id = $invoice_item['id'];
+        if ( ! $is_deferred_auto_charge ) {
 
+            /***************************************************************************
+             * Record finalized invoice to order meta
+             ***************************************************************************
+             *
+             * We record the finalized invoice to the order meta.
+             */
+            $status = '';
             if ( $auto_charge ) {
-                $invoice_item_ids = array( $invoice_item_id );
+                $status          = ! empty( $finalized['status'] ) ? $finalized['status'] : '';
+                $finalized_items = array( $finalized );
 
-                $order->update_meta_data( $invoice_item_id_meta_key, $invoice_item_ids );
+                $order->update_meta_data( '_wpay_stripe_invoice', $finalized_items );
+
+                // Extract invoice item ID from the finalized invoice lines.
+                // For draft invoices (auto-charge), lines['data'] won't be populated until finalization.
+                $invoice_item_id = '';
+                if ( isset( $finalized['status'] ) && 'draft' !== $finalized['status'] ) {
+                    // Only extract item ID if invoice is finalized (has lines data).
+                    if ( isset( $finalized['lines']['data'][0]['id'] ) ) {
+                        $invoice_item_id = $finalized['lines']['data'][0]['id'];
+                    }
+                }
+
+                // Normalize invoice_id to always be a string for consistency.
+                // For auto-charge orders, invoice_id may be stored as an array in order meta.
+                $normalized_invoice_id = is_array( $invoice_id ) ? $invoice_id[0] : $invoice_id;
+
+                $invoice_data = array(
+                    'invoice_id'            => $normalized_invoice_id,
+                    'invoice_item_id'       => $invoice_item_id,
+                    'stripe_invoice'        => wp_json_encode( $finalized ),
+                    'stripe_invoice_status' => $status,
+                    'status'                => 'created',
+                );
+
+                // Ensure breakdown_ids is available and not empty before updating invoice data.
+                if ( ! empty( $breakdown_ids ) && is_array( $breakdown_ids ) ) {
+                    WPAY_Invoices::update_invoice_data( 'id', $breakdown_ids[0], $invoice_data );
+
+                    // Update the last index of the breakdown.
+                    WPAY_Invoices::update_invoice_data( 'id', end( $breakdown_ids ), array( 'breakdown_last_index' => 1 ) );
+                }
+
+                $stripe_invoices = WPAY_Invoices::get_invoices( $order_id );
+                $statusses       = array();
+                if ( ! empty( $stripe_invoices ) ) {
+                    foreach ( $stripe_invoices as $stripe_invoice ) {
+                        $statusses[] = ! empty( $stripe_invoice->stripe_invoice_status ) ? $stripe_invoice->stripe_invoice_status : 'pending';
+                    }
+                }
+
+                $status = ! empty( $statusses ) && is_array( $statusses ) ? end( $statusses ) : $status;
             } else {
-                $order->update_meta_data( $invoice_item_id_meta_key, $invoice_item_id );
+                $status = WPay::get_invoice_payment_progress_status( $finalized, 'status' );
+
+                $order->update_meta_data( '_wpay_stripe_invoice', $finalized );
             }
 
+            $order->update_meta_data( '_wpay_stripe_invoice_status', $status );
             $order->save_meta_data();
         }
 
-        /***************************************************************************
-         * Finalize invoice
-         ***************************************************************************
-         *
-         * We finalize the invoice to send it to the customer.
-         */
-        $finalized = Stripe::instance()->finalize_invoice( $invoice_id );
-        if ( is_wp_error( $finalized ) ) {
-            if ( str_contains( $finalized->get_error_message(), 'already finalized' ) ) {
-                $order->set_status( OrderStatus::PROCESSING, __( 'Invoice already finalized.', 'woocommerce-wholesale-payments' ) );
-                $order->save();
-                wp_safe_redirect( $order->get_checkout_order_received_url() );
-                exit;
-            }
-
-            wc_add_notice( $finalized->get_error_message(), 'error' );
-
-            if ( $is_checkout ) {
-                return $redirect_fail;
+        // Add order note with invoice number (if available).
+        if ( ! $is_deferred_auto_charge ) {
+            if ( isset( $finalized['number'] ) && isset( $finalized['hosted_invoice_url'] ) ) {
+                $invoice_number = $finalized['number'];
+                $order_link     = $finalized['hosted_invoice_url'];
+                $order_note     = sprintf(
+                    /* translators: %1$s = invoice number; %2$s = order link */
+                    __( 'Invoice #%1$s has been created. <a href="%2$s" target="_blank">View Invoice</a>.', 'woocommerce-wholesale-payments' ),
+                    $invoice_number,
+                    $order_link
+                );
+                $order->add_order_note( $order_note );
             } else {
-                wp_safe_redirect( $redirect );
-                exit;
+                // Fallback for draft invoices or incomplete data.
+                // Handle both string (non-auto-charge) and array (auto-charge) invoice IDs.
+                $invoice_id_for_note = is_array( $invoice_id ) ? implode( ', ', $invoice_id ) : $invoice_id;
+                $order->add_order_note(
+                    sprintf(
+                        /* translators: %s = invoice ID */
+                        __( 'Stripe invoice created with ID: %s', 'woocommerce-wholesale-payments' ),
+                        $invoice_id_for_note
+                    )
+                );
             }
         }
 
-        /***************************************************************************
-         * Record finalized invoice to order meta
-         ***************************************************************************
-         *
-         * We record the finalized invoice to the order meta.
-         */
-        $status = '';
-        if ( $auto_charge ) {
-            $status          = ! empty( $finalized['status'] ) ? $finalized['status'] : '';
-            $finalized_items = array( $finalized );
-
-            $order->update_meta_data( '_wpay_stripe_invoice', $finalized_items );
-
-            $invoice_data = array(
-                'invoice_id'            => $invoice_id,
-                'invoice_item_id'       => $invoice_item_id,
-                'stripe_invoice'        => wp_json_encode( $finalized ),
-                'stripe_invoice_status' => $status,
-                'status'                => 'created',
-            );
-            WPAY_Invoices::update_invoice_data( 'id', $breakdown_ids[0], $invoice_data );
-
-            // Update the last index of the breakdown.
-            WPAY_Invoices::update_invoice_data( 'id', end( $breakdown_ids ), array( 'breakdown_last_index' => 1 ) );
-
-            $stripe_invoices = WPAY_Invoices::get_invoices( $order_id );
-            $statusses       = array();
-            if ( ! empty( $stripe_invoices ) ) {
-                foreach ( $stripe_invoices as $stripe_invoice ) {
-                    $statusses[] = ! empty( $stripe_invoice->stripe_invoice_status ) ? $stripe_invoice->stripe_invoice_status : 'pending';
-                }
-            }
-
-            $status = ! empty( $statusses ) && is_array( $statusses ) ? end( $statusses ) : $status;
+        if ( $this->overdue_on_hold ) {
+            $order->update_status( 'on-hold', __( 'Order placed on hold due to outstanding overdue payment balance.', 'woocommerce-wholesale-payments' ) );
+        } elseif ( 'on_hold' === $this->get_credit_limit_restriction( $order->get_customer_id() ) ) {
+            $order->update_status( 'on-hold', __( 'Order placed on hold: customer has exceeded their credit limit.', 'woocommerce-wholesale-payments' ) );
         } else {
-            $status = WPay::get_invoice_payment_progress_status( $finalized, 'status' );
-
-            $order->update_meta_data( '_wpay_stripe_invoice', $finalized );
+            $order->update_status( 'processing' );
         }
 
-        $order->update_meta_data( '_wpay_stripe_invoice_status', $status );
-        $order->save_meta_data();
-
-        // Add order note with invoice number.
-        $invoice_number = $finalized['number'];
-        $order_link     = $finalized['hosted_invoice_url'];
-        $order_note     = sprintf(
-            /* translators: %1$s = invoice number; %2$s = order link */
-            __( 'Invoice #%1$s has been created. <a href="%2$s" target="_blank">View Invoice</a>.', 'woocommerce-wholesale-payments' ),
-            $invoice_number,
-            $order_link
-        );
-        $order->add_order_note( $order_note );
-
-        $order->update_status( 'processing' );
-
-        // Schedule email reminders for this order.
-        \RymeraWebCo\WPay\Schedulers\WPay_Email_Scheduler::schedule_order_reminders_on_creation( $order_id, $payment_plan );
+        // Schedule email reminders for this order (skip if deferred — will be scheduled on completion).
+        if ( ! $is_deferred ) {
+            \RymeraWebCo\WPay\Schedulers\WPay_Email_Scheduler::schedule_order_reminders_on_creation( $order_id, $payment_plan );
+        }
 
         WC()->cart->empty_cart();
         $this->wpay_set_to_empty_plan();

@@ -28,6 +28,14 @@ class UPSDAPCarrierStrategyRESTController extends WCShippingRESTController {
 		);
 	}
 
+	/**
+	 * Error codes that indicate client validation errors (HTTP 400).
+	 * All other error codes are treated as server errors (HTTP 500).
+	 */
+	private const CLIENT_ERROR_CODES = array(
+		'invalid_user_email',
+	);
+
 	public function update( $request ) {
 		try {
 			[
@@ -41,7 +49,19 @@ class UPSDAPCarrierStrategyRESTController extends WCShippingRESTController {
 		$response = $this->upsdap_carrier_service->update_strategies( $origin, array( 'tos' => $confirmed ) );
 
 		if ( is_wp_error( $response ) ) {
-			return new \WP_REST_Response( array( 'success' => false ), 500 );
+			$error_code = $response->get_error_code();
+
+			// Use 400 for client validation errors, 500 for server errors.
+			$status_code = in_array( $error_code, self::CLIENT_ERROR_CODES, true ) ? 400 : 500;
+
+			return new \WP_REST_Response(
+				array(
+					'success' => false,
+					'code'    => $error_code,
+					'message' => $response->get_error_message(),
+				),
+				$status_code
+			);
 		}
 
 		return rest_ensure_response(

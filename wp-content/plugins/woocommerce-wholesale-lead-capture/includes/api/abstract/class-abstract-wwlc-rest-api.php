@@ -172,7 +172,14 @@ abstract class WWLC_Abstract_REST_Controller extends WP_REST_Controller {
      * @return WP_Error|bool True if the request has read access, WP_Error object otherwise.
      */
     public function get_items_permissions_check( $request ) {
-        return current_user_can( 'list_users' );
+        if ( ! current_user_can( 'list_users' ) ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'Sorry, you are not allowed to list users.', 'woocommerce-wholesale-lead-capture' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+        return true;
     }
 
     /**
@@ -184,7 +191,14 @@ abstract class WWLC_Abstract_REST_Controller extends WP_REST_Controller {
      * @return WP_Error|bool True if the request has read access for the item, WP_Error object otherwise.
      */
     public function get_item_permissions_check( $request ) {
-        return current_user_can( 'list_users' );
+        if ( ! current_user_can( 'list_users' ) ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'Sorry, you are not allowed to list users.', 'woocommerce-wholesale-lead-capture' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+        return true;
     }
 
     /**
@@ -193,10 +207,18 @@ abstract class WWLC_Abstract_REST_Controller extends WP_REST_Controller {
      * @param WP_REST_Request $request Full data about the request.
      *
      * @since 2.0.0
+     * @since 2.0.2 - Added check for create_users capability.
      * @return WP_Error|bool True if the request has access to create items, WP_Error object otherwise.
      */
     public function create_item_permissions_check( $request ) {
-        return current_user_can( 'list_users' );
+        if ( ! current_user_can( 'create_users' ) ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'Sorry, you are not allowed to create users.', 'woocommerce-wholesale-lead-capture' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+        return true;
     }
 
     /**
@@ -205,10 +227,18 @@ abstract class WWLC_Abstract_REST_Controller extends WP_REST_Controller {
      * @param WP_REST_Request $request Full data about the request.
      *
      * @since 2.0.0
+     * @since 2.0.2 - Added check for edit_users capability.
      * @return WP_Error|bool True if the request has access to update the item, WP_Error object otherwise.
      */
     public function update_item_permissions_check( $request ) {
-        return current_user_can( 'list_users' );
+        if ( ! current_user_can( 'edit_users' ) ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'Sorry, you are not allowed to edit users.', 'woocommerce-wholesale-lead-capture' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+        return true;
     }
 
     /**
@@ -217,10 +247,18 @@ abstract class WWLC_Abstract_REST_Controller extends WP_REST_Controller {
      * @param WP_REST_Request $request Full data about the request.
      *
      * @since 2.0.0
+     * @since 2.0.2 - Added check for delete_users capability.
      * @return WP_Error|bool True if the request has access to delete the item, WP_Error object otherwise.
      */
     public function delete_item_permissions_check( $request ) {
-        return current_user_can( 'list_users' );
+        if ( ! current_user_can( 'delete_users' ) ) {
+            return new WP_Error(
+                'rest_forbidden',
+                __( 'Sorry, you are not allowed to delete users.', 'woocommerce-wholesale-lead-capture' ),
+                array( 'status' => rest_authorization_required_code() )
+            );
+        }
+        return true;
     }
 
 	/**

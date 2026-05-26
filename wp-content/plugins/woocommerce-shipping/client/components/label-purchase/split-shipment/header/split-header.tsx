@@ -29,7 +29,12 @@ export const SplitHeader = ( {
 	isDisabled,
 }: SplitHeaderProps ) => {
 	const {
-		shipment: { shipments, setShipments, setCurrentShipmentId },
+		shipment: {
+			shipments,
+			setShipments,
+			setCurrentShipmentId,
+			getShipmentType,
+		},
 		labels: { getShipmentsWithoutLabel },
 	} = useLabelPurchaseContext();
 
@@ -142,8 +147,9 @@ export const SplitHeader = ( {
 			/>
 			<Text upperCase>
 				{ getShipmentTitle(
-					shipmentIndex,
-					Object.values( shipments ).length
+					shipmentIndex.toString(),
+					Object.values( shipments ).length,
+					getShipmentType( shipmentIndex.toString() )
 				) }
 			</Text>
 			{ ! isDisabled && canRemoveShipment && (

@@ -96,7 +96,9 @@ class WWPP_Wholesale_Role_Order_Requirement_Mapping {
             wp_die();
         }
 
-        $mapping = array_map( 'sanitize_text_field', $_POST['mapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $mapping = isset( $_POST['mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mapping'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
         $order_requirement_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_ORDER_REQUIREMENT_MAPPING, array() );
         if ( ! is_array( $order_requirement_mapping ) ) {
@@ -153,7 +155,9 @@ class WWPP_Wholesale_Role_Order_Requirement_Mapping {
             wp_die();
         }
 
-        $mapping = array_map( 'sanitize_text_field', $_POST['mapping'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $mapping = isset( $_POST['mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mapping'] ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
         $order_requirement_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_ORDER_REQUIREMENT_MAPPING, array() );
         if ( ! is_array( $order_requirement_mapping ) ) {
@@ -203,7 +207,9 @@ class WWPP_Wholesale_Role_Order_Requirement_Mapping {
             wp_die();
         }
 
-        $wholesale_role = sanitize_text_field( $_POST['wholesale_role'] );
+        WWPP_Helper_Functions::require_capability_or_send_error();
+
+        $wholesale_role = isset( $_POST['wholesale_role'] ) ? sanitize_text_field( wp_unslash( $_POST['wholesale_role'] ) ) : '';
 
         $order_requirement_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_ORDER_REQUIREMENT_MAPPING, array() );
         if ( ! is_array( $order_requirement_mapping ) ) {

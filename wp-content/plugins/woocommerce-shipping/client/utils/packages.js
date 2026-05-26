@@ -14,9 +14,7 @@ export const getCarrierPackages = (
 		config.packagesSettings.schema.predefined
 	) ) {
 		for ( const [ , pkgData ] of Object.entries( pkg ) ) {
-			if ( ! carrierPackages[ carrierId ] ) {
-				carrierPackages[ carrierId ] = [];
-			}
+			carrierPackages[ carrierId ] ??= [];
 
 			pkgData.definitions.forEach( ( definition ) => {
 				if (
@@ -73,8 +71,8 @@ export const getPackageDimensions = ( {
 	dimensions,
 } ) => {
 	const boxDimensions = (
-		outerDimensions ||
-		dimensions ||
+		outerDimensions ??
+		dimensions ??
 		innerDimensions
 	).match( /([-.0-9]+).+?([-.0-9]+).+?([-.0-9]+)/ );
 

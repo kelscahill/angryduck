@@ -2,12 +2,30 @@ import { __ } from '@wordpress/i18n';
 import { PDFJson } from 'types';
 import { getPDFSupport } from './pdf-support';
 
+/**
+ * Thrown when the browser refuses to open the merged PDF in a new tab. Used so
+ * callers can branch on the cause (popup blocker vs generic failure) without
+ * depending on a free-form English error message.
+ */
+export class PopupBlockedError extends Error {
+	constructor() {
+		super( 'Unable to open label PDF in new tab' );
+		this.name = 'PopupBlockedError';
+		// Subclassing `Error` can break `instanceof` after transpilation
+		// targeting ES5 because the prototype chain is not always set up
+		// automatically. Repairing it here keeps `e instanceof
+		// PopupBlockedError` reliable regardless of the build target.
+		Object.setPrototypeOf( this, new.target.prototype );
+	}
+}
+
 let iframe: HTMLIFrameElement | null = null;
 
 /**
- * Loads the given URL in an invisible <iframe>
- * To do that, an invisible <iframe> is created, added to the current page, and "print()" is invoked
- * for just that iframe.
+ * Loads the given URL into a hidden iframe and resolves once the iframe's
+ * `load` event fires. Replaces any previously-loaded iframe to avoid leaking
+ * blob URLs across consecutive prints. Note: this only loads the document;
+ * the caller is responsible for invoking `print()` on the resulting iframe.
  */
 const loadDocumentInFrame = ( url: string ) =>
 	new Promise< void >( ( resolve, reject ) => {
@@ -43,9 +61,18 @@ const buildBlob = ( b64Content: string, mimeType: string ) => {
 };
 
 /**
- * Opens the native printing dialog to print the given URL.
- * Falls back to opening the PDF in a new tab if opening the printing dialog is not supported.
- * invoked, rejects otherwise.
+ * Renders a base64-encoded PDF in the most appropriate path for the current
+ * browser. Resolves once the document has been handed off to the browser
+ * (native print dialog opened, new tab opened, or download initiated).
+ *
+ * Per-path failure modes:
+ * - `native` / `native_ff`: rejects when the hidden iframe fires `onerror`
+ *   while loading the blob URL (e.g. PDF plugin error). Propagated from
+ *   `loadDocumentInFrame()`.
+ * - `addon`: rejects with `PopupBlockedError` when the new tab is suppressed.
+ * - `ie`: rejects when `msSaveOrOpenBlob` returns false.
+ * - default (browser cannot render PDFs at all): always resolves; the iframe
+ *   load triggers a Download prompt, and we do not wait for it.
  */
 export const printDocument = (
 	{ b64Content, mimeType }: PDFJson,
@@ -55,12 +82,13 @@ export const printDocument = (
 	const blobUrl =
 		getPDFSupport() !== 'ie' ? URL.createObjectURL( blob ) : null; // IE has no use for "blob:" URLs
 
-	if ( ! blobUrl )
+	if ( ! blobUrl ) {
 		return Promise.reject(
 			new Error(
 				__( 'Unable to create blob url', 'woocommerce-shipping' )
 			)
 		);
+	}
 	switch ( getPDFSupport() ) {
 		case 'native':
 			// Happy case where everything can happen automatically. Supported in Chrome and Safari
@@ -93,9 +121,7 @@ export const printDocument = (
 			setTimeout( () => URL.revokeObjectURL( blobUrl ), 1000 );
 			return success
 				? Promise.resolve()
-				: Promise.reject(
-						new Error( 'Unable to open label PDF in new tab' )
-				  );
+				: Promise.reject( new PopupBlockedError() );
 
 		case 'ie':
 			// @ts-ignore. Internet Explorer / Edge don't allow to load "blob:" URLs into an <iframe> or a new tab. The only solution is to download

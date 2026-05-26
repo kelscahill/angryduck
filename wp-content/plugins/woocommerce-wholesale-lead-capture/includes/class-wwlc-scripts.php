@@ -107,6 +107,7 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                     'wwlc_UserListing_js',
                     'UserListingVars',
                     array(
+                        'nonce'                       => wp_create_nonce( 'wwlc_manage_leads' ),
                         'approving_failed_message'    => __( 'Approving User Failed', 'woocommerce-wholesale-lead-capture' ),
                         'rejecting_failed_message'    => __( 'Rejecting User Failed', 'woocommerce-wholesale-lead-capture' ),
                         'activating_failed_message'   => __( 'Activating User Failed', 'woocommerce-wholesale-lead-capture' ),
@@ -117,7 +118,7 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
             }
             if ( in_array( $screen->id, array( 'woocommerce_page_wc-settings' ), true ) ) {
 
-                if ( ! isset( $_GET['section'] ) || ( isset($_GET['section'] ) && $_GET['section'] == '') ) { // phpcs:ignore.
+                if ( ! isset( $_GET['section'] ) || ( isset( $_GET['section'] ) && $_GET['section'] == '' ) ) { // phpcs:ignore.
 
                     // General Section
                     // Styles.
@@ -149,10 +150,11 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                         'wwlc_HelpSettings_js',
                         'HelpSettingsVars',
                         array(
-                            'success_message' => __( 'The following pages were created successfully:', 'woocommerce-wholesale-lead-capture' ),
-                            'error_message'   => __( 'Failed To Create Lead Pages', 'woocommerce-wholesale-lead-capture' ),
+                            'success_message'         => __( 'The following pages were created successfully:', 'woocommerce-wholesale-lead-capture' ),
+                            'error_message'           => __( 'Failed To Create Lead Pages', 'woocommerce-wholesale-lead-capture' ),
                             'success_force_fetch_update_data_txt' => __( 'Successfully re-fetched plugin update data', 'woocommerce-wholesale-prices-premium' ),
                             'failed_force_fetch_update_data_txt' => __( 'Failed to re-fetch plugin update data', 'woocommerce-wholesale-prices-premium' ),
+                            'create_lead_pages_nonce' => wp_create_nonce( 'wwlc_create_lead_pages' ),
                         )
                     );
 
@@ -178,6 +180,7 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                         'wwlc_WWLCCustomFieldsControl_js',
                         'WWLCCustomFieldsControlVars',
                         array(
+                            'nonce'                      => wp_create_nonce( 'wwlc_custom_fields_nonce' ),
                             'empty_fields_error_message' => __( 'Please Fill The Form Properly. The following fields have empty values.', 'woocommerce-wholesale-lead-capture' ),
                             'success_save_message'       => __( 'Custom Field Successfully Saved', 'woocommerce-wholesale-lead-capture' ),
                             'failed_save_message'        => __( 'Failed To Save Custom Field', 'woocommerce-wholesale-lead-capture' ),
@@ -250,6 +253,9 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                         'file_size_is_empty'            => __( 'The file you selected is empty. Please upload something more substantial.', 'woocommerce-wholesale-lead-capture' ),
                         'file_size_exceeds_max_allowed' => __( 'The file you selected exceeds the maximum allowed file size', 'woocommerce-wholesale-lead-capture' ),
                         'file_format_not_supported'     => __( 'The format of the file you selected is not supported', 'woocommerce-wholesale-lead-capture' ),
+                        'upload_failed_message'         => __( 'File upload failed. Please refresh the page and try again.', 'woocommerce-wholesale-lead-capture' ),
+                        'wwlc_file_upload_nonce'        => wp_create_nonce( 'wwlc_file_upload_nonce' ),
+                        'wwlc_file_remove_nonce'        => wp_create_nonce( 'wwlc_file_remove_nonce' ),
                     )
                 );
 
@@ -262,6 +268,7 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                     'wwlc_UserListing_js',
                     'UserListingVars',
                     array(
+                        'nonce'                       => wp_create_nonce( 'wwlc_manage_leads' ),
                         'approving_failed_message'    => __( 'Approving User Failed', 'woocommerce-wholesale-lead-capture' ),
                         'rejecting_failed_message'    => __( 'Rejecting User Failed', 'woocommerce-wholesale-lead-capture' ),
                         'activating_failed_message'   => __( 'Activating User Failed', 'woocommerce-wholesale-lead-capture' ),
@@ -272,7 +279,16 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
             } elseif ( 'dashboard' === $screen->id && 'dashboard' === $screen->base ) {
 
                 // Tooltip purpose.
-                wp_enqueue_script( 'woocommerce_admin', WC()->plugin_url() . '/assets/js/jquery-tiptip/jquery.tipTip.min.js', array( 'jquery', 'jquery-tiptip' ), WC_VERSION, false );
+                wp_enqueue_script(
+                    'woocommerce_admin',
+                    WC()->plugin_url() . '/assets/js/jquery-tiptip/jquery.tipTip.min.js',
+                    array(
+						'jquery',
+						'jquery-tiptip',
+                    ),
+                    WC_VERSION,
+                    false
+                );
                 wp_enqueue_style( 'woocommerce_admin_styles', WC()->plugin_url() . '/assets/css/admin.css', array(), WC_VERSION );
 
             }
@@ -308,7 +324,12 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                 if ( ! empty( $custom_fields ) ) {
                     $has_custom_fields_show_on_checkout = false;
                     foreach ( $custom_fields as $custom_field_id => $custom_field ) {
-                        if ( $custom_field['enabled'] > 0 && $custom_field['checkout_display'] > 0 ) {
+                        if ( is_array( $custom_field ) &&
+                            isset( $custom_field['enabled'] ) &&
+                            isset( $custom_field['checkout_display'] ) &&
+                            $custom_field['enabled'] > 0 &&
+                            $custom_field['checkout_display'] > 0
+                        ) {
                             $has_custom_fields_show_on_checkout = true;
                             break;
                         }
@@ -326,8 +347,24 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
             }
 
             wp_register_script( 'wwlc_FrontEndAjaxServices_js', WWLC_JS_ROOT_URL . 'app/modules/FrontEndAjaxServices.js', array( 'jquery' ), $this->_wwlc_version, false );
-            wp_localize_script( 'wwlc_FrontEndAjaxServices_js', 'Ajax', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
-            wp_register_script( 'wwlc_FormValidator_js', WWLC_JS_ROOT_URL . 'app/modules/FormValidator.js', array( 'jquery', 'password-strength-meter' ), $this->_wwlc_version, false );
+            wp_localize_script(
+                'wwlc_FrontEndAjaxServices_js',
+                'Ajax',
+                array(
+                    'ajaxurl' => admin_url( 'admin-ajax.php' ),
+                    'nonce'   => wp_create_nonce( 'wwlc_form_nonce' ),
+                )
+            );
+            wp_register_script(
+                'wwlc_FormValidator_js',
+                WWLC_JS_ROOT_URL . 'app/modules/FormValidator.js',
+                array(
+					'jquery',
+					'password-strength-meter',
+                ),
+                $this->_wwlc_version,
+                false
+            );
             wp_register_script( 'wwlc_FormActions_js', WWLC_JS_ROOT_URL . 'app/modules/FormActions.js', array( 'jquery' ), $this->_wwlc_version, false );
             wp_localize_script(
                 'wwlc_FormActions_js',
@@ -339,11 +376,27 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                 )
             );
             wp_register_script( 'wwlc_mask_js', WWLC_JS_ROOT_URL . 'lib/mask/jquery.mask.js', array( 'jquery' ), $this->_wwlc_version, false );
-            wp_register_script( 'wwlc_RegistrationForm_js', WWLC_JS_ROOT_URL . 'app/RegistrationForm.js', array( 'jquery', 'wwlc_FrontEndAjaxServices_js', 'wwlc_FormValidator_js', 'wwlc_FormActions_js', 'wwlc_mask_js' ), $this->_wwlc_version, false );
+            wp_register_script( 'wwlc_RecaptchaHelper_js', WWLC_JS_ROOT_URL . 'app/modules/RecaptchaHelper.js', array(), $this->_wwlc_version, false );
+            wp_register_script(
+                'wwlc_RegistrationForm_js',
+                WWLC_JS_ROOT_URL . 'app/RegistrationForm.js',
+                array(
+					'jquery',
+					'wwlc_FrontEndAjaxServices_js',
+					'wwlc_FormValidator_js',
+					'wwlc_FormActions_js',
+					'wwlc_mask_js',
+					'wwlc_RecaptchaHelper_js',
+                ),
+                $this->_wwlc_version,
+                false
+            );
             wp_localize_script(
                 'wwlc_RegistrationForm_js',
                 'RegistrationVars',
                 array(
+                    'is_user_logged_in'                   => is_user_logged_in(),
+                    // Used for skipping password validation for logged-in users.
                     'registrationThankYouPage'            => get_option( 'wwlc_general_registration_thankyou', false ) ? wwlc_get_url_of_page_option( 'wwlc_general_registration_thankyou' ) : wwlc_get_url_of_page_option( WWLC_OPTIONS_REGISTRATION_PAGE_ID ),
                     'fill_form_appropriately_message'     => __( 'Please Fill The Form Appropriately', 'woocommerce-wholesale-lead-capture' ),
                     'failed_registration_process_message' => __( 'Failed To Process Registration', 'woocommerce-wholesale-lead-capture' ),
@@ -361,6 +414,7 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                     'file_size_is_empty'                  => __( 'The file you selected is empty. Please upload something more substantial.', 'woocommerce-wholesale-lead-capture' ),
                     'file_size_exceeds_max_allowed'       => __( 'The file you selected exceeds the maximum allowed file size', 'woocommerce-wholesale-lead-capture' ),
                     'file_format_not_supported'           => __( 'The format of the file you selected is not supported', 'woocommerce-wholesale-lead-capture' ),
+                    'upload_failed_message'               => __( 'File upload failed. Please refresh the page and try again.', 'woocommerce-wholesale-lead-capture' ),
                     'confirm_password_field_enabled'      => get_option( 'wwlc_fields_enable_confirm_password_field' ) === 'yes' ? true : false,
                     'confirm_password_error_message'      => __( 'Password does not match the confirm password.', 'woocommerce-wholesale-lead-capture' ),
                     'activate_password_field'             => ( get_option( 'wwlc_fields_activate_password_field' ) === 'yes' ) ? true : false,
@@ -369,12 +423,23 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                     'agree_terms_conditions_error'        => get_option( 'wwlc_terms_privacy_validation_text' ) ?? __( 'You need to agree to the terms and conditions.', 'woocommerce-wholesale-lead-capture' ),
                     'wwlc_captcha_enabled'                => get_option( 'wwlc_security_enable_recaptcha' ) === 'yes' ? true : false,
                     'wwlc_captcha_type'                   => get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' ),
+                    'wwlc_captcha_site_key'               => get_option( 'wwlc_security_recaptcha_site_key', '' ),
+                    'wwlc_captcha_v3_action'              => WWLC_User_Account::RECAPTCHA_V3_REGISTER_ACTION,
                 )
             );
 
             if ( is_account_page() ) {
                 wp_enqueue_style( 'wwlc_MyAccountForm_css', WWLC_CSS_ROOT_URL . 'MyAccountForm.css', array(), $this->_wwlc_version, 'all' );
-                wp_register_script( 'wwlc_MyAccountForm_js', WWLC_JS_ROOT_URL . 'app/MyAccount.js', array( 'jquery', 'wwlc_FrontEndAjaxServices_js' ), $this->_wwlc_version, false );
+                wp_register_script(
+                    'wwlc_MyAccountForm_js',
+                    WWLC_JS_ROOT_URL . 'app/MyAccount.js',
+                    array(
+						'jquery',
+						'wwlc_FrontEndAjaxServices_js',
+                    ),
+                    $this->_wwlc_version,
+                    false
+                );
                 wp_enqueue_script( 'wwlc_MyAccountForm_js' );
                 wp_localize_script(
                     'wwlc_MyAccountForm_js',
@@ -383,38 +448,58 @@ if ( ! class_exists( 'WWLC_Scripts' ) ) {
                         'file_size_is_empty'            => __( 'The file you selected is empty. Please upload something more substantial.', 'woocommerce-wholesale-lead-capture' ),
                         'file_size_exceeds_max_allowed' => __( 'The file you selected exceeds the maximum allowed file size', 'woocommerce-wholesale-lead-capture' ),
                         'file_format_not_supported'     => __( 'The format of the file you selected is not supported', 'woocommerce-wholesale-lead-capture' ),
+                        'upload_failed_message'         => __( 'File upload failed. Please refresh the page and try again.', 'woocommerce-wholesale-lead-capture' ),
+                        'wwlc_file_upload_nonce'        => wp_create_nonce( 'wwlc_file_upload_nonce' ),
                     )
                 );
             }
 
-            wp_register_script( 'wwlc_recaptcha_api_js', 'https://www.google.com/recaptcha/api.js?hl=' . get_user_locale(), array( 'jquery' ), $this->_wwlc_version, false );
-            wp_register_script( 'wwlc_login_form_js', WWLC_JS_ROOT_URL . 'app/LoginForm.js', array( 'jquery' ), $this->_wwlc_version, false );
+            $recaptcha_type_for_api = get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' );
+            $recaptcha_enabled_api  = get_option( 'wwlc_security_enable_recaptcha' ) === 'yes';
+            if ( 'v3_score_based' === $recaptcha_type_for_api && $recaptcha_enabled_api ) {
+                $recaptcha_api_url = 'https://www.google.com/recaptcha/api.js?render=' . rawurlencode( get_option( 'wwlc_security_recaptcha_site_key', '' ) ) . '&hl=' . get_user_locale();
+            } else {
+                $recaptcha_api_url = 'https://www.google.com/recaptcha/api.js?hl=' . get_user_locale();
+            }
+            wp_register_script( 'wwlc_recaptcha_api_js', $recaptcha_api_url, array( 'jquery' ), $this->_wwlc_version, false );
+            wp_register_script( 'wwlc_login_form_js', WWLC_JS_ROOT_URL . 'app/LoginForm.js', array( 'jquery', 'wwlc_RecaptchaHelper_js' ), $this->_wwlc_version, false );
             wp_localize_script(
                 'wwlc_login_form_js',
                 'wwlc_login_page',
                 apply_filters(
                     'wwlc_login_page',
                     array(
-						'empty_recaptcha'       => __( 'Please prove that you are human', 'woocommerce-wholesale-lead-capture' ),
-						'wwlc_capatcha_enabled' => get_option( 'wwlc_security_enable_recaptcha' ) === 'yes' ? true : false,
-						'wwlc_captcha_type'     => get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' ),
+                        'empty_recaptcha'        => __( 'Please prove that you are human', 'woocommerce-wholesale-lead-capture' ),
+                        'wwlc_capatcha_enabled'  => get_option( 'wwlc_security_enable_recaptcha' ) === 'yes' ? true : false,
+                        'wwlc_captcha_type'      => get_option( 'wwlc_security_recaptcha_type', 'v2_im_not_a_robot' ),
+                        'wwlc_captcha_site_key'  => get_option( 'wwlc_security_recaptcha_site_key', '' ),
+                        'wwlc_captcha_v3_action' => WWLC_User_Account::RECAPTCHA_V3_LOGIN_ACTION,
                     )
                 )
             );
 
-            wp_register_script( 'wwlc_password_meter_js', WWLC_JS_ROOT_URL . 'app/PasswordMeter.js', array( 'jquery', 'password-strength-meter' ), $this->_wwlc_version, false );
+            wp_register_script(
+                'wwlc_password_meter_js',
+                WWLC_JS_ROOT_URL . 'app/PasswordMeter.js',
+                array(
+					'jquery',
+					'password-strength-meter',
+                ),
+                $this->_wwlc_version,
+                false
+            );
             wp_localize_script(
                 'wwlc_password_meter_js',
                 'wwlc_pword_meter',
                 apply_filters(
                     'wwlc_password_meter',
                     array(
-						'short'             => __( 'Very weak', 'woocommerce-wholesale-lead-capture' ),
-						'bad'               => __( 'Weak', 'woocommerce-wholesale-lead-capture' ),
-						'good'              => __( 'Medium', 'woocommerce-wholesale-lead-capture' ),
-						'strong'            => __( 'Strong', 'woocommerce-wholesale-lead-capture' ),
-						'mismatch'          => __( 'Mismatch', 'woocommerce-wholesale-lead-capture' ),
-						'blacklisted_words' => array( 'black', 'listed', 'word' ),
+                        'short'             => __( 'Very weak', 'woocommerce-wholesale-lead-capture' ),
+                        'bad'               => __( 'Weak', 'woocommerce-wholesale-lead-capture' ),
+                        'good'              => __( 'Medium', 'woocommerce-wholesale-lead-capture' ),
+                        'strong'            => __( 'Strong', 'woocommerce-wholesale-lead-capture' ),
+                        'mismatch'          => __( 'Mismatch', 'woocommerce-wholesale-lead-capture' ),
+                        'blacklisted_words' => array( 'black', 'listed', 'word' ),
                     )
                 )
             );

@@ -39,7 +39,7 @@ class Initializer {
 	 *
 	 * @var string
 	 */
-	const PACKAGE_VERSION = '5.17.1';
+	const PACKAGE_VERSION = '5.36.0';
 
 	/**
 	 * HTML container ID for the IDC screen on My Jetpack page.
@@ -103,9 +103,6 @@ class Initializer {
 
 		// Sets up JITMS.
 		JITM::configure();
-
-		// Add "Activity Log" menu item.
-		Activitylog::init();
 
 		// Add "Jetpack Manage" menu item.
 		Jetpack_Manage::init();
@@ -179,6 +176,15 @@ class Initializer {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- No nonce needed for redirect flow control
 		$step = isset( $_GET['step'] ) ? sanitize_text_field( wp_unslash( $_GET['step'] ) ) : '';
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Checking for partner coupon redemption flow
+		$show_coupon_redemption = isset( $_GET['showCouponRedemption'] );
+
+		// Redirect to Jetpack dashboard for partner coupon redemption
+		if ( $show_coupon_redemption ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=jetpack&showCouponRedemption=1#/dashboard' ) );
+			exit( 0 );
+		}
+
 		// Handle onboarding redirects based on connection status
 		$should_redirect = false;
 		$redirect_args   = array( 'page' => 'my-jetpack' );
@@ -211,10 +217,6 @@ class Initializer {
 		self::$site_info = self::get_site_info();
 		add_filter( 'identity_crisis_container_id', array( static::class, 'get_idc_container_id' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
-		// Product statuses are constantly changing, so we never want to cache the page.
-		header( 'Cache-Control: no-cache, no-store, must-revalidate' );
-		header( 'Pragma: no-cache' );
-		header( 'Expires: 0' );
 	}
 
 	/**
@@ -321,6 +323,7 @@ class Initializer {
 				'sandboxedDomain'        => $sandboxed_domain,
 				'isDevVersion'           => $is_dev_version,
 				'isAtomic'               => ( new Status_Host() )->is_woa_site(),
+				'isJetpackPluginActive'  => class_exists( 'Jetpack' ),
 				'latestBoostSpeedScores' => $latest_score,
 			)
 		);
@@ -353,9 +356,6 @@ class Initializer {
 		$plugin_slugs = array_map(
 			static function ( $slug ) {
 				$parts = explode( '/', $slug );
-				if ( empty( $parts ) ) {
-					return '';
-				}
 				// Return the last segment of the filepath without the PHP extension
 				return str_replace( '.php', '', $parts[ count( $parts ) - 1 ] );
 			},
@@ -410,9 +410,6 @@ class Initializer {
 		$plugin_slugs              = array_map(
 			static function ( $slug ) {
 				$parts = explode( '/', $slug );
-				if ( empty( $parts ) ) {
-					return '';
-				}
 				// Return the last segment of the filepath without the PHP extension
 				return str_replace( '.php', '', $parts[ count( $parts ) - 1 ] );
 			},
@@ -514,10 +511,6 @@ class Initializer {
 	 */
 	public static function should_initialize() {
 		$should = true;
-
-		if ( is_multisite() ) {
-			$should = false;
-		}
 
 		// All options presented in My Jetpack require a connection to WordPress.com.
 		if ( ( new Status() )->is_offline_mode() ) {
@@ -693,26 +686,55 @@ class Initializer {
 	}
 
 	/**
-	 * Conditionally append the red bubble notification to the "Jetpack" menu item if there are alerts to show
+	 * Conditionally append the red bubble notification to the "Jetpack" menu item if there are alerts to show.
+	 *
+	 * On My Jetpack page: Uses blocking behavior to fetch fresh data.
+	 * On other admin pages: Uses cached data only to avoid blocking, with async JS fetch if cache is empty.
 	 *
 	 * @return void
 	 */
 	public static function maybe_show_red_bubble() {
-		global $menu;
+		global $menu, $pagenow;
 
 		// Don't show red bubble alerts for non-admin users
 		// These alerts are generally only actionable for admins
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$rbn = new Red_Bubble_Notifications();
 
-		// filters for the items in this file
-		add_filter( 'my_jetpack_red_bubble_notification_slugs', array( $rbn, 'add_red_bubble_alerts' ) );
+		// Don't show any red bubbles when Jetpack is disconnected
+		// Users can't act on most alerts without a connection
+		$connection = new Connection_Manager();
+		if ( ! $connection->is_connected() ) {
+			return;
+		}
+
+		// Check if we're on the My Jetpack page.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$page               = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
+		$is_my_jetpack_page = $pagenow === 'admin.php' && $page === 'my-jetpack';
+
+		if ( $is_my_jetpack_page ) {
+			// On My Jetpack page: use blocking behavior for fresh data.
+			add_filter( 'my_jetpack_red_bubble_notification_slugs', array( Red_Bubble_Notifications::class, 'add_red_bubble_alerts' ) );
+			$red_bubble_alerts = Red_Bubble_Notifications::get_red_bubble_alerts();
+		} else {
+			// On other pages: use cached data only to avoid blocking.
+			$cached_alerts = Red_Bubble_Notifications::get_cached_alerts();
+
+			if ( false === $cached_alerts ) {
+				// No cache - fetch asynchronously via JS.
+				add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_red_bubble_script' ) );
+				return;
+			}
+
+			$red_bubble_alerts = $cached_alerts;
+		}
+
+		// Filter out silent alerts.
 		$red_bubble_alerts = array_filter(
-			$rbn::get_red_bubble_alerts(),
+			$red_bubble_alerts,
 			function ( $alert ) {
-				// We don't want to show the red bubble for silent alerts
 				return empty( $alert['is_silent'] );
 			}
 		);
@@ -726,6 +748,24 @@ class Initializer {
 			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 			$menu[3][0] .= sprintf( ' <span class="awaiting-mod">%d</span>', count( $red_bubble_alerts ) );
 		}
+	}
+
+	/**
+	 * Enqueue the notification bubble script.
+	 * Fetches fresh alert data via REST API without blocking page load.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_red_bubble_script() {
+		Assets::register_script(
+			'my-jetpack-notification-bubble',
+			'../build/async-notification-bubble.js',
+			__FILE__,
+			array(
+				'enqueue'   => true,
+				'in_footer' => true,
+			)
+		);
 	}
 
 	/**

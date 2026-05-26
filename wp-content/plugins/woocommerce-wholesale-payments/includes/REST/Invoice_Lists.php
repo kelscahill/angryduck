@@ -36,6 +36,14 @@ class Invoice_Lists extends Abstract_REST {
     protected static $instance;
 
     /**
+     * REST API base.
+     *
+     * @since 1.2.0
+     * @var string
+     */
+    protected $rest_base = 'invoice-list';
+
+    /**
      * Register the routes for the objects of the controller.
      *
      * @since 1.0.2

@@ -9,7 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once WCSHIPPING_PLUGIN_DIR . '/classes/class-wc-connect-nux.php';
 
 use Automattic\WCShipping\Connect\WC_Connect_Nux;
-use Automattic\WooCommerce\Internal\Traits\AccessiblePrivateMethods;
 use Automattic\WooCommerce\Utilities\ArrayUtil;
 use WP_User;
 
@@ -21,7 +20,6 @@ use WP_User;
  * @package Automattic\WCShipping\Migration
  */
 class LegacySettingsMigrator {
-	use AccessiblePrivateMethods;
 
 	public const PURCHASE_SETTINGS = array(
 		'label_box_id'    => array(
@@ -75,14 +73,6 @@ class LegacySettingsMigrator {
 		),
 	);
 
-	public function __construct() {
-		self::mark_method_as_accessible( 'needs_migration' );
-		self::mark_method_as_accessible( 'migrate_settings' );
-		self::mark_method_as_accessible( 'has_migrated_purchase_settings' );
-		self::mark_method_as_accessible( 'migrate_label_purchase_settings' );
-		self::mark_method_as_accessible( 'migrate_origin_address' );
-	}
-
 	public function migrate_all(): void {
 		do_action( 'wcshipping_settings_migration_started' );
 		$this->migrate_label_purchase_settings();
@@ -126,7 +116,10 @@ class LegacySettingsMigrator {
 			|| ( empty( $wcshipping_origins ) && ! empty( $legacy_origins ) );
 	}
 
-	private function migrate_settings(): void {
+	/**
+	 * @internal For internal use only.
+	 */
+	public function migrate_settings(): void {
 		if ( ! $this->needs_migration() ) {
 			return;
 		}
@@ -214,7 +207,10 @@ class LegacySettingsMigrator {
 		return array_column( $users, 'ID' );
 	}
 
-	private function migrate_label_purchase_settings(): void {
+	/**
+	 * @internal For internal use only.
+	 */
+	public function migrate_label_purchase_settings(): void {
 		$user_ids = $this->get_users_with_legacy_purchase_settings();
 		foreach ( $user_ids as $user_id ) {
 			foreach ( self::PURCHASE_SETTINGS as $versioned_setting ) {
@@ -224,7 +220,10 @@ class LegacySettingsMigrator {
 		}
 	}
 
-	private function migrate_origin_address(): void {
+	/**
+	 * @internal For internal use only.
+	 */
+	public function migrate_origin_address(): void {
 		$legacy_origin      = get_option( self::ORIGIN_ADDRESS['legacy'] );
 		$wcshipping_origins = get_option( self::ORIGIN_ADDRESS['wcshipping'] );
 

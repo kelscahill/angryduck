@@ -6,6 +6,10 @@ use stdClass;
 use Automattic\WCShipping\DOM\Manipulation as DOM_Manipulation;
 use Automattic\WCShipping\Utils;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 class WC_Connect_Help_View {
 
 	/**
@@ -108,7 +112,7 @@ class WC_Connect_Help_View {
 		);
 
 		if ( empty( $last_fetch_timestamp ) ) {
-			$this->logger->log( 'Cannot retrieve last fetch timestamp information.', __FUNCTION__ );
+			$this->logger->log( 'Cannot retrieve last fetch timestamp information.', __METHOD__ );
 		}
 
 		return $health_items;
@@ -186,11 +190,7 @@ class WC_Connect_Help_View {
 			return $data;
 		}
 
-		$log_prefix = 'wc\-services';
-
-		if ( ! empty( $feature ) ) {
-			$log_prefix .= '\-' . $feature;
-		}
+		$log_prefix = 'woocommerce-shipping';
 
 		$logs             = WC_Admin_Status::scan_log_files();
 		$latest_file_date = 0;
@@ -212,7 +212,22 @@ class WC_Connect_Help_View {
 
 		if ( null !== $data->file ) {
 			$complete_log = file( $data->file );
-			$data->tail   = array_slice( $complete_log, -10 );
+			if ( 'shipping' === $feature ) {
+				/**
+				 * Filter the $complete_log to only include lines that do not contain logs from the following method:
+				 * Automattic\WCShipping\Connect\WC_Connect_Service_Schemas_Store::fetch_service_schemas_from_connect_server
+				*/
+				$complete_log = array_filter(
+					$complete_log,
+					function ( $complete_log ) {
+						return strpos(
+							$complete_log,
+							'Automattic\WCShipping\Connect\WC_Connect_Service_Schemas_Store::fetch_service_schemas_from_connect_server)'
+						) === false;
+					}
+				);
+			}
+			$data->tail = array_slice( $complete_log, -10 );
 		}
 
 		$line_count = count( $data->tail );
@@ -280,7 +295,7 @@ class WC_Connect_Help_View {
 
 		DOM_Manipulation::create_root_script_element( 'woocommerce-shipping-admin-status' );
 		do_action(
-			'enqueue_woocommerce_shipping_script',
+			'wcshipping_enqueue_script',
 			'woocommerce-shipping-admin-status',
 			array(
 				'formData'     => $this->get_form_data(),
