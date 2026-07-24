@@ -5,6 +5,14 @@ jQuery(function($) {
 	//tab-content display
 	$('#perfmatters-menu a[rel][href^="#"]').on('click', function(e) {
 
+		//leave snippet editor when already on Code tab; otherwise return via client-side switch
+		if(new URLSearchParams(location.search).has('snippet') && $(this).attr('rel') === 'code-code' && $('#perfmatters-menu a.active').attr('rel') === 'code-code') {
+			e.preventDefault();
+			var hash = $(this).attr('href');
+			location.href = '?page=perfmatters' + (hash === '#' ? '' : hash);
+			return;
+		}
+
 		$('.perfmatters-button-message').hide();
 					
 		//deactivate previous active tab + content
@@ -102,9 +110,9 @@ jQuery(function($) {
 
 			/* snippet conditions */
 			if($clonedRow.hasClass('condition')) {
-				$clonedRow.removeClass('pmcs-condition-objects-loaded');
-				var $clonedObject = $clonedRow.find('.condition-object-select');
-				$clonedObject.empty();
+				$clonedRow.removeClass('pmcs-condition-load-objects pmcs-condition-objects-loaded');
+				$clonedRow.attr('data-object-type', '').attr('data-saved-object', '');
+				$clonedRow.find('.condition-object-wrap').empty();
 			}
 
 			$clonedRow.find(':text, select').val('');
@@ -134,7 +142,9 @@ jQuery(function($) {
 
 			/* snippet conditions */
 			if($row.hasClass('condition')) {
-				$row.removeClass('pmcs-condition-objects-loaded');
+				$row.removeClass('pmcs-condition-load-objects pmcs-condition-objects-loaded');
+				$row.attr('data-object-type', '').attr('data-saved-object', '');
+				$row.find('.condition-object-wrap').empty();
 			}
 		}
 		else {
@@ -296,6 +306,64 @@ jQuery(function($) {
 	    });
 	});
 
+	// PHP-rendered success beside a button (?message= after full reload): same fadeIn + 10s fadeOut as AJAX .always.
+	$('.perfmatters-button-message[data-pm-post-reload-notice="1"]').each(function() {
+		var $message = $(this);
+		var action = $message.closest('.perfmatters-button-container').find('button[data-pm-action]').attr('data-pm-action');
+		if(!action) {
+			return;
+		}
+		$message.fadeIn();
+		clearTimeout(pmActionButtonTimeouts[action]);
+		pmActionButtonTimeouts[action] = setTimeout(function() {
+			//$message.fadeOut();
+		}, 10000);
+	});
+
+
+	function perfmattersFadeButtonMessage($message, action) {
+		$message.fadeIn();
+		clearTimeout(pmActionButtonTimeouts[action]);
+		pmActionButtonTimeouts[action] = setTimeout(function() {
+			$message.fadeOut();
+		}, 10000);
+	}
+
+	function perfmattersReloadWithNotice(data) {
+		if(!data.message_key) {
+			window.location.reload();
+			return;
+		}
+
+		var url = new URL(window.location.href);
+
+		url.search = '';
+		url.searchParams.set('page', 'perfmatters');
+		url.searchParams.set('message', data.message_key);
+
+		var messageKeyHashes = {
+			snippets_imported: '#code/settings',
+			editor_theme_updated: '#code/settings',
+			settings_imported: '#tools',
+			settings_restored: '#tools'
+		};
+		if(messageKeyHashes[data.message_key]) {
+			url.hash = messageKeyHashes[data.message_key];
+		}
+
+		window.location.assign(url.toString());
+	}
+
+	// PHP-rendered success after full reload.
+	$('.perfmatters-button-message .perfmatters-reload-notice').each(function() {
+		var $message = $(this).closest('.perfmatters-button-message');
+		var action = $message.closest('.perfmatters-button-container').find('button[data-pm-action]').attr('data-pm-action');
+		if(!action) {
+			return;
+		}
+		perfmattersFadeButtonMessage($message, action);
+	});
+
 	//action button press
 	$('button[data-pm-action]').on('click', function(e) {
 
@@ -346,6 +414,14 @@ jQuery(function($) {
 			    this.CodeMirror.save();
 			});
 	    	formData.append('form', form.serialize());
+
+	    	//include custom CodeMirror theme file upload when saving settings.
+	    	if(action == 'save_settings') {
+	    		var customThemeInput = document.getElementById('code-custom-theme-file');
+	    		if(customThemeInput && customThemeInput.files && customThemeInput.files[0]) {
+	    			formData.append('code_custom_theme_file', customThemeInput.files[0]);
+	    		}
+	    	}
 	    }
 
 	    //ajax request
@@ -402,17 +478,18 @@ jQuery(function($) {
 			message.addClass('perfmatters-error');
 			message.html(PERFMATTERS.strings.failed);
 		})
-		.always(function(r) {
-			
+	.always(function(r) {
+
+			if(r.data && r.data.reload) {
+				perfmattersReloadWithNotice(r.data);
+				return;
+			}
+
 			//show response message
 			if(r.data && r.data.message) {
 				message.html(r.data.message);
 			}
-			message.fadeIn();
-			clearTimeout(pmActionButtonTimeouts[action]);
-			pmActionButtonTimeouts[action] = setTimeout(function() {
-				message.fadeOut();
-			}, 10000);
+			perfmattersFadeButtonMessage(message, action);
 
 			//re-enable button
 			button.attr('disabled', false);
@@ -422,13 +499,6 @@ jQuery(function($) {
 	       	//clear checkboxes
 	       	if(action == 'purge_meta') {
 	       		$('#perfmatters-purge-meta input:checkbox').removeAttr('checked');
-	       	}
-
-	       	//reload page
-	       	if(r.data && r.data.reload) {
-	       		setTimeout(function() {
-                    location.reload();
-                }, 2000);
 	       	}
 		})
 	});

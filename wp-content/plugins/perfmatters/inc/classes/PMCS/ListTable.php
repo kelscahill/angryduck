@@ -90,14 +90,14 @@ class ListTable extends \WP_List_Table
 				//snippet name and row actions
 				if(!empty($item['file_name'])) {
 
-					$output = '<a href="?page=' . $_REQUEST['page'] . '&snippet=' . esc_attr($item['file_name']) . '#code">';
+					$output = '<a href="?page=perfmatters&snippet=' . esc_attr($item['file_name']) . '#code">';
 						$output.= esc_html($item['name']);
 					$output.= '</a>';
 					
 					$actions = array(
-	                	'edit'   => sprintf('<a href="?page=%s&snippet=%s#code">' . esc_html__('Edit', 'perfmatters') . '</a>', $_REQUEST['page'], esc_attr($item['file_name'])),
-	                	'export' => sprintf('<a href="%s#code">' . esc_html__('Export', 'perfmatters') . '</a>', esc_url(wp_nonce_url(add_query_arg(array('page' => sanitize_text_field($_REQUEST['page']), 'export' => $item['file_name']), admin_url('admin.php')), 'pmcs-action'))),
-	                	'delete' => sprintf('<a href="%s#code" class="pmcs-delete">' . esc_html__('Delete', 'perfmatters') . '</a>', esc_url(wp_nonce_url(add_query_arg(array('page' => sanitize_text_field($_REQUEST['page']), 'delete' => $item['file_name']), admin_url('admin.php')), 'pmcs-action'))),
+	                	'edit'   => sprintf('<a href="?page=perfmatters&snippet=%s#code">' . esc_html__('Edit', 'perfmatters') . '</a>', esc_attr($item['file_name'])),
+	                	'export' => sprintf('<a href="%s#code">' . esc_html__('Export', 'perfmatters') . '</a>', esc_url(wp_nonce_url(add_query_arg(array('page' => 'perfmatters', 'export' => $item['file_name']), admin_url('admin.php')), 'pmcs-action'))),
+	                	'delete' => sprintf('<a href="%s#code" class="pmcs-delete">' . esc_html__('Delete', 'perfmatters') . '</a>', esc_url(wp_nonce_url(add_query_arg(array('page' => 'perfmatters', 'delete' => $item['file_name']), admin_url('admin.php')), 'pmcs-action'))),
 					);
 
 					$output.= $this->row_actions($actions, true);
@@ -111,7 +111,7 @@ class ListTable extends \WP_List_Table
 
 				//code type badge
 				if(!empty($item['type'])) {
-					return '<a class="pmcs-snippet-type-badge" href="' . add_query_arg('type', $item['type']) . '#code" data-snippet-type="' . $item['type'] . '">' . $item['type'] . '</a>';
+					return '<a class="pmcs-snippet-type-badge" href="' . esc_url(add_query_arg('type', $item['type'])) . '#code" data-snippet-type="' . esc_attr($item['type']) . '">' . esc_html($item['type']) . '</a>';
 				}
 				
 				break;
@@ -124,7 +124,7 @@ class ListTable extends \WP_List_Table
 					$tag_html = '';
 
 					foreach($item['tags'] as $tag) {
-						$tag_html.= '<a class="" href="' . esc_url(add_query_arg('tag', urlencode($tag))) . '#code">' . esc_html__($tag) . '</a>, ';
+						$tag_html.= '<a class="" href="' . esc_url(add_query_arg('tag', urlencode($tag))) . '#code">' . esc_html($tag) . '</a>, ';
 					}
 
 					return rtrim($tag_html, ', ');
@@ -138,7 +138,7 @@ class ListTable extends \WP_List_Table
 				if(!empty($item['author'])) {
 					$author = get_user_by('id', $item['author']);
 					if(!empty($author->display_name)) {
-						return $author->display_name;
+						return esc_html($author->display_name);
 					}
 				}
 		
@@ -209,9 +209,25 @@ class ListTable extends \WP_List_Table
 					($snippet['type'] ?? '') . ' ' .
 					(is_array($snippet['tags']) ? implode(' ', $snippet['tags']) : '')
 				);
-				
-				//search combined string
-				return strpos($haystack, $search_term) !== false;
+
+				if(str_contains($haystack, $search_term)) {
+					return true;
+				}
+
+				//fall back to searching snippet file contents
+				if(empty($snippet['file_name'])) {
+					return false;
+				}
+
+				$file = PMCS::get_storage_dir() . '/' . $snippet['file_name'];
+
+				if(!is_readable($file)) {
+					return false;
+				}
+
+				$code = PMCS::parse_doc_block(file_get_contents($file), true);
+
+				return $code !== '' && stripos($code, $search_term) !== false;
 			});
 		}
 
@@ -246,7 +262,7 @@ class ListTable extends \WP_List_Table
         $this->set_pagination_args(array(
             'total_items' => $total_items,
             'per_page'    => $per_page,
-            'total_pages' => ceil($total_items / $per_page)
+            'total_pages' => (int) ceil($total_items / $per_page)
         ));
 
         //snippets being viewed
@@ -331,7 +347,7 @@ class ListTable extends \WP_List_Table
 
 		    	//selected tag
 			    if(!empty($_GET['tag'])) {
-			    	echo '<a href="' . remove_query_arg('tag') . '#code" class="pmcs-tag" style="color: #333; text-decoration: none; margin-right: 10px;">' . esc_html($_GET['tag']) . '<span class="pmcs-tag-close">×</span></a>';
+			    	echo '<a href="' . esc_url(remove_query_arg('tag')) . '#code" class="pmcs-tag" style="color: #333; text-decoration: none; margin-right: 10px;">' . esc_html($_GET['tag']) . '<span class="pmcs-tag-close">×</span></a>';
 			    }
 
 		        //screen options toggle
@@ -344,11 +360,8 @@ class ListTable extends \WP_List_Table
 	//sorting function
     function usort_reorder($a, $b)
     {
-        //default orderby
-        $orderby = (!empty($_GET['orderby'])) ? $_GET['orderby'] : 'created';
-
-        //default order
-        $order = (!empty($_GET['order'])) ? $_GET['order'] : 'desc';
+        $orderby = PMCS::get_snippet_sort_orderby();
+        $order   = PMCS::get_snippet_sort_order();
 
         //determine sort order
         $result = strcmp($a[$orderby] ?? '', $b[$orderby] ?? '');

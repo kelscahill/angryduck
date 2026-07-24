@@ -31,6 +31,9 @@ class PMCS
         'updated_by'
     ];
 
+    //cached snippet config from index.php
+    private static $snippet_config_cache = null;
+
     //init
     public static function init()
     {
@@ -53,9 +56,13 @@ class PMCS
             add_action('load-' . $perfmatters_settings_page, array(__CLASS__, 'settings_load'));
         }, 10);
 
-        //filter screen options
+        //filter screen options save
         add_filter('set-screen-option', function($status, $option, $value) {
-            return $option === 'snippets_per_page' ? $value : $status;
+            if($option === 'snippets_per_page') {
+                self::save_snippet_sort_order_screen_options();
+                return $value;
+            }
+            return $status;
         }, 10, 3);
 
         //data handler
@@ -93,9 +100,6 @@ class PMCS
             //pmcs styles
             wp_enqueue_style('pmcs', PERFMATTERS_URL . 'css/pmcs.css', [], PERFMATTERS_VERSION);
 
-            //pmcs main script
-            wp_enqueue_script('pmcs', PERFMATTERS_URL . 'js/pmcs.js', [], PERFMATTERS_VERSION);
-
             //pmcs script args
             $pmcs_js_args = array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
@@ -124,34 +128,33 @@ class PMCS
                     )
                 )
             );
-            
-            //add helper scripts for snippet edit page
+
+            //snippet edit: enqueue code editor before pmcs.js so initializer runs before our reveal logic
+            $pmcs_deps = array('jquery');
             if(!empty($_GET['snippet'])) {
 
-                //eventually need to move this to a static variable that we can use throughout
                 $editor_type = 'php';
 
                 if($_GET['snippet'] !== 'create') {
                     $current_snippet = Snippet::get($_GET['snippet']);
-                    $editor_type = $current_snippet['meta']['type'] ?? 'php';
+                    $editor_type     = $current_snippet['meta']['type'] ?? 'php';
                 }
-                else {
+                elseif(!empty($_POST['type'])) {
 
-                    //on create (including validation error re-render), prefer the submitted type from our form.
-                    if(!empty($_POST['type'])) {
-                        $editor_type = $_POST['type'];
-                    }
+                    //on create (including validation error re-render), prefer the submitted type from our form
+                    $editor_type = $_POST['type'];
                 }
+
+                Editor::init($editor_type);
+                $pmcs_deps[] = 'code-editor';
 
                 wp_enqueue_script('pmcs-conditions', PERFMATTERS_URL . 'js/pmcs-conditions.js', [], time());
                 wp_enqueue_script('pmcs-tags', PERFMATTERS_URL . 'js/pmcs-tags.js', [], time());
                 $pmcs_js_args['tags'] = self::get_snippet_tags();
-
-                //initialize code editor
-                Editor::init($editor_type);
             }
 
-            //add script args to main pmcs script
+            wp_enqueue_script('pmcs', PERFMATTERS_URL . 'js/pmcs.js', $pmcs_deps, PERFMATTERS_VERSION);
+
             wp_localize_script('pmcs', 'PMCS', $pmcs_js_args);
 
         });
@@ -164,6 +167,9 @@ class PMCS
         );
         add_screen_option('per_page', $args);
 
+        //sort order by screen options
+        add_filter('screen_settings', array(__CLASS__, 'snippet_sort_order_screen_settings'), 10, 2);
+
         //default hidden columns
         add_filter('default_hidden_columns', function($hidden) {
             return array('author', 'tags', 'created', 'priority');
@@ -171,6 +177,122 @@ class PMCS
 
         global $table;
         $table = new ListTable();
+    }
+
+    //render sort order fields in screen options
+    public static function snippet_sort_order_screen_settings($settings, $screen) {
+
+        if($screen->id !== 'settings_page_perfmatters') {
+            return $settings;
+        }
+
+        $orderby = self::get_snippet_sort_orderby(false);
+        $order   = self::get_snippet_sort_order(false);
+
+        $settings .= '<fieldset class="screen-options">';
+            $settings .= '<legend>' . esc_html__('Sort Order', 'perfmatters') . '</legend>';
+
+            //order by
+            $settings .= '<label for="snippets_orderby">' . esc_html__('Order by', 'perfmatters') . '</label>';
+            $settings .= '<select name="snippets_orderby" id="snippets_orderby" style="margin-left: 5px; margin-right: 10px;">';
+                foreach(self::get_snippet_sort_orderby_options() as $value => $label) {
+                    $settings .= '<option value="' . esc_attr($value) . '"' . selected($orderby, $value, false) . '>' . esc_html($label) . '</option>';
+                }
+            $settings .= '</select>';
+
+            //order
+            $settings .= '<label for="snippets_order" class="screen-options-order">' . esc_html__('Order', 'perfmatters') . '</label>';
+            $settings .= '<select name="snippets_order" id="snippets_order" style="margin-left: 5px;">';
+                foreach(self::get_snippet_sort_order_options() as $value => $label) {
+                    $settings .= '<option value="' . esc_attr($value) . '"' . selected($order, $value, false) . '>' . esc_html($label) . '</option>';
+                }
+            $settings .= '</select>';
+        $settings .= '</fieldset>';
+
+        return $settings;
+    }
+
+    //save sort order screen option values
+    public static function save_snippet_sort_order_screen_options() {
+
+        if(empty($_POST['screenoptionnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['screenoptionnonce'])), 'screen-options-nonce')) {
+            return;
+        }
+
+        if(isset($_POST['snippets_orderby'])) {
+            $orderby = sanitize_key(wp_unslash($_POST['snippets_orderby']));
+            if(array_key_exists($orderby, self::get_snippet_sort_orderby_options())) {
+                update_user_meta(get_current_user_id(), 'snippets_orderby', $orderby);
+            }
+        }
+
+        if(isset($_POST['snippets_order'])) {
+            $order = strtolower(sanitize_key(wp_unslash($_POST['snippets_order'])));
+            if(array_key_exists($order, self::get_snippet_sort_order_options())) {
+                update_user_meta(get_current_user_id(), 'snippets_order', $order);
+            }
+        }
+    }
+
+    //allowed sort order by values for snippet list
+    public static function get_snippet_sort_orderby_options() {
+        return array(
+            'name'     => __('Name', 'perfmatters'),
+            'created'  => __('Created', 'perfmatters'),
+            'modified' => __('Modified', 'perfmatters'),
+        );
+    }
+
+    //allowed order values for snippet list
+    public static function get_snippet_sort_order_options() {
+        return array(
+            'asc'  => __('Ascending', 'perfmatters'),
+            'desc' => __('Descending', 'perfmatters'),
+        );
+    }
+
+    //get active snippet list orderby
+    public static function get_snippet_sort_orderby($use_request = true) {
+
+        $orderby = 'created';
+
+        if($use_request && !empty($_GET['orderby'])) {
+            $orderby = sanitize_key(wp_unslash($_GET['orderby']));
+        }
+        else {
+            $saved = get_user_option('snippets_orderby');
+            if(!empty($saved)) {
+                $orderby = sanitize_key($saved);
+            }
+        }
+
+        if(!array_key_exists($orderby, self::get_snippet_sort_orderby_options())) {
+            $orderby = 'created';
+        }
+
+        return $orderby;
+    }
+
+    //get active snippet list order direction
+    public static function get_snippet_sort_order($use_request = true) {
+
+        $order = 'desc';
+
+        if($use_request && !empty($_GET['order'])) {
+            $order = strtolower(sanitize_key(wp_unslash($_GET['order'])));
+        }
+        else {
+            $saved = get_user_option('snippets_order');
+            if(!empty($saved)) {
+                $order = strtolower(sanitize_key($saved));
+            }
+        }
+
+        if(!array_key_exists($order, self::get_snippet_sort_order_options())) {
+            $order = 'desc';
+        }
+
+        return $order;
     }
 
     //snippet action handling
@@ -224,7 +346,7 @@ class PMCS
 
                     case 'export':
 
-                        self::export($snippet_files);
+                        Transfer::export($snippet_files);
 
                         break;
 
@@ -248,7 +370,7 @@ class PMCS
                     self::admin_notice_redirect('export', 'file_not_found');
                 }
 
-                self::export($file_name);
+                Transfer::export($file_name);
             }
 
             //delete snippet
@@ -347,20 +469,22 @@ class PMCS
             }
 
             //notice messages
-            if(!empty($_GET['message'])) {
+            $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'])) : '';
+
+            if(!empty($message_key)) {
 
                 $messages = [
-                    'saved'              => ['snippet_saved', __('Snippet saved.', 'perfmatters'), 'success'],
-                    'deleted'            => ['delete_success', __('Snippet deleted successfully.', 'perfmatters'), 'success'],
-                    'activated'          => ['activate_success', __('Snippet activated successfully.', 'perfmatters'), 'success'],
-                    'deactivated'        => ['deactivate_success', __('Snippet deactivated successfully.', 'perfmatters'), 'success'],
-                    'file_not_found'     => ['file_not_found', __('File not found.', 'perfmatters'), 'error'],
-                    'safe_mode_disabled' => ['safe_mode_disabled', __('Safe mode disabled.', 'perfmatters'), 'success'],
-                    'invalid_nonce'      => ['invalid_nonce', __('Security check failed. Please try again.', 'perfmatters'), 'error']
+                    'saved'                => ['snippet_saved', __('Snippet saved.', 'perfmatters'), 'success'],
+                    'deleted'              => ['delete_success', __('Snippet deleted successfully.', 'perfmatters'), 'success'],
+                    'activated'            => ['activate_success', __('Snippet activated successfully.', 'perfmatters'), 'success'],
+                    'deactivated'          => ['deactivate_success', __('Snippet deactivated successfully.', 'perfmatters'), 'success'],
+                    'file_not_found'       => ['file_not_found', __('File not found.', 'perfmatters'), 'error'],
+                    'safe_mode_disabled'   => ['safe_mode_disabled', __('Safe mode disabled.', 'perfmatters'), 'success'],
+                    'invalid_nonce'        => ['invalid_nonce', __('Security check failed. Please try again.', 'perfmatters'), 'error'],
                 ];
 
-                if(isset($messages[$_GET['message']])) {
-                    self::admin_notice(...$messages[$_GET['message']]);
+                if(isset($messages[$message_key])) {
+                    self::admin_notice(...$messages[$message_key]);
                 }
             }
         }
@@ -432,7 +556,7 @@ class PMCS
 					'id'                 => $id,
 					'type'               => $type,
 					'dismissible'        => $dismissible,
-                    'additional_classes' => ['inline']
+					'additional_classes' => array( 'inline' ),
 				)
 			);
 		});
@@ -479,11 +603,9 @@ class PMCS
     //return snippet config file array
     public static function get_snippet_config($cached = true)
     {
-        static $config = null;
-
         //return cached config
-        if($config !== null && $cached) {
-            return $config;
+        if(self::$snippet_config_cache !== null && $cached) {
+            return self::$snippet_config_cache;
         }
 
         //get config from file
@@ -495,9 +617,15 @@ class PMCS
 
         $loaded_config = include $config_file; 
         
-        $config = is_array($loaded_config) ? $loaded_config : []; 
+        self::$snippet_config_cache = is_array($loaded_config) ? $loaded_config : []; 
 
-        return $config;
+        return self::$snippet_config_cache;
+    }
+
+    //clear cached snippet config after index.php is updated
+    public static function reset_snippet_config_cache()
+    {
+        self::$snippet_config_cache = null;
     }
 
     //generate doc block for given meta array
@@ -551,7 +679,6 @@ class PMCS
                 }
             }
             
-            //encode cleaned array
             $meta['conditions'] = json_encode($cleaned_conditions);
         }
 
@@ -587,7 +714,9 @@ class PMCS
             return $value;
         }
 
-        return str_replace('*/', '', $value);
+        $value = str_replace('*/', '', $value);
+
+        return $value;
     }
 
     //parse doc block from file and convert into formatted meta array
@@ -605,40 +734,41 @@ class PMCS
             return [null, null];
         }
 
-        $file_content = explode('// <Internal Doc End> ?>' . PHP_EOL, $file_content[1]);
-        $code = $file_content[1];
+        $parts = preg_split('/\/\/ <Internal Doc End> \?>\R/u', $file_content[1], 2);
+
+        //backward compat for snippets saved with a fixed PHP_EOL delimiter
+        if(count($parts) < 2) {
+            $parts = explode('// <Internal Doc End> ?>' . PHP_EOL, $file_content[1]);
+        }
+
+        $doc_block_string = $parts[0];
+        $code = $parts[1] ?? '';
 
         if($code_only) {
             return $code;
         }
 
-        $doc_block_string = $file_content[0];
-
-        $doc_block_array = explode('*', $doc_block_string);
-        
-        // Explode by : and get the key and value
-
         $meta = [];
 
-        foreach($doc_block_array as $key => $value) {
-            $value = trim($value);
-            $arr = explode(':', $value, 2);
-            if(count($arr) < 2) {
-                continue;
+        //match each * @key: value block; value may span multiple lines until the next field
+        if(preg_match_all('/\*\s*@([a-z_]+):\s*(.*?)(?=\R\*\s*@|\*\/)/su', $doc_block_string, $matches, PREG_SET_ORDER)) {
+            foreach($matches as $match) {
+                $key = $match[1];
+                $val = rtrim($match[2]);
+
+                //backward compat for descriptions saved with encoded newlines
+                $val = str_replace('\n', "\n", $val);
+
+                if(!$key || $val === '') {
+                    continue;
+                }
+
+                if(!isset(self::$meta_defaults[$key])) {
+                    continue;
+                }
+
+                $meta[$key] = in_array($key, self::$meta_int_keys) ? (int) $val : $val;
             }
-
-            $key = trim(str_replace('@', '', $arr[0]));
-            $val = trim($arr[1]);
-
-            if(!$key || $val === '') {
-                continue;
-            }
-
-            if(!isset(self::$meta_defaults[$key])) {
-                continue;
-            }
-
-            $meta[$key] = in_array($key, self::$meta_int_keys) ? (int) $val : $val;
         }
 
         //decode optimizations
@@ -805,6 +935,8 @@ PHP;
             @opcache_invalidate($config_file, true); 
         }
 
+        self::reset_snippet_config_cache();
+
         return $return;
     }
 
@@ -861,6 +993,13 @@ PHP;
 
         //add admin bar menu item for snippets
         add_action('admin_bar_menu', array('Perfmatters\PMCS\PMCS', 'admin_bar_menu'), 1);
+
+        //register before active check; map populated in loop below (by reference)
+        $shortcode_snippets = [];
+
+        add_shortcode('pmcs', function($atts) use (&$shortcode_snippets) {
+            return self::render_shortcode($atts, $shortcode_snippets);
+        });
 
         //no active snippets
         if(empty($config['active']) || !is_array($config['active'])) {
@@ -1060,8 +1199,11 @@ PHP;
                                     }
                                     //css async behavior
                                     elseif($snippet['optimizations']['behavior'] == 'async') {
-
                                         \Perfmatters\CSS::$snippet_optimizations['pmcs-' . $script_name . '-css'] = 'async';
+                                    }
+                                    //css delay behavior
+                                    elseif($snippet['optimizations']['behavior'] == 'delay') {
+                                        \Perfmatters\CSS::$snippet_optimizations['pmcs-' . $script_name . '-css'] = 'delay';
                                     }
                                 }
                             }
@@ -1117,6 +1259,16 @@ PHP;
 
                     $location = $snippet['location'];
 
+                    if($location === 'shortcode') {
+
+                        $shortcode_snippets[str_replace('.php', '', $file_name)] = [
+                            'file'    => $file,
+                            'snippet' => $snippet
+                        ];
+
+                        break;
+                    }
+
                     if(in_array($location, ['wp_head', 'wp_body_open', 'wp_footer'])) {
 
                         add_action($location, function() use($file, $snippet) {
@@ -1132,7 +1284,7 @@ PHP;
                     }
 
                     //content filters
-                    if(isset($content_filters[$location])) {
+                    elseif(isset($content_filters[$location])) {
 
                         $filter = $content_filters[$location];
 
@@ -1163,6 +1315,8 @@ PHP;
                         }, self::get_priority($snippet['priority'] ?? null));
                     }
 
+                    break;
+
                 default:
                     break;
             }
@@ -1171,6 +1325,36 @@ PHP;
         if($invalid_files) {
             self::build_snippet_config();
         }
+    }
+
+    //render pmcs shortcode output
+    public static function render_shortcode($atts, $shortcode_snippets)
+    {
+        $atts = shortcode_atts(['id' => ''], $atts, 'pmcs');
+
+        if(empty($atts['id'])) {
+            return '';
+        }
+
+        $id = preg_replace('/\.php$/i', '', sanitize_file_name($atts['id']));
+
+        if(empty($id) || !isset($shortcode_snippets[$id])) {
+            return '';
+        }
+
+        $entry = $shortcode_snippets[$id];
+
+        if(!Conditions::evaluate($entry['snippet']['conditions'])) {
+            return '';
+        }
+
+        if(!is_file($entry['file'])) {
+            return '';
+        }
+
+        ob_start();
+        require $entry['file'];
+        return ob_get_clean();
     }
 
     //get url of cached js or css file
@@ -1250,65 +1434,6 @@ PHP;
         }
 
         return false;
-    }
-
-    //return export content for requested snippets
-    public static function get_export_content($file_names) {
-
-        $snippet_data = [];
-
-        foreach((array)$file_names as $file_name) {
-
-            $snippet = Snippet::get($file_name);
-
-            if(!empty($snippet['meta']) && !empty($snippet['code'])) {
-                $snippet_data[$file_name] = $snippet;
-            }
-        }
-
-        return $snippet_data;
-    }
-
-    //export snippet, supports multiple
-    private static function export($file_names) {
-
-        $snippet_data = self::get_export_content($file_names);
-
-        if(empty($snippet_data)) {
-            self::admin_notice_redirect('export', 'file_not_found');
-        }
-
-        if(count($snippet_data) > 1) {
-            $download_name = 'perfmatters-snippets-bulk-export-' . $_SERVER['HTTP_HOST'] . '-' . date('Y-m-d') . '.json';
-        }
-        else {
-            $download_name = 'perfmatters-snippet-' . preg_replace('/\.php$/', '', key($snippet_data)) . '-' . date('Y-m-d') . '.json';
-        }
-
-        $json_output = json_encode($snippet_data, JSON_PRETTY_PRINT);
-
-
-        self::force_download($download_name, $json_output);
-    }
-
-    private static function force_download($filename, $content, $temp_file_path = null) {
-        header('Content-Description: File Transfer');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Type: application/json; charset=utf-8');
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
-        header('Content-Length: ' . strlen($content));
-        
-        // Output the file content and stop execution
-        echo $content;
-
-        // 1. CONDITIONAL CLEANUP: Delete the temporary file if a path was passed
-        if($temp_file_path && is_file($temp_file_path)) {
-            unlink($temp_file_path);
-        }
-
-        exit;
     }
 
     //add admin bar menu item
