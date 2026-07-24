@@ -1161,7 +1161,7 @@ if ( ! class_exists( 'WWPP_Lifecycle_EMAIL' ) ) {
          */
         public function life_cycle_settings_tabs( $tabs ) {
             $tabs['wholesale_prices']['child']['lifecycle_email'] = array(
-                'sort'     => 6,
+                'sort'     => 9,
                 'key'      => 'lifecycle_email',
                 'label'    => __( 'Advanced', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(

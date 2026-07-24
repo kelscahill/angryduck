@@ -89,6 +89,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
          *
          * @since 2.0
          * @since 2.0.3 Added check if the license is active.
+         * @since 2.1.0 Added the Wholesale Role Automation tab entry.
          * @access public
          *
          * @return array
@@ -99,6 +100,15 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                 'sort'  => 1,
                 'key'   => 'general',
                 'label' => __( 'General', 'woocommerce-wholesale-prices-premium' ),
+            );
+
+            // The `sections` and `no_save` keys for this tab are layered on by
+            // WWPP_Wholesale_Role_Automation_Settings_Tab::register_tab() via the
+            // `wwp_admin_setting_default_tabs` filter (array-union pattern).
+            $tabs['wholesale_prices']['child']['wholesale_role_automation'] = array(
+                'sort'  => 5,
+                'key'   => 'wholesale_role_automation',
+                'label' => __( 'Wholesale Role Automation', 'woocommerce-wholesale-prices-premium' ),
             );
 
             $order_requirements_dec = sprintf(
@@ -187,7 +197,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             $tabs['wholesale_prices']['child']['shipping'] = array(
-                'sort'     => 4,
+                'sort'     => 6,
                 'key'      => 'shipping',
                 'label'    => __( 'Shipping', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(
@@ -221,7 +231,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             $tabs['wholesale_prices']['child']['discount'] = array(
-                'sort'     => 5,
+                'sort'     => 7,
                 'key'      => 'discount',
                 'label'    => __( 'Discount', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(
@@ -241,7 +251,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             $tabs['wholesale_prices']['child']['gateway'] = array(
-                'sort'     => 6,
+                'sort'     => 8,
                 'key'      => 'gateway',
                 'label'    => __( 'Payment Gateway', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(
@@ -257,7 +267,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             $tabs['wholesale_prices']['child']['cache'] = array(
-                'sort'     => 7,
+                'sort'     => 10,
                 'key'      => 'cache',
                 'label'    => __( 'Cache', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(
@@ -278,7 +288,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                 '</a>',
             );
             $tabs['wholesale_prices']['child']['help'] = array(
-                'sort'     => 8,
+                'sort'     => 12,
                 'key'      => 'help',
                 'label'    => __( 'Help', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(
@@ -294,7 +304,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             $tabs['wholesale_prices']['child']['upgrade'] = array(
-                'sort'            => 10,
+                'sort'            => 14,
                 'key'             => 'upgrade',
                 'label'           => __( 'Upgrade', 'woocommerce-wholesale-prices-premium' ),
                 'sections'        => array(
@@ -312,7 +322,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             $tabs['wholesale_prices']['child']['license'] = array(
-                'sort'     => 9,
+                'sort'     => 13,
                 'key'      => 'license',
                 'label'    => __( 'License', 'woocommerce-wholesale-prices-premium' ),
                 'link'     => is_multisite() ? network_admin_url( 'admin.php?page=wws-ms-license-settings' ) : admin_url( 'admin.php?page=wws-license-settings' ),
@@ -385,6 +395,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
          * @param array $controls General tab controls.
          *
          * @since  2.0
+         * @since  2.1.0 Add the "Quantity Discount Table Position" setting.
          * @access public
          *
          * @return array
@@ -551,14 +562,16 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
             );
 
             // General Products Options - Section.
-            $settings_only_show_wholesale_products_to_wholesale_users = get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users' );
-            $settings_multiple_category_wholesale_discount_logic      = get_option( 'wwpp_settings_multiple_category_wholesale_discount_logic' );
-            $settings_hide_quantity_discount_table                    = get_option( 'wwpp_settings_hide_quantity_discount_table' );
-            $settings_hide_product_categories_product_count           = get_option( 'wwpp_settings_hide_product_categories_product_count' );
-            $settings_enforce_product_min_step_on_cart_page           = get_option( 'wwpp_settings_enforce_product_min_step_on_cart_page' );
-            $settings_override_stock_display_format                   = get_option( 'wwpp_settings_override_stock_display_format' );
-            $settings_prevent_stock_reduction                         = get_option( 'wwpp_settings_prevent_stock_reduction' );
-            $settings_allow_add_to_cart_below_product_minimum         = get_option( 'wwpp_settings_allow_add_to_cart_below_product_minimum' );
+            $settings_only_show_wholesale_products_to_wholesale_users    = get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users' );
+            $settings_multiple_category_wholesale_discount_logic         = get_option( 'wwpp_settings_multiple_category_wholesale_discount_logic' );
+            $settings_hide_quantity_discount_table                       = get_option( 'wwpp_settings_hide_quantity_discount_table' );
+            $settings_quantity_discount_table_position                   = get_option( 'wwpp_settings_quantity_discount_table_position' );
+            $settings_hide_product_categories_product_count              = get_option( 'wwpp_settings_hide_product_categories_product_count' );
+            $settings_enforce_product_min_step_on_cart_page              = get_option( 'wwpp_settings_enforce_product_min_step_on_cart_page' );
+            $settings_override_stock_display_format                      = get_option( 'wwpp_settings_override_stock_display_format' );
+            $settings_prevent_stock_reduction                            = get_option( 'wwpp_settings_prevent_stock_reduction' );
+            $settings_allow_add_to_cart_below_product_minimum            = get_option( 'wwpp_settings_allow_add_to_cart_below_product_minimum' );
+            $auto_remove_retail_products_for_wholesale_customers_in_cart = get_option( 'wwpp_settings_remove_retail_products_for_wholesale_customers_in_cart' );
 
             $controls['wholesale_products'] = array(
                 array(
@@ -569,6 +582,15 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                     'multiple'    => false,
                     'description' => __( 'This setting only affects wholesale customers.', 'woocommerce-wholesale-prices-premium' ),
                     'default'     => $settings_only_show_wholesale_products_to_wholesale_users,
+                ),
+                array(
+                    'type'        => 'checkbox',
+                    'label'       => __( 'Automatically remove retail products from the cart for wholesale customers.', 'woocommerce-wholesale-prices-premium' ),
+                    'id'          => 'wwpp_settings_remove_retail_products_for_wholesale_customers_in_cart',
+                    'input_label' => __( 'Retail priced products in cart page will be removed.', 'woocommerce-wholesale-prices-premium' ),
+                    'multiple'    => false,
+                    'description' => __( 'This setting only affects wholesale customers.', 'woocommerce-wholesale-prices-premium' ),
+                    'default'     => $auto_remove_retail_products_for_wholesale_customers_in_cart,
                 ),
                 array(
                     'type'        => 'select',
@@ -590,6 +612,19 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                     'input_label' => __( 'Even if a product has a quantity based discount, do not show the quantity discount table.', 'woocommerce-wholesale-prices-premium' ),
                     'description' => __( 'By default, a table describing the quantity based discounts is shown to wholesale customers.', 'woocommerce-wholesale-prices-premium' ),
                     'default'     => $settings_hide_quantity_discount_table,
+                ),
+                array(
+                    'type'        => 'select',
+                    'label'       => __( 'Quantity Discount Table Position', 'woocommerce-wholesale-prices-premium' ),
+                    'id'          => 'wwpp_settings_quantity_discount_table_position',
+                    'multiple'    => false,
+                    'description' => __( 'Choose where the quantity discount table is displayed on the single product page. When "After short description" is chosen but a product has no short description, the table falls back to displaying after the price.', 'woocommerce-wholesale-prices-premium' ),
+                    'options'     => array(
+                        'after_price'             => __( 'After wholesale price (default)', 'woocommerce-wholesale-prices-premium' ),
+                        'after_short_description' => __( 'After short description', 'woocommerce-wholesale-prices-premium' ),
+                        'before_add_to_cart'      => __( 'Before add to cart button', 'woocommerce-wholesale-prices-premium' ),
+                    ),
+                    'default'     => ! empty( $settings_quantity_discount_table_position ) ? $settings_quantity_discount_table_position : 'after_price',
                 ),
                 array(
                     'type'        => 'checkbox',
@@ -1349,6 +1384,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
          * Shipping tab controls.
          *
          * @since  2.0
+         * @since  2.1.0 Add the per-method "Wholesale Only?" column and field to the shipping method mapping table.
          * @access public
          *
          * @return array
@@ -1484,6 +1520,7 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                     );
 
                     $use_non_zoned_shipping_method = ! empty( $mapping['use_non_zoned_shipping_method'] ) ? $mapping['use_non_zoned_shipping_method'] : 'no';
+                    $wholesale_only                = ! empty( $mapping['wholesale_only'] ) ? $mapping['wholesale_only'] : 'no';
 
                     $group_non_zoning_methods[] = array(
                         'key'                            => $idx,
@@ -1497,6 +1534,8 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                         'shipping_method_text'           => $shipping_method_text,
                         'non_zoned_shipping_method'      => ! empty( $mapping['non_zoned_shipping_method'] ) ? $mapping['non_zoned_shipping_method'] : '',
                         'non_zoned_shipping_method_text' => $shipping_method_text,
+                        'wholesale_only'                 => $wholesale_only,
+                        'wholesale_only_text'            => $non_zoned[ $wholesale_only ],
                     );
                 }
             }
@@ -1582,6 +1621,18 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                                 ),
                             ),
                         ),
+                        array(
+                            'type'     => 'select',
+                            'label'    => __( 'Wholesale Only?', 'woocommerce-wholesale-prices-premium' ),
+                            'id'       => 'wholesale_only',
+                            'label_id' => 'wholesale_only_text',
+                            'default'  => 'no',
+                            'tip'      => __( 'Hide this shipping method from retail and guest customers. Wholesale customers will still see it.', 'woocommerce-wholesale-prices-premium' ),
+                            'options'  => array(
+                                'no'  => __( 'No', 'woocommerce-wholesale-prices-premium' ),
+                                'yes' => __( 'Yes', 'woocommerce-wholesale-prices-premium' ),
+                            ),
+                        ),
                     ),
                     'table'        => array(
                         'paginated'     => true,
@@ -1614,6 +1665,12 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                                 'dataIndex' => 'use_non_zoned_shipping_method_text',
                                 'field'     => 'use_non_zoned_shipping_method',
                                 'key'       => 'use_non_zoned_shipping_method_text',
+                            ),
+                            array(
+                                'title'     => __( 'Wholesale Only?', 'woocommerce-wholesale-prices-premium' ),
+                                'dataIndex' => 'wholesale_only_text',
+                                'field'     => 'wholesale_only',
+                                'key'       => 'wholesale_only_text',
                             ),
                             array(
                                 'title'     => __( 'Action', 'woocommerce-wholesale-prices-premium' ),
@@ -2313,8 +2370,8 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
 
             $cache_controls = array();
 
-            $enable_wholesale_price_cache        = get_option( 'wwpp_enable_wholesale_price_cache' );
-            $enable_var_prod_price_range_caching = get_option( 'wwpp_enable_var_prod_price_range_caching' );
+            $enable_wholesale_price_cache        = get_option( 'wwpp_enable_wholesale_price_cache', 'yes' );
+            $enable_var_prod_price_range_caching = get_option( 'wwpp_enable_var_prod_price_range_caching', 'yes' );
             $enable_product_cache                = get_option( 'wwpp_enable_product_cache' );
 
             $cache_controls['cache_options'] = array(
@@ -2322,14 +2379,14 @@ if ( ! class_exists( 'WWPP_Admin_Settings' ) ) {
                     'type'        => 'checkbox',
                     'label'       => __( 'Enable wholesale price caching', 'woocommerce-wholesale-prices-premium' ),
                     'id'          => 'wwpp_enable_wholesale_price_cache',
-                    'input_label' => __( 'When enabled, products with wholesale price will be cached to improve loading time when the product has multiple tier of wholesale prices.', 'woocommerce-wholesale-prices-premium' ),
+                    'input_label' => __( 'When enabled, wholesale prices are cached per wholesale role to improve loading time, so the first customer in a role warms the cache for everyone else in that role. Enabled by default; uncheck to turn it off.', 'woocommerce-wholesale-prices-premium' ),
                     'default'     => $enable_wholesale_price_cache,
                 ),
                 array(
                     'type'        => 'checkbox',
                     'label'       => __( 'Enable variable product price range caching', 'woocommerce-wholesale-prices-premium' ),
                     'id'          => 'wwpp_enable_var_prod_price_range_caching',
-                    'input_label' => __( 'When enabled, wholesale price ranges for variable products will be cached by the system. This speeds up the loading of your category pages and single product pages.', 'woocommerce-wholesale-prices-premium' ),
+                    'input_label' => __( 'When enabled, wholesale price ranges for variable products are cached per wholesale role, speeding up category and single product pages for every customer in the role after the first. Enabled by default; uncheck to turn it off.', 'woocommerce-wholesale-prices-premium' ),
                     'default'     => $enable_var_prod_price_range_caching,
                 ),
                 array(

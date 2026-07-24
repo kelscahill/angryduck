@@ -50,8 +50,8 @@ jQuery(document).ready(function ($) {
           ];
         $logic =
           $logic_value == "and"
-            ? wwpp_order_requirement_per_wholesale_role_var.and_txt
-            : wwpp_order_requirement_per_wholesale_role_var.or_txt;
+            ? wp.i18n.__( 'AND', 'woocommerce-wholesale-prices-premium' )
+            : wp.i18n.__( 'OR', 'woocommerce-wholesale-prices-premium' );
 
         wholesale_role_order_requirement_mapping +=
           '<tr class="' +
@@ -95,7 +95,7 @@ jQuery(document).ready(function ($) {
       wholesale_role_order_requirement_mapping =
         '<tr class="no-items">' +
         '<td class="colspanchange" colspan="5">' +
-        wwpp_order_requirement_per_wholesale_role_var.no_mapping_txt +
+        wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) +
         "</td>" +
         "</tr>";
     }
@@ -106,10 +106,10 @@ jQuery(document).ready(function ($) {
       '<div class="order-requirement-controls" style="display: none;">' +
       '<div class="field-container wholesale-roles-field-container">' +
       "<label>" +
-      wwpp_order_requirement_per_wholesale_role_var.wholesale_role_txt_with_col +
+      wp.i18n.__( 'Wholesale Role:', 'woocommerce-wholesale-prices-premium' ) +
       "</label>" +
       '<select id="wholesale-roles" data-placeholder="' +
-      wwpp_order_requirement_per_wholesale_role_var.choose_wholesale_role_txt +
+      wp.i18n.__( 'Choose wholesale role...', 'woocommerce-wholesale-prices-premium' ) +
       '">' +
       '<option value=""></option>' +
       wholesale_roles +
@@ -117,26 +117,30 @@ jQuery(document).ready(function ($) {
       "</div>" +
       '<div class="field-container">' +
       "<label>" +
-      wwpp_order_requirement_per_wholesale_role_var.min_order_qty_txt_with_col +
+      wp.i18n.__( 'Minimum Order Quantity:', 'woocommerce-wholesale-prices-premium' ) +
       "</label>" +
       '<input type="number" id="minimum-order-quantity" min="0">' +
       "</div>" +
       '<div class="field-container">' +
       "<label>" +
-      wwpp_order_requirement_per_wholesale_role_var.minimum_subtotal_txt_with_col +
+      wp.i18n.sprintf(
+        /* translators: %s: WooCommerce currency symbol */
+        wp.i18n.__( 'Minimum Sub-total Amount (%s):', 'woocommerce-wholesale-prices-premium' ),
+        wwpp_order_requirement_per_wholesale_role_var.currency_symbol
+      ) +
       "</label>" +
       '<input id="minimum-order-subtotal" type="number" min="0" step="any">' +
       "</div>" +
       '<div class="field-container">' +
       "<label>" +
-      wwpp_order_requirement_per_wholesale_role_var.minimum_order_logic_txt_with_col +
+      wp.i18n.__( 'Minimum Order Logic:', 'woocommerce-wholesale-prices-premium' ) +
       "</label>" +
       '<select id="minimum-order-logic">' +
       '<option value="and">' +
-      wwpp_order_requirement_per_wholesale_role_var.and_txt +
+      wp.i18n.__( 'AND', 'woocommerce-wholesale-prices-premium' ) +
       "</option>" +
       '<option value="or">' +
-      wwpp_order_requirement_per_wholesale_role_var.or_txt +
+      wp.i18n.__( 'OR', 'woocommerce-wholesale-prices-premium' ) +
       "</option>" +
       "</select>" +
       "</div>" +
@@ -144,16 +148,16 @@ jQuery(document).ready(function ($) {
       // Button Controls
       '<div class="order-requirement-button-controls add-mode">' +
       '<input type="button" id="cancel-edit-mapping" class="button button-secondary" value="' +
-      wwpp_order_requirement_per_wholesale_role_var.cancel_txt +
+      wp.i18n.__( 'Cancel', 'woocommerce-wholesale-prices-premium' ) +
       '"/>' +
       '<input type="button" id="save-mapping" class="button button-primary" value="' +
-      wwpp_order_requirement_per_wholesale_role_var.save_mapping_txt +
+      wp.i18n.__( 'Save Mapping', 'woocommerce-wholesale-prices-premium' ) +
       '"/>' +
       '<input type="button" id="add-mapping" class="button button-primary" value="' +
-      wwpp_order_requirement_per_wholesale_role_var.add_mapping_txt +
+      wp.i18n.__( 'Add Mapping', 'woocommerce-wholesale-prices-premium' ) +
       '"/>' +
       '<input type="button" id="add-new-mapping" class="button button-primary" value="' +
-      wwpp_order_requirement_per_wholesale_role_var.add_new_mapping_txt +
+      wp.i18n.__( 'Add New Mapping', 'woocommerce-wholesale-prices-premium' ) +
       '"/>' +
       '<span class="spinner"></span>' +
       '<div style="clear: both; float: none; display: block;"></div>' +
@@ -163,16 +167,20 @@ jQuery(document).ready(function ($) {
       "<thead>" +
       "<tr>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.wholesale_role_txt +
+      wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ) +
       "</th>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.min_order_qty_txt +
+      wp.i18n.__( 'Minimum Order Quantity', 'woocommerce-wholesale-prices-premium' ) +
       "</th>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.minimum_order_logic_txt +
+      wp.i18n.__( 'Minimum Order Logic', 'woocommerce-wholesale-prices-premium' ) +
       "</th>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.minimum_subtotal_txt +
+      wp.i18n.sprintf(
+        /* translators: %s: WooCommerce currency symbol */
+        wp.i18n.__( 'Minimum Sub-total Amount (%s)', 'woocommerce-wholesale-prices-premium' ),
+        wwpp_order_requirement_per_wholesale_role_var.currency_symbol
+      ) +
       "</th>" +
       "<th></th>" +
       "</tr>" +
@@ -180,16 +188,20 @@ jQuery(document).ready(function ($) {
       "<tfoot>" +
       "<tr>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.wholesale_role_txt +
+      wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ) +
       "</th>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.min_order_qty_txt +
+      wp.i18n.__( 'Minimum Order Quantity', 'woocommerce-wholesale-prices-premium' ) +
       "</th>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.minimum_order_logic_txt +
+      wp.i18n.__( 'Minimum Order Logic', 'woocommerce-wholesale-prices-premium' ) +
       "</th>" +
       "<th>" +
-      wwpp_order_requirement_per_wholesale_role_var.minimum_subtotal_txt +
+      wp.i18n.sprintf(
+        /* translators: %s: WooCommerce currency symbol */
+        wp.i18n.__( 'Minimum Sub-total Amount (%s)', 'woocommerce-wholesale-prices-premium' ),
+        wwpp_order_requirement_per_wholesale_role_var.currency_symbol
+      ) +
       "</th>" +
       "<th></th>" +
       "</tr>" +
@@ -208,7 +220,7 @@ jQuery(document).ready(function ($) {
       .append(
         "<br><br>" +
           '<a href="https://wholesalesuiteplugin.com/kb/why-does-the-cart-show-retail-prices-until-the-minimums-are-met/?utm_source=Prices%20Premium%20Plugin&utm_medium=Settings&utm_campaign=Minimum%Order%20Setting%20" target="_blank">' +
-          "read more about how this function works." +
+          wp.i18n.__( 'read more about how this function works.', 'woocommerce-wholesale-prices-premium' ) +
           "</a>"
       );
   }
@@ -258,26 +270,34 @@ jQuery(document).ready(function ($) {
 
     if (wholesale_role === "")
       error_fields.push(
-        wwpp_order_requirement_per_wholesale_role_var.wholesale_role_txt
+        wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' )
       );
 
     if (minimum_order_quantity === "" && minimum_order_subtotal === "")
       error_fields.push(
-        wwpp_order_requirement_per_wholesale_role_var.min_order_qty_txt +
+        wp.i18n.__( 'Minimum Order Quantity', 'woocommerce-wholesale-prices-premium' ) +
           " / " +
-          wwpp_order_requirement_per_wholesale_role_var.minimum_subtotal_txt
+          wp.i18n.sprintf(
+            /* translators: %s: WooCommerce currency symbol */
+            wp.i18n.__( 'Minimum Sub-total Amount (%s)', 'woocommerce-wholesale-prices-premium' ),
+            wwpp_order_requirement_per_wholesale_role_var.currency_symbol
+          )
       );
-    
+
     if (minimum_order_quantity < 0)
       error_fields.push(
-        wwpp_order_requirement_per_wholesale_role_var.min_order_qty_txt +
-        " (" + wwpp_order_requirement_per_wholesale_role_var.negative_value_fields_txt + ")"
+        wp.i18n.__( 'Minimum Order Quantity', 'woocommerce-wholesale-prices-premium' ) +
+        " (" + wp.i18n.__( 'Value must be greater than or equal to 0', 'woocommerce-wholesale-prices-premium' ) + ")"
       );
-    
+
     if (minimum_order_subtotal < 0)
       error_fields.push(
-        wwpp_order_requirement_per_wholesale_role_var.minimum_subtotal_txt +
-        " (" + wwpp_order_requirement_per_wholesale_role_var.negative_value_fields_txt + ")"
+        wp.i18n.sprintf(
+          /* translators: %s: WooCommerce currency symbol */
+          wp.i18n.__( 'Minimum Sub-total Amount (%s)', 'woocommerce-wholesale-prices-premium' ),
+          wwpp_order_requirement_per_wholesale_role_var.currency_symbol
+        ) +
+        " (" + wp.i18n.__( 'Value must be greater than or equal to 0', 'woocommerce-wholesale-prices-premium' ) + ")"
       );
 
     return error_fields;
@@ -341,7 +361,7 @@ jQuery(document).ready(function ($) {
 
     if (error_fields.length > 0) {
       var msg =
-        wwpp_order_requirement_per_wholesale_role_var.empty_fields_txt +
+        wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) +
         "<br/><ul>";
 
       for (var i = 0; i < error_fields.length; i++)
@@ -351,7 +371,7 @@ jQuery(document).ready(function ($) {
 
       toastr.error(
         msg,
-        wwpp_order_requirement_per_wholesale_role_var.form_error_txt,
+        wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
         { closeButton: true, showDuration: error_message_duration }
       );
 
@@ -375,7 +395,7 @@ jQuery(document).ready(function ($) {
         if (data.status == "success") {
           toastr.success(
             "",
-            wwpp_order_requirement_per_wholesale_role_var.success_add_mapping_txt,
+            wp.i18n.__( 'Successfully Added Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: success_message_duration }
           );
 
@@ -438,12 +458,12 @@ jQuery(document).ready(function ($) {
         } else {
           toastr.error(
             data.error_message,
-            wwpp_order_requirement_per_wholesale_role_var.failed_add_mapping_txt,
+            wp.i18n.__( 'Failed To Add New Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: error_message_duration }
           );
 
           console.log(
-            wwpp_order_requirement_per_wholesale_role_var.failed_add_mapping_txt
+            wp.i18n.__( 'Failed To Add New Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' )
           );
           console.log(data);
           console.log("----------");
@@ -452,12 +472,12 @@ jQuery(document).ready(function ($) {
       .fail(function (jqXHR, textStatus, errorThrown) {
         toastr.error(
           jqXHR.responseText,
-          wwpp_order_requirement_per_wholesale_role_var.failed_add_mapping_txt,
+          wp.i18n.__( 'Failed To Add New Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
           { closeButton: true, showDuration: error_message_duration }
         );
 
         console.log(
-          wwpp_order_requirement_per_wholesale_role_var.failed_add_mapping_txt
+          wp.i18n.__( 'Failed To Add New Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' )
         );
         console.log(jqXHR);
         console.log("----------");
@@ -494,7 +514,7 @@ jQuery(document).ready(function ($) {
 
     if (error_fields.length > 0) {
       var msg =
-        wwpp_order_requirement_per_wholesale_role_var.empty_fields_txt +
+        wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) +
         "<br/><ul>";
 
       for (var i = 0; i < error_fields.length; i++)
@@ -504,7 +524,7 @@ jQuery(document).ready(function ($) {
 
       toastr.error(
         msg,
-        wwpp_order_requirement_per_wholesale_role_var.form_error_txt,
+        wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
         { closeButton: true, showDuration: error_message_duration }
       );
 
@@ -572,18 +592,18 @@ jQuery(document).ready(function ($) {
 
           toastr.success(
             "",
-            wwpp_order_requirement_per_wholesale_role_var.success_edit_mapping_txt,
+            wp.i18n.__( 'Successfully Updated Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: success_message_duration }
           );
         } else {
           toastr.error(
             data.error_message,
-            wwpp_order_requirement_per_wholesale_role_var.failed_edit_mapping_txt,
+            wp.i18n.__( 'Failed To Update Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: error_message_duration }
           );
 
           console.log(
-            wwpp_order_requirement_per_wholesale_role_var.failed_edit_mapping_txt
+            wp.i18n.__( 'Failed To Update Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' )
           );
           console.log(data);
           console.log("----------");
@@ -592,12 +612,12 @@ jQuery(document).ready(function ($) {
       .fail(function (jqXHR, textStatus, errorThrown) {
         toastr.error(
           jqXHR.responseText,
-          wwpp_order_requirement_per_wholesale_role_var.failed_edit_mapping_txt,
+          wp.i18n.__( 'Failed To Update Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
           { closeButton: true, showDuration: error_message_duration }
         );
 
         console.log(
-          wwpp_order_requirement_per_wholesale_role_var.failed_edit_mapping_txt
+          wp.i18n.__( 'Failed To Update Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' )
         );
         console.log(data);
         console.log("----------");
@@ -692,7 +712,7 @@ jQuery(document).ready(function ($) {
 
       if (
         confirm(
-          wwpp_order_requirement_per_wholesale_role_var.delete_mapping_prompt_txt
+          wp.i18n.__( 'Clicking OK will remove the current wholesale role order requirement mapping', 'woocommerce-wholesale-prices-premium' )
         )
       ) {
         var wholesale_role = $.trim(
@@ -717,7 +737,7 @@ jQuery(document).ready(function ($) {
                     .html(
                       '<tr class="no-items">' +
                         '<td class="colspanchange" colspan="6">' +
-                        wwpp_order_requirement_per_wholesale_role_var.no_mapping_txt +
+                        wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) +
                         "</td>" +
                         "</tr>"
                     );
@@ -726,18 +746,18 @@ jQuery(document).ready(function ($) {
 
               toastr.success(
                 "",
-                wwpp_order_requirement_per_wholesale_role_var.success_delete_mapping_txt,
+                wp.i18n.__( 'Successfully Deleted Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: success_message_duration }
               );
             } else {
               toastr.error(
                 data.error_message,
-                wwpp_order_requirement_per_wholesale_role_var.failed_delete_mapping_txt,
+                wp.i18n.__( 'Failed To Delete Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: error_message_duration }
               );
 
               console.log(
-                wwpp_order_requirement_per_wholesale_role_var.failed_delete_mapping_txt
+                wp.i18n.__( 'Failed To Delete Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' )
               );
               console.log(data);
               console.log("----------");
@@ -746,12 +766,12 @@ jQuery(document).ready(function ($) {
           .fail(function (jqXHR, textStatus, errorThrown) {
             toastr.error(
               jqXHR.responseText,
-              wwpp_order_requirement_per_wholesale_role_var.failed_delete_mapping_txt,
+              wp.i18n.__( 'Failed To Delete Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
               { closeButton: true, showDuration: error_message_duration }
             );
 
             console.log(
-              wwpp_order_requirement_per_wholesale_role_var.failed_delete_mapping_txt
+              wp.i18n.__( 'Failed To Delete Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' )
             );
             console.log(jqXHR);
             console.log("----------");

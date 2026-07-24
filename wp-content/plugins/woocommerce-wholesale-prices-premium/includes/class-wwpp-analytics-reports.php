@@ -83,6 +83,11 @@ if ( ! class_exists( 'WWPP_Reports' ) ) {
                     'wp-html-entities',
                     'lodash',
                     'jquery',
+                    // `wc-currency` exposes `window.wc.currency` (the
+                    // @woocommerce/currency package) which the
+                    // useCurrencyFormatter composable consumes to render
+                    // prices in the store's configured currency / locale.
+                    'wc-currency',
                 ),
                 array(
                     'wpNonce' => wp_create_nonce( 'wp_rest' ),

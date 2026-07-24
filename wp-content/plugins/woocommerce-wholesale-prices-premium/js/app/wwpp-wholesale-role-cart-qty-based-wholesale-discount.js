@@ -52,13 +52,13 @@ jQuery(document).ready(function ($) {
 
     if (index) index = $.trim(index);
 
-    if (wholesale_role == "") err.push(wwpp_wrcqbwd_params.i18n_please_specify_wholesale_role);
+    if (wholesale_role == "") err.push(wp.i18n.__( 'Please specify wholesale role', 'woocommerce-wholesale-prices-premium' ));
 
-    if (start_qty <= 0 || start_qty == "" || isNaN(start_qty)) err.push(wwpp_wrcqbwd_params.i18n_invalid_start_qty);
+    if (start_qty <= 0 || start_qty == "" || isNaN(start_qty)) err.push(wp.i18n.__( 'Invalid start quantity', 'woocommerce-wholesale-prices-premium' ));
 
-    if (end_qty === 0 || isNaN(end_qty) || end_qty < 0) err.push(wwpp_wrcqbwd_params.i18n_invalid_end_qty);
+    if (end_qty === 0 || isNaN(end_qty) || end_qty < 0) err.push(wp.i18n.__( 'Invalid end quantity', 'woocommerce-wholesale-prices-premium' ));
 
-    if (discount <= 0 || discount == "" || isNaN(discount)) err.push(wwpp_wrcqbwd_params.i18n_invalid_percent_discount);
+    if (discount <= 0 || discount == "" || isNaN(discount)) err.push(wp.i18n.__( 'Invalid percent discount', 'woocommerce-wholesale-prices-premium' ));
 
     if (err.length <= 0) {
       var data = {
@@ -171,7 +171,7 @@ jQuery(document).ready(function ($) {
         .find("tbody")
         .append(
           '<tr class="no-items"><td class="colspanchange" colspan="5">' +
-            wwpp_wrcqbwd_params.i18n_no_mappings_found +
+            wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) +
             "</td></tr>"
         );
   }
@@ -209,7 +209,7 @@ jQuery(document).ready(function ($) {
 
       for (var i = 0; i < result.error.length; i++) err_msg += result.error[i] + "<br/>";
 
-      toastr.error(err_msg, wwpp_wrcqbwd_params.i18n_form_error, {
+      toastr.error(err_msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: error_message_duration,
       });
@@ -232,7 +232,7 @@ jQuery(document).ready(function ($) {
             wrcqbwdc_add_new_mapping_table_entry(data.last_inserted_item_index, result.data, $wrcqbwdc_mapping_table);
             wrcqbwdc_reset_form($wrcqbwdc_field_controls, $wrcqbwdc_button_controls, $wrcqbwdc_mapping_table);
           } else {
-            toastr.error(data.error_msg, wwpp_wrcqbwd_params.i18n_add_mapping_error, {
+            toastr.error(data.error_msg, wp.i18n.__( 'Add Mapping Error', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: error_message_duration,
             });
@@ -241,8 +241,8 @@ jQuery(document).ready(function ($) {
         })
         .fail(function (jqxhr) {
           toastr.error(
-            wwpp_wrcqbwd_params.i18n_failed_to_record_new_mapping_entry,
-            wwpp_wrcqbwd_params.i18n_add_mapping_error,
+            wp.i18n.__( 'Failed to record new mapping entry', 'woocommerce-wholesale-prices-premium' ),
+            wp.i18n.__( 'Add Mapping Error', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: error_message_duration }
           );
           console.log(jqxhr);
@@ -260,7 +260,7 @@ jQuery(document).ready(function ($) {
 
     $tr.addClass("editing");
 
-    if (confirm(wwpp_wrcqbwd_params.i18n_confirm_remove_mapping)) {
+    if (confirm(wp.i18n.__( 'Clicking OK will remove the current wholesale role/discount mapping', 'woocommerce-wholesale-prices-premium' ))) {
       $wrcqbwdc_cancel_save_mapping.find("tbody tr td.controls .dashicons").css("visibility", "hidden");
 
       var index = $.trim($tr.attr("data-index"));
@@ -279,7 +279,7 @@ jQuery(document).ready(function ($) {
         .done(function (data) {
           if (data.status === "success") wrcqbwdc_remove_mapping_table_entry(index, $wrcqbwdc_mapping_table);
           else {
-            toastr.error(data.error_msg, wwpp_wrcqbwd_params.i18n_delete_mapping_error, {
+            toastr.error(data.error_msg, wp.i18n.__( 'Delete Mapping Error', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: error_message_duration,
             });
@@ -288,8 +288,8 @@ jQuery(document).ready(function ($) {
         })
         .fail(function (jqxhr) {
           toastr.error(
-            wwpp_wrcqbwd_params.i18n_failed_to_deleted_mapping,
-            wwpp_wrcqbwd_params.i18n_delete_mapping_error,
+            wp.i18n.__( 'Failed to delete specified mapping entry', 'woocommerce-wholesale-prices-premium' ),
+            wp.i18n.__( 'Delete Mapping Error', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: error_message_duration }
           );
           console.log(jqxhr);
@@ -343,7 +343,7 @@ jQuery(document).ready(function ($) {
 
       for (var i = 0; i < result.error.length; i++) err_msg += result.error[i] + "<br/>";
 
-      toastr.error(err_msg, wwpp_wrcqbwd_params.i18n_form_error, {
+      toastr.error(err_msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: error_message_duration,
       });
@@ -366,7 +366,7 @@ jQuery(document).ready(function ($) {
             wrcqbwdc_edit_mapping_table_entry(result.data.index, result.data, $wrcqbwdc_mapping_table);
             wrcqbwdc_reset_form($wrcqbwdc_field_controls, $wrcqbwdc_button_controls, $wrcqbwdc_mapping_table);
           } else {
-            toastr.error(data.error_msg, wwpp_wrcqbwd_params.i18n_edit_mapping_error, {
+            toastr.error(data.error_msg, wp.i18n.__( 'Edit Mapping Error', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: error_message_duration,
             });
@@ -374,7 +374,7 @@ jQuery(document).ready(function ($) {
           }
         })
         .fail(function (jqxhr) {
-          toastr.error(wwpp_wrcqbwd_params.i18n_failed_edit_mapping, wwpp_wrcqbwd_params.i18n_edit_mapping_error, {
+          toastr.error(wp.i18n.__( 'Failed to edit mapping entry', 'woocommerce-wholesale-prices-premium' ), wp.i18n.__( 'Edit Mapping Error', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: error_message_duration,
           });

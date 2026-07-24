@@ -16,6 +16,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WWPP_Wholesale_Prices {
 
     /**
+     * Action Scheduler hook name for a single scheduled-wholesale-sales batch.
+     *
+     * @since 2.1.0
+     * @var string
+     */
+    const SCHEDULED_SALES_BATCH_ACTION = 'wwpp_scheduled_wholesale_sales_batch';
+
+    /**
+     * Action Scheduler group for scheduled-wholesale-sales batches.
+     *
+     * @since 2.1.0
+     * @var string
+     */
+    const SCHEDULED_SALES_GROUP = 'wwpp_scheduled_wholesale_sales';
+
+    /**
+     * Default number of products processed per scheduled-wholesale-sales batch.
+     *
+     * @since 2.1.0
+     * @var int
+     */
+    const SCHEDULED_SALES_CHUNK_SIZE = 100;
+
+    /**
      * Property that holds the single main instance of WWPP_Wholesale_Prices.
      *
      * @since  1.12.8
@@ -49,6 +73,24 @@ class WWPP_Wholesale_Prices {
      * @var int
      */
     public $preload_calculate_cart_total = 0;
+
+    /**
+     * Holds the quantity discount table markup of the main product when it is repositioned away from the price block.
+     *
+     * @since 2.1.0
+     *
+     * @var string
+     */
+    private $repositioned_quantity_discount_table_html = '';
+
+    /**
+     * Memoized quantity discount table position for the current request.
+     *
+     * @since 2.1.0
+     *
+     * @var string|null
+     */
+    private $quantity_discount_table_position = null;
 
     /*
     |--------------------------------------------------------------------------
@@ -153,6 +195,7 @@ class WWPP_Wholesale_Prices {
      *         show the variation. (WWPP-592).
      * @since  1.30.3 Fix qty based pricing not respecting 'Always use regular price' setting.
      *               Fix price not based on wholesale sale price if wholesale sale price is set.
+     * @since  2.1.0 Stash the table markup instead of appending it when a non-default table position is configured.
      * @access public
      * @return string Filtered wholesale price html.
      */
@@ -259,12 +302,153 @@ class WWPP_Wholesale_Prices {
 
                 }
 
-                $wholesale_price_html .= $mapping_table_html;
-
+                /*
+                 * When the merchant chooses to display the table somewhere other than the price block, stash the
+                 * markup for the main product so a dedicated single-product-summary action can render it at the
+                 * configured position. Related/upsell products and ajax (variation) requests keep appending so the
+                 * default layout and the JS-driven variable product flow are not affected.
+                 */
+                if ( 'after_price' !== $this->get_quantity_discount_table_position() && $this->is_main_single_product( $product ) ) {
+                    $this->repositioned_quantity_discount_table_html = $mapping_table_html;
+                } else {
+                    $wholesale_price_html .= $mapping_table_html;
+                }
             }
         }
 
         return $wholesale_price_html;
+    }
+
+    /**
+     * Check whether the given product is the main product being viewed on the current single product page.
+     *
+     * Used to decide whether the quantity discount table should be repositioned. Only the queried product
+     * is repositioned; related/upsell products and ajax (variation) requests keep their default markup.
+     *
+     * @since 2.1.0
+     *
+     * @param WC_Product $product WC_Product object.
+     *
+     * @return bool True when the product is the queried single product, false otherwise.
+     */
+    private function is_main_single_product( $product ) {
+
+        if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || ! is_product() || ! $product instanceof WC_Product ) {
+            return false;
+        }
+
+        return WWP_Helper_Functions::wwp_get_product_id( $product ) === get_queried_object_id();
+    }
+
+    /**
+     * Get the configured position for the quantity discount table on the single product page.
+     *
+     * @since 2.1.0
+     *
+     * @return string One of 'after_price', 'after_short_description' or 'before_add_to_cart'.
+     */
+    public function get_quantity_discount_table_position() {
+
+        if ( null !== $this->quantity_discount_table_position ) {
+            return $this->quantity_discount_table_position;
+        }
+
+        $position        = get_option( 'wwpp_settings_quantity_discount_table_position', 'after_price' );
+        $valid_positions = array( 'after_price', 'after_short_description', 'before_add_to_cart' );
+
+        if ( ! in_array( $position, $valid_positions, true ) ) {
+            $position = 'after_price';
+        }
+
+        $this->quantity_discount_table_position = apply_filters( 'wwpp_quantity_discount_table_position', $position );
+
+        return $this->quantity_discount_table_position;
+    }
+
+    /**
+     * Get the woocommerce_single_product_summary priority used to render the repositioned quantity discount table.
+     *
+     * The short description renders at priority 20 and the add to cart button at priority 30, so the table is
+     * rendered between them depending on the chosen position.
+     *
+     * @since 2.1.0
+     *
+     * @param string $position The configured table position.
+     *
+     * @return int The hook priority.
+     */
+    private function get_quantity_discount_table_position_priority( $position ) {
+
+        $priority = 'before_add_to_cart' === $position ? 25 : 21;
+
+        return (int) apply_filters( 'wwpp_quantity_discount_table_position_priority', $priority, $position );
+    }
+
+    /**
+     * Register the single product summary hook that renders the repositioned quantity discount table.
+     *
+     * Hooked on `wp` rather than at plugin include time so the configured position (and the
+     * wwpp_quantity_discount_table_position filter) is read after themes and plugins have registered their
+     * filter callbacks on the usual hooks. Does nothing when the table is left at its default position.
+     *
+     * @since 2.1.0
+     *
+     * @return void
+     */
+    public function register_repositioned_quantity_discount_table_hook() {
+
+        $position = $this->get_quantity_discount_table_position();
+
+        if ( 'after_price' === $position ) {
+            return;
+        }
+
+        add_action(
+            'woocommerce_single_product_summary',
+            array( $this, 'render_repositioned_quantity_discount_table' ),
+            $this->get_quantity_discount_table_position_priority( $position )
+        );
+    }
+
+    /**
+     * Render the quantity discount table at the configured position on the single product page.
+     *
+     * For simple, composite and bundle products the stashed markup is rendered directly. For variable products an
+     * empty positioning container is rendered so the frontend script can move the variation table into place once a
+     * variation is selected.
+     *
+     * @since 2.1.0
+     *
+     * @return void
+     */
+    public function render_repositioned_quantity_discount_table() {
+
+        // Mirror the positioning script enqueue, which only loads for wholesale users. Without this guard a
+        // variable product would emit an empty positioning container for every visitor, including guests, even
+        // though the script that moves the table into it never loads for non-wholesale users.
+        if ( empty( $this->_wwpp_wholesale_roles->getUserWholesaleRole() ) ) {
+            return;
+        }
+
+        $product = wc_get_product( get_queried_object_id() );
+
+        if ( ! $product instanceof WC_Product ) {
+            return;
+        }
+
+        $is_variable = $product->is_type( 'variable' );
+
+        // Nothing to render for non-variable products without a stashed table.
+        if ( ! $is_variable && '' === $this->repositioned_quantity_discount_table_html ) {
+            return;
+        }
+
+        echo '<div class="wwpp-quantity-discount-table-position">';
+        // Plugin-generated markup mirroring the default wwp_filter_wholesale_price_html output; not request-derived.
+        echo $this->repositioned_quantity_discount_table_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Plugin-generated markup mirroring the default wholesale price HTML output; not request-derived.
+        echo '</div>';
+
+        $this->repositioned_quantity_discount_table_html = '';
     }
 
     /**
@@ -1002,6 +1186,8 @@ class WWPP_Wholesale_Prices {
      * @since  1.16.0
      * Renamed from 'applyCustomProductTypeWholesalePrice'  to 'apply_custom_product_type_wholesale_price'.
      * Refactor codebase.
+     * @since  2.1.0 Route `subscription_variation` through `get_product_wholesale_price_on_cart()` so variable
+     *               subscription variations resolve their wholesale price and `_wwp_wholesale_priced` is set to `yes`.
      * @access public
      *
      * @since  1.8.0
@@ -1009,7 +1195,7 @@ class WWPP_Wholesale_Prices {
      */
     public function apply_custom_product_type_wholesale_price( $wholesale_price, $cart_item, $user_wholesale_role, $cart_object ) {
 
-        if ( in_array( WWP_Helper_Functions::wwp_get_product_type( $cart_item['data'] ), array( 'composite', 'bundle' ), true ) ) {
+        if ( in_array( WWP_Helper_Functions::wwp_get_product_type( $cart_item['data'] ), array( 'composite', 'bundle', 'subscription_variation' ), true ) ) {
             $wholesale_price = WWP_Wholesale_Prices::get_product_wholesale_price_on_cart( WWP_Helper_Functions::wwp_get_product_id( $cart_item['data'] ), $user_wholesale_role, $cart_item, $cart_object );
         }
 
@@ -1395,7 +1581,7 @@ class WWPP_Wholesale_Prices {
              * or
              * When show saving amount on shop page is enabled and in the shop page or in taxomony page or in loop (Related product, Upsell product, etc.)
              */
-            if ( ( get_option( 'wwpp_settings_show_saving_amount_page_single_product', false ) === 'yes' && is_product() && '' === $woocommerce_loop['name'] ) || ( ( get_option( 'wwpp_settings_show_saving_amount_page_shop', false ) === 'yes' ) && ( is_shop() || is_product_taxonomy() || ( isset( $woocommerce_loop['name'] ) && '' !== $woocommerce_loop['name'] ) ) ) ) {
+            if ( ( get_option( 'wwpp_settings_show_saving_amount_page_single_product', false ) === 'yes' && is_product() && empty( $woocommerce_loop['name'] ) ) || ( ( get_option( 'wwpp_settings_show_saving_amount_page_shop', false ) === 'yes' ) && ( is_shop() || is_product_taxonomy() || ( isset( $woocommerce_loop['name'] ) && '' !== $woocommerce_loop['name'] ) ) ) ) {
 
                 remove_filter( 'woocommerce_product_is_on_sale', array( $this, 'apply_on_sale_badge_on_wholesale_sale_products' ), 10, 2 );
                 $use_regular_price = get_option( 'wwpp_settings_explicitly_use_product_regular_price_on_discount_calc' );
@@ -1432,12 +1618,175 @@ class WWPP_Wholesale_Prices {
                     $saved_amount      = $retail_price - $wholesale_price;
                     $saving_percentage = round( 100 - ( $wholesale_price / $retail_price * 100 ), wc_get_price_decimals() );
 
+                    // The wholesale price is stored rounded to the store's price decimals, so
+                    // reverse-deriving the percentage from it can drift from the configured
+                    // discount (e.g. 5% rendering as 4.99% / 5.01%). Prefer the configured
+                    // percentage for percentage-based discounts when the drift is rounding noise.
+                    $saving_percentage = $this->get_display_saving_percentage( $product, $user_wholesale_role, $source, $retail_price, $saving_percentage );
+
                     $wholesale_price_html .= $this->get_saved_amount_text( $saved_amount, $saving_percentage );
                 }
             }
         }
 
         return $wholesale_price_html;
+    }
+
+    /**
+     * Resolve the wholesale saving percentage to display next to the saved amount.
+     *
+     * The saving percentage is derived from the wholesale price, which is stored rounded to the
+     * store's price decimals. Reverse-deriving the percentage from that rounded price introduces a
+     * small discrepancy (e.g. a 5% discount on a 71.50 product can render as 4.99% or 5.01%). For
+     * percentage-based discounts (wholesale role general discount, per-user override discount, and
+     * product category discount) the configured percentage is authoritative, so it is returned
+     * whenever the derived percentage differs only by the noise that cent rounding can introduce.
+     * Per-product fixed wholesale prices (and any other source) have no nominal percentage and keep
+     * the derived value.
+     *
+     * @since 2.1.2
+     * @access private
+     *
+     * @param WC_Product $product             Product object.
+     * @param array      $user_wholesale_role Array of user wholesale roles.
+     * @param string     $source              Source of the wholesale price being applied.
+     * @param float      $retail_price        Retail price used in the saving calculation.
+     * @param float      $computed_percentage Percentage derived from the rounded wholesale price.
+     * @return float Percentage to display.
+     */
+    private function get_display_saving_percentage( $product, $user_wholesale_role, $source, $retail_price, $computed_percentage ) {
+
+        $role = is_array( $user_wholesale_role ) ? reset( $user_wholesale_role ) : $user_wholesale_role;
+
+        if ( empty( $role ) || $retail_price <= 0 ) {
+            return $computed_percentage;
+        }
+
+        $nominal_percentage = $this->get_nominal_saving_percentage( $product, $role, $source, get_current_user_id() );
+
+        return $this->snap_saving_percentage_to_nominal( $computed_percentage, $nominal_percentage, $retail_price );
+    }
+
+    /**
+     * Resolve the configured (nominal) percentage discount behind a wholesale price.
+     *
+     * Percentage-based discounts store an authoritative percentage that the displayed saving should
+     * reflect. This returns that percentage for the wholesale role general discount, the per-user
+     * override discount, and the product category discount, or null for per-product fixed wholesale
+     * prices (and any other source) that have no nominal percentage.
+     *
+     * @since 2.1.2
+     * @access private
+     *
+     * @param WC_Product $product Product object.
+     * @param string     $role    Single wholesale role key.
+     * @param string     $source  Source of the wholesale price being applied.
+     * @param int        $user_id User whose discount configuration should be read (the order's
+     *                            customer on order/email surfaces, not necessarily the current user).
+     * @return float|null Configured percentage, or null when the source has no nominal percentage.
+     */
+    private function get_nominal_saving_percentage( $product, $role, $source, $user_id ) {
+
+        global $wc_wholesale_prices_premium;
+
+        if ( empty( $role ) || ! isset( $wc_wholesale_prices_premium ) ) {
+            return null;
+        }
+
+        if ( 'wholesale_role_level' === $source || 'per_user_level' === $source ) {
+
+            // get_user_wholesale_role_level_discount() discriminates the source itself and returns
+            // the per-user override percentage for 'per_user_level' and the role general discount for
+            // 'wholesale_role_level', so both nominal-percentage sources resolve through this branch.
+            $role_discount = $wc_wholesale_prices_premium->wwpp_wholesale_price_wholesale_role->get_user_wholesale_role_level_discount( $user_id, $role );
+
+            if ( isset( $role_discount['discount'] ) && is_numeric( $role_discount['discount'] ) ) {
+                return (float) $role_discount['discount'];
+            }
+        } elseif ( 'product_category_level' === $source ) {
+
+            $category_discount = $wc_wholesale_prices_premium->wwpp_wholesale_price_product_category->get_base_term_id_and_wholesale_discount( WWP_Helper_Functions::wwp_get_product_id( $product ), array( $role ) );
+
+            if ( isset( $category_discount['discount'] ) && is_numeric( $category_discount['discount'] ) ) {
+                return (float) $category_discount['discount'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Snap a derived saving percentage back to the configured percentage when they differ only by
+     * cent-rounding noise.
+     *
+     * The wholesale price is stored rounded to the store's price decimals, so reverse-deriving the
+     * percentage from it can drift from the configured discount (e.g. a 5% discount on a 71.50
+     * product renders as 4.99% / 5.01%). When the derived percentage is within the noise a cent of
+     * rounding can introduce, the configured percentage is returned; a larger difference means
+     * something other than rounding changed the effective price, so the derived value is kept.
+     *
+     * @since 2.1.2
+     * @access private
+     *
+     * @param float      $computed_percentage Percentage derived from the rounded wholesale price(s).
+     * @param float|null $nominal_percentage  Configured percentage to snap to, or null to skip.
+     * @param float      $retail_basis        Unit retail price the tolerance is scaled against (the
+     *                                        average unit retail for aggregated surfaces).
+     * @return float Percentage to display.
+     */
+    private function snap_saving_percentage_to_nominal( $computed_percentage, $nominal_percentage, $retail_basis ) {
+
+        if ( null === $nominal_percentage || $retail_basis <= 0 ) {
+            return $computed_percentage;
+        }
+
+        $decimals  = wc_get_price_decimals();
+        $tolerance = ( 200 * pow( 10, -$decimals ) ) / $retail_basis;
+
+        if ( abs( $nominal_percentage - $computed_percentage ) <= $tolerance ) {
+            return round( $nominal_percentage, $decimals );
+        }
+
+        return $computed_percentage;
+    }
+
+    /**
+     * Track whether every line item shares a single nominal percentage discount.
+     *
+     * The aggregated saving-amount surfaces (cart, order, invoice email) show one percentage for the
+     * whole basket. That aggregate only equals a single configured percentage when every line item is
+     * discounted by the same nominal percentage; a per-product fixed price, an undiscounted item, or a
+     * differing percentage makes the basket a blend with no single nominal to snap to. This resolves
+     * each item's source and nominal percentage and folds the result into the running state.
+     *
+     * @since 2.1.2
+     * @access private
+     *
+     * @param WC_Product $product             Line item product object.
+     * @param string     $role                Single wholesale role key.
+     * @param array      $user_wholesale_role Array of user wholesale roles (for source resolution).
+     * @param int        $user_id             User whose discount configuration should be read.
+     * @param float|null $shared_nominal      Running shared nominal percentage (by reference).
+     * @param bool       $nominal_is_uniform  Whether all items share one nominal so far (by reference).
+     */
+    private function accumulate_nominal_saving_percentage( $product, $role, $user_wholesale_role, $user_id, &$shared_nominal, &$nominal_is_uniform ) {
+
+        // Once the basket is known to be non-uniform the result is sealed; skip further resolution.
+        if ( ! $nominal_is_uniform ) {
+            return;
+        }
+
+        $price_data   = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( WWP_Helper_Functions::wwp_get_product_id( $product ), $user_wholesale_role );
+        $item_source  = isset( $price_data['source'] ) ? $price_data['source'] : '';
+        $item_nominal = $this->get_nominal_saving_percentage( $product, $role, $item_source, $user_id );
+
+        if ( null === $item_nominal ) {
+            $nominal_is_uniform = false;
+        } elseif ( null === $shared_nominal ) {
+            $shared_nominal = $item_nominal;
+        } elseif ( abs( $item_nominal - $shared_nominal ) > 0.0000001 ) {
+            $nominal_is_uniform = false;
+        }
     }
 
     /**
@@ -1460,6 +1809,12 @@ class WWPP_Wholesale_Prices {
             $cart_subtotal_before_wholesale = 0;
             $saving_percentage              = 0;
             $use_regular_price              = get_option( 'wwpp_settings_explicitly_use_product_regular_price_on_discount_calc' );
+            $role                           = $user_wholesale_role;
+            $role_array                     = array( $user_wholesale_role );
+            $user_id                        = get_current_user_id();
+            $total_units                    = 0;
+            $shared_nominal                 = null;
+            $nominal_is_uniform             = true;
 
             // Loop through the cart items to get the regular price of the products.
             foreach ( WC()->cart->cart_contents as $cart_item ) {
@@ -1480,12 +1835,19 @@ class WWPP_Wholesale_Prices {
                 $quantity      = $cart_item['quantity'];
 
                 $cart_subtotal_before_wholesale += $retail_price * $quantity;
+                $total_units                    += $quantity;
+
+                $this->accumulate_nominal_saving_percentage( $cart_item['data'], $role, $role_array, $user_id, $shared_nominal, $nominal_is_uniform );
             }
 
             // Check if cart retail subtotal is greater that cart subtotal with wholesale price.
             if ( $cart_subtotal_before_wholesale > $cart_subtotal ) {
                 $saved_amount      = $cart_subtotal_before_wholesale - $cart_subtotal;
                 $saving_percentage = round( 100 - ( $cart_subtotal / $cart_subtotal_before_wholesale * 100 ), wc_get_price_decimals() );
+
+                if ( $nominal_is_uniform && null !== $shared_nominal && $total_units > 0 ) {
+                    $saving_percentage = $this->snap_saving_percentage_to_nominal( $saving_percentage, $shared_nominal, $cart_subtotal_before_wholesale / $total_units );
+                }
 
                 // The hook used is an wc action so we should echoing the text instead of returning.
                 echo $this->get_saved_amount_text( $saved_amount, $saving_percentage ); // phpcs:ignore.
@@ -1515,6 +1877,12 @@ class WWPP_Wholesale_Prices {
             $order_subtotal_before_wholesale = 0;
             $saving_percentage               = 0;
             $use_regular_price               = get_option( 'wwpp_settings_explicitly_use_product_regular_price_on_discount_calc' );
+            $role                            = $user_wholesale_role;
+            $role_array                      = array( $user_wholesale_role );
+            $user_id                         = $order->get_user_id();
+            $total_units                     = 0;
+            $shared_nominal                  = null;
+            $nominal_is_uniform              = true;
 
             foreach ( $order->get_items() as $order_item ) {
                 $product       = $order_item->get_product();
@@ -1535,12 +1903,19 @@ class WWPP_Wholesale_Prices {
                 $quantity      = $order_item->get_quantity();
 
                 $order_subtotal_before_wholesale += $retail_price * $quantity;
+                $total_units                     += $quantity;
+
+                $this->accumulate_nominal_saving_percentage( $product, $role, $role_array, $user_id, $shared_nominal, $nominal_is_uniform );
             }
 
             // Check if cart retail subtotal is greater that cart subtotal with wholesale price.
             if ( $order_subtotal_before_wholesale > $order_subtotal ) {
                 $saved_amount      = $order_subtotal_before_wholesale - $order_subtotal;
                 $saving_percentage = round( 100 - ( $order_subtotal / $order_subtotal_before_wholesale * 100 ), wc_get_price_decimals() );
+
+                if ( $nominal_is_uniform && null !== $shared_nominal && $total_units > 0 ) {
+                    $saving_percentage = $this->snap_saving_percentage_to_nominal( $saving_percentage, $shared_nominal, $order_subtotal_before_wholesale / $total_units );
+                }
 
                 // The hook used is an wc action so we should echoing the text instead of returning.
                 echo $this->get_saved_amount_text( $saved_amount, $saving_percentage ); // phpcs:ignore.
@@ -1574,6 +1949,12 @@ class WWPP_Wholesale_Prices {
             $order_subtotal_before_wholesale = 0;
             $saving_percentage               = 0;
             $use_regular_price               = get_option( 'wwpp_settings_explicitly_use_product_regular_price_on_discount_calc' );
+            $role                            = $user_wholesale_role;
+            $role_array                      = array( $user_wholesale_role );
+            $user_id                         = $order->get_user_id();
+            $total_units                     = 0;
+            $shared_nominal                  = null;
+            $nominal_is_uniform              = true;
 
             foreach ( $order->get_items() as $order_item ) {
                 $product       = $order_item->get_product();
@@ -1594,12 +1975,19 @@ class WWPP_Wholesale_Prices {
                 $quantity      = $order_item->get_quantity();
 
                 $order_subtotal_before_wholesale += $retail_price * $quantity;
+                $total_units                     += $quantity;
+
+                $this->accumulate_nominal_saving_percentage( $product, $role, $role_array, $user_id, $shared_nominal, $nominal_is_uniform );
             }
 
             // Check if cart retail subtotal is greater that cart subtotal with wholesale price.
             if ( $order_subtotal_before_wholesale > $order_subtotal ) {
                 $saved_amount      = $order_subtotal_before_wholesale - $order_subtotal;
                 $saving_percentage = round( 100 - ( $order_subtotal / $order_subtotal_before_wholesale * 100 ), wc_get_price_decimals() );
+
+                if ( $nominal_is_uniform && null !== $shared_nominal && $total_units > 0 ) {
+                    $saving_percentage = $this->snap_saving_percentage_to_nominal( $saving_percentage, $shared_nominal, $order_subtotal_before_wholesale / $total_units );
+                }
 
                 // The hook used is an wc action so we should echoing the text instead of returning.
                 echo $this->get_saved_amount_text( $saved_amount, $saving_percentage, true ); // phpcs:ignore.
@@ -2109,101 +2497,247 @@ class WWPP_Wholesale_Prices {
     }
 
     /**
-     * Function which handles the start and end of scheduled wholeasle sales via cron.
+     * Cron entry point that starts/ends scheduled wholesale sales.
+     *
+     * Hooked to the daily `woocommerce_scheduled_sales` cron. For each registered
+     * wholesale role it runs one bounded `INNER JOIN ... DISTINCT` scan for products
+     * flagged as having a wholesale sale price, then processes the matched ids in
+     * fixed-size Action Scheduler batches so the cron tick never blocks on a
+     * full-catalog scan plus per-product hydration.
+     *
+     * The migration path ({@see WWPP_Bootstrap}) and the admin "update wholesale
+     * sales" tool ({@see WWPP_Admin_Action_Settings}) pass `$run_synchronously = true`
+     * so the on-sale flags are fully recomputed before they return their success
+     * status. When Action Scheduler is unavailable the batches also run inline.
      *
      * @since  1.30.1
+     * @since  2.1.0 Batched via Action Scheduler; reads variation date metas without
+     *               hydrating full variation data; saves only when the on-sale flag
+     *               actually changes.
      * @access public
+     *
+     * @param bool $run_synchronously Process the batches inline instead of enqueuing
+     *                                them. Used by the migration and admin-tool callers.
      */
-    public function scheduled_wholesale_sales() {
+    public function scheduled_wholesale_sales( $run_synchronously = false ) {
 
         global $wpdb;
 
+        $can_enqueue = ! $run_synchronously && function_exists( 'as_enqueue_async_action' );
+
+        /**
+         * Number of products processed per scheduled-wholesale-sales batch.
+         *
+         * @since 2.1.0
+         *
+         * @param int $chunk_size Products per batch.
+         */
+        $chunk_size = (int) apply_filters( 'wwpp_scheduled_wholesale_sales_chunk_size', self::SCHEDULED_SALES_CHUNK_SIZE );
+        $chunk_size = $chunk_size > 0 ? $chunk_size : self::SCHEDULED_SALES_CHUNK_SIZE;
+
         foreach ( $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles() as $role_key => $role ) {
 
-            // phpcs:ignore WordPress.VIP.DirectDatabaseQuery.DirectQuery
-            // Get product variations with wholesale sale.
+            // Bounded scan for products/variations flagged as having a wholesale sale price.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $product_ids = $wpdb->get_col(
                 $wpdb->prepare(
-                    "SELECT posts.ID FROM {$wpdb->posts} as posts
-                            LEFT JOIN {$wpdb->postmeta} as postmeta ON posts.ID = postmeta.post_id
+                    "SELECT DISTINCT posts.ID FROM {$wpdb->posts} AS posts
+                            INNER JOIN {$wpdb->postmeta} AS postmeta ON posts.ID = postmeta.post_id
                             WHERE posts.post_type IN ('product', 'product_variation')
-                            AND (
-                                    ( postmeta.meta_key = %s AND postmeta.meta_value = 'yes' )
-                                    OR ( postmeta.meta_key = %s AND postmeta.meta_value = 'yes' )
-                            )
-                    ",
+                                AND postmeta.meta_value = 'yes'
+                                AND postmeta.meta_key IN ( %s, %s )",
                     $role_key . '_have_wholesale_sale_price',
                     $role_key . '_variations_have_wholesale_sale_price'
                 )
             );
 
-            if ( $product_ids ) {
-                foreach ( $product_ids as $product_id ) {
+            if ( empty( $product_ids ) ) {
+                continue;
+            }
 
-                    $product              = wc_get_product( $product_id );
-                    $is_on_wholesale_sale = true;
-
-                    if ( in_array( $product->get_type(), array( 'simple', 'variation' ), true ) ) {
-
-                        $product->delete_meta_data( "{$role_key}_have_on_sale_wholesale_sale_price" );
-
-                        $date_on_sale_from = $product->get_meta( "{$role_key}_wholesale_sale_price_dates_from", true );
-                        $date_on_sale_to   = $product->get_meta( "{$role_key}_wholesale_sale_price_dates_to", true );
-
-                        if ( $date_on_sale_from && $date_on_sale_from > time() ) {
-                            $is_on_wholesale_sale = false;
-                        }
-
-                        if ( $date_on_sale_to && $date_on_sale_to < time() ) {
-                            $is_on_wholesale_sale = false;
-                        }
-
-                        if ( true === $is_on_wholesale_sale ) {
-                            $product->update_meta_data( "{$role_key}_have_on_sale_wholesale_sale_price", 'yes' );
-                        }
-                    } elseif ( $product->get_type() === 'variable' ) {
-
-                        $available_variations = $product->get_available_variations();
-
-                        $product->delete_meta_data( "{$role_key}_variations_have_on_sale_wholesale_sale_price" );
-
-                        foreach ( $available_variations as $variation ) {
-
-                            $variation_product = wc_get_product( $variation['variation_id'] );
-
-                            $date_on_sale_from = $variation_product->get_meta( "{$role_key}_wholesale_sale_price_dates_from", true );
-                            $date_on_sale_to   = $variation_product->get_meta( "{$role_key}_wholesale_sale_price_dates_to", true );
-
-                            if ( $date_on_sale_from && $date_on_sale_from > time() ) {
-                                $is_on_wholesale_sale = false;
-                            }
-
-                            if ( $date_on_sale_to && $date_on_sale_to < time() ) {
-                                $is_on_wholesale_sale = false;
-                            }
-
-                            if ( true === $is_on_wholesale_sale ) {
-                                $product->update_meta_data( "{$role_key}_variations_have_on_sale_wholesale_sale_price", 'yes' );
-                                break;
-                            }
-                        }
+            foreach ( array_chunk( $product_ids, $chunk_size ) as $chunk ) {
+                if ( $can_enqueue ) {
+                    // Skip enqueuing when an identical batch is already pending so overlapping
+                    // cron ticks don't stack duplicate (idempotent) work.
+                    if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action(
+                        self::SCHEDULED_SALES_BATCH_ACTION,
+                        array( $role_key, $chunk ),
+                        self::SCHEDULED_SALES_GROUP
+                    ) ) {
+                        continue;
                     }
 
-                    // Save the product data.
-                    $product->save();
+                    as_enqueue_async_action(
+                        self::SCHEDULED_SALES_BATCH_ACTION,
+                        array( $role_key, $chunk ),
+                        self::SCHEDULED_SALES_GROUP
+                    );
+                } else {
+                    $this->process_scheduled_wholesale_sales_batch( $role_key, $chunk );
                 }
             }
         }
     }
 
     /**
+     * Process one batch of products for scheduled wholesale sales.
+     *
+     * Shared by the synchronous call sites and the
+     * `wwpp_scheduled_wholesale_sales_batch` Action Scheduler job. Recomputes the
+     * per-role on-sale flag for each product and saves only when the flag actually
+     * changed (no `post_modified` churn). Variation date metas are read via
+     * `get_children()` plus a single primed `update_meta_cache()` call — never via
+     * `get_available_variations()`, which would build full variation arrays and
+     * render price HTML.
+     *
+     * @since  2.1.0
+     * @since  2.1.1 Skip variations the display never renders as on sale when computing the parent's
+     *               on-sale flag — mirroring {@see WWPP_Wholesale_Prices::apply_wholesale_sale_price_on_single_and_shop_page()},
+     *               which iterates get_available_variations() (out-of-stock excluded only when the
+     *               hide-out-of-stock setting is on) and then skips non-purchasable variations.
+     * @access public
+     *
+     * @param string $role_key    Wholesale role key.
+     * @param array  $product_ids Product/variation IDs to process.
+     */
+    public function process_scheduled_wholesale_sales_batch( $role_key, $product_ids ) {
+
+        if ( empty( $role_key ) || ! is_array( $product_ids ) || empty( $product_ids ) ) {
+            return;
+        }
+
+        // Prime the parent meta cache so the per-product get_meta() reads below hit cache.
+        update_meta_cache( 'post', $product_ids );
+
+        $now = time();
+
+        foreach ( $product_ids as $product_id ) {
+
+            $product = wc_get_product( $product_id );
+
+            if ( ! $product instanceof WC_Product ) {
+                continue;
+            }
+
+            $product_type = $product->get_type();
+
+            if ( in_array( $product_type, array( 'simple', 'variation' ), true ) ) {
+
+                $meta_key    = "{$role_key}_have_on_sale_wholesale_sale_price";
+                $is_on_sale  = $this->is_within_wholesale_sale_window(
+                    $product->get_meta( "{$role_key}_wholesale_sale_price_dates_from", true ),
+                    $product->get_meta( "{$role_key}_wholesale_sale_price_dates_to", true ),
+                    $now
+                );
+                $was_on_sale = 'yes' === $product->get_meta( $meta_key, true );
+
+            } elseif ( 'variable' === $product_type ) {
+
+                $meta_key   = "{$role_key}_variations_have_on_sale_wholesale_sale_price";
+                $child_ids  = $product->get_children();
+                $is_on_sale = false;
+
+                if ( ! empty( $child_ids ) ) {
+
+                    // Prime the variation meta cache in one query before the per-child reads.
+                    update_meta_cache( 'post', $child_ids );
+
+                    // The display path iterates get_available_variations(), which drops out-of-stock
+                    // variations only when "Hide out of stock items from the catalog" is enabled.
+                    $hide_out_of_stock = 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' );
+
+                    foreach ( $child_ids as $child_id ) {
+
+                        $child_product = wc_get_product( $child_id );
+
+                        // Mirror the display's inclusion criteria in apply_wholesale_sale_price_on_single_and_shop_page():
+                        // it iterates get_available_variations() (out-of-stock variations excluded only when the
+                        // hide-out-of-stock setting is on) and then skips non-purchasable ones. Matching both keeps the
+                        // parent flag — and the sale badge, which reads the flag alone — from being set for a variation
+                        // the front end never renders as on sale.
+                        if ( ! $child_product instanceof WC_Product
+                            || ! $child_product->is_purchasable()
+                            || ( $hide_out_of_stock && ! $child_product->is_in_stock() ) ) {
+                            continue;
+                        }
+
+                        if ( $this->is_within_wholesale_sale_window(
+                            get_post_meta( $child_id, "{$role_key}_wholesale_sale_price_dates_from", true ),
+                            get_post_meta( $child_id, "{$role_key}_wholesale_sale_price_dates_to", true ),
+                            $now
+                        ) ) {
+                            $is_on_sale = true;
+                            break;
+                        }
+                    }
+                }
+
+                $was_on_sale = 'yes' === $product->get_meta( $meta_key, true );
+
+            } else {
+                continue;
+            }
+
+            // Only write when the on-sale flag actually changed.
+            if ( $is_on_sale === $was_on_sale ) {
+                continue;
+            }
+
+            if ( $is_on_sale ) {
+                $product->update_meta_data( $meta_key, 'yes' );
+            } else {
+                $product->delete_meta_data( $meta_key );
+            }
+
+            $product->save();
+        }
+    }
+
+    /**
+     * Determine whether "now" falls within a wholesale sale's start/end window.
+     *
+     * Mirrors the original cron semantics: an empty bound is treated as open-ended on
+     * that side, so a configured wholesale sale price with no dates is always active.
+     *
+     * @since  2.1.0
+     * @access private
+     *
+     * @param string|int $date_from Sale start timestamp, or empty for no start bound.
+     * @param string|int $date_to   Sale end timestamp, or empty for no end bound.
+     * @param int        $now       Current timestamp.
+     *
+     * @return bool True when the sale is currently active.
+     */
+    private function is_within_wholesale_sale_window( $date_from, $date_to, $now ) {
+
+        if ( $date_from && (int) $date_from > $now ) {
+            return false;
+        }
+
+        if ( $date_to && (int) $date_to < $now ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Filter the product price in the cart.
+     *
+     * Determines whether the cart item fails its wholesale minimum requirements
+     * before computing any wholesale/sale/quantity-discount price. When the
+     * requirements are met (the common case) the unchanged price HTML is returned
+     * without running the pricing pipeline, so the expensive price lookups only run
+     * for rows that will actually render the "minimum requirement not met" notice.
      *
      * @param string $price_html    Price HTML.
      * @param array  $cart_item     Cart item data.
      * @param string $cart_item_key Cart item key.
      *
      * @since 1.30.2
+     * @since 2.1.1 Evaluate the minimum-requirement check first and fetch wholesale/sale/quantity-discount
+     *              prices only when the not-met notice will be rendered.
+     * @since 2.1.1 Exempt bundled/composite child items from the MOQ price-display gate. (WWPP-1828)
      *
      * @return string
      */
@@ -2214,7 +2748,41 @@ class WWPP_Wholesale_Prices {
         $user_wholesale_role = $this->_get_current_user_wholesale_role();
 
         if ( is_cart() && ! empty( $user_wholesale_role ) ) {
-            $did_not_meet                 = false;
+            $did_not_meet = false;
+
+            // Evaluate the minimum-requirement checks first. These rely only on cart totals
+            // (preloaded once per request) and per-product quantity meta, so the full pricing
+            // pipeline is not needed to decide whether a notice will be rendered.
+            $apply_wholesale_price_cart_level = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $this->preload_calculate_cart_total, $woocommerce->cart, array( $user_wholesale_role ) );
+
+            if ( true !== $apply_wholesale_price_cart_level ) {
+                $did_not_meet = true;
+            }
+
+            $apply_wholesale_price_product_level = WWPP_Helper_Functions::apply_wholesale_price_per_product_level_min_condition( $cart_item, $woocommerce->cart, array( $user_wholesale_role ), 0 );
+
+            if ( $apply_wholesale_price_product_level ) {
+                $did_not_meet = true;
+            }
+
+            // Bundled (WC Product Bundles) and composite (WC Composite Products) child items have their
+            // quantity controlled by the parent, so the standalone wholesale minimum order quantity does not
+            // gate their wholesale pricing — see set_cart_item_quantity() and
+            // filter_if_apply_wholesale_price_per_product_level() in class-wwpp-wholesale-price-requirement.php,
+            // both of which exempt these children unconditionally. Clear the "did not meet" flag for them here
+            // too so the cart price display matches the price actually applied; otherwise a priced-individually
+            // child below its MOQ would render the "minimum requirement not met" notice while still being
+            // charged the wholesale price (WWPP-1828).
+            if ( ! empty( $cart_item['bundled_by'] ) || ! empty( $cart_item['composite_parent'] ) ) {
+                $did_not_meet = false;
+            }
+
+            if ( ! $did_not_meet ) {
+                // Requirements met: nothing to render, so skip the pricing pipeline entirely.
+                return $price_html;
+            }
+
+            // From here the notice will be rendered, so fetch the wholesale/sale/quantity-discount prices.
             $product_id                   = ( ! empty( $cart_item['variation_id'] ) ) ? $cart_item['variation_id'] : $cart_item['product_id'];
             $product                      = wc_get_product( $product_id );
             $product_price                = $cart_item['data']->get_sale_price() ? $cart_item['data']->get_sale_price() : $cart_item['data']->get_regular_price();
@@ -2250,60 +2818,8 @@ class WWPP_Wholesale_Prices {
                 $wholesale_price = $quantity_based_price['wholesale_price'];
             }
 
-            // Get min conditions to apply wholesale price in cart level.
-            $apply_wholesale_price_cart_level = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $this->preload_calculate_cart_total, $woocommerce->cart, array( $user_wholesale_role ) );
-
-            if ( true !== $apply_wholesale_price_cart_level ) {
-                $did_not_meet = true;
-            }
-
-            // Get min conditions to apply wholesale price in cart level.
-            $apply_wholesale_price_product_level = WWPP_Helper_Functions::apply_wholesale_price_per_product_level_min_condition( $cart_item, $woocommerce->cart, array( $user_wholesale_role ), $wholesale_price );
-
-            if ( $apply_wholesale_price_product_level ) {
-                $did_not_meet = true;
-            }
-
-            // Check if composited product and is priced individually.
-            if ( WWP_Helper_Functions::is_plugin_active( 'woocommerce-composite-products/woocommerce-composite-products.php' ) ) {
-                // Check if composited product.
-                if ( wc_cp_is_composited_cart_item( $cart_item ) ) {
-
-                    // Get the container item key.
-                    $composite_container_item_key = wc_cp_get_composited_cart_item_container( $cart_item, WC()->cart->cart_contents, true );
-
-                    // Get the container item.
-                    if ( $composite_container_item_key ) {
-                        $composite_container_item = WC()->cart->cart_contents[ $composite_container_item_key ];
-
-                        $product_id   = $cart_item['product_id'];
-                        $component_id = $cart_item['composite_item'];
-
-                        if ( isset( $composite_container_item['data'] ) && method_exists( $composite_container_item['data'], 'get_component_option' ) ) {
-                            $component_option = $composite_container_item['data']->get_component_option( $component_id, $product_id );
-
-                            // Check if the component is priced individually.
-                            if ( $component_option && false === $component_option->is_priced_individually() ) {
-                                $did_not_meet = false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Check if under bundle product.
-            if ( ! empty( $cart_item['bundled_by'] ) ) {
-                $item           = WC_PB_DB::get_bundled_item( $cart_item['bundled_item_id'] );
-                $item_meta_data = $item->get_meta_data();
-
-                // Check if bundle component has priced individually.
-                if ( ! empty( $item_meta_data ) && ! empty( $item_meta_data['priced_individually'] ) && 'no' === $item_meta_data['priced_individually'] ) {
-                    $did_not_meet = false;
-                }
-            }
-
             // If conditions are not meet, apply wholesale price in product level.
-            if ( $did_not_meet && ! empty( $wholesale_price ) ) {
+            if ( ! empty( $wholesale_price ) ) {
                 $wholesale_price        = WWP_Helper_Functions::wwp_formatted_price( $wholesale_price );
                 $formatted_retail_price = $this->get_product_shop_price_with_taxing_applied( $product, $product_price, array( 'currency' => $active_currency ), $user_wholesale_role );
 
@@ -2501,12 +3017,18 @@ class WWPP_Wholesale_Prices {
      * Execute model.
      *
      * @since  1.16.0
+     * @since  2.1.0 Register the action that renders the quantity discount table at a configurable position.
      * @access public
      */
     public function run() {
 
         // Per Product Level Order Qty Wholesale Discount.
         add_filter( 'wwp_filter_wholesale_price_html', array( $this, 'render_per_product_level_order_quantity_based_wholesale_discount_table_markup' ), 10, 7 );
+
+        // Register the repositioned quantity discount table hook on `wp` rather than at include time, so the
+        // position option and its wwpp_quantity_discount_table_position filter are read after themes and
+        // plugins have registered their callbacks on the usual hooks (init, after_setup_theme, plugins_loaded).
+        add_action( 'wp', array( $this, 'register_repositioned_quantity_discount_table_hook' ) );
         add_filter( 'wwp_filter_wholesale_price_cart', array( $this, 'apply_product_level_order_quantity_based_wholesale_pricing' ), 11, 4 );
 
         // Apply wholesale prices on shop and cart for custom product types.
@@ -2543,6 +3065,7 @@ class WWPP_Wholesale_Prices {
         add_filter( 'wwp_filter_wholesale_price_cart', array( $this, 'apply_wholesale_sale_price_on_cart' ), 10, 4 );
         add_filter( 'woocommerce_product_is_on_sale', array( $this, 'apply_on_sale_badge_on_wholesale_sale_products' ), 10, 2 );
         add_action( 'woocommerce_scheduled_sales', array( $this, 'scheduled_wholesale_sales' ), 10, 1 );
+        add_action( self::SCHEDULED_SALES_BATCH_ACTION, array( $this, 'process_scheduled_wholesale_sales_batch' ), 10, 2 );
 
         // Filter cart item price.
         add_filter( 'woocommerce_cart_item_price', array( $this, 'filter_woocommerce_cart_item_price' ), 20, 3 );

@@ -38,6 +38,7 @@ require_once WWPP_INCLUDES_PATH . 'class-wwpp-wholesale-back-order.php';
 require_once WWPP_INCLUDES_PATH . 'wholesale-prices/class-wwpp-wholesale-price-variable-product.php';
 require_once WWPP_INCLUDES_PATH . 'wholesale-prices/class-wwpp-wholesale-price-product-category.php';
 require_once WWPP_INCLUDES_PATH . 'wholesale-prices/class-wwpp-wholesale-price-wholesale-role.php';
+require_once WWPP_INCLUDES_PATH . 'wholesale-prices/class-wwpp-wholesale-price-percentage-sync.php';
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-tax.php';
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-wc-order.php';
 require_once WWPP_INCLUDES_PATH . 'reports/class-wwpp-report.php';
@@ -48,6 +49,33 @@ require_once WWPP_INCLUDES_PATH . 'class-wwpp-per-wholesale-user-settings.php';
 require_once WWPP_INCLUDES_PATH . 'blocks/class-woocommerce-blocks.php';
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-cart-discounts.php';
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-analytics-reports.php';
+
+// Wholesale Role Automation — helpers, services, handlers, admin, emails, bootstrap (in dependency order).
+require_once WWPP_INCLUDES_PATH . 'role-automations/helpers/class-wwpp-wholesale-role-automation-role-helper.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/helpers/class-wwpp-wholesale-role-automation-window-helper.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/helpers/class-wwpp-wholesale-role-automation-currency-helper.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-validation-exception.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-rules-repository.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-audit-log.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-metric-provider.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/handlers/abstract-class-wwpp-wholesale-role-automation-transition-handler.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/handlers/class-wwpp-wholesale-role-automation-upgrade-handler.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/handlers/class-wwpp-wholesale-role-automation-downgrade-handler.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/handlers/class-wwpp-wholesale-role-automation-pause-handler.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-action-dispatcher.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-evaluator.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/services/class-wwpp-wholesale-role-automation-scheduler.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/admin/class-wwpp-wholesale-role-automation-settings-tab.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/admin/class-wwpp-wholesale-role-automation-action-handlers.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/admin/class-wwpp-wholesale-role-automation-user-profile-field.php';
+require_once WWPP_INCLUDES_PATH . 'role-automations/admin/class-wwpp-wholesale-role-automation-my-account-notice.php';
+// Email classes (extends WC_Email) are loaded lazily inside the woocommerce_email_classes filter callback — WC_Email is not available at this point in the load order.
+require_once WWPP_INCLUDES_PATH . 'role-automations/class-wwpp-wholesale-role-automation-bootstrap.php';
+
+// Role Automation mail catcher — only loaded on debug/test environments (WP_DEBUG must be true).
+if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+    require_once WWPP_INCLUDES_PATH . 'role-automations/class-wwpp-wholesale-role-automation-mail-catcher.php';
+}
 
 // Lifecycle Email.
 require_once WWPP_INCLUDES_PATH . 'class-wwpp-lifecyle-email.php';
@@ -65,6 +93,7 @@ require_once WWPP_INCLUDES_PATH . 'plugin-integrations/woocommerce-multilingual/
 require_once WWPP_INCLUDES_PATH . 'plugin-integrations/wc-vendors/class-wwpp-wc-vendors.php';
 require_once WWPP_INCLUDES_PATH . 'plugin-integrations/wc-vendors/class-wwpp-wc-vendors-form-helper.php';
 require_once WWPP_INCLUDES_PATH . 'plugin-integrations/woocommerce-subscriptions/class-wwpp-wc-subscriptions.php';
+require_once WWPP_INCLUDES_PATH . 'plugin-integrations/elementor/class-wwpp-elementor.php';
 
 // WWPP Reports Factory.
 require_once WWPP_INCLUDES_PATH . 'api/class-wwpp-reports.php';
@@ -113,6 +142,7 @@ class WooCommerceWholeSalePricesPremium {
     public $wwpp_wholesale_price_variable_product;
     public $wwpp_wholesale_price_product_category;
     public $wwpp_wholesale_price_wholesale_role;
+    public $wwpp_wholesale_price_percentage_sync;
     public $wwpp_wholesale_role_payment_gateway;
     public $wwpp_tax;
     public $wwpp_wc_order;
@@ -126,6 +156,7 @@ class WooCommerceWholeSalePricesPremium {
     public $wwpp_reports_api_factory;
     public $wwpp_cart_discounts;
     public $wwpp_reports;
+    public $wwpp_wholesale_role_automation;
 
     // Lifecycle Email.
     public $wwpp_lifecyle_email;
@@ -142,9 +173,10 @@ class WooCommerceWholeSalePricesPremium {
     public $wwpp_wc_multilingual;
     public $wwpp_wc_vendors;
     public $wwpp_wc_subscriptions;
+    public $wwpp_elementor;
     // phpcs:enable
 
-    const VERSION = '2.0.9';
+    const VERSION = '2.1.1.1';
 
     /*
     |--------------------------------------------------------------------------
@@ -206,6 +238,7 @@ class WooCommerceWholeSalePricesPremium {
         );
         $this->wwpp_wholesale_price_product_category          = WWPP_Wholesale_Price_Product_Category::instance( array() );
         $this->wwpp_wholesale_price_wholesale_role            = WWPP_Wholesale_Price_Wholesale_Role::instance( array() );
+        $this->wwpp_wholesale_price_percentage_sync           = WWPP_Wholesale_Price_Percentage_Sync::instance( array( 'WWPP_Wholesale_Roles' => $this->wwpp_wholesale_roles ) );
         $this->wwpp_script_loader                             = WWPP_Script_Loader::instance(
             array(
                 'WWPP_Wholesale_Roles'                  => $this->wwpp_wholesale_roles,
@@ -294,6 +327,11 @@ class WooCommerceWholeSalePricesPremium {
                 'WWPP_Wholesale_Roles' => $this->wwpp_wholesale_roles,
             )
         );
+        $this->wwpp_elementor            = WWPP_Elementor::instance(
+            array(
+                'WWPP_Wholesale_Roles' => $this->wwpp_wholesale_roles,
+            )
+        );
 
         $this->wwpp_wc_products_attributes_variations = WWPP_WC_Products_Atributes_Variations::instance( array() );
 
@@ -319,6 +357,14 @@ class WooCommerceWholeSalePricesPremium {
 
         // WWPP API.
         $this->wwpp_rest_api = WWPP_REST_API::instance( array() );
+
+        // Wholesale Role Automation.
+        $this->wwpp_wholesale_role_automation = WWPP_Wholesale_Role_Automation_Bootstrap::instance( array() );
+
+        // Role Automation mail catcher (debug/test environments only — the matching require_once at file load is also WP_DEBUG-gated, so the class only exists when this branch is reachable).
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            WWPP_Wholesale_Role_Automation_Mail_Catcher::instance()->run();
+        }
     }
 
     /**
@@ -362,6 +408,7 @@ class WooCommerceWholeSalePricesPremium {
         $this->wwpp_admin_action_settings->run();
         $this->wwpp_wholesale_price_product_category->run();
         $this->wwpp_wholesale_price_wholesale_role->run();
+        $this->wwpp_wholesale_price_percentage_sync->run();
         $this->wwpp_script_loader->run();
         $this->wwpp_settings->run();
         $this->wwpp_wholesale_roles_admin_page->run();
@@ -391,6 +438,7 @@ class WooCommerceWholeSalePricesPremium {
         $this->wwpp_wc_blocks->run();
         $this->wwpp_cart_discounts->run();
         $this->wwpp_reports->run();
+        $this->wwpp_wholesale_role_automation->run();
 
         // Lifecycle Email.
         $this->wwpp_lifecyle_email->run();
@@ -407,6 +455,7 @@ class WooCommerceWholeSalePricesPremium {
         $this->wwpp_wc_multilingual->run();
         $this->wwpp_wc_vendors->run();
         $this->wwpp_wc_subscriptions->run();
+        $this->wwpp_elementor->run();
 
         // HPOS compatibility.
         add_action( 'before_woocommerce_init', array( $this, 'declare_hpos_compatibility' ) );

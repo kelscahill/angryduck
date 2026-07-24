@@ -317,6 +317,7 @@ class WWPP_WWS_License_Manager {
      * @since 1.0.1
      * @since 1.11 Updated to use new license manager
      * @since 2.0.3 Remove license status if email and license key is empty.
+     * @since 2.1.1 Require the manage_woocommerce capability for AJAX requests.
      * @access public
      *
      * @return array $response.
@@ -326,6 +327,19 @@ class WWPP_WWS_License_Manager {
 
         // Make sure we're doing ajax.
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+
+            // Bail if the user is not allowed to manage WC settings.
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                wp_send_json(
+                    array(
+                        'status'    => 'fail',
+                        'error_msg' => __(
+                            'Invalid AJAX Operation',
+                            'woocommerce-wholesale-prices-premium'
+                        ),
+                    )
+                );
+            }
 
             // Check nonce and fail gracefully if invalid.
             if ( ! check_ajax_referer( strtolower( $this->_software_key ) . '_activate_license', 'ajax_nonce', false ) ) {
@@ -1034,39 +1048,85 @@ class WWPP_WWS_License_Manager {
      * This is to prevent users from accessing the premium submenu pages when the license is not activated, disabled, cancelled or expired.
      *
      * @since 1.30.4
+     * @since 2.1.3 Keep the shared Wholesale Suite pages reachable when another Wholesale Suite plugin is licensed, so licensed sibling plugins are not locked out.
      * @access public
      */
     public function maybe_disable_plugin_settings_menu() {
         $this->_show_interstitial = $this->_maybe_show_interstitial();
 
-        if ( ! empty( $this->_show_interstitial ) ) {
-            foreach ( $this->_plugin_submenus as $slug => $submenu ) {
-                global $wc_wholesale_prices, $wc_wholesale_prices_premium;
+        if ( empty( $this->_show_interstitial ) ) {
+            return;
+        }
 
-                $hookname = $submenu['toplevel'] ? 'toplevel_page_' . $slug : 'wholesale_page_' . $slug;
+        $has_licensed_sibling = $this->_has_licensed_sibling();
 
-                // Remove original submenu page callback.
-                if ( 'wwpp-wholesale-roles-page' === $slug ) {
-                    remove_action( $hookname, array( $wc_wholesale_prices_premium->wwpp_wholesale_roles_admin_page, $submenu['callback'] ) );
-                } else {
-                    remove_action( $hookname, array( $wc_wholesale_prices->wwp_admin_menu, $submenu['callback'] ) );
-                }
+        foreach ( $this->_plugin_submenus as $slug => $submenu ) {
+            global $wc_wholesale_prices, $wc_wholesale_prices_premium;
 
-                // Remove submenu page.
-                remove_submenu_page( 'wholesale-suite', $slug );
+            // The Roles page is the only WWPP-owned entry. The remaining entries are
+            // shared Wholesale Suite pages registered by the free WooCommerce Wholesale
+            // Prices plugin and populated by every Wholesale Suite plugin (e.g. sibling
+            // plugins surface their own settings inside the shared Settings page). Only
+            // WWPP's own page is gated when a sibling plugin is licensed, so the shared
+            // menu remains reachable for that licensed sibling.
+            $is_wwpp_owned = 'wwpp-wholesale-roles-page' === $slug;
 
-                // Add disabled page.
-                add_submenu_page(
-                    'wholesale-suite',
-                    $submenu['title'],
-                    $submenu['title'],
-                    'manage_woocommerce',
-                    $slug,
-                    array( $this, 'license_interstitial_page' ),
-                    $submenu['position']
-                );
+            if ( ! $is_wwpp_owned && $has_licensed_sibling ) {
+                continue;
+            }
+
+            $hookname = $submenu['toplevel'] ? 'toplevel_page_' . $slug : 'wholesale_page_' . $slug;
+
+            // Remove original submenu page callback.
+            if ( $is_wwpp_owned ) {
+                remove_action( $hookname, array( $wc_wholesale_prices_premium->wwpp_wholesale_roles_admin_page, $submenu['callback'] ) );
+            } else {
+                remove_action( $hookname, array( $wc_wholesale_prices->wwp_admin_menu, $submenu['callback'] ) );
+            }
+
+            // Remove submenu page.
+            remove_submenu_page( 'wholesale-suite', $slug );
+
+            // Add disabled page.
+            add_submenu_page(
+                'wholesale-suite',
+                $submenu['title'],
+                $submenu['title'],
+                'manage_woocommerce',
+                $slug,
+                array( $this, 'license_interstitial_page' ),
+                $submenu['position']
+            );
+        }
+    }
+
+    /**
+     * Check whether any active sibling Wholesale Suite plugin has an active license.
+     *
+     * Used to avoid the WWPP license interstitial from hijacking the shared Wholesale
+     * Suite menu pages (Dashboard, Orders, Reports, Settings) when a sibling plugin
+     * such as WooCommerce Wholesale Lead Capture is licensed and still needs access.
+     *
+     * @since 2.1.3
+     * @access private
+     *
+     * @return bool True if at least one active sibling Wholesale Suite plugin is licensed. False otherwise.
+     */
+    private function _has_licensed_sibling() {
+        $active_plugins = $this->_get_active_plugins( false );
+        $license_data   = $this->get_wws_license_data();
+
+        foreach ( array_keys( $active_plugins ) as $software_key ) {
+            if ( $this->_software_key === $software_key ) {
+                continue;
+            }
+
+            if ( isset( $license_data[ $software_key ]['license_status'] ) && 'active' === $license_data[ $software_key ]['license_status'] ) {
+                return true;
             }
         }
+
+        return false;
     }
 
     /**

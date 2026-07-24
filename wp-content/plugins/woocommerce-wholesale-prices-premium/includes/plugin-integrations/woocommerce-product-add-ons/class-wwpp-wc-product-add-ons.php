@@ -536,11 +536,11 @@ if ( ! class_exists( 'WWPP_WC_Product_Addon' ) ) {
                 $price_arr       = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $product->get_id(), $user_wholesale_role );
                 $wholesale_price = $price_arr['wholesale_price_with_tax'];
                 if ( $wholesale_price ) {
-                    $product_price_excl = $wholesale_price * $qty;
+                    $product_price_incl = $wholesale_price * $qty;
                 }
             }
 
-            return $product_price_excl;
+            return $product_price_incl;
         }
 
         /**

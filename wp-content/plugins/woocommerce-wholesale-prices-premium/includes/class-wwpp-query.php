@@ -65,6 +65,23 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
         private $_product_cat_wholesale_role_filter;
 
         /**
+         * In-request cache of `filter_children()` results.
+         *
+         * Hooked on `woocommerce_product_get_children`, this fires every time a
+         * grouped product's children are read (price range, visibility checks,
+         * template render) — several times per page view — and each run issues up
+         * to three `get_posts( posts_per_page => -1 )` queries over the same id
+         * list. Keyed by `md5( id-list ) . '|' . role` it serves an identical
+         * ( id-list, role ) computation once per request. Request scoped only, so
+         * it needs no invalidation.
+         *
+         * @since 2.1.1
+         * @access private
+         * @var array
+         */
+        private $_filter_children_cache = array();
+
+        /**
          * Class Methods
          */
 
@@ -145,6 +162,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
          * This is used in visibility check if a product belongs to wholesale products.
          *
          * @since 1.23.2
+         * @since 2.1.1 Cast the wholesale price as DECIMAL(10,2) instead of NUMERIC for currency-precision consistency.
          * @access public
          *
          * @param bool   $only_show_wholesale_products   If "Only Show Wholesale Products To Wholesale Users" setting is enabled.
@@ -249,7 +267,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                                     'key'     => $user_wholesale_role . '_wholesale_price',
                                     'value'   => 0,
                                     'compare' => '>=',
-                                    'type'    => 'NUMERIC',
+                                    'type'    => 'DECIMAL(10,2)',
                                 ),
                             ),
                         );
@@ -423,6 +441,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
          *               Replacing the filter fixes the issue on multiple filter call.
          *               Avoid using multiple meta_query. Doing 2 or more query joins will cause loading issue if customer has very huge database.
          *               The fix was to divide meta queries. 1st query checks the 'wwpp_product_wholesale_visibility_filter' of products, 2nd query checks if the returned products in 1st query has met the meta query condition set for '{wholesale_role}_have_wholesale_price' and '{wholesale_role}_wholesale_price'.
+         * @since 2.1.1  Skip building the product-visibility whitelist when no wholesale filtering applies, to avoid injecting an oversized post__in clause on large catalogs.
          * @access public
          *
          * @param WP_Query $query WP_Query object.
@@ -478,6 +497,13 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
 
                 if ( ! is_admin() && ( $is_shop_page || is_product_category() || is_product_taxonomy() || is_search() ) ) {
 
+                    // Skip building the visibility whitelist when there is no wholesale context to filter
+                    // on, so we do not inject a post__in listing every product, which on large catalogs can
+                    // exceed the host's SQL length limit and return zero products.
+                    if ( $this->should_skip_visibility_filter( $user_wholesale_role ) ) {
+                        return;
+                    }
+
                     $filtered_query = $this->get_filtered_products_query();
 
                     // Set tax query.
@@ -514,11 +540,21 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
         /**
          * Filter Woocommerce 'product_cat' taxonomy for removing restricted taxonomies from Woocommerce Categories 'Rest Api' only.
          *
+         * @since 1.16.0
+         * @since 2.1.1 Bypass filtering for admin users so all categories remain visible in the block product editor.
+         *
          * @param array $args Woocommerce product args.
          * @param array $taxonomies Woocommerce taxnomy args.
          * @return array
          */
         public function filter_categories_from_woocommerce_rest_api( $args, $taxonomies ) {
+            // Never restrict store managers. Wholesale role filtering is meant for wholesale customers on the
+            // storefront, not users managing products in the back end (e.g. the block product editor's Categories
+            // panel). Mirrors pre_get_posts(), which exempts both administrators and shop managers.
+            if ( current_user_can( 'manage_options' ) || current_user_can( 'manage_woocommerce' ) ) {
+                return $args;
+            }
+
             if ( wp_is_serving_rest_request() && in_array( 'product_cat', $taxonomies, true ) && ! empty( $this->_product_cat_wholesale_role_filter ) ) {
                 $current_user_role = $this->_get_current_user_wholesale_role() ?? ''; // get the current user role.
 
@@ -915,6 +951,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
          * Dont show restricted products to guests if set via category and product restriction.
          *
          * @since 1.27
+         * @since 2.1.1 Cast the wholesale price as DECIMAL(10,2) instead of NUMERIC so prices below $1.00 are not truncated to 0.
          * @access public
          *
          * @param array $related_posts Array of related posts.
@@ -976,7 +1013,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                             'key'     => $wholesale_role . '_wholesale_price',
                             'value'   => 0,
                             'compare' => '>',
-                            'type'    => 'NUMERIC',
+                            'type'    => 'DECIMAL(10,2)',
                         ),
                     );
                 }
@@ -996,6 +1033,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
          * - When the child has General level wholesale discount is set for a product and "Disregard Wholesale Role Level Wholesale Discount" is enabled then dont show the child.
          *
          * @since 1.27.3
+         * @since 2.1.1 Use the current user's actual wholesale role key for the product-level query (was hardcoded to wholesale_customer) and memoize the result per ( id-list, role ) for the duration of the request.
          * @access public
          *
          * @param array $ids          Product Ids.
@@ -1011,6 +1049,16 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
 
             if ( ! empty( $ids ) && ! empty( $user_wholesale_role ) && get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' ) {
 
+                // Serve an identical ( id-list, role ) computation once per request.
+                // Sort a copy of the id list before hashing so the same set in a
+                // different order resolves to the same key (a cache hit, not a miss).
+                $cache_key_ids = $ids;
+                sort( $cache_key_ids );
+                $cache_key = md5( implode( ',', $cache_key_ids ) ) . '|' . $user_wholesale_role[0];
+                if ( isset( $this->_filter_children_cache[ $cache_key ] ) ) {
+                    return $this->_filter_children_cache[ $cache_key ];
+                }
+
                 // Wholesale Product Level should still be displayed.
                 $product_level_wholesale_products = get_posts(
                     array(
@@ -1020,7 +1068,7 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                         'fields'         => 'ids',
                         'meta_query'     => array(
                             array(
-                                'key'     => 'wholesale_customer_wholesale_price',
+                                'key'     => $user_wholesale_role[0] . '_wholesale_price',
                                 'value'   => '0',
                                 'compare' => '>',
                             ),
@@ -1074,7 +1122,11 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
                     )
                 );
 
-                return array_unique( array_merge( $product_level_wholesale_products, $disregard_general_discount_products, $disregard_category_discount_products ) );
+                $filtered_children = array_unique( array_merge( $product_level_wholesale_products, $disregard_general_discount_products, $disregard_category_discount_products ) );
+
+                $this->_filter_children_cache[ $cache_key ] = $filtered_children;
+
+                return $filtered_children;
 
             }
 
@@ -1156,6 +1208,71 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
         }
 
         /**
+         * Check whether any product is restricted to a specific wholesale role.
+         *
+         * Looks for a per-product wholesale visibility filter set to a wholesale role
+         * (any value other than the "visible to all" markers). The result is cached for
+         * the duration of the request because the front-end product query filters can run
+         * several times per page load.
+         *
+         * This lets the query filters skip building the product-visibility whitelist when
+         * there is genuinely nothing to hide, avoiding an oversized post__in clause.
+         *
+         * @since 2.1.1
+         * @access private
+         *
+         * @return bool True if at least one product is restricted to a wholesale role, false otherwise.
+         */
+        private function has_role_restricted_products() {
+            static $has_restricted = null;
+
+            if ( null !== $has_restricted ) {
+                return $has_restricted;
+            }
+
+            global $wpdb;
+
+            $restricted_id = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value NOT IN ( '', 'all' ) LIMIT 1",
+                    WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER
+                )
+            );
+
+            $has_restricted = ! empty( $restricted_id );
+
+            return $has_restricted;
+        }
+
+        /**
+         * Determine whether the product-visibility whitelist can be skipped entirely.
+         *
+         * The whitelist is only needed when there is something to hide or trim: the current user has
+         * a wholesale role, category-level role restrictions are configured, a product is restricted
+         * to a wholesale role, or the Show Single Variations integration is active (it trims main
+         * variable products from the whitelist regardless of role). When none of those apply, building
+         * the whitelist would inject a post__in listing every product, which on large catalogs can
+         * exceed the host's SQL length limit and return zero products.
+         *
+         * The integration check goes through WWP_Helper_Functions::is_plugin_active(), which loads
+         * wp-admin/includes/plugin.php when needed so the check is safe on the front end (the raw
+         * is_plugin_active() is not defined there and would fatal).
+         *
+         * @since 2.1.1
+         * @access private
+         *
+         * @param string|array $user_wholesale_role Wholesale role of the current user.
+         *
+         * @return bool True when the whitelist can be safely skipped, false otherwise.
+         */
+        private function should_skip_visibility_filter( $user_wholesale_role ) {
+            return empty( $user_wholesale_role )
+                && empty( $this->_product_cat_wholesale_role_filter )
+                && ! $this->has_role_restricted_products()
+                && ! WWP_Helper_Functions::is_plugin_active( 'show-products-by-attributes-variations/addify_show_variation_single_product.php' );
+        }
+
+        /**
          * Filter products collection visibility.
          *
          * @param WC_Product_Query $query object.
@@ -1164,10 +1281,16 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
          *
          * @since 2.0.3
          * @since 2.0.4 Add check if post type is product.
+         * @since 2.1.1 Bypass wholesale filtering for administrators and shop managers (matching pre_get_posts), and skip building the product-visibility whitelist when no wholesale filtering applies, to avoid injecting an oversized post__in clause on large catalogs.
          *
          * @return WC_Product_Query
          */
         public function filter_query_loop_block_query_vars( $query, $block, $page ) { // phpcs:ignore
+            // Administrators and shop managers are never restricted, consistent with pre_get_posts().
+            if ( current_user_can( 'manage_options' ) || current_user_can( 'manage_woocommerce' ) ) {
+                return $query;
+            }
+
             /**
              * If specific handpicked-products or product collections are selected then just return the query params(this is for handpicked-products, product-collection block)
              */
@@ -1184,6 +1307,14 @@ if ( ! class_exists( 'WWPP_Query' ) ) {
 
             // Pass if post type is product.
             if ( isset( $query['post_type'] ) && 'product' === $query['post_type'] ) {
+
+                // No wholesale context to filter on: skip building the visibility whitelist so we do not
+                // inject a post__in listing every product, which on large catalogs can exceed the host's
+                // SQL length limit and return zero products. See pre_get_posts() for the rationale.
+                if ( $this->should_skip_visibility_filter( $this->_get_current_user_wholesale_role() ) ) {
+                    return $query;
+                }
+
                 $filtered_query = $this->get_filtered_products_query();
 
                 // Set tax query.

@@ -1,1 +1,0 @@
-import{A as o}from"./hooks.C8Kwl4hr.js";const t=(t,e)=>{const r=o({},t);return Object.keys(e).forEach(o=>{const t=r[o];if(!t)throw new Error("not have ".concat(o," prop"));t.type||t.default?t.default=e[o]:t.def?t.def(e[o]):r[o]={type:t,default:e[o]}}),r};export{t as i};

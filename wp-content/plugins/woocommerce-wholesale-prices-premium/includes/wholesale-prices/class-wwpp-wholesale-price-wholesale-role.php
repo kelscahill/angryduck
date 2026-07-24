@@ -10,6 +10,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Wholesale_Role' ) ) {
      * Model that houses the logic of applying wholesale role level wholesale pricing.
      *
      * @since 1.16.0
+     * @since 2.1.1 Honour a wholesale price explicitly set to 0 instead of overriding it with the role/general discount.
      */
     class WWPP_Wholesale_Price_Wholesale_Role {
         /*
@@ -332,6 +333,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Wholesale_Role' ) ) {
          * Support ignore role/cat level wholesale pricing feature.
          * @since 1.23.5 Display correct wholesale when woocommerce multilingual is enabled.
          * @since 1.27.9 Replace round with wc_format_decimal function
+         * @since 2.1.1  Honour a wholesale price explicitly set to 0 instead of overriding it with the role/general discount.
          * @access public
          *
          * @param array        $wholesale_price_arr Wholesale price array data.
@@ -343,7 +345,13 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Wholesale_Role' ) ) {
          */
         public function apply_wholesale_role_general_discount( $wholesale_price_arr, $product_id, $user_wholesale_role, $cart_item, $cart_object ) {
 
-            if ( ! empty( $user_wholesale_role ) && isset( $user_wholesale_role[0] ) && empty( $wholesale_price_arr['wholesale_price'] ) ) {
+            // Only apply the role/general discount when no wholesale price is set (unset key or empty
+            // string). A numeric value, including 0, is a deliberately-set price and must be honoured.
+            // This also covers individual variations, whose type is "variation" (not "variable") and so
+            // are not caught by the variable-type early return below.
+            $explicit_wholesale_price = $wholesale_price_arr['wholesale_price'] ?? '';
+
+            if ( ! empty( $user_wholesale_role ) && isset( $user_wholesale_role[0] ) && ! is_numeric( $explicit_wholesale_price ) ) {
 
                 $product = wc_get_product( $product_id );
 

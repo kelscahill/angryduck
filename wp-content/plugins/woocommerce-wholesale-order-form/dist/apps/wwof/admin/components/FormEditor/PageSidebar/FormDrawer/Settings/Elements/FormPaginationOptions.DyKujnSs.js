@@ -1,1 +1,0 @@
-import{d as o,l as s,o as t}from"../../../../../../../../../common/hooks.C8Kwl4hr.js";import{_ as a}from"../../../../../../../../../common/NoOptions.vue_vue_type_script_setup_true_lang.TCm1N7cq.js";const m=o({__name:"FormPaginationOptions",setup:o=>(o,m)=>(t(),s(a))});export{m as default};

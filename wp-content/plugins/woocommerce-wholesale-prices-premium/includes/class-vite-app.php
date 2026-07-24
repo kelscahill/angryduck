@@ -109,6 +109,24 @@ class Vite_App {
     protected $register;
 
     /**
+     * Cache for merged script translations keyed by "domain:locale".
+     *
+     * @since 2.1.0
+     * @var array
+     */
+    protected static $merged_translations_cache = array();
+
+    /**
+     * Tracks which "domain:locale" combos have already been injected via wp-i18n.
+     * Prevents duplicate wp_add_inline_script() calls when multiple Vite handles share
+     * the same translations.
+     *
+     * @since 2.1.1
+     * @var array
+     */
+    protected static $translations_injected = array();
+
+    /**
      * Setups Vue app script files. After instantiation, call the enqueue() method to enqueue the script.
      *
      * @param string     $script_handle      The script handle to use for the app.
@@ -658,18 +676,153 @@ window.__vite_plugin_react_preamble_installed__ = true
          * Enable gettext functions in our script
          ***************************************************************************
          *
-         * We tell WordPress to load translations directly in our script if we have
-         * wp-i18n as a dependency.
+         * Load and inject merged JSON translations for wp.i18n when wp-i18n is
+         * a declared dependency. This replaces wp_set_script_translations() to
+         * (a) handle WPML's admin-bar locale switcher and (b) cover strings in
+         * dynamically-imported chunks whose JSON files wp_set_script_translations()
+         * would otherwise miss.
          */
         if ( in_array( 'wp-i18n', $this->dependencies, true ) ) {
-            wp_set_script_translations(
-                $this->script_handle,
+            $this->load_merged_script_translations(
                 'woocommerce-wholesale-prices-premium',
                 WWPP_PLUGIN_DIR_PATH . 'languages'
             );
         }
 
         $this->enqueue_stylesheet();
+    }
+
+    /**
+     * Load and merge all JSON translation files for the given text domain and current locale,
+     * then inject the merged translations via wp_add_inline_script().
+     *
+     * Replaces wp_set_script_translations() to solve two problems:
+     * 1. WPML's admin-bar language switcher: determine_locale() returns en_US even when WPML
+     *    is serving another locale, so wp_set_script_translations() loads the wrong JSON.
+     * 2. Dynamically-imported chunks each produce their own JSON file that
+     *    wp_set_script_translations() ignores because it only processes the entry-point handle.
+     *
+     * By globbing all `{domain}-{locale}-*.json` files and merging them, every translated string
+     * (entry files and code-split chunks) is available to wp.i18n.__() calls.
+     *
+     * @since  2.1.0
+     * @param  string $domain                Text domain.
+     * @param  string $plugin_languages_path Absolute path to the plugin's languages directory.
+     * @return void
+     */
+    protected function load_merged_script_translations( $domain, $plugin_languages_path ) {
+
+        $locale = determine_locale();
+
+        // When WPML's admin-bar language switcher is used, determine_locale() may return
+        // the site default locale. Resolve the real locale from WPML's current language.
+        $wpml_locale = WWPP_WPML_Helper::get_current_locale();
+        if ( ! empty( $wpml_locale ) ) {
+            $locale = $wpml_locale;
+        }
+
+        // No translations needed for English.
+        if ( 'en_US' === $locale ) {
+            return;
+        }
+
+        $cache_key = "$domain:$locale";
+
+        if ( ! isset( self::$merged_translations_cache[ $cache_key ] ) ) {
+
+            $pattern      = "{$domain}-{$locale}-*.json";
+            $all_messages = array();
+            $jed_header   = null;
+
+            $search_dirs = array(
+                rtrim( $plugin_languages_path, '/' ),
+                rtrim( WP_LANG_DIR, '/' ) . '/plugins',
+            );
+
+            foreach ( $search_dirs as $dir ) {
+                if ( ! is_dir( $dir ) ) {
+                    continue;
+                }
+
+                // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+                $files = @glob( "$dir/$pattern" );
+                if ( empty( $files ) ) {
+                    continue;
+                }
+
+                foreach ( $files as $file ) {
+                    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+                    $contents = file_get_contents( $file );
+                    if ( empty( $contents ) ) {
+                        continue;
+                    }
+
+                    $data = json_decode( $contents, true );
+                    if ( empty( $data['locale_data']['messages'] ) ) {
+                        continue;
+                    }
+
+                    $messages = $data['locale_data']['messages'];
+
+                    if ( null === $jed_header && isset( $messages[''] ) ) {
+                        $jed_header = $messages[''];
+                    }
+
+                    unset( $messages[''] );
+
+                    foreach ( $messages as $key => $value ) {
+                        if ( ! isset( $all_messages[ $key ] ) ) {
+                            $all_messages[ $key ] = $value;
+                        }
+                    }
+                }
+            }
+
+            if ( empty( $all_messages ) ) {
+                self::$merged_translations_cache[ $cache_key ] = false;
+                return;
+            }
+
+            if ( null === $jed_header ) {
+                $jed_header = array(
+                    'domain' => $domain,
+                    'lang'   => $locale,
+                );
+            }
+            $all_messages[''] = $jed_header;
+
+            $jed_data = array(
+                'locale_data' => array(
+                    'messages' => $all_messages,
+                ),
+            );
+
+            self::$merged_translations_cache[ $cache_key ] = wp_json_encode( $jed_data );
+        }
+
+        if ( false === self::$merged_translations_cache[ $cache_key ] ) {
+            return;
+        }
+
+        // Inject once per request: attach to wp-i18n so all consumers share one copy.
+        if ( isset( self::$translations_injected[ $cache_key ] ) ) {
+            return;
+        }
+        self::$translations_injected[ $cache_key ] = true;
+
+        $json        = self::$merged_translations_cache[ $cache_key ];
+        $domain_json = wp_json_encode( $domain );
+        $output      = <<<JS
+( function( domain, translations ) {
+	var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
+	if ( localeData ) {
+		localeData[""].domain = domain;
+		wp.i18n.setLocaleData( localeData, domain );
+	}
+} )( {$domain_json}, {$json} );
+JS;
+
+        wp_add_inline_script( 'wp-i18n', $output, 'after' );
     }
 
     /**

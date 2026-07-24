@@ -69,6 +69,7 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Product_Variations_V1_Controller' ) ) 
          * @param WP_REST_Request $request     Request data.
          *
          * @since 1.27
+         * @since 2.1.1 Cast the wholesale price as DECIMAL(10,2) instead of NUMERIC so prices below $1.00 are not truncated to 0.
          * @access public
          *
          * @return array
@@ -91,7 +92,7 @@ if ( ! class_exists( 'WWPP_REST_Wholesale_Product_Variations_V1_Controller' ) ) 
                         'key'     => $wholesale_role . '_wholesale_price',
                         'value'   => 0,
                         'compare' => '>',
-                        'type'    => 'NUMERIC',
+                        'type'    => 'DECIMAL(10,2)',
                     ),
                 );
                 $meta_query                 = array(

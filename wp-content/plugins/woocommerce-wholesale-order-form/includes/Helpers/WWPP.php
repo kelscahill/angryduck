@@ -69,6 +69,68 @@ class WWPP {
     }
 
     /**
+     * Resolve the authenticated user's wholesale role from WWP, intersected with
+     * the registered wholesale roles.
+     *
+     * Returns an empty string for guests, admins, shop managers, plain customers,
+     * or any user whose first WWP role is not a currently registered wholesale
+     * role. Multi-role users are treated as single-role — only the first slug
+     * returned by `getUserWholesaleRole()` is honoured, matching how the rest
+     * of the WWP/WWPP/WWOF codebase consumes the value.
+     *
+     * Use this instead of trusting a client-supplied `wholesale_role` request
+     * parameter — the server is the source of truth for role identity.
+     *
+     * Designed for REST-request scope. The registered-roles list is cached in a
+     * function-static for the process lifetime, so long-running PHP-FPM workers
+     * (queue jobs, WP-CLI batches) that add/remove wholesale roles mid-process
+     * will not see the change until the process restarts.
+     *
+     * @since 3.1.0
+     * @return string Wholesale role slug, or empty string when none applies.
+     */
+    public static function get_current_user_wholesale_role() {
+
+        global $wc_wholesale_prices;
+
+        if ( ! self::is_active() || ! is_object( $wc_wholesale_prices ) || ! isset( $wc_wholesale_prices->wwp_wholesale_roles ) ) {
+            return '';
+        }
+
+        $user_role = $wc_wholesale_prices->wwp_wholesale_roles->getUserWholesaleRole();
+        $user_role = is_array( $user_role ) ? ( $user_role[0] ?? '' ) : '';
+
+        if ( '' === $user_role ) {
+            return '';
+        }
+
+        // Re-intersect with registered wholesale roles to guard against the
+        // `wwp_user_wholesale_role` filter injecting a slug that isn't currently
+        // registered — WWP's `getUserWholesaleRole()` runs its own
+        // `array_intersect` against the registered list *before* the filter
+        // fires, so without this recheck a third-party callback could widen the
+        // returned set past what's actually registered.
+        //
+        // Only cache the registered-roles list once it materializes as a
+        // non-empty array. If the getter returns false/null/`[]` (option
+        // transiently missing, a misbehaving filter returning a non-array,
+        // WWP not finished bootstrapping), leave the static unset and
+        // short-circuit — caching a degenerate result here would lock the
+        // process into returning `''` for every subsequent call even after
+        // the underlying state recovers.
+        static $registered_roles = null;
+        if ( null === $registered_roles ) {
+            $candidate = $wc_wholesale_prices->wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
+            if ( ! is_array( $candidate ) || empty( $candidate ) ) {
+                return '';
+            }
+            $registered_roles = $candidate;
+        }
+
+        return isset( $registered_roles[ $user_role ] ) ? $user_role : '';
+    }
+
+    /**
      * Get WWPP settings used in the app script.
      *
      * @since 3.0

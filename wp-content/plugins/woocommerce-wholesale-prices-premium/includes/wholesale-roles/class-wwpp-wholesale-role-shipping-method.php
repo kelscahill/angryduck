@@ -162,6 +162,7 @@ class WWPP_Wholesale_Role_Shipping_Method {
      * Shipping methods introduced on WC 2.6 can not stand on their own and is dependent on the zone.
      * @since 1.14.8 If the package rates contains free shipping, it will force use free shipping. This is only for wholesale customers.
      * @since 1.16.0 Add support for per user shipping options override.
+     * @since 2.1.0 Hide per-method "wholesale only" mapped methods from non-wholesale and guest customers regardless of the global toggle.
      * @access public
      *
      * @param array $package_rates Package rates.
@@ -291,13 +292,18 @@ class WWPP_Wholesale_Role_Shipping_Method {
             }
         } elseif ( ! empty( $wholesale_zone_mapping ) && empty( $user_wholesale_role ) ) {
             $mapped_methods_for_wholesale_only = get_option( 'wwpp_settings_mapped_methods_for_wholesale_users_only' );
+            $has_wholesale_only_mapping        = $this->_has_wholesale_only_mapping( $wholesale_zone_mapping );
 
-            if ( 'yes' === $mapped_methods_for_wholesale_only || ! empty( $shipping_methods_blocked_for_non_wholesale_users ) || ! empty( $shipping_methods_blocked_for_all_other_users ) ) {
+            if ( 'yes' === $mapped_methods_for_wholesale_only || $has_wholesale_only_mapping || ! empty( $shipping_methods_blocked_for_non_wholesale_users ) || ! empty( $shipping_methods_blocked_for_all_other_users ) ) {
                 // Prevent non-wholesale users from using mapped shipping zone methods.
 
                 foreach ( WC()->shipping()->load_shipping_methods( $package ) as $shipping_method ) {
-                    // Check if shipping method is mapped.
-                    if ( 'yes' === $mapped_methods_for_wholesale_only && $this->_is_shipping_method_mapped( $shipping_method, $wholesale_zone_mapping ) !== false ) {
+                    // Hide the method from non-wholesale/guest customers when the global "wholesale only" toggle is on
+                    // and the method is mapped, or when the method's own mapping is flagged as wholesale only.
+                    $is_mapped_method  = false !== $this->_is_shipping_method_mapped( $shipping_method, $wholesale_zone_mapping );
+                    $is_wholesale_only = $this->_is_shipping_method_wholesale_only( $shipping_method, $wholesale_zone_mapping );
+
+                    if ( ( 'yes' === $mapped_methods_for_wholesale_only && $is_mapped_method ) || $is_wholesale_only ) {
                         /**
                          * Shipping method is mapped, but we still add a way for end users to override the behavior
                          * of skipping this mapped method to the non-wholesale customers
@@ -533,6 +539,9 @@ class WWPP_Wholesale_Role_Shipping_Method {
      *
      * @since 1.9.1
      * @since 1.14.0 Refactor codebase and move to its proper model.
+     * @since 2.1.0 Compare the duplicate-check result and the edited index as strings so editing an entry
+     *              without changing its role/zone/method is not rejected as a duplicate. Preserve the
+     *              "wholesale_only" flag when the posted mapping does not include it.
      * @access public
      *
      * @param null|int   $index   Mapping entry index.
@@ -566,7 +575,7 @@ class WWPP_Wholesale_Role_Shipping_Method {
                 'status'        => 'fail',
                 'error_message' => __( 'The mapping you wish to edit does not exists', 'woocommerce-wholesale-prices-premium' ),
             );
-        } elseif ( false !== $mapping_exists_check && $mapping_exists_check !== $index ) {
+        } elseif ( false !== $mapping_exists_check && (string) $mapping_exists_check !== (string) $index ) {
             $response = array(
                 'status'        => 'fail',
                 'error_message' => __( 'The new mapping data you want to save duplicates with another existing mapping', 'woocommerce-wholesale-prices-premium' ),
@@ -580,6 +589,11 @@ class WWPP_Wholesale_Role_Shipping_Method {
             } else {
                 unset( $mapping['shipping_zone_text'] );
                 unset( $mapping['shipping_method_text'] );
+            }
+
+            // Preserve the "wholesale only" flag when the posted mapping does not include it (e.g. legacy UI).
+            if ( ! isset( $mapping['wholesale_only'] ) && isset( $wholesale_zone_mapping[ $index ]['wholesale_only'] ) ) {
+                $mapping['wholesale_only'] = $wholesale_zone_mapping[ $index ]['wholesale_only'];
             }
 
             $wholesale_zone_mapping[ $index ] = $mapping;
@@ -685,11 +699,49 @@ class WWPP_Wholesale_Role_Shipping_Method {
     }
 
     /**
+     * Check whether a single mapping entry targets the given shipping method.
+     *
+     * Encapsulates the zoned/non-zoned branching and the numeric id normalisation shared by the mapping
+     * scans so the matching rules live in one place. A non-zoned method matches a non-zoned entry whose
+     * `non_zoned_shipping_method` equals the method id; a zoned method matches a zoned entry whose
+     * `shipping_method` equals the method instance id.
+     *
+     * @since 2.1.0
+     * @access private
+     *
+     * @param array  $wm              A single wholesale shipping mapping entry.
+     * @param object $shipping_method Shipping method object.
+     * @return bool True if the entry targets the shipping method, false otherwise.
+     */
+    private function _mapping_entry_matches_method( $wm, $shipping_method ) {
+        if ( ! $shipping_method->supports( 'shipping-zones' ) ) {
+            // Non-Zoned Shipping Method.
+            if ( empty( $wm['non_zoned_shipping_method'] ) || 'yes' !== $wm['use_non_zoned_shipping_method'] ) {
+                return false;
+            }
+            $wm_non_zoned_shipping_method = is_numeric( $wm['non_zoned_shipping_method'] ) ? intval( $wm['non_zoned_shipping_method'] ) : $wm['non_zoned_shipping_method'];
+            return $wm_non_zoned_shipping_method === $shipping_method->id;
+        }
+
+        if ( $shipping_method->get_instance_id() ) {
+            // Zoned Shipping Method.
+            if ( empty( $wm['shipping_method'] ) || 'no' !== $wm['use_non_zoned_shipping_method'] ) {
+                return false;
+            }
+            $wm_shipping_method = is_numeric( $wm['shipping_method'] ) ? intval( $wm['shipping_method'] ) : $wm['shipping_method'];
+            return $wm_shipping_method === $shipping_method->get_instance_id();
+        }
+
+        return false;
+    }
+
+    /**
      * Check if a shipping zone method is mapped.
      *
      * @since 1.9.1
      * @since 1.9.4 Check if both zoned and non-zoned shipping methods are mapped.
      * @since 1.14.0 Refactor codebase and move to its proper model.
+     * @since 2.1.0 Match each entry through the shared _mapping_entry_matches_method() predicate.
      * @access public
      *
      * @param object $shipping_method   Shipping method object.
@@ -697,25 +749,55 @@ class WWPP_Wholesale_Role_Shipping_Method {
      * @return bool False if not mapped, index of the mapping entry if mapped.
      */
     private function _is_shipping_method_mapped( $shipping_method, $wholesale_mapping ) {
-        if ( ! $shipping_method->supports( 'shipping-zones' ) ) {
-            // Non-Zoned Shipping Method.
-            foreach ( $wholesale_mapping as $index => $wm ) {
-                if ( ! empty( $wm['non_zoned_shipping_method'] ) ) {
-                    $wm_non_zoned_shipping_method = is_numeric( $wm['non_zoned_shipping_method'] ) ? intval( $wm['non_zoned_shipping_method'] ) : $wm['non_zoned_shipping_method'];
-                    if ( 'yes' === $wm['use_non_zoned_shipping_method'] && $wm_non_zoned_shipping_method === $shipping_method->id ) {
-                        return $index;
-                    }
-                }
+        foreach ( $wholesale_mapping as $index => $wm ) {
+            if ( $this->_mapping_entry_matches_method( $wm, $shipping_method ) ) {
+                return $index;
             }
-        } elseif ( $shipping_method->get_instance_id() ) {
-            // Zoned Shipping Method.
-            foreach ( $wholesale_mapping as $index => $wm ) {
-                if ( ! empty( $wm['shipping_method'] ) ) {
-                    $wm_shipping_method = is_numeric( $wm['shipping_method'] ) ? intval( $wm['shipping_method'] ) : $wm['shipping_method'];
-                    if ( 'no' === $wm['use_non_zoned_shipping_method'] && $wm_shipping_method === $shipping_method->get_instance_id() ) {
-                        return $index;
-                    }
-                }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a shipping method is flagged as "wholesale only" in any of its mapping entries.
+     *
+     * A method flagged as wholesale only must be hidden from non-wholesale and guest customers even when the
+     * global "Wholesale Only Shipping Methods" toggle is off.
+     *
+     * @since 2.1.0
+     * @access private
+     *
+     * @param object $shipping_method   Shipping method object.
+     * @param array  $wholesale_mapping Wholesale shipping mapping data.
+     * @return bool True if a matching mapping entry is flagged wholesale only, false otherwise.
+     */
+    private function _is_shipping_method_wholesale_only( $shipping_method, $wholesale_mapping ) {
+        foreach ( $wholesale_mapping as $wm ) {
+            if ( $this->_mapping_entry_matches_method( $wm, $shipping_method )
+                && ! empty( $wm['wholesale_only'] ) && 'yes' === $wm['wholesale_only'] ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if any shipping method mapping entry is flagged as "wholesale only".
+     *
+     * Used to decide whether the non-wholesale rate filtering needs to run even when the global
+     * "Wholesale Only Shipping Methods" toggle is off.
+     *
+     * @since 2.1.0
+     * @access private
+     *
+     * @param array $wholesale_mapping Wholesale shipping mapping data.
+     * @return bool True if at least one entry is flagged wholesale only, false otherwise.
+     */
+    private function _has_wholesale_only_mapping( $wholesale_mapping ) {
+        foreach ( (array) $wholesale_mapping as $wm ) {
+            if ( ! empty( $wm['wholesale_only'] ) && 'yes' === $wm['wholesale_only'] ) {
+                return true;
             }
         }
 

@@ -1,0 +1,1 @@
+import{Cr as a,En as s,Ln as o,Yt as e,br as r,er as l,gn as n,gr as t,hr as i,pn as m,xn as p}from"./ExclamationCircleFilled.hVlCEKoI.js";e();var c=p({__name:"NoOptions",setup:a=>(a,s)=>(o(),n("p",null,[m("em",null,r(i(wp.i18n.__)("No available options.","woocommerce-wholesale-order-form")),1)]))}),u=a({default:()=>_}),_=c;export{u as n,_ as t};

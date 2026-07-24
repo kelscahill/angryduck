@@ -344,6 +344,51 @@ class License_Manager extends Abstract_Class {
             is_multisite() ? delete_site_option( constant( $this->_software_key . '_OPTION_LICENSE_KEY' ) ) : delete_option( constant( $this->_software_key . '_OPTION_LICENSE_KEY' ) );
         }
 
+        /*
+         * When both the license email and key are submitted empty, the user is clearing their
+         * license. There is nothing to validate against the license server (an empty-credential
+         * request can only fail), so clear all locally stored license status immediately and skip
+         * the remote round-trip. Clearing locally guarantees the status is cleared even when the
+         * license server is unreachable, and avoids reading properties off an empty/undecodable
+         * remote response.
+         *
+         * @since 3.1.1.1
+         */
+        if ( '' === $activation_email && '' === $license_key ) {
+            if ( is_multisite() ) {
+                delete_site_option( constant( $this->_software_key . '_LICENSE_ACTIVATED' ) );
+                delete_site_option( constant( $this->_software_key . '_LICENSE_EXPIRED' ) );
+            } else {
+                delete_option( constant( $this->_software_key . '_LICENSE_ACTIVATED' ) );
+                delete_option( constant( $this->_software_key . '_LICENSE_EXPIRED' ) );
+            }
+
+            // Remove this plugin's entry from the shared WWS license data.
+            $wws_license_data = is_multisite() ? (array) get_site_option( WWS_LICENSE_DATA, array() ) : (array) get_option( WWS_LICENSE_DATA, array() );
+            $wws_license_data = array_diff_key( $wws_license_data, array( $this->_software_key => '' ) );
+
+            if ( is_multisite() ) {
+                update_site_option( WWS_LICENSE_DATA, $wws_license_data );
+            } else {
+                update_option( WWS_LICENSE_DATA, $wws_license_data );
+            }
+
+            $response = array(
+                'status'  => 'success',
+                'message' => __( 'License details have been cleared.', 'woocommerce-wholesale-order-form' ),
+            );
+
+            // Fire the same post-activation hook used by the standard activation flow below.
+            do_action( strtolower( $this->_software_key ) . '_ajax_activate_license', $response, $activation_email, $license_key );
+
+            if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+                // Return AJAX response.
+                wp_send_json( $response );
+            } else {
+                return $response;
+            }
+        }
+
         $activation_url = add_query_arg(
             array(
                 'activation_email' => rawurlencode( $activation_email ),

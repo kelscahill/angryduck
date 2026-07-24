@@ -222,7 +222,7 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
                             AND (
                                     (
                                         pm2.meta_key LIKE %s
-                                        AND CAST(pm2.meta_value AS SIGNED) > 0
+                                        AND CAST(pm2.meta_value AS DECIMAL(10,2)) > 0
                                     )
                                     OR (
                                         pm2.meta_key IN ( $vwp_placeholders )
@@ -230,7 +230,7 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Controller' ) ) {
                                     )
                                     OR (
                                         pm2.meta_key IN ( $vwp_placeholders )
-                                        AND CAST(pm2.meta_value AS SIGNED) > 0
+                                        AND CAST(pm2.meta_value AS DECIMAL(10,2)) > 0
                                     )
                                     OR (
                                         pm2.meta_key IN ( $cat_placeholders )

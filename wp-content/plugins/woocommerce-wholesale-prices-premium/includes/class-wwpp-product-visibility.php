@@ -10,6 +10,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
      * Model that houses the logic of filtering the products and only showing them to the proper recipient.
      *
      * @since 1.12.8
+     * @since 2.1.1 Enforce the "Only Show Wholesale Products To Wholesale Customers" setting at the add-to-cart and cart layers, matching the single product page enforcement.
      * @see WWPP_Query They are related in a way that WWPP_Query also filter products but via query.
      */
     class WWPP_Product_Visibility {
@@ -163,6 +164,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          * @since 1.0.0
          * @since 1.12.8 Refactor code base to be more efficient and secure.
          * @since 1.16.0 Add ignore role/cat level wholesale pricing feature.
+         * @since 2.1.1  Sanitize and whitelist submitted visibility roles against registered wholesale roles before persisting.
          * @access public
          *
          * @param int $post_id Post ( Product ) Id.
@@ -191,14 +193,15 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                     // We make sure to delete old post meta so the meta won't contains duplicate values.
                     $product->delete_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
 
-                    if ( isset( $_POST['wholesale-visibility-select'] ) && is_array( $_POST['wholesale-visibility-select'] ) && ! empty( $_POST['wholesale-visibility-select'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                    // Sanitize without case-folding: registered role keys can be mixed-case
+                    // (the add-role page allows them), and the strict whitelist match in
+                    // persist_wholesale_visibility_roles() is the real gate. Lowercasing here
+                    // would drop legitimate keys and fail open to 'all'.
+                    $submitted_roles = isset( $_POST['wholesale-visibility-select'] ) && is_array( $_POST['wholesale-visibility-select'] )
+                        ? array_map( 'sanitize_text_field', wp_unslash( $_POST['wholesale-visibility-select'] ) )
+                        : array();
 
-                        foreach ( $_POST['wholesale-visibility-select'] as $wholesaleRole ) { // phpcs:ignore 
-                            $product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $wholesaleRole );
-                        }
-                    } else {
-                        $product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, 'all' );
-                    }
+                    $this->persist_wholesale_visibility_roles( $product, $submitted_roles );
                 }
 
                 if ( isset( $_POST['wwpp_nonce_save_product_wholesale_price_options'] ) && wp_verify_nonce( $_POST['wwpp_nonce_save_product_wholesale_price_options'], 'wwpp_action_save_product_wholesale_price_options' ) ) { // phpcs:ignore
@@ -245,25 +248,8 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                     $product    = wc_get_product( $post->ID );
                     $product_id = $product->get_id();
 
-                    $product_cat_terms = get_the_terms( $product_id, 'product_cat' );
-
-                    // Wholesale role product category filter.
-                    $product_is_restricted_in_category = WWPP_Helper_Functions::is_product_restricted_in_category( $product_id, $user_wholesale_role );
-
-                    // One of the cats this product is under have a wholesale role filter.
-                    if ( $product_is_restricted_in_category ) {
-                        wp_safe_redirect( $redirect_link );
-                        exit();
-                    }
-
-                    $post_wholesale_filter = WWP_Helper_Functions::get_formatted_meta_data( $product, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
-
-                    if ( ! is_array( $post_wholesale_filter ) || empty( $post_wholesale_filter ) ) {
-                        // If no filter then meaning this product is accessible to all users.
-                        $post_wholesale_filter = array( 'all' );
-                    }
-
-                    if ( ! in_array( $user_wholesale_role, $post_wholesale_filter, true ) && ! in_array( 'all', $post_wholesale_filter, true ) ) {
+                    // Category-level and per-product wholesale role visibility filter.
+                    if ( $this->is_product_restricted_for_wholesale_role( $product_id, $user_wholesale_role ) ) {
                         wp_safe_redirect( $redirect_link );
                         exit();
                     }
@@ -281,6 +267,164 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
             }
         }
 
+        /**
+         * Determine whether a product is restricted for a given wholesale role via the
+         * category-level, per-product, or per-variation ( wholesale exclusive variation )
+         * wholesale role visibility filters.
+         *
+         * This is the same logic enforced on the single product page in
+         * {@see check_product_wholesale_role_visibility_filter()}, extracted so it can also
+         * be enforced at the cart and checkout layers.
+         *
+         * @since 2.1.1
+         * @access public
+         *
+         * @param int          $product_id          Product ( or variation ) id.
+         * @param string|false $user_wholesale_role  Current user wholesale role, or false for guests.
+         *
+         * @return bool True if the product is restricted for the given role, false otherwise.
+         */
+        public function is_product_restricted_for_wholesale_role( $product_id, $user_wholesale_role ) {
+
+            $product = wc_get_product( $product_id );
+
+            if ( ! is_a( $product, 'WC_Product' ) ) {
+                return false;
+            }
+
+            if ( WWPP_Wholesale_Price_Product_Category::is_variation_type( $product ) ) {
+
+                // Wholesale exclusive variation filter, stored on the variation itself.
+                $variation_wholesale_filter = WWP_Helper_Functions::get_formatted_meta_data( $product, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+
+                if ( ! empty( $variation_wholesale_filter )
+                    && ! in_array( $user_wholesale_role, $variation_wholesale_filter, true )
+                    && ! in_array( 'all', $variation_wholesale_filter, true ) ) {
+                    return true;
+                }
+
+                // Resolve to the parent product, as the category-level and per-product visibility filters are stored on the parent.
+                $parent_id = $product->get_parent_id();
+
+                if ( $parent_id ) {
+                    $parent_product = wc_get_product( $parent_id );
+
+                    if ( is_a( $parent_product, 'WC_Product' ) ) {
+                        $product_id = $parent_id;
+                        $product    = $parent_product;
+                    }
+                }
+            }
+
+            // Wholesale role product category filter. One of the cats this product is under has a wholesale role filter.
+            if ( WWPP_Helper_Functions::is_product_restricted_in_category( $product_id, $user_wholesale_role ) ) {
+                return true;
+            }
+
+            $post_wholesale_filter = WWP_Helper_Functions::get_formatted_meta_data( $product, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+
+            if ( ! is_array( $post_wholesale_filter ) || empty( $post_wholesale_filter ) ) {
+                // If no filter then meaning this product is accessible to all users.
+                $post_wholesale_filter = array( 'all' );
+            }
+
+            if ( ! in_array( $user_wholesale_role, $post_wholesale_filter, true ) && ! in_array( 'all', $post_wholesale_filter, true ) ) {
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Enforce wholesale role visibility restrictions when a product is added to the cart.
+         *
+         * The single product page guard ({@see check_product_wholesale_role_visibility_filter()})
+         * only fires on the product template, so any add-to-cart path that bypasses that template
+         * (direct `?add-to-cart={id}` URL, AJAX add-to-cart, Store API, Order Form REST, etc.) would
+         * otherwise let a restricted product into the cart. This closes that gap.
+         *
+         * @since 2.1.1
+         * @since 2.1.1 Also block products hidden by the "Only Show Wholesale Products To Wholesale Customers" setting.
+         * @access public
+         *
+         * @param bool $passed       Whether add-to-cart validation has passed so far.
+         * @param int  $product_id   Product id being added to the cart.
+         * @param int  $quantity     Quantity being added.
+         * @param int  $variation_id Variation id being added, if any.
+         *
+         * @return bool False when the product is restricted for the current user, otherwise the unchanged $passed value.
+         */
+        public function validate_product_visibility_on_add_to_cart( $passed, $product_id, $quantity = 1, $variation_id = 0 ) {
+
+            // Do not restrict admins or shop managers.
+            if ( current_user_can( 'manage_woocommerce' ) ) {
+                return $passed;
+            }
+
+            $user_wholesale_role = $this->_get_current_user_wholesale_role();
+            $product_id_to_check = $variation_id ? $variation_id : $product_id;
+
+            if ( $this->is_product_restricted_for_wholesale_role( $product_id_to_check, $user_wholesale_role )
+                || $this->is_non_wholesale_product_for_wholesale_user( $product_id_to_check, $user_wholesale_role ) ) {
+
+                wc_add_notice(
+                    __( 'This product is not available for your account.', 'woocommerce-wholesale-prices-premium' ),
+                    'error'
+                );
+
+                return false;
+            }
+
+            return $passed;
+        }
+
+        /**
+         * Secondary defence: block checkout if the cart contains any product restricted for the current user.
+         *
+         * Guards against restricted products that entered the cart before this validation existed, or via
+         * a path that did not run add-to-cart validation.
+         *
+         * Hooked on `woocommerce_check_cart_items`, which fires on the cart page, the classic
+         * checkout, and the Store API ( block checkout ) cart validation — unlike
+         * `woocommerce_checkout_process`, which only fires in the classic shortcode checkout
+         * and would let the block checkout bypass this backstop.
+         *
+         * @since 2.1.1
+         * @since 2.1.1 Also block products hidden by the "Only Show Wholesale Products To Wholesale Customers" setting.
+         * @access public
+         */
+        public function validate_product_visibility_in_cart() {
+
+            // Do not restrict admins or shop managers.
+            if ( current_user_can( 'manage_woocommerce' ) || ! WC()->cart ) {
+                return;
+            }
+
+            $user_wholesale_role = $this->_get_current_user_wholesale_role();
+
+            foreach ( WC()->cart->get_cart() as $cart_item ) {
+
+                $product_id_to_check = ! empty( $cart_item['variation_id'] ) ? $cart_item['variation_id'] : $cart_item['product_id'];
+
+                if ( $this->is_product_restricted_for_wholesale_role( $product_id_to_check, $user_wholesale_role )
+                    || $this->is_non_wholesale_product_for_wholesale_user( $product_id_to_check, $user_wholesale_role ) ) {
+
+                    $restricted_product = isset( $cart_item['data'] ) && is_a( $cart_item['data'], 'WC_Product' ) ? $cart_item['data'] : wc_get_product( $product_id_to_check );
+
+                    wc_add_notice(
+                        sprintf(
+                            /* translators: %s: name of the restricted product in the cart */
+                            __( '"%s" is not available for your account. Please remove it from your cart before proceeding.', 'woocommerce-wholesale-prices-premium' ),
+                            $restricted_product ? $restricted_product->get_name() : __( 'A product in your cart', 'woocommerce-wholesale-prices-premium' )
+                        ),
+                        'error'
+                    );
+
+                    return;
+                }
+            }
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Only Show Wholesale Products To Wholesale Users
@@ -293,6 +437,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          * @since 1.0.3
          * @since 1.13.0 Refactor codebase and move to its correct model.
          * @since 1.16.0 Refactor code base to get wholesale discount wholesale role level from 'WWPP_Wholesale_Price_Wholesale_Role' model.
+         * @since 2.1.1  Extract the non-wholesale product decision into is_non_wholesale_product_for_wholesale_user() so the same predicate can be enforced at the cart layer.
          */
         public function only_show_wholesale_products_to_wholesale_users() {
 
@@ -300,66 +445,120 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
 
             // Check if user is not an admin, else we don't want to restrict admins in any way.
             // And also check if settings for "Only Showing Wholesale Products To Wholesale Users" option is checked.
-            if ( ! empty( $user_wholesale_role ) && ! current_user_can( 'manage_options' ) && get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' && is_product() ) {
+            if ( ! empty( $user_wholesale_role ) && ! current_user_can( 'manage_options' ) && ! current_user_can( 'manage_woocommerce' ) && get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) === 'yes' && is_product() ) {
 
-                global $post, $wc_wholesale_prices_premium;
+                global $post;
 
-                $disregard_products = $wc_wholesale_prices_premium->wwpp_query->disregard_wholesale_products( $user_wholesale_role );
-                $redirect_link      = apply_filters( 'wwpp_only_show_wholesale_products_to_wholesale_users_redirect_link', get_permalink( wc_get_page_id( 'shop' ) ) );
+                if ( $this->is_non_wholesale_product_for_wholesale_user( $post->ID, $user_wholesale_role ) ) {
 
-                // Disregard wholesale products.
-                if ( in_array( $post->ID, $disregard_products, true ) ) {
+                    $redirect_link = apply_filters( 'wwpp_only_show_wholesale_products_to_wholesale_users_redirect_link', get_permalink( wc_get_page_id( 'shop' ) ) );
 
                     wp_safe_redirect( $redirect_link );
                     exit();
 
                 }
+            }
+        }
 
-                $user_wholesale_discount = $this->_wwpp_wholesale_price_wholesale_role->get_user_wholesale_role_level_discount( get_current_user_id(), $user_wholesale_role );
+        /**
+         * Determine whether a product is a non-wholesale product that must be hidden from the current
+         * wholesale user when "Only Show Wholesale Products To Wholesale Customers" is enabled.
+         *
+         * This is the same decision enforced on the single product page in
+         * {@see only_show_wholesale_products_to_wholesale_users()}, extracted so it can also be
+         * enforced at the add-to-cart and cart layers, keeping cart enforcement in lockstep with page enforcement.
+         *
+         * @since 2.1.1
+         * @access public
+         *
+         * @param int          $product_id          Product ( or variation ) id.
+         * @param string|false $user_wholesale_role Current user wholesale role, or false for guests.
+         *
+         * @return bool True if the product is a non-wholesale product hidden from the given wholesale user, false otherwise.
+         */
+        public function is_non_wholesale_product_for_wholesale_user( $product_id, $user_wholesale_role ) {
 
-                // If the current user have no ( either empty or zero or false ) wholesale discount, we check the 'have_wholesale_price' flag.
-                // Else ( It has valid value ) then all products for this customer is considered as having wholesale price.
-                if ( $user_wholesale_role && empty( $user_wholesale_discount['discount'] ) ) {
+            // Only applies when the setting is enabled and the current user has a wholesale role.
+            if ( empty( $user_wholesale_role ) || get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', false ) !== 'yes' ) {
+                return false;
+            }
 
-                    $wholesale_price      = get_post_meta( $post->ID, $user_wholesale_role . '_wholesale_price', true );
-                    $have_wholesale_price = get_post_meta( $post->ID, $user_wholesale_role . '_have_wholesale_price', true );
+            global $wc_wholesale_prices_premium;
 
-                    // Possible that the product is group.
-                    if ( 'product' === $post->post_type && 'yes' !== $have_wholesale_price ) {
-                        // Get product object.
-                        $product = wc_get_product( $post->ID );
+            $product = wc_get_product( $product_id );
 
-                        // Check if Grouped product.
-                        if ( $product->is_type( 'grouped' ) ) {
-                            $grouped_products = $product->get_children();
-                            $not_allowed      = true;
-                            if ( ! empty( $grouped_products ) ) {
-                                $child_products = array();
-                                foreach ( $grouped_products as $grouped_product_id ) {
-                                    $grouped_product_have_wholesale_price = get_post_meta( $grouped_product_id, $user_wholesale_role . '_have_wholesale_price', true );
+            if ( ! is_a( $product, 'WC_Product' ) ) {
+                return false;
+            }
 
-                                    if ( 'yes' !== $grouped_product_have_wholesale_price ) {
-                                        $child_products[] = $grouped_product_id;
-                                    }
-                                }
+            // The only-show-wholesale meta is stored on the parent product, so resolve variations to their parent.
+            if ( WWPP_Wholesale_Price_Product_Category::is_variation_type( $product ) ) {
 
-                                if ( empty( $child_products ) ) {
-                                    $not_allowed = false;
-                                }
-                            }
+                $parent_id = $product->get_parent_id();
 
-                            if ( $not_allowed ) {
-                                wp_safe_redirect( $redirect_link );
-                                exit();
-                            }
-                        } elseif ( empty( $wholesale_price ) && 0 === strlen( (string) $wholesale_price ) ) { // redirect for single product with no wholesale price defined or set (if 0 is defined as wholesale price it will not redirect from now onwards).
-                            wp_safe_redirect( $redirect_link );
-                            exit();
+                if ( $parent_id ) {
+                    $parent_product = wc_get_product( $parent_id );
 
-                        }
+                    if ( is_a( $parent_product, 'WC_Product' ) ) {
+                        $product_id = $parent_id;
+                        $product    = $parent_product;
                     }
                 }
             }
+
+            // Guard the global before dereferencing: these entry points now fire in add-to-cart and
+            // cart-validation contexts, not just the single-page template_redirect path the old code
+            // ran on. If the plugin object or its query dependency is not yet initialized, bail safely
+            // rather than fatal, matching the "not a hidden non-wholesale product" default.
+            if ( ! isset( $wc_wholesale_prices_premium->wwpp_query ) ) {
+                return false;
+            }
+
+            $disregard_products = $wc_wholesale_prices_premium->wwpp_query->disregard_wholesale_products( $user_wholesale_role );
+
+            // Disregard wholesale products.
+            if ( in_array( $product_id, $disregard_products, true ) ) {
+                return true;
+            }
+
+            $user_wholesale_discount = $this->_wwpp_wholesale_price_wholesale_role->get_user_wholesale_role_level_discount( get_current_user_id(), $user_wholesale_role );
+
+            // If the current user has a wholesale discount, all products for this customer are considered as having a wholesale price.
+            if ( ! empty( $user_wholesale_discount['discount'] ) ) {
+                return false;
+            }
+
+            $wholesale_price      = get_post_meta( $product_id, $user_wholesale_role . '_wholesale_price', true );
+            $have_wholesale_price = get_post_meta( $product_id, $user_wholesale_role . '_have_wholesale_price', true );
+
+            if ( 'yes' === $have_wholesale_price ) {
+                return false;
+            }
+
+            // Grouped product: hidden unless every child has a wholesale price.
+            if ( $product->is_type( 'grouped' ) ) {
+
+                $grouped_products = $product->get_children();
+
+                if ( empty( $grouped_products ) ) {
+                    return true;
+                }
+
+                foreach ( $grouped_products as $grouped_product_id ) {
+                    if ( 'yes' !== get_post_meta( $grouped_product_id, $user_wholesale_role . '_have_wholesale_price', true ) ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            // Single product with no wholesale price defined or set ( a 0 wholesale price is treated as set ).
+            if ( empty( $wholesale_price ) && 0 === strlen( (string) $wholesale_price ) ) {
+                return true;
+            }
+
+            return false;
         }
 
         /*
@@ -373,6 +572,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          *
          * @since 1.23.4
          * @since 1.28   Add 'product_variation' in 'post_type' query arguments to show variation as upsells product
+         * @since 2.1.1  Cast the wholesale price as DECIMAL(10,2) instead of NUMERIC so prices below $1.00 are not truncated to 0.
          *
          * @param string $wholesale_role             Wholesale Role.
          * @param array  $ids                        Cross-sells and Uup-sells ids.
@@ -437,7 +637,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                             'key'     => $wholesale_role . '_wholesale_price',
                             'value'   => 0,
                             'compare' => '>',
-                            'type'    => 'NUMERIC',
+                            'type'    => 'DECIMAL(10,2)',
                         ),
                     );
                 }
@@ -510,6 +710,12 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          * @since 1.23.4 Remove using filter_cross_and_up_sell_products function to count how many wholesale products. Revert changes made in filter_cross_and_up_sell_products function which fixes the load time issue.
          *               Perform a query to count the wholesale products under this category,
          *               Only if Only Show Wholesale Products is enabled and override per user and the general discount is not set for the current user.
+         * @since 2.1.1  Cast the wholesale price as DECIMAL(10,2) instead of NUMERIC so prices below $1.00 are not truncated to 0.
+         * @since 2.1.1  Replace the two unbounded queries per tile (get_products_by_category() + a
+         *               posts_per_page=>-1 WP_Query) with a guarded early-return for the common
+         *               storefront case and a single cached COUNT(*) for the restricted cases (issue #1792).
+         *               Also fixes the guest + category-restriction path to use the restricted term
+         *               *ids* (array_keys) instead of the option's role-array values.
          *
          * @access public
          *
@@ -528,67 +734,33 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
                 return '';
             }
 
-            $product_ids = array();
-            $products    = WWPP_WPDB_Helper::get_products_by_category( $category->term_id ); // WP_Post.
-
-            foreach ( $products as $product ) {
-                $product_ids[] = $product->ID;
-            }
-
+            // Resolve the category-level restricted term ids as a flat array of term ids, matching the
+            // shop listing (WWPP_Query::get_filtered_products_query): the wholesale path uses the
+            // per-role helper, the guest path uses the restriction option's keys (the term ids).
             if ( ! empty( $wholesale_role ) ) {
                 $restricted_cat_ids = $wc_wholesale_prices_premium->wwpp_query->_get_restricted_product_cat_ids_for_wholesale_user( $wholesale_role );
             } else {
-                $restricted_cat_ids = get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER, array() );
+                $restricted_cat_ids = array_keys( (array) get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER, array() ) );
             }
 
-            $args = array(
-                'post_type'      => 'product',
-                'post_status'    => 'publish',
-                'posts_per_page' => -1,
-                'fields'         => 'ids',
-                'post__in'       => $product_ids,
-                'meta_query'     => array(
-                    array(
-                        'key'     => WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER,
-                        'value'   => array( $wholesale_role, 'all' ),
-                        'compare' => 'IN',
-                    ),
-                ),
-                'tax_query'      => empty( $restricted_cat_ids ) ? array() : array(
-                    array(
-                        'taxonomy' => 'product_cat',
-                        'field'    => 'term_id',
-                        'terms'    => array_map( 'intval', $restricted_cat_ids ),
-                        'operator' => 'NOT IN',
-                    ),
-                ),
-            );
+            // Guarded early-return: when there is no wholesale role, no category-level restriction and
+            // no per-product visibility restriction anywhere, the wholesale-filtered count equals
+            // WooCommerce's native count, so return the original markup with zero extra queries.
+            if ( empty( $wholesale_role ) &&
+                empty( $restricted_cat_ids ) &&
+                ! WWPP_Cache::instance( array() )->store_has_per_product_visibility_restriction() ) {
+                return $count_markup;
+            }
 
-            if ( ! empty( $user_wholesale_role ) &&
+            // "Only show wholesale products to wholesale users" gate (same conditions as before).
+            $only_wholesale = ! empty( $user_wholesale_role ) &&
                 'yes' === get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users' ) &&
                 ! WWPP_Helper_Functions::_wholesale_user_have_override_per_user_discount( $user_wholesale_role ) &&
-                ! WWPP_Helper_Functions::_wholesale_user_have_general_role_discount( $wholesale_role ) ) {
+                ! WWPP_Helper_Functions::_wholesale_user_have_general_role_discount( $wholesale_role );
 
-                $args['meta_query'][] = array(
-                    'relation' => 'OR',
-                    array(
-                        'key'     => $wholesale_role . '_have_wholesale_price',
-                        'value'   => 'yes',
-                        'compare' => '=',
-                    ),
-                    array(
-                        'key'     => $wholesale_role . '_wholesale_price',
-                        'value'   => 0,
-                        'compare' => '>',
-                        'type'    => 'NUMERIC',
-                    ),
-                );
+            $count = WWPP_Cache::instance( array() )->get_product_cat_count( $category->term_id, $wholesale_role, $restricted_cat_ids, $only_wholesale );
 
-            }
-
-            $wholesale_query = new WP_Query( $args );
-
-            return ' <mark class="count">(' . $wholesale_query->post_count . ')</mark>';
+            return ' <mark class="count">(' . $count . ')</mark>';
         }
 
         /**
@@ -627,6 +799,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          * current values of the quick edit fields via javascript.
          *
          * @since 1.14.4
+         * @since 2.1.1 Escape the selected-roles data attribute output.
          * @access public
          *
          * @param Array $all_wholesale_roles   list of wholesale roles.
@@ -645,7 +818,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
 
             ?>
 
-            <div class="wholesale_product_visibility_data" data-selected_roles='<?php echo wp_json_encode( $product_wholesale_role_filter ); ?>'></div>
+            <div class="wholesale_product_visibility_data" data-selected_roles='<?php echo esc_attr( wp_json_encode( $product_wholesale_role_filter ) ); ?>'></div>
             <?php
         }
 
@@ -653,6 +826,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          * Save wholesale custom fields on the quick edit option.
          *
          * @since 1.14.4
+         * @since 2.1.1 Sanitize and whitelist submitted visibility roles against registered wholesale roles before persisting.
          * @access public
          *
          * @param WC_Product $product               Product object.
@@ -671,17 +845,54 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
             // We make sure to delete old post meta so the meta won't contains duplicate values.
             $product_obj->delete_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
 
-            if ( isset( $_POST['wholesale-visibility-select'] ) && is_array( $_POST['wholesale-visibility-select'] ) && ! empty( $_POST['wholesale-visibility-select'] ) ) { // phpcs:ignore.
+            // phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce and capability are verified upstream by WooCommerce core's WC_AJAX::save_product() ( check_ajax_referer( 'save-product', 'security' ) and current_user_can() ) before the woocommerce_product_quick_edit_save hook fires the wwp_save_wholesale_price_fields_on_quick_edit_screen action that triggers this method.
+            // Sanitize without case-folding so mixed-case registered role keys survive the
+            // strict whitelist match in persist_wholesale_visibility_roles(); lowercasing here
+            // would drop legitimate keys and fail open to 'all'.
+            $submitted_roles = isset( $_POST['wholesale-visibility-select'] ) && is_array( $_POST['wholesale-visibility-select'] )
+                ? array_map( 'sanitize_text_field', wp_unslash( $_POST['wholesale-visibility-select'] ) )
+                : array();
+            // phpcs:enable WordPress.Security.NonceVerification.Missing
 
-                foreach ( $_POST['wholesale-visibility-select'] as $wholesaleRole ) { // phpcs:ignore.
-                    $product_obj->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $wholesaleRole );
-                }
-            } else {
-                $product_obj->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, 'all' );
-            }
+            $this->persist_wholesale_visibility_roles( $product_obj, $submitted_roles );
 
             // Save the product.
             $product_obj->save();
+        }
+
+        /**
+         * Persist the whitelisted wholesale-role visibility meta for a product.
+         *
+         * Persists only the submitted role keys that map to a registered wholesale role.
+         * When no registered role is submitted, the product is marked visible to all ('all').
+         * The strict whitelist match against registered role keys is the gate, so callers must
+         * sanitize without case-folding (e.g. sanitize_text_field) to preserve mixed-case keys.
+         *
+         * @since 2.1.1
+         * @access private
+         *
+         * @param WC_Product $product         Product object to persist the visibility meta on.
+         * @param array      $submitted_roles Sanitized wholesale role keys submitted from the save form.
+         *
+         * @return void
+         */
+        private function persist_wholesale_visibility_roles( $product, $submitted_roles ) {
+
+            $registered_role_keys = array_keys( $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles() );
+            $saved_any_role       = false;
+
+            foreach ( $submitted_roles as $wholesale_role ) {
+
+                // Only persist values that map to a registered wholesale role.
+                if ( in_array( $wholesale_role, $registered_role_keys, true ) ) {
+                    $product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, $wholesale_role );
+                    $saved_any_role = true;
+                }
+            }
+
+            if ( ! $saved_any_role ) {
+                $product->add_meta_data( WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, 'all' );
+            }
         }
 
         /*
@@ -1015,6 +1226,7 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
          * @since 1.12.8
          * @since 1.13.0 Move the logic of only showing wholesale products to wholesale users here
          * @since 1.23.4 Update crosssell and upsell hook prefix to 'woocommerce_product_get_' from 'woocommerce_product_'
+         * @since 2.1.1  Run the add-to-cart visibility validation at a later priority so it is not overwritten by the wholesale minimum order quantity validation.
          * @access public
          */
         public function run() {
@@ -1023,6 +1235,23 @@ if ( ! class_exists( 'WWPP_Product_Visibility' ) ) {
             add_action( 'post_submitbox_misc_actions', array( $this, 'add_product_wholesale_role_visibility_filter_fields' ), 100 );
             add_action( 'save_post', array( $this, 'save_product_wholesale_role_visibility_filter' ), 10, 1 );
             add_action( 'template_redirect', array( $this, 'check_product_wholesale_role_visibility_filter' ), 10 );
+
+            // Enforce wholesale role visibility restrictions at the cart and checkout layers,
+            // covering add-to-cart paths that bypass the single product page template.
+            // `woocommerce_check_cart_items` fires on the cart page, the classic checkout,
+            // and the Store API ( block checkout ), unlike `woocommerce_checkout_process`
+            // which is classic-checkout only.
+            //
+            // Priority 20 is deliberate and load-bearing: this validator must run AFTER
+            // WWPP_Wholesale_Price_Requirement::validate_minimum_order_quantity_on_shop_page_add_to_cart()
+            // ( registered on the same filter at the default priority 10 ), which reassigns the
+            // incoming `woocommerce_add_to_cart_validation` value unconditionally and would
+            // otherwise flip a `false` set here back to `true` for a restricted or non-wholesale
+            // product. Correctness is therefore coupled to hook order — a future validator that
+            // reassigns the result unconditionally at a priority greater than 20 would re-open the
+            // clobber, so any such addition must account for this dependency.
+            add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'validate_product_visibility_on_add_to_cart' ), 20, 4 );
+            add_action( 'woocommerce_check_cart_items', array( $this, 'validate_product_visibility_in_cart' ), 10 );
 
             // Only show wholesale products to wholesale users.
             add_filter( 'template_redirect', array( $this, 'only_show_wholesale_products_to_wholesale_users' ), 100 );

@@ -1,1 +1,0 @@
-System.register(["./Col-legacy.BzP303_L.js","./hooks-legacy.BRKQHcMP.js"],function(e,t){"use strict";var s,r,c;return{setters:[e=>{s=e.C,r=e.A},e=>{c=e.a8}],execute:function(){e("C",c(s)),e("R",c(r))}}});

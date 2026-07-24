@@ -7,6 +7,7 @@
  */
 
 use RymeraWebCo\WWOF\REST\Admin_Notices;
+use RymeraWebCo\WWOF\REST\Cart_Bundle;
 use RymeraWebCo\WWOF\REST\Favourites;
 use RymeraWebCo\WWOF\REST\License_Manager;
 use RymeraWebCo\WWOF\REST\Order_Form;
@@ -20,4 +21,5 @@ return array(
     Admin_Notices::instance(),
     Order_Form::instance(),
     Favourites::instance(),
+    Cart_Bundle::instance(),
 );

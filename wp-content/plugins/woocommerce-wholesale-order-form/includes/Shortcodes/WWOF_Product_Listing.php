@@ -114,7 +114,7 @@ class WWOF_Product_Listing extends Abstract_Shortcode {
 
         $login_url = ! empty( $form->settings['permissions']['noAccessLoginUrl'] )
             ? do_shortcode( html_entity_decode( $form->settings['permissions']['noAccessLoginUrl'] ) )
-            : ( WWLC::is_active()
+            : ( WWLC::is_active() && function_exists( 'wwlc_get_url_of_page_option' )
                 ? wwlc_get_url_of_page_option( 'wwlc_general_login_page' )
                 : ( get_permalink( wc_get_page_id( 'myaccount' ) )
                     ? get_permalink( wc_get_page_id( 'myaccount' ) )

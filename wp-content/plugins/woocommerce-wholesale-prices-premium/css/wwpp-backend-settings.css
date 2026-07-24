@@ -3,7 +3,9 @@
     display: block;
     padding: 10px 15px;
     background-color: #dce9de;
-    width: max-content;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
 }
 
 .wwpp-recommendation-notice a,

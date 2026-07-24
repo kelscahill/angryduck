@@ -8,7 +8,6 @@
 namespace RymeraWebCo\WWOF\Integrations;
 
 use RymeraWebCo\WWOF\Abstracts\Abstract_Class;
-use RymeraWebCo\WWOF\Helpers\WWOF;
 use RymeraWebCo\WWOF\Helpers\WWPP as WWPP_Helper;
 use WP_Error;
 use WP_HTTP_Response;
@@ -217,13 +216,17 @@ class WWPP extends Abstract_Class {
      */
     public function product_variation_replace_clauses( $clauses ) {
 
-        global $wpdb, $wc_wholesale_prices;
+        global $wpdb;
 
         if ( ! is_a( $this->request, 'WP_REST_Request' ) || ! $this->request->get_param( 'wwof' ) ) {
             return $clauses;
         }
 
-        $wholesale_role = $wc_wholesale_prices->wwp_wholesale_roles->getUserWholesaleRole()[0] ?? WWOF::get_app_user();
+        $wholesale_role = WWPP_Helper::get_current_user_wholesale_role();
+
+        if ( '' === $wholesale_role ) {
+            return $clauses;
+        }
 
         // Cache product category wholesale role filter to avoid repeated option calls.
         $filter_cache_key                  = 'wwof_product_cat_filter_' . md5( $wholesale_role );
@@ -277,8 +280,61 @@ class WWPP extends Abstract_Class {
 
         $this->request = $request;
 
-        if ( 'yes' === get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', 'no' ) ) {
-            add_filter( 'posts_clauses_request', array( $this, 'product_variation_replace_clauses' ), 100 );
+        if ( 'yes' !== get_option( 'wwpp_settings_only_show_wholesale_products_to_wholesale_users', 'no' ) ) {
+            return $args;
+        }
+
+        add_filter( 'posts_clauses_request', array( $this, 'product_variation_replace_clauses' ), 100 );
+
+        /***************************************************************************
+         * Exclude variations without wholesale pricing from the order form dropdown
+         ***************************************************************************
+         *
+         * WWPP's product-page filtering runs on `woocommerce_get_children`, but the
+         * REST variations endpoint queries by `post_parent` directly so that hook
+         * never fires (see issue #930). Tighten the variation query so a wholesale
+         * customer only sees variations priced for their role when the
+         * "Only Show Wholesale Products To Wholesale Customers" option is on.
+         *
+         * Role identity is resolved from the authenticated user — the client-supplied
+         * `wholesale_role` request param is ignored (see issue #966).
+         */
+        $wholesale_role = WWPP_Helper::get_current_user_wholesale_role();
+
+        if ( '' === $wholesale_role ) {
+            return $args;
+        }
+
+        // Mirror WWPP's own variation meta_query (`OR` of `_have_wholesale_price` and
+        // `_wholesale_price > 0`) so variations priced via category-level wholesale
+        // pricing or carrying only the `_have_wholesale_price` flag aren't over-hidden.
+        $price_clause = array(
+            'relation' => 'OR',
+            array(
+                'key'     => $wholesale_role . '_have_wholesale_price',
+                'value'   => 'yes',
+                'compare' => '=',
+            ),
+            array(
+                'key'     => $wholesale_role . '_wholesale_price',
+                'value'   => 0,
+                'compare' => '>',
+                // DECIMAL(10,2), not NUMERIC: NUMERIC casts to SIGNED INT, truncating
+                // sub-$1 prices to 0 so they fail `> 0` and the variation is hidden (#989).
+                'type'    => 'DECIMAL(10,2)',
+            ),
+        );
+
+        // Defensive AND-wrap: keep any meta_query another filter may have set
+        // intact while ensuring the wholesale-price requirement applies on top.
+        if ( empty( $args['meta_query'] ) || ! is_array( $args['meta_query'] ) ) {
+            $args['meta_query'] = $price_clause;
+        } else {
+            $args['meta_query'] = array(
+                'relation' => 'AND',
+                $args['meta_query'],
+                $price_clause,
+            );
         }
 
         return $args;

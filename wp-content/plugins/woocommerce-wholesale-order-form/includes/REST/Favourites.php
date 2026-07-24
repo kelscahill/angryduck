@@ -113,7 +113,7 @@ class Favourites extends Abstract_REST {
     }
 
     /**
-     * Save a favourite.
+     * Save a favorite.
      *
      * @param WP_REST_Request $request Request object.
      *
@@ -125,16 +125,16 @@ class Favourites extends Abstract_REST {
         $product_id = $request->get_param( 'id' );
 
         if ( WWOF::save_favourite_product( $product_id ) ) {
-            $message = __( 'Product saved to favourites.', 'woocommerce-wholesale-order-form' );
+            $message = __( 'Product saved to favorites.', 'woocommerce-wholesale-order-form' );
         } else {
-            $message = __( 'Product already in favourites.', 'woocommerce-wholesale-order-form' );
+            $message = __( 'Product already in favorites.', 'woocommerce-wholesale-order-form' );
         }
 
         return $this->rest_response( compact( 'message' ), $request );
     }
 
     /**
-     * Remove a product from favourites.
+     * Remove a product from favorites.
      *
      * @param WP_REST_Request $request Request object.
      *
@@ -146,9 +146,9 @@ class Favourites extends Abstract_REST {
         $product_id = $request->get_param( 'id' );
 
         if ( WWOF::remove_favourite_product( $product_id ) ) {
-            $message = __( 'Product removed from favourites.', 'woocommerce-wholesale-order-form' );
+            $message = __( 'Product removed from favorites.', 'woocommerce-wholesale-order-form' );
         } else {
-            $message = __( 'Product not found in favourites.', 'woocommerce-wholesale-order-form' );
+            $message = __( 'Product not found in favorites.', 'woocommerce-wholesale-order-form' );
         }
 
         return $this->rest_response( compact( 'message' ), $request );

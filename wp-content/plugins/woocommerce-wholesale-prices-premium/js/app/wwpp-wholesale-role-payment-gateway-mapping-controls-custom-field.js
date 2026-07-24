@@ -70,10 +70,10 @@ jQuery( document ).ready( function ( $ ) {
         error_fields = [];
 
         if ( $.trim( $wwpp_wr_pg_wholesale_roles.val() ) == "" )
-            error_fields.push( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_wholesale_role );
+            error_fields.push( wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ) );
 
         if ( $.trim( $wwpp_wr_pg_payment_gateway.val() ) == "" )
-            error_fields.push( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_payment_gateways );
+            error_fields.push( wp.i18n.__( 'Payment Gateways', 'woocommerce-wholesale-prices-premium' ) );
 
         return error_fields;
 
@@ -99,14 +99,14 @@ jQuery( document ).ready( function ( $ ) {
 
         if ( error_fields.length > 0 ) {
 
-            var msg = "Please specify values for the following field/s:<br/><ul>";
+            var msg = wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) + "<br/><ul>";
 
             for ( var i = 0 ; i < error_fields.length ; i++ )
                 msg += "<li>" + error_fields[ i ] + "</li>";
 
             msg += "</ul>";
 
-            toastr.error( msg , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_form_error , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( msg , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
             $this.removeAttr( 'disabled' );
             $wr_pg_button_controls.removeClass( 'processing' );
@@ -136,7 +136,7 @@ jQuery( document ).ready( function ( $ ) {
 
                 if ( data.status == 'success' ) {
 
-                    toastr.success( '' , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_success_add_wholesale_role , { "closeButton" : true , "showDuration" : successMessageDuration } );
+                    toastr.success( '' , wp.i18n.__( 'Successfully Added Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : successMessageDuration } );
 
                     removeTableNoItemsPlaceholder( $wr_pg_mapping );
 
@@ -189,9 +189,9 @@ jQuery( document ).ready( function ( $ ) {
 
                 } else {
 
-                    toastr.error( data.error_message , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_add_wholesale_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                    toastr.error( data.error_message , wp.i18n.__( 'Failed To Add New Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                    console.log( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_add_wholesale_role );
+                    console.log( wp.i18n.__( 'Failed To Add New Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( data );
                     console.log( '----------' );
 
@@ -200,9 +200,9 @@ jQuery( document ).ready( function ( $ ) {
             } )
             .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                toastr.error( jqXHR.responseText , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_add_wholesale_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Add New Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                console.log( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_add_wholesale_role );
+                console.log( wp.i18n.__( 'Failed To Add New Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) );
                 console.log( jqXHR );
                 console.log( '----------' );
 
@@ -227,14 +227,14 @@ jQuery( document ).ready( function ( $ ) {
 
         if ( error_fields.length > 0 ) {
 
-            var msg = "Please specify values for the following field/s:<br/><ul>";
+            var msg = wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) + "<br/><ul>";
 
             for ( var i = 0 ; i < error_fields.length ; i++ )
                 msg += "<li>" + error_fields[ i ] + "</li>";
 
             msg += "</ul>";
 
-            toastr.error( msg , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_form_error , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( msg , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
             $this.removeAttr( 'disabled' );
             $wr_pg_button_controls.removeClass( 'processing' );
@@ -301,13 +301,13 @@ jQuery( document ).ready( function ( $ ) {
                         .removeClass( "edit-mode" )
                         .addClass( "add-mode" );
 
-                    toastr.success( '' , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_success_update_wholesale_role , { "closeButton" : true , "showDuration" : successMessageDuration } );
+                    toastr.success( '' , wp.i18n.__( 'Successfully Updated Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : successMessageDuration } );
 
                 } else {
 
-                    toastr.error( data.error_message , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_update_wholesale_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                    toastr.error( data.error_message , wp.i18n.__( 'Failed To Update Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                    console.log( data.error_message , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_update_wholesale_role );
+                    console.log( data.error_message , wp.i18n.__( 'Failed To Update Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( data );
                     console.log( '----------' );
 
@@ -316,9 +316,9 @@ jQuery( document ).ready( function ( $ ) {
             } )
             .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                toastr.error( jqXHR.responseText , data.error_message , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_update_wholesale_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                toastr.error( jqXHR.responseText , data.error_message , wp.i18n.__( 'Failed To Update Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                console.log( data.error_message , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_update_wholesale_role );
+                console.log( data.error_message , wp.i18n.__( 'Failed To Update Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) );
                 console.log( jqXHR );
                 console.log( '----------' );
 
@@ -388,7 +388,7 @@ jQuery( document ).ready( function ( $ ) {
 
         $currentTr.addClass( "edited" );
 
-        if ( confirm( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_click_ok_remove_wholesale_role ) ) {
+        if ( confirm( wp.i18n.__( 'Clicking OK will remove the current wholesale role / payment gateway mapping', 'woocommerce-wholesale-prices-premium' ) ) ) {
 
             var wholesaleRoleKey = $.trim( $currentTr.find( ".meta" ).find( ".wholesale-role" ).text() );
 
@@ -412,20 +412,20 @@ jQuery( document ).ready( function ( $ ) {
                                 $wr_pg_mapping
                                     .find("tbody")
                                     .html(  '<tr class="no-items">' +
-                                                '<td class="colspanchange" colspan="3">' + wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_no_mappings_found + '</td>' +
+                                                '<td class="colspanchange" colspan="3">' + wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) + '</td>' +
                                             '</tr>');
 
                             }
 
                         } );
 
-                        toastr.success( '' , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_success_delete_wholesale_role , { "closeButton" : true , "showDuration" : successMessageDuration } );
+                        toastr.success( '' , wp.i18n.__( 'Successfully Deleted Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : successMessageDuration } );
 
                     } else {
 
-                        toastr.error( data.error_message , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_delete_wholesale_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                        toastr.error( data.error_message , wp.i18n.__( 'Failed to Delete Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                        console.log( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_delete_wholesale_role );
+                        console.log( wp.i18n.__( 'Failed to Delete Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) );
                         console.log( data );
                         console.log( '----------' );
 
@@ -434,9 +434,9 @@ jQuery( document ).ready( function ( $ ) {
                 } )
                 .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                    toastr.error( jqXHR.responseText , wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_delete_wholesale_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                    toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed to Delete Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                    console.log( wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params.i18n_fail_delete_wholesale_role );
+                    console.log( wp.i18n.__( 'Failed to Delete Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( jqXHR );
                     console.log( '----------' );
 

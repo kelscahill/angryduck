@@ -26,6 +26,123 @@ class WWP extends Abstract_Class {
     use Magic_Get_Trait;
 
     /**
+     * Column-visibility mode: column is shown to everyone (default).
+     *
+     * The frontend mirror lives in
+     * `src/apps/wwof/admin/components/FormEditor/PageSidebar/FormDrawer/Settings/Elements/Common/ColumnVisibility.vue`
+     * as `VISIBLE_TO_ALL`. Any change here must also update that file.
+     *
+     * @since 3.1.0
+     */
+    const VISIBLE_TO_ALL = 'all';
+
+    /**
+     * Column-visibility mode: column is shown only to users with any
+     * registered wholesale role.
+     *
+     * The frontend mirror is `VISIBLE_TO_WHOLESALE` in
+     * `ColumnVisibility.vue` — keep both sides in sync.
+     *
+     * @since 3.1.0
+     */
+    const VISIBLE_TO_WHOLESALE = 'wholesale';
+
+    /**
+     * Column-visibility mode: column is shown only to users whose wholesale
+     * role is listed in the column's `visibleToRoles` array.
+     *
+     * The frontend mirror is `VISIBLE_TO_ROLES` in `ColumnVisibility.vue` —
+     * keep both sides in sync.
+     *
+     * @since 3.1.0
+     */
+    const VISIBLE_TO_ROLES = 'roles';
+
+    /**
+     * Strip body-table columns that are restricted to roles the current
+     * user does not have.
+     *
+     * Columns may carry a `visibleTo` option set in the form editor (the
+     * canonical mode list is the `self::VISIBLE_TO_*` constants above, and
+     * the editor mirror is in `ColumnVisibility.vue` — both sides must be
+     * kept in sync):
+     *
+     *  - `self::VISIBLE_TO_ALL` (default) — visible to everyone.
+     *  - `self::VISIBLE_TO_WHOLESALE`     — visible to logged-in users
+     *                                       with any wholesale role.
+     *  - `self::VISIBLE_TO_ROLES`         — visible to users whose
+     *                                       wholesale role is in
+     *                                       `visibleToRoles` (array of
+     *                                       role slugs).
+     *
+     * Two cases short-circuit the filter and return the full column set:
+     *  1. The form is loaded for the admin editor preview ('edit' context).
+     *  2. The current user can manage WooCommerce (admins / shop managers
+     *     should always see every column on the live frontend too, mirroring
+     *     the editor's behavior).
+     *
+     * @param array  $form_body The form body meta.
+     * @param int    $post_id   The post ID. Unused but retained for the documented filter signature.
+     * @param string $meta_key  The meta key being filtered.
+     * @param string $context   The order form load context ('view' or 'edit').
+     *
+     * @since 3.1.0
+     * @return array
+     */
+    public function filter_form_body_column_visibility( $form_body, $post_id, $meta_key, $context = 'view' ) {
+
+        if ( 'form_body' !== $meta_key || 'edit' === $context ) {
+            return $form_body;
+        }
+
+        if ( current_user_can( 'manage_woocommerce' ) ) {
+            return $form_body;
+        }
+
+        if ( empty( $form_body['columns'] ) || ! is_array( $form_body['columns'] ) ) {
+            return $form_body;
+        }
+
+        global $wc_wholesale_prices;
+
+        $user_roles = array();
+        if ( is_object( $wc_wholesale_prices )
+            && isset( $wc_wholesale_prices->wwp_wholesale_roles )
+            && method_exists( $wc_wholesale_prices->wwp_wholesale_roles, 'getUserWholesaleRole' )
+        ) {
+            $user_roles = (array) $wc_wholesale_prices->wwp_wholesale_roles->getUserWholesaleRole();
+        }
+        $is_wholesale = ! empty( $user_roles );
+
+        $form_body['columns'] = array_values(
+            array_filter(
+                $form_body['columns'],
+                static function ( $column ) use ( $is_wholesale, $user_roles ) {
+                    $visible_to = $column['settings']['options']['visibleTo'] ?? self::VISIBLE_TO_ALL;
+
+                    if ( self::VISIBLE_TO_WHOLESALE === $visible_to ) {
+                        return $is_wholesale;
+                    }
+
+                    if ( self::VISIBLE_TO_ROLES === $visible_to ) {
+                        $allowed_roles = (array) ( $column['settings']['options']['visibleToRoles'] ?? array() );
+                        if ( empty( $allowed_roles ) ) {
+                            // Empty list with mode 'roles' means no role satisfies the rule — hide for everyone.
+                            return false;
+                        }
+
+                        return ! empty( array_intersect( $user_roles, $allowed_roles ) );
+                    }
+
+                    return true;
+                }
+            )
+        );
+
+        return $form_body;
+    }
+
+    /**
      * Custom query args.
      *
      * @param array           $args           The query args.
@@ -55,7 +172,9 @@ class WWP extends Abstract_Class {
                 array(
                     'key'     => "{$user_role}_wholesale_price",
                     'compare' => '>',
-                    'type'    => 'NUMERIC',
+                    // DECIMAL(10,2), not NUMERIC: NUMERIC casts to SIGNED INT, truncating
+                    // sub-$1 prices to 0 so they fail `> 0` (same root cause as #989).
+                    'type'    => 'DECIMAL(10,2)',
                     'value'   => 0,
                 ),
                 array(
@@ -264,6 +383,17 @@ class WWP extends Abstract_Class {
          * We customize the query clauses to include WWP data in the query.
          */
         add_filter( 'wwof_wc_rest_product_object_query', array( $this, 'product_object_query' ), 10, 3 );
+
+        /***************************************************************************
+         * Restrict order-form columns by user role.
+         ***************************************************************************
+         *
+         * Strip body-table columns from the order form payload when the current
+         * user does not satisfy the column's `visibleTo` setting.
+         *
+         * @since 3.1.0
+         */
+        add_filter( 'wwof_order_form_body_meta', array( $this, 'filter_form_body_column_visibility' ), 10, 4 );
 
         /**
          * Add database optimization button to WWP help controls.

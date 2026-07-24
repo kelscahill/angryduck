@@ -1,0 +1,1 @@
+import{R as n}from"./ExclamationCircleFilled.hVlCEKoI.js";var e=n.map(n=>`${n}-inverse`),r=["success","processing","error","default","warning"];function i(r){return arguments.length>1&&void 0!==arguments[1]&&!arguments[1]?n.includes(r):[...e,...n].includes(r)}function s(n){return r.includes(n)}export{s as n,i as t};

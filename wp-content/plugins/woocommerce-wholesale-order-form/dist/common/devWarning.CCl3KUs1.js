@@ -1,0 +1,1 @@
+import{G as a}from"./ExclamationCircleFilled.hVlCEKoI.js";var e=(e,i,r)=>{a(e,`[ant-design-vue: ${i}] ${r}`)};export{e as t};

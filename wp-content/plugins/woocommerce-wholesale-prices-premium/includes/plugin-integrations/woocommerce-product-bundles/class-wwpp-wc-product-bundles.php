@@ -78,6 +78,8 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
         /**
          * Store All The Bundle Variable Product Variations (Memoization Is Used To Avoid Recomputation Of Variations)(Run Time Cache)
          *
+         * @since 2.1.0
+         * @access private
          * @var array
          */
         private $_bundle_variations;
@@ -197,6 +199,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          * Filter bundled items of a bundle product and check if the current user is allowed to view the bundled item.
          *
          * @since 1.13.0
+         * @since 2.1.0 Keep "priced individually" bundled items regardless of the wholesale visibility filter, since they are sold at their own price and removing them breaks the bundle.
          * @access public
          *
          * @param array             $bundled_items     Array bundled items.
@@ -254,6 +257,13 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
             }
 
             foreach ( $bundled_items as $bundle_id => $bundled_item ) {
+
+                // Bundled items that are priced individually are sold at their own price and are
+                // integral to the bundle, so they must remain available regardless of the wholesale
+                // product-visibility filter - otherwise the bundle loses its children entirely.
+                if ( method_exists( $bundled_item, 'is_priced_individually' ) && $bundled_item->is_priced_individually() ) {
+                    continue;
+                }
 
                 $product_id = $bundled_item->item_data['product_id'];
 
@@ -360,6 +370,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          *
          * @since 1.13.0
          * @since 1.16.4 Bug fix WWPP-564
+         * @since 2.1.0  Resolve variable bundled item base price from the lowest variation wholesale price so the bundle price range reflects wholesale pricing.
          * @access public
          *
          * @param array             $bundle_price_data Array of bundle price data.
@@ -435,11 +446,30 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     if ( isset( $bundled_item->item_data['discounted_wholesale_price'] ) && $bundled_item->item_data['discounted_wholesale_price'] > 0 ) {
                         $bundle_price_data['prices'][ $bundle_item_id ] = $bundled_item->item_data['discounted_wholesale_price'];
                     } else {
-                        $price_arr = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $bundled_item->product->get_id(), $user_wholesale_role );
+                        // Reset per iteration so a previous item's price never leaks into this one.
+                        $wholesale_price = null;
 
-                        if ( ! empty( $price_arr ) && $price_arr['wholesale_price_raw'] > 0 ) {
-                            $sale_price_arr  = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( WWP_Helper_Functions::wwp_get_product_id( $bundled_item->product ), $user_wholesale_role );
-                            $wholesale_price = ! empty( $sale_price_arr ) && true === $sale_price_arr['is_on_sale'] ? $sale_price_arr['wholesale_sale_price'] : $price_arr['wholesale_price_raw'];
+                        if ( $bundled_item->product->is_type( 'variable' ) ) {
+
+                            // Variable parent products carry no wholesale price meta; the wholesale price
+                            // is stored on each variation. Use the lowest variation wholesale price as the
+                            // bundled item's base price so the bundle price range reflects wholesale pricing.
+                            foreach ( $this->get_bundle_item_variations( $bundled_item->product ) as $variation ) {
+
+                                $variation_price = $this->get_variation_wholesale_price( $variation['variation_id'], $user_wholesale_role );
+
+                                if ( $variation_price > 0 && ( null === $wholesale_price || $variation_price < $wholesale_price ) ) {
+                                    $wholesale_price = $variation_price;
+                                }
+                            }
+                        } else {
+
+                            $price_arr = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $bundled_item->product->get_id(), $user_wholesale_role );
+
+                            if ( ! empty( $price_arr ) && $price_arr['wholesale_price_raw'] > 0 ) {
+                                $sale_price_arr  = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( WWP_Helper_Functions::wwp_get_product_id( $bundled_item->product ), $user_wholesale_role );
+                                $wholesale_price = ! empty( $sale_price_arr ) && true === $sale_price_arr['is_on_sale'] ? $sale_price_arr['wholesale_sale_price'] : $price_arr['wholesale_price_raw'];
+                            }
                         }
 
                         $bundle_price_data['prices'][ $bundle_item_id ] = isset( $wholesale_price ) && $wholesale_price > 0 ? $wholesale_price : $bundled_item_regular_price;
@@ -571,6 +601,9 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          * Note this filter callback is only for WC less than 2.7
          *
          * @since 1.3.1
+         * @deprecated Orphaned since the `wwp_third_party_product_id` add_filter
+         *             registration was removed in #548; retained intentionally
+         *             per the issue author.
          * @access public
          *
          * @param int        $product_id Product id.
@@ -624,6 +657,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          * With product bundle 5.7.7, they edited there markup again on the front end, which results to this bug WWPP-560, this is fixed in 1.16.3
          * Also integrate the step feature for variable products that are made as bundled item of a bundle product WWPP-532
          * @since 1.16.4 Bug fix WWPP-564
+         * @since 2.1.0  Lazy-load the variations cache so off-page renders (order form, AJAX, shortcodes) still inject wholesale pricing into the bundle total.
          *
          * @access public
          *
@@ -642,7 +676,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
             if ( ! empty( $user_wholesale_role ) ) {
 
                 $variations_wholesale_prices = null;
-                $variations                  = isset( $this->_bundle_variations[ $bundled_item->product->get_id() ] ) ? $this->_bundle_variations[ $bundled_item->product->get_id() ] : array();
+                $variations                  = $this->get_bundle_item_variations( $bundled_item->product );
 
                 foreach ( $variations as $variation ) {
 
@@ -820,6 +854,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          *
          * @since 1.14.5
          * @since 1.16.0 Supports new wholesale price model.
+         * @since 2.1.0  Lazy-load the variations cache and bind the price update handler directly to the bundled item element on show_variation so Product Bundles' stopPropagation no longer blocks the wholesale price html.
          * @access public
          *
          * @param int             $bundled_product_id Product id of the bundle item.
@@ -842,7 +877,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                 $product                                        = $bundled_item->product;
                 $has_per_order_quantity_wholesale_price_mapping = false;
                 $has_per_cat_level_order_quantity_wholesale_discount_mapping = false;
-                $variations = isset( $this->_bundle_variations[ $product->get_id() ] ) ? $this->_bundle_variations[ $product->get_id() ] : array();
+                $variations = $this->get_bundle_item_variations( $product );
 
                 foreach ( $variations as $variation ) {
 
@@ -974,12 +1009,19 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
 
                         }
 
-                        $("body").on("woocommerce_variation_has_changed",
-                            '.bundled_item_cart_content[data-product_id="<?php echo $bundled_product_id; ?>"][data-bundle_id="<?php echo $bundled_item->bundle_id; ?>"][data-bundled_item_id="<?php echo $bundled_item->get_id(); ?>"]',
-                            update_variation_price_html);
-                        $("body").on("found_variation",
-                            '.bundled_item_cart_content[data-product_id="<?php echo $bundled_product_id; ?>"][data-bundle_id="<?php echo $bundled_item->bundle_id; ?>"][data-bundled_item_id="<?php echo $bundled_item->get_id(); ?>"]',
-                            update_variation_price_html); // Only triggered on ajax complete
+                        var $bundled_item_el = $(
+                            '.bundled_item_cart_content[data-product_id="<?php echo $bundled_product_id; ?>"][data-bundle_id="<?php echo $bundled_item->bundle_id; ?>"][data-bundled_item_id="<?php echo $bundled_item->get_id(); ?>"]'
+                        );
+
+                        // Bind directly to the bundled item element. Product Bundles calls
+                        // event.stopPropagation() in its own found_variation handler, so a
+                        // body-level delegated handler never receives the event. Listen for
+                        // show_variation (not found_variation) so the price update runs after
+                        // WooCommerce has finished rebuilding the .single_variation markup,
+                        // otherwise the injected price would be wiped immediately.
+                        $bundled_item_el.on("show_variation woocommerce_variation_has_changed", function() {
+                            setTimeout(update_variation_price_html, 0);
+                        });
 
                     }
 
@@ -1490,6 +1532,8 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          * but the bundled items is priced individualy and has wholesale prices.
          *
          * @since 1.27.2
+         * @since 2.1.0 Lazy-load the variations cache so the wholesale price html is detected when rendered off the bundle product page.
+         * @since 2.1.1 Detect bundled-item wholesale prices via a direct lookup when wholesale_price_data is not yet a PHP property, so the bundle "From:" price and wholesale container render for priced-individually bundles with no parent wholesale price.
          * @access public
          *
          * @param string     $price_html price html.
@@ -1517,7 +1561,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                 $bundled_items_has_wholesale_data = '';
                 foreach ( $bundled_items as $bundled_item ) {
                     if ( WWP_Helper_Functions::wwp_get_product_type( $bundled_item->product ) === 'variable' ) {
-                        $variations = isset( $this->_bundle_variations[ $bundled_item->product->get_id() ] ) ? $this->_bundle_variations[ $bundled_item->product->get_id() ] : array();
+                        $variations = $this->get_bundle_item_variations( $bundled_item->product );
 
                         foreach ( $variations as $variation ) {
                             if ( ! $variation['is_purchasable'] ) {
@@ -1530,6 +1574,12 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                             }
                         }
                     } elseif ( property_exists( $bundled_item->product, 'wholesale_price_data' ) ) {
+                            $bundled_items_has_wholesale_data = 'yes';
+                            break;
+                        // The wholesale_price_data is stored via update_meta_data(), not as a PHP property,
+                        // and the bundle "From:" price can render before the bundled-item price hooks fire.
+                        // Fall back to a direct wholesale price lookup so the wholesale branch is not skipped.
+                    } elseif ( $this->resolve_bundled_item_wholesale_price( WWP_Helper_Functions::wwp_get_product_id( $bundled_item->product ), $user_wholesale_role ) > 0 ) {
                             $bundled_items_has_wholesale_data = 'yes';
                             break;
                     }
@@ -1608,11 +1658,45 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
         }
 
         /**
+         * Resolve the wholesale unit price for a bundled item via a direct lookup.
+         *
+         * Used when the bundled item's wholesale_price_data is not available as a PHP property yet
+         * (the bundle price html can render before the bundled-item price hooks fire). Returns the
+         * wholesale sale price when the item is on a valid wholesale sale, otherwise the raw wholesale
+         * price, or 0 when the item has no wholesale price.
+         *
+         * @since 2.1.1
+         * @access private
+         *
+         * @param int          $product_id          Product ( or variation ) id.
+         * @param string|array $user_wholesale_role Wholesale role of the current user.
+         *
+         * @return float Wholesale unit price, or 0 when the item has no wholesale price.
+         */
+        private function resolve_bundled_item_wholesale_price( $product_id, $user_wholesale_role ) {
+            $price_arr = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $product_id, $user_wholesale_role );
+
+            if ( ! isset( $price_arr['wholesale_price_raw'] ) || ! is_numeric( $price_arr['wholesale_price_raw'] ) || $price_arr['wholesale_price_raw'] <= 0 ) {
+                return 0;
+            }
+
+            $sale_price_arr = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( $product_id, $user_wholesale_role );
+
+            if ( ! empty( $sale_price_arr ) && true === $sale_price_arr['is_on_sale'] && $sale_price_arr['wholesale_sale_price'] > 0 ) {
+                return (float) $sale_price_arr['wholesale_sale_price'];
+            }
+
+            return (float) $price_arr['wholesale_price_raw'];
+        }
+
+        /**
          * Calculates bundle wholesale prices.
          *
          * @since  1.27.2
          * @since  1.27.9 Add fix when bundled item max quantity is empty then use 'min' quantity to avoid error on calculation.
          * @since  1.27.10 Add support if the bundle product is regular priced but contains priced individually items with wholesale price.
+         * @since  2.1.0 Resolve the variation wholesale price directly for variable bundled items so the min/max no longer falls back to retail.
+         * @since  2.1.1 Resolve the wholesale price directly for non-variable bundled items when wholesale_price_data is not yet a PHP property, so the min/max no longer falls back to retail.
          *
          * @param  WC_Product $product             WC_Product object.
          * @param  array      $args                min_or_max, qty, calc.
@@ -1687,14 +1771,41 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                                 } elseif ( property_exists( $min_or_max_product, 'wholesale_price_data' ) ) {
                                     $bundled_item_price = isset( $min_or_max_product->wholesale_price_data['wholesale_sale_price'] ) ? $min_or_max_product->wholesale_price_data['wholesale_sale_price'] : $min_or_max_product->wholesale_price_data['wholesale_price_raw'];
                                 } else {
-                                    $bundled_item_price = $min_or_max_product->get_price();
+
+                                    // The wholesale_price_data property is only set on the variable parent, never on
+                                    // the individual min/max variation objects, so resolve the variation wholesale
+                                    // price directly. Without this the min/max falls back to retail.
+                                    $bundled_item_price = $this->get_variation_wholesale_price( $min_or_max_product->get_id(), $user_wholesale_role );
+
+                                    if ( $bundled_item_price > 0 ) {
+
+                                        // Apply the bundled item discount when one is configured for this item.
+                                        if ( $bundled_item->get_discount() ) {
+                                            $bundled_item_price = $bundled_item_price - ( $bundled_item_price * ( $bundled_item->get_discount() / 100 ) );
+                                        }
+                                    } else {
+                                        $bundled_item_price = $min_or_max_product->get_price();
+                                    }
                                 }
                             } elseif ( property_exists( $bundled_item->product, 'wholesale_price_data' ) && property_exists( $bundled_item->product, 'discounted_wholesale_price' ) && $bundled_item->product->discounted_wholesale_price > 0 ) {
                                 $bundled_item_price = $bundled_item->product->discounted_wholesale_price;
                             } elseif ( property_exists( $bundled_item->product, 'wholesale_price_data' ) ) {
                                 $bundled_item_price = isset( $bundled_item->product->wholesale_price_data['wholesale_sale_price'] ) ? $bundled_item->product->wholesale_price_data['wholesale_sale_price'] : $bundled_item->product->wholesale_price_data['wholesale_price_raw'];
                             } else {
-                                $bundled_item_price = $bundled_item->product->get_price();
+                                // wholesale_price_data may not be a PHP property yet (the bundle "From:" price
+                                // can render before the bundled-item price hooks fire). Resolve the wholesale
+                                // price directly so the total does not fall back to retail.
+                                $resolved_wholesale_price = $this->resolve_bundled_item_wholesale_price( WWP_Helper_Functions::wwp_get_product_id( $bundled_item->product ), $user_wholesale_role );
+                                if ( $resolved_wholesale_price > 0 ) {
+                                    $bundled_item_price = $resolved_wholesale_price;
+
+                                    // Apply the bundled item discount when one is configured for this item, mirroring the variable item and cart paths.
+                                    if ( $bundled_item->get_discount() ) {
+                                        $bundled_item_price = $bundled_item_price - ( $bundled_item_price * ( $bundled_item->get_discount() / 100 ) );
+                                    }
+                                } else {
+                                    $bundled_item_price = $bundled_item->product->get_price();
+                                }
                             }
 
                             if ( 'excl_tax' === $price_calc ) {
@@ -1813,6 +1924,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
          * If bundled items has wholesale price then calculate the totals of the bundled price, instead using product price.
          *
          * @since 1.27.2
+         * @since 2.1.0 Lazy-load the variations cache so the wholesale suffix base price is detected when rendered off the bundle product page.
          * @access public
          *
          * @param int        $price_base Base price.
@@ -1830,7 +1942,7 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                     foreach ( $bundled_items as $bundled_item ) {
 
                         if ( WWP_Helper_Functions::wwp_get_product_type( $bundled_item->product ) === 'variable' ) {
-                            $variations = isset( $this->_bundle_variations[ $bundled_item->product->get_id() ] ) ? $this->_bundle_variations[ $bundled_item->product->get_id() ] : array();
+                            $variations = $this->get_bundle_item_variations( $bundled_item->product );
 
                             foreach ( $variations as $variation ) {
                                 if ( ! $variation['is_purchasable'] ) {
@@ -2090,7 +2202,13 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
         }
 
         /**
-         * Use Hashmap To Store The Variations (Memoization).
+         * Preload the variations of variable bundled items into the run-time cache (Memoization).
+         *
+         * Populates the hashmap of variations for every variable bundled item of the current
+         * bundle product so subsequent lookups avoid recomputing the variation data.
+         *
+         * @since 2.1.0 Add PHPDoc.
+         * @access public
          *
          * @return void
          */
@@ -2102,11 +2220,58 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
                 if ( is_object( $product ) && 'bundle' === $product->get_type() ) {
                     foreach ( $product->get_bundled_items() as $bundle_item ) {
                         if ( 'variable' === $bundle_item->product->get_type() ) {
-                            $this->_bundle_variations[ $bundle_item->product->get_id() ] = WWP_Helper_Functions::wwp_get_variable_product_variations( $bundle_item->product );
+                            $this->get_bundle_item_variations( $bundle_item->product );
                         }
                     }
                 }
             }
+        }
+
+        /**
+         * Get the memoized variations of a variable bundled item product, populating the cache on demand.
+         *
+         * The preload only runs on bundle product pages, so off-page renders (order form, AJAX,
+         * shortcodes) need to populate this run-time cache lazily to retain wholesale pricing.
+         *
+         * @since 2.1.0
+         *
+         * @param WC_Product $product Variable bundled item product.
+         * @return array Variation data array.
+         */
+        private function get_bundle_item_variations( $product ) {
+
+            if ( ! isset( $this->_bundle_variations[ $product->get_id() ] ) ) {
+                $this->_bundle_variations[ $product->get_id() ] = WWP_Helper_Functions::wwp_get_variable_product_variations( $product );
+            }
+
+            return $this->_bundle_variations[ $product->get_id() ];
+        }
+
+        /**
+         * Resolve the wholesale price of a single variation, preferring an active wholesale sale price.
+         *
+         * Variable parent products carry no wholesale price meta; the wholesale price is stored on each
+         * variation. This returns the variation's wholesale sale price when one is active, otherwise the
+         * regular wholesale price, or 0 when the variation has no wholesale price. The caller is
+         * responsible for applying any bundled item discount.
+         *
+         * @since 2.1.0
+         *
+         * @param int   $variation_id        Variation product id.
+         * @param array $user_wholesale_role Current user's wholesale role(s).
+         * @return float Resolved variation wholesale price, or 0 when none applies.
+         */
+        private function get_variation_wholesale_price( $variation_id, $user_wholesale_role ) {
+
+            $variation_price_arr = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $variation_id, $user_wholesale_role );
+
+            if ( empty( $variation_price_arr ) || $variation_price_arr['wholesale_price_raw'] <= 0 ) {
+                return 0;
+            }
+
+            $sale_price_arr = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( $variation_id, $user_wholesale_role );
+
+            return ! empty( $sale_price_arr ) && true === $sale_price_arr['is_on_sale'] && $sale_price_arr['wholesale_sale_price'] > 0 ? $sale_price_arr['wholesale_sale_price'] : $variation_price_arr['wholesale_price_raw'];
         }
 
         /*
@@ -2138,9 +2303,6 @@ if ( ! class_exists( 'WWPP_WC_Product_Bundles' ) ) {
 
                 add_action( 'woocommerce_bundled_single_variation', array( $this, 'filter_variable_bundle_variations_data' ), 10, 2 );
                 add_action( 'woocommerce_bundled_single_variation', array( $this, 'filter_per_variation_price_html' ), 10, 2 );
-
-                // WC 2.7.
-                add_filter( 'wwp_third_party_product_id', array( $this, 'get_product_id' ), 10, 2 );
 
                 // Quick edit support.
                 add_filter( 'wwp_quick_edit_allowed_product_types', array( $this, 'support_for_quick_edit_fields' ), 10, 2 );

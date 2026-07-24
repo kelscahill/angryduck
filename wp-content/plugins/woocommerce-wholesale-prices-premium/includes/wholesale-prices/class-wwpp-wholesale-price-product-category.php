@@ -10,6 +10,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
      * Model that houses the logic of applying product category level wholesale pricing.
      *
      * @since 1.14.0
+     * @since 2.1.1 Honour a wholesale price explicitly set to 0 instead of overriding it with the category-level discount.
      */
     class WWPP_Wholesale_Price_Product_Category {
         /*
@@ -218,6 +219,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
          * @since 1.16.0
          * @since 1.23.5 Display correct wholesale when woocommerce multilingual is enabled.
          * @since 1.27.9 Replace round with wc_format_decimal function
+         * @since 2.1.1  Honour a wholesale price explicitly set to 0 instead of overriding it with the category-level discount.
          * @access public
          *
          * @param array        $wholesale_price_arr Wholesale price array data.
@@ -229,7 +231,14 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Product_Category' ) ) {
          */
         public function apply_product_category_level_wholesale_discount( $wholesale_price_arr, $product_id, $user_wholesale_role, $cart_item, $cart_object ) {
 
-            if ( ! empty( $user_wholesale_role ) && isset( $user_wholesale_role[0] ) && empty( $wholesale_price_arr['wholesale_price'] ) ) {
+            // Only apply the category-level discount when no wholesale price is set (unset key or empty
+            // string). A numeric value, including 0, is a deliberately-set price and must be honoured.
+            // WWP stores the wholesale price as a clean decimal or an empty string (non-numeric input is
+            // coerced to empty and locale separators are stripped on save), so is_numeric reliably
+            // distinguishes a set-but-zero price from an unset one.
+            $explicit_wholesale_price = $wholesale_price_arr['wholesale_price'] ?? '';
+
+            if ( ! empty( $user_wholesale_role ) && isset( $user_wholesale_role[0] ) && ! is_numeric( $explicit_wholesale_price ) ) {
 
                 $product             = wc_get_product( $product_id );
                 $conditional_product = $product;

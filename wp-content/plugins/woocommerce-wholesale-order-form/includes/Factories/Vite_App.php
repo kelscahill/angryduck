@@ -121,6 +121,16 @@ class Vite_App {
     protected static $merged_translations_cache = array();
 
     /**
+     * Tracks which "domain:locale" combos have already been injected via wp-i18n.
+     * Prevents duplicate wp_add_inline_script() calls when multiple Vite handles share
+     * the same translations.
+     *
+     * @since 3.0
+     * @var array<string, bool> Keyed by "{domain}:{locale}".
+     */
+    protected static $translations_injected = array();
+
+    /**
      * Setups Vue app script files. After instantiation, call the enqueue() method to enqueue the script.
      *
      * @param string     $script_handle      The script handle to use for the app.
@@ -784,18 +794,25 @@ class Vite_App {
             return;
         }
 
-        $json   = self::$merged_translations_cache[ $cache_key ];
-        $output = <<<JS
+        // Inject once per request: attach to wp-i18n so all consumers share one copy.
+        if ( isset( self::$translations_injected[ $cache_key ] ) ) {
+            return;
+        }
+        self::$translations_injected[ $cache_key ] = true;
+
+        $json        = self::$merged_translations_cache[ $cache_key ];
+        $domain_json = wp_json_encode( $domain );
+        $output      = <<<JS
 ( function( domain, translations ) {
 	var localeData = translations.locale_data[ domain ] || translations.locale_data.messages;
 	if ( localeData ) {
 		localeData[""].domain = domain;
 		wp.i18n.setLocaleData( localeData, domain );
 	}
-} )( "$domain", $json );
+} )( {$domain_json}, {$json} );
 JS;
 
-        wp_add_inline_script( $this->script_handle, $output, 'before' );
+        wp_add_inline_script( 'wp-i18n', $output, 'after' );
     }
 
     /**

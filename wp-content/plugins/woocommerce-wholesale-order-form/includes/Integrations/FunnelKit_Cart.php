@@ -84,17 +84,32 @@ class FunnelKit_Cart extends Abstract_Class {
             return;
         }
 
-        // Check if this is coming from WWOF by checking the REST API endpoint.
+        // Check if this is coming from WWOF by reading the request header
+        // the order form's axios layer attaches to every cart-mutating
+        // call. Header-based signalling rides on the outer HTTP request
+        // and remains readable from inside Store API batch sub-requests,
+        // unlike a `$_POST` body flag which is empty when the request body
+        // is JSON.
+        //
+        // Mirrors `Order_Source::is_wwof_add_to_cart()` exactly: the header
+        // is required AND the request URI must match a Store API cart
+        // route. Aligning the two prevents a future non-WWOF code path that
+        // happens to forward the header (or fires on a non-cart Store API
+        // endpoint) from silently triggering the auto-open flow.
         $is_wwof_request = false;
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Flag check only, not processing data.
-        if ( isset( $_POST['wwof_add_to_cart'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['wwof_add_to_cart'] ) ) ) {
-            $is_wwof_request = true;
-        }
+        $header = isset( $_SERVER['HTTP_X_WWOF_ADD_TO_CART'] )
+            ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WWOF_ADD_TO_CART'] ) )
+            : '';
 
-        if ( ! $is_wwof_request && defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-            $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-            if ( strpos( $request_uri, 'wc/store/cart/add-item' ) !== false || strpos( $request_uri, 'wc/store/v1/batch' ) !== false ) {
+        if ( '1' === $header ) {
+            $request_uri = isset( $_SERVER['REQUEST_URI'] )
+                ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+                : '';
+
+            if ( false !== strpos( $request_uri, 'wc/store/cart/add-item' )
+                || false !== strpos( $request_uri, 'wc/store/v1/cart/add-item' )
+                || false !== strpos( $request_uri, 'wc/store/v1/batch' ) ) {
                 $is_wwof_request = true;
             }
         }

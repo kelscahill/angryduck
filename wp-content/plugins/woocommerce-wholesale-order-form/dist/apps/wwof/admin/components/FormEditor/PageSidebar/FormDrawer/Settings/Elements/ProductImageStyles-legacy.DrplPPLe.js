@@ -1,0 +1,1 @@
+System.register(["../../../../../../../../../common/ExclamationCircleFilled-legacy.BI-ax_ZG.js","../../../../../../../../../common/ElementAlignment-legacy.BvvVMOYl.js"],function(e,n){var t,c,m,l,o;return{setters:[function(e){e.En,t=e.Ln,c=e.Yt,m=e.mn,l=e.xn},function(e){o=e.t}],execute:function(){c(),e("default",l({__name:"ProductImageStyles",setup:e=>(e,n)=>(t(),m(o))}))}}});

@@ -64,7 +64,7 @@ jQuery( document ).ready( function( $ ) {
         var error_fields = [];
 
         if ( wholesale_role == "" )
-            error_fields.push( wwpp_settings_tax_var.wholesale_role_txt );
+            error_fields.push( wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ) );
 
         return error_fields;
 
@@ -94,14 +94,14 @@ jQuery( document ).ready( function( $ ) {
 
         if ( error_fields.length > 0 ) {
 
-            var msg = wwpp_settings_tax_var.empty_fields_txt + "<br/><ul>";
+            var msg = wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) + "<br/><ul>";
 
             for ( var i = 0 ; i < error_fields.length ; i++ )
                 msg += "<li>" + error_fields[ i ] + "</li>";
 
             msg += "</ul>";
 
-            toastr.error( msg , wwpp_settings_tax_var.form_error_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+            toastr.error( msg , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
             $this.removeAttr( 'disabled' );
             $button_controls.removeClass( 'processing' );
@@ -120,7 +120,7 @@ jQuery( document ).ready( function( $ ) {
 
                 if ( data.status == 'success' ) {
 
-                    toastr.success( '' , wwpp_settings_tax_var.success_add_mapping_txt , { "closeButton" : true , "showDuration" : success_message_duration } );
+                    toastr.success( '' , wp.i18n.__( 'Successfully Added Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : success_message_duration } );
 
                     remove_table_no_items_placeholder( $tax_option_mapping );
 
@@ -161,9 +161,9 @@ jQuery( document ).ready( function( $ ) {
 
                 } else {
 
-                    toastr.error( data.error_message , wwpp_settings_tax_var.failed_add_mapping_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+                    toastr.error( data.error_message , wp.i18n.__( 'Failed To Add New Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
-                    console.log( wwpp_settings_tax_var.failed_add_mapping_txt );
+                    console.log( wp.i18n.__( 'Failed To Add New Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( data );
                     console.log( '----------' );
 
@@ -172,9 +172,9 @@ jQuery( document ).ready( function( $ ) {
             } )
             .fail( function( jqXHR , textStatus , errorThrown ) {
 
-                toastr.error( jqXHR.responseText , wwpp_settings_tax_var.failed_add_mapping_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+                toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Add New Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
-                console.log( wwpp_settings_tax_var.failed_add_mapping_txt );
+                console.log( wp.i18n.__( 'Failed To Add New Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) );
                 console.log( jqXHR );
                 console.log( '----------' );
 
@@ -204,14 +204,14 @@ jQuery( document ).ready( function( $ ) {
 
         if ( error_fields.length > 0 ) {
 
-            var msg = wwpp_settings_tax_var.empty_fields_txt + "<br/><ul>";
+            var msg = wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) + "<br/><ul>";
 
             for ( var i = 0 ; i < error_fields.length ; i++ )
                 msg += "<li>" + error_fields[ i ] + "</li>";
 
             msg += "</ul>";
 
-            toastr.error( msg , wwpp_settings_tax_var.form_error_txt , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( msg , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
             $this.removeAttr( 'disabled' );
             $wholesale_role_tax_options.find( '#cancel-edit-mapping' ).removeAttr( 'disabled' );
@@ -255,13 +255,13 @@ jQuery( document ).ready( function( $ ) {
                         .removeClass( "edit-mode" )
                         .addClass( "add-mode" );
 
-                    toastr.success( '' , wwpp_settings_tax_var.success_edit_mapping_txt , { "closeButton" : true , "showDuration" : success_message_duration } );
+                    toastr.success( '' , wp.i18n.__( 'Successfully Updated Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : success_message_duration } );
 
                 } else {
 
-                    toastr.error( data.error_message , wwpp_settings_tax_var.failed_edit_mapping_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+                    toastr.error( data.error_message , wp.i18n.__( 'Failed To Update Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
-                    console.log( wwpp_settings_tax_var.failed_edit_mapping_txt );
+                    console.log( wp.i18n.__( 'Failed To Update Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( data );
                     console.log( '----------' );
 
@@ -270,9 +270,9 @@ jQuery( document ).ready( function( $ ) {
             } )
             .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                toastr.error( jqXHR.responseText , wwpp_settings_tax_var.failed_edit_mapping_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+                toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Update Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
-                console.log( wwpp_settings_tax_var.failed_edit_mapping_txt );
+                console.log( wp.i18n.__( 'Failed To Update Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) );
                 console.log( data );
                 console.log( '----------' );
 
@@ -332,7 +332,7 @@ jQuery( document ).ready( function( $ ) {
 
         $current_tr.addClass( "edited" );
 
-        if ( confirm( wwpp_settings_tax_var.delete_mapping_prompt_confirm_txt ) ) {
+        if ( confirm( wp.i18n.__( 'Clicking OK will remove the current wholesale role tax option mapping', 'woocommerce-wholesale-prices-premium' ) ) ) {
 
             var wholesale_role = $.trim( $current_tr.find( ".meta" ).find( ".wholesale-role" ).text() );
 
@@ -356,20 +356,20 @@ jQuery( document ).ready( function( $ ) {
                                 $tax_option_mapping
                                     .find( "tbody" )
                                     .html(  '<tr class="no-items">' +
-                                                '<td class="colspanchange" colspan="3">' + wwpp_settings_tax_var.no_mappings_found_txt + '</td>' +
+                                                '<td class="colspanchange" colspan="3">' + wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) + '</td>' +
                                             '</tr>' );
 
                             }
 
                         } );
 
-                        toastr.success( '' , wwpp_settings_tax_var.success_delete_mapping_txt , { "closeButton" : true , "showDuration" : success_message_duration } );
+                        toastr.success( '' , wp.i18n.__( 'Successfully Deleted Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : success_message_duration } );
 
                     } else {
 
-                        toastr.error( data.error_message , wwpp_settings_tax_var.failed_delete_mapping_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+                        toastr.error( data.error_message , wp.i18n.__( 'Failed To Delete Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
-                        console.log( wwpp_settings_tax_var.failed_delete_mapping_txt );
+                        console.log( wp.i18n.__( 'Failed To Delete Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) );
                         console.log( data );
                         console.log( '----------' );
 
@@ -378,9 +378,9 @@ jQuery( document ).ready( function( $ ) {
                 } )
                 .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                    toastr.error( jqXHR.responseText , data.error_message , wwpp_settings_tax_var.failed_delete_mapping_txt , { "closeButton" : true , "showDuration" : error_message_duration } );
+                    toastr.error( jqXHR.responseText , data.error_message , wp.i18n.__( 'Failed To Delete Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : error_message_duration } );
 
-                    console.log( data.error_message , wwpp_settings_tax_var.failed_delete_mapping_txt );
+                    console.log( data.error_message , wp.i18n.__( 'Failed To Delete Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( jqXHR );
                     console.log( '----------' );
 

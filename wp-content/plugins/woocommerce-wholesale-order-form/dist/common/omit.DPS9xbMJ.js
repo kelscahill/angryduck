@@ -1,0 +1,1 @@
+import{Gt as t}from"./ExclamationCircleFilled.hVlCEKoI.js";function e(e,l){const o=t({},e);for(let t=0;t<l.length;t+=1){delete o[l[t]]}return o}export{e as t};

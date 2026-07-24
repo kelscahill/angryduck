@@ -79,3 +79,23 @@ define( 'WWPP_OPTION_WHOLESALE_ROLE_SHIPPING_ZONE_METHOD_MAPPING', 'wwpp_option_
 define( 'WWPP_POST_META_ENABLE_QUANTITY_DISCOUNT_RULE', 'wwpp_post_meta_enable_quantity_discount_rule' );
 define( 'WWPP_POST_META_QUANTITY_DISCOUNT_RULE_MAPPING_VIEW', 'wwpp_post_meta_quantity_discount_rule_mapping_view' );
 define( 'WWPP_POST_META_QUANTITY_DISCOUNT_RULE_MAPPING', 'wwpp_post_meta_quantity_discount_rule_mapping' );
+
+// Wholesale Role Automation.
+// Note: when persisting this option (Rules_Repository::create() / update() — #1653), pass `false` for the autoload arg.
+// Up to 500 rules of nested config can hit hundreds of KB; only admin contexts read it, so don't load it on every request.
+define( 'WWPP_OPTION_WHOLESALE_ROLE_AUTOMATION_RULES', 'wwpp_wholesale_role_automation_rules' );
+define( 'WWPP_OPTION_WHOLESALE_ROLE_AUTOMATION_DB_VERSION', 'wwpp_wholesale_role_automation_db_version' );
+define( 'WWPP_USER_META_WHOLESALE_ROLE_AUTOMATION_LOCKED', 'wwpp_wholesale_role_automation_locked' );
+define( 'WWPP_TABLE_WHOLESALE_ROLE_AUTOMATION_AUDIT', 'wwpp_wholesale_role_automation_changes' );
+define( 'WWPP_ACTION_WHOLESALE_ROLE_AUTOMATION_SWEEP', 'wwpp_wholesale_role_automation_sweep' );
+define( 'WWPP_ACTION_WHOLESALE_ROLE_AUTOMATION_EVAL_USER', 'wwpp_wholesale_role_automation_evaluate_user' );
+
+// Restricted-variations parent-flag backfill (#1817).
+// One-shot, batched Action Scheduler job that seeds `wwpp_has_restricted_variations`
+// for existing variable products on upgrade, so the front-end lazy backfill no longer
+// writes product meta on a GET. The option stores 'yes' once the backfill completes.
+define( 'WWPP_ACTION_SEED_HAS_RESTRICTED_VARIATIONS', 'wwpp_seed_has_restricted_variations' );
+define( 'WWPP_OPTION_HAS_RESTRICTED_VARIATIONS_SEEDED', 'wwpp_has_restricted_variations_seeded' );
+define( 'WWPP_EMAIL_ID_ROLE_UPGRADED', 'wwpp_role_upgraded' );
+define( 'WWPP_EMAIL_ID_ROLE_DOWNGRADED', 'wwpp_role_downgraded' );
+define( 'WWPP_WHOLESALE_ROLE_AUTOMATION_RULES_HARD_CAP', 500 );

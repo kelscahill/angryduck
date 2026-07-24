@@ -1,1 +1,0 @@
-import{d as o,l as s,o as t}from"../../../../../../../../../common/hooks.C8Kwl4hr.js";import{_ as e}from"../../../../../../../../../common/NoOptions.vue_vue_type_script_setup_true_lang.TCm1N7cq.js";const a=o({__name:"OnlyShowFavouritesOptions",setup:o=>(o,a)=>(t(),s(e))});export{a as default};

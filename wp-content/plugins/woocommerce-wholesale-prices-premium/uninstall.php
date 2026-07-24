@@ -57,6 +57,7 @@ function wwpp_plugin_cleanup() {
         delete_option( 'wwpp_settings_clear_cart_on_login' );
         delete_option( 'wwpp_settings_override_stock_display_format' );
         delete_option( 'wwpp_settings_allow_add_to_cart_below_product_minimum' );
+        delete_option( 'wwpp_settings_remove_retail_products_for_wholesale_customers_in_cart' );
 
         // Price.
         delete_option( 'wwpp_settings_explicitly_use_product_regular_price_on_discount_calc' );
@@ -127,7 +128,6 @@ function wwpp_plugin_cleanup() {
         );
 
     }
-
 }
 
 wwpp_plugin_cleanup();

@@ -1,1 +1,0 @@
-import{d as o,h as s,aq as n,l as a,o as i,u as r}from"./hooks.C8Kwl4hr.js";import{S as t}from"./index.D9NSC_Gx.js";const e=o({__name:"LoadingSpinner",setup(o){const e=s(n,{style:{fontSize:"24px"},spin:!0});return(o,s)=>(i(),a(r(t),{indicator:r(e)},null,8,["indicator"]))}});export{e as _};

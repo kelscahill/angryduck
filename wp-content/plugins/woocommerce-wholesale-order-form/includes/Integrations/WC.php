@@ -195,7 +195,7 @@ class WC extends Abstract_Class {
          * used in the app.
          */
         if ( ( empty( $response->data['categories'] ) && $wc_data->get_parent_id() ) || ( $this->product_variations_query && $wc_data->get_parent_id() ) ) {
-            $response->data['categories'] = wc_get_object_terms( $wc_data->get_parent_id(), 'product_cat' );
+            $response->data['categories'] = $this->get_memoized_parent_terms( $wc_data->get_parent_id(), 'product_cat' );
         }
 
         /***************************************************************************
@@ -208,7 +208,7 @@ class WC extends Abstract_Class {
          * - We're querying variations individually and the product has a parent
          */
         if ( ( empty( $response->data['tags'] ) && $wc_data->get_parent_id() ) || ( $this->product_variations_query && $wc_data->get_parent_id() ) ) {
-            $response->data['tags'] = wc_get_object_terms( $wc_data->get_parent_id(), 'product_tag' );
+            $response->data['tags'] = $this->get_memoized_parent_terms( $wc_data->get_parent_id(), 'product_tag' );
         }
 
         /***************************************************************************
@@ -273,7 +273,7 @@ class WC extends Abstract_Class {
          */
         if ( 'variation' === $response->data['type'] && ! empty( $response->data['sku'] ) ) {
             $parent_id   = $wc_data->get_parent_id();
-            $parent      = $parent_id ? wc_get_product( $parent_id ) : null;
+            $parent      = $parent_id ? $this->get_memoized_product( $parent_id ) : null;
             $parent_sku  = $parent ? $parent->get_sku() : '';
             $object_data = $wc_data->get_data();
             if ( empty( $object_data['sku'] ) && $response->data['sku'] === $parent_sku ) {
@@ -364,11 +364,14 @@ class WC extends Abstract_Class {
             $response->data['attribute_summary'] = $product->get_attribute_summary();
         }
 
-        $variation  = new WC_Product_Variation( $product->get_id() );
-        $attributes = ! empty( $variation->get_attributes() )
+        // The filter already hands us the fully-loaded variation object, so reuse
+        // it instead of constructing a second `WC_Product_Variation` (which would
+        // re-read the post + meta for every variation in the response).
+        $variation_attributes = $product->get_attributes();
+        $attributes           = ! empty( $variation_attributes )
             ? array_keys(
                 array_filter(
-                    $variation->get_attributes(),
+                    $variation_attributes,
                     function ( $value ) {
 
                         return empty( $value );
@@ -376,10 +379,11 @@ class WC extends Abstract_Class {
                 )
             )
             : array();
+        $parent_id            = $product->get_parent_id();
         foreach ( $attributes as $attribute_name ) {
             $response->data['attributes'][] = array(
-                'id'     => wc_attribute_taxonomy_id_by_name( $attribute_name ),
-                'name'   => wc_attribute_label( $attribute_name, $product ),
+                'id'     => $this->get_memoized_attribute_taxonomy_id( $attribute_name ),
+                'name'   => $this->get_memoized_attribute_label( $attribute_name, $product, $parent_id ),
                 'option' => '',
             );
         }
@@ -393,7 +397,7 @@ class WC extends Abstract_Class {
          * used in the app.
          */
         if ( empty( $response->data['categories'] ) ) {
-            $response->data['categories'] = wc_get_object_terms( $product->get_parent_id(), 'product_cat' );
+            $response->data['categories'] = $this->get_memoized_parent_terms( $parent_id, 'product_cat' );
         }
 
         /***************************************************************************
@@ -405,7 +409,7 @@ class WC extends Abstract_Class {
          * in WooCommerce, so we use the parent's tags.
          */
         if ( empty( $response->data['tags'] ) ) {
-            $response->data['tags'] = wc_get_object_terms( $product->get_parent_id(), 'product_tag' );
+            $response->data['tags'] = $this->get_memoized_parent_terms( $parent_id, 'product_tag' );
         }
 
         if ( empty( $response->data['price_html'] ) ) {
@@ -596,7 +600,7 @@ class WC extends Abstract_Class {
              * Show priority products first
              ***************************************************************************
              *
-             * We show priority products first on top of the list below the favourites if selected in the settings.
+             * We show priority products first on top of the list below the favorites if selected in the settings.
              */
             $priority_products = $order_form->get_settings( 'priorityProducts' );
             if ( ! empty( $priority_products ) ) {
@@ -636,7 +640,7 @@ class WC extends Abstract_Class {
             if ( $order_form->allow_favourites() && ! $order_form->only_show_favourites() ) {
                 $favourites = WWOF::get_favourite_products();
                 if ( ! empty( $favourites ) ) {
-                    // Use memoization for favourites to avoid repeated processing within the same request.
+                    // Use memoization for favorites to avoid repeated processing within the same request.
                     $favourites_memo_key = 'favourites_' . md5( wp_json_encode( $favourites ) );
 
                     if ( ! isset( self::$memoization_cache[ $favourites_memo_key ] ) ) {
@@ -786,13 +790,69 @@ END AS menu_order";
                     )
                 ) {
 
-                    $clauses['join'] .= "LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwoftr.object_id)";
-
-                    $clauses['where'] = preg_replace(
-                        "/($wpdb->term_relationships\.term_taxonomy_id\s+IN\s+\(([^\)]+)\))/",
-                        '($1 OR wwoftr.term_taxonomy_id IN ($2))',
-                        $clauses['where']
+                    /*
+                     * Include a variation when its parent product is in the requested
+                     * category.
+                     *
+                     * WP_Query gives each tax_query its own aliased term_relationships
+                     * join (product_cat, product_type, product_visibility, ...), so the
+                     * product_cat clause is not always on the unaliased
+                     * `wp_term_relationships` table. Matching the clause by table alias
+                     * (the previous behaviour) could wrap the wrong clause, or none, when
+                     * additional wholesale/WPML clauses shift the join order, leaving the
+                     * category clause ANDed and dropping every variation from the result
+                     * (#1019). Instead we resolve the requested product_cat
+                     * term_taxonomy_ids and rewrite only the clause whose id list
+                     * intersects them, regardless of its alias or position, appending a
+                     * `post_parent IN ( <subquery> )` term. The subquery is used rather
+                     * than a `LEFT JOIN` on the parent's term_relationships because the
+                     * join multiplies rows (one per parent term) and, combined with the
+                     * wholesale meta joins, made the query run for ~30s+ on large multi
+                     * category catalogues; the subquery hits the `term_taxonomy_id`
+                     * index and returns a bounded parent-id set instead.
+                     *
+                     * Only the requested terms are resolved (not their children): WP's
+                     * tax_query already expands children into the clause when
+                     * `include_children` is on, and the widened OR reuses that clause's
+                     * own id list, so a requested term's tt_id is always present to
+                     * identify the clause.
+                     */
+                    $category_term_ids = array_filter(
+                        array_map(
+                            'absint',
+                            array_merge(
+                                (array) $this->rest_request->get_param( 'category' ),
+                                (array) $this->rest_request->get_param( 'category__in' )
+                            )
+                        )
                     );
+
+                    $category_tt_ids = array();
+                    if ( ! empty( $category_term_ids ) ) {
+                        $category_terms = get_terms(
+                            array(
+                                'taxonomy'   => 'product_cat',
+                                'include'    => $category_term_ids,
+                                'hide_empty' => false,
+                            )
+                        );
+                        if ( ! is_wp_error( $category_terms ) ) {
+                            $category_tt_ids = wp_list_pluck( $category_terms, 'term_taxonomy_id' );
+                            $category_tt_ids = array_map( 'intval', $category_tt_ids );
+                        }
+                    }
+
+                    if ( ! empty( $category_tt_ids ) ) {
+                        $clauses['where'] = self::widen_category_clause_to_variation_parents( $clauses['where'], $category_tt_ids );
+                    } else {
+                        // Fallback: category terms could not be resolved, keep prior behaviour.
+                        $clauses['join'] .= "LEFT JOIN $wpdb->term_relationships AS wwoftr ON ($wpdb->posts.post_parent = wwoftr.object_id)";
+                        $clauses['where'] = preg_replace(
+                            "/($wpdb->term_relationships\.term_taxonomy_id\s+IN\s+\(([^\)]+)\))/",
+                            '($1 OR wwoftr.term_taxonomy_id IN ($2))',
+                            $clauses['where']
+                        );
+                    }
                 }
             }
         }
@@ -806,6 +866,65 @@ END AS menu_order";
          * @since 3.0.1
          */
         return apply_filters( 'wwof_posts_clauses_request', $clauses, $this );
+    }
+
+    /**
+     * Widen the product_cat WHERE clause so a variation also matches when its
+     * parent product is in the requested category ("Show variations individually").
+     *
+     * WP_Query aliases each tax_query's `term_relationships` join independently
+     * (product_cat, product_type, product_visibility, ...), so the product_cat
+     * clause is not always on the unaliased `wp_term_relationships` table. This
+     * matches the product_cat clause by its resolved `term_taxonomy_id` set.
+     * `term_taxonomy_id` is globally unique, so the intersect can only ever match
+     * the product_cat clause; it then appends
+     * `OR wp_posts.post_parent IN ( SELECT object_id FROM wp_term_relationships
+     * WHERE term_taxonomy_id IN (...) )` to that clause, so a variation matches
+     * when its parent product is in the category, regardless of alias or position
+     * and without disturbing any other clause.
+     *
+     * A correlated-free subquery is used rather than a `LEFT JOIN` on the parent's
+     * term_relationships: the join multiplies rows (one per parent term) and,
+     * combined with the wholesale meta joins, made this query run ~30s+ on large
+     * multi-category catalogues (#1019). The subquery hits the `term_taxonomy_id`
+     * index and returns a bounded parent-id set, keeping the query fast and
+     * duplicate-free.
+     *
+     * @internal Public only so it can be unit-tested in isolation; not part of the
+     *           plugin's public API. Do not call from outside this class.
+     *
+     * @since 3.1.2
+     *
+     * @param string $where           The WP_Query WHERE clause.
+     * @param int[]  $category_tt_ids Resolved product_cat term_taxonomy_ids for the request.
+     * @return string The widened WHERE clause.
+     */
+    public static function widen_category_clause_to_variation_parents( $where, $category_tt_ids ) {
+
+        global $wpdb;
+
+        $category_tt_ids = array_map( 'absint', (array) $category_tt_ids );
+
+        if ( empty( $category_tt_ids ) ) {
+            return $where;
+        }
+
+        return preg_replace_callback(
+            '/\b\w+\.term_taxonomy_id\s+IN\s+\(\s*([0-9,\s]+?)\s*\)/',
+            static function ( $matches ) use ( $category_tt_ids, $wpdb ) {
+                $clause_tt_ids = array_map( 'absint', explode( ',', $matches[1] ) );
+
+                // Only rewrite the product_cat clause; its ids intersect the resolved set.
+                if ( empty( array_intersect( $clause_tt_ids, $category_tt_ids ) ) ) {
+                    return $matches[0];
+                }
+
+                $ids = implode( ',', $clause_tt_ids );
+
+                return '(' . $matches[0] . " OR {$wpdb->posts}.post_parent IN ( SELECT tr_parent.object_id FROM {$wpdb->term_relationships} AS tr_parent WHERE tr_parent.term_taxonomy_id IN ($ids) ))";
+            },
+            $where
+        );
     }
 
     /**
@@ -834,6 +953,8 @@ END AS menu_order";
         $order_form = Order_Form::get_instance( $form_id );
 
         $this->rest_request = $request;
+
+        $this->add_serialization_cache_priming();
 
         $this->product_variations_query = 'yes' === $request->get_param( 'product_variations' );
 
@@ -868,6 +989,31 @@ END AS menu_order";
                     'compare' => 'IN',
                 )
             );
+        } else {
+            /*
+             * Override WC core's `woocommerce_hide_out_of_stock_items`
+             * option for the lifetime of this REST request. WC core
+             * auto-assigns the `outofstock` product_visibility taxonomy
+             * term to every OOS product on `transition_post_status`,
+             * then `WC_Query` and other downstream filters use that
+             * term to exclude OOS items from catalog-style queries
+             * whenever the option is enabled. WWOF's `Show Zero
+             * Inventory` setting is meant to surface OOS products on
+             * the order form regardless of the global WC option — but
+             * before this override, an admin who had toggled "hide
+             * out of stock items" on the WC settings page would see
+             * OOS products vanish from the form even with WWOF's
+             * setting set to "yes". QA finding #2 on PR #976.
+             *
+             * Force the option to `'no'` for the current request via
+             * `pre_option_*` (returns synchronously without touching
+             * the DB) so every downstream consumer of the option —
+             * WC_Query, WPSEO, third-party catalog filters — agrees
+             * with our caller's stated intent. The filter is removed
+             * in `clean_up_filters_after_query()` so it cannot leak
+             * into unrelated requests.
+             */
+            add_filter( 'pre_option_woocommerce_hide_out_of_stock_items', array( $this, 'force_show_out_of_stock_items_for_wwof' ), 10, 0 );
         }
 
         $category__in = $request->get_param( 'category__in' );
@@ -907,11 +1053,11 @@ END AS menu_order";
         }
 
         /***************************************************************************
-         * Include favourites if enabled
+         * Include favorites if enabled
          ***************************************************************************
          *
-         * We include favourites if this setting is enabled and it's limited to
-         * only show favourites.
+         * We include favorites if this setting is enabled and it's limited to
+         * only show favorites.
          */
         if ( $order_form->allow_favourites() && $order_form->only_show_favourites() ) {
             $favourites = WWOF::get_favourite_products();
@@ -954,9 +1100,13 @@ END AS menu_order";
              * products in the `post__in` parameter.
              */
             if ( ! empty( $post__in ) && ! $order_form->only_show_favourites() ) {
-                $new_post__in = array();
+                // Resolve every parent's variation children in a single query
+                // instead of instantiating each parent product and calling
+                // `get_children()` one-by-one.
+                $children_by_parent = $this->get_variation_children_for_parents( $post__in );
+                $new_post__in       = array();
                 foreach ( $post__in as $index => $post_in ) {
-                    $children = wc_get_product( $post_in )->get_children();
+                    $children = isset( $children_by_parent[ (int) $post_in ] ) ? $children_by_parent[ (int) $post_in ] : array();
                     if ( ! empty( $children ) ) {
                         $new_post__in = array_merge( $new_post__in, $children );
                         unset( $post__in[ $index ] );
@@ -976,6 +1126,16 @@ END AS menu_order";
              * those that do not have a `product_type` only since we need to hide or not
              * include the parent product in the results for the `variable` type.
              */
+            /**
+             * Product type terms — "show variations individually" mode.
+             *
+             * Integrations can append additional product types (bundle, grouped,
+             * composite, etc.) by hooking `wwof_product_type_terms`.
+             *
+             * @since 3.1.0
+             */
+            $product_type_terms = apply_filters( 'wwof_product_type_terms', array( 'simple', 'grouped', 'external' ) );
+
             $args['tax_query'] = WC_Helper::add_tax_query(
                 $args,
                 array(
@@ -987,7 +1147,7 @@ END AS menu_order";
                     array(
                         'taxonomy' => 'product_type',
                         'field'    => 'slug',
-                        'terms'    => array( 'simple', 'grouped', 'external' ),
+                        'terms'    => $product_type_terms,
                         'operator' => 'IN',
                     ),
                 )
@@ -999,14 +1159,18 @@ END AS menu_order";
              *
              * We limit products query to certain types.
              *
-             * @since 3.0 We only support simple and variable products.
+             * @since 3.0   We only support simple and variable products.
+             * @since 3.1.0 Integrations can append product types via the
+             *              `wwof_product_type_terms` filter.
              */
+            $product_type_terms = apply_filters( 'wwof_product_type_terms', array( 'simple', 'variable', 'grouped', 'external' ) );
+
             $args['tax_query'] = WC_Helper::add_tax_query(
                 $args,
                 array(
                     'taxonomy' => 'product_type',
                     'field'    => 'slug',
-                    'terms'    => array( 'simple', 'variable', 'grouped', 'external' ),
+                    'terms'    => $product_type_terms,
                 )
             );
         }
@@ -1066,6 +1230,34 @@ END AS menu_order";
     }
 
     /**
+     * Maybe customize the product variation REST query.
+     *
+     * The variation collection endpoint (`/products/{id}/variations`) is the
+     * request the order form issues when a shopper opens a variation dropdown.
+     * We don't need to alter the query, but we register the per-request cache
+     * priming here so the per-variation enrichment in
+     * `rest_prepare_product_variation_object()` runs against warm caches.
+     *
+     * @param array           $args    Array of arguments for WP_Query.
+     * @param WP_REST_Request $request The REST API request.
+     *
+     * @since 3.1.0
+     * @return array
+     */
+    public function rest_product_variation_object_query( $args, $request ) {
+
+        if ( ! $request->get_param( 'wwof' ) || 'edit' === $request->get_param( 'context' ) ) {
+            return $args;
+        }
+
+        $this->rest_request = $request;
+
+        $this->add_serialization_cache_priming();
+
+        return $args;
+    }
+
+    /**
      * Removes the custom handlers added to the WP_Query.
      *
      * @param WP_REST_Response|WP_HTTP_Response|WP_Error|mixed $response The REST API response data object.
@@ -1079,6 +1271,34 @@ END AS menu_order";
             remove_filter( 'posts_clauses_request', array( $this, 'replace_clauses' ), 100 );
         }
 
+        // Always drop the serialization-cache priming filter — `remove_filter`
+        // is a no-op when it wasn't added, so this is safe regardless of how the
+        // request entered (products or variations endpoint).
+        remove_filter( 'the_posts', array( $this, 'prime_rest_serialization_caches' ), 10 );
+
+        // Clear the request-scoped memoization at teardown. The products
+        // endpoint already wipes it per clauses-filtered WP_Query via
+        // `replace_clauses`, but the variations endpoint hooks neither
+        // `replace_clauses` nor `search_post_clauses_request`, so its
+        // `parent_terms_*` / `product_object_*` / `attribute_*` entries would
+        // otherwise outlive the request in long-running contexts (WP-CLI, queue
+        // workers, integration tests). Harmless no-op when already empty.
+        self::clear_memoization_cache();
+
+        // Always attempt to remove the OOS-override filter — `remove_filter`
+        // is a no-op when the filter wasn't added, so this is safe whether
+        // or not the current request set show_zero_inventory. Keeps the
+        // teardown reachable even when REST_REQUEST is false (CLI / cron
+        // re-using the WC integration via direct method calls).
+        remove_filter( 'pre_option_woocommerce_hide_out_of_stock_items', array( $this, 'force_show_out_of_stock_items_for_wwof' ), 10 );
+
+        // Null the request reference at teardown so a stale `WP_REST_Request`
+        // from a prior WWOF request can't leak into methods that read
+        // `$this->rest_request` (`replace_clauses`, the search-cache helpers) in
+        // long-running contexts (WP-CLI, queue workers, the Pest suite). Both
+        // query handlers set it; this is the matching reset.
+        $this->rest_request = null;
+
         $this->product_variations_query = false;
 
         if ( ! empty( $this->search_sku_in_product_lookup_table ) ) {
@@ -1086,6 +1306,25 @@ END AS menu_order";
         }
 
         return $response;
+    }
+
+    /**
+     * `pre_option_*` callback that forces WC's
+     * `woocommerce_hide_out_of_stock_items` option to `'no'` for the
+     * current WWOF REST query.
+     *
+     * Returned synchronously without touching the DB so the option's
+     * existing autoload value stays intact for non-WWOF requests. Hooked
+     * via `rest_product_object_query()` only when the request's
+     * `show_zero_inventory` param is truthy, and removed in
+     * `remove_wp_query_custom_handlers()` regardless of outcome.
+     *
+     * @since 3.1.0
+     * @return string Always `'no'`.
+     */
+    public function force_show_out_of_stock_items_for_wwof() {
+
+        return 'no';
     }
 
     /**
@@ -1226,6 +1465,18 @@ JS;
          * @see wp-content/plugins/woocommerce/includes/rest-api/Controllers/Version3/class-wc-rest-crud-controller.php:340
          */
         add_filter( 'woocommerce_rest_product_object_query', array( $this, 'rest_product_object_query' ), 100, 2 );
+
+        /**************************************************************************
+         * Maybe customize REST API response for product variations query
+         **************************************************************************
+         *
+         * We hook the product variation collection query so that, for WWOF
+         * requests, we can prime the per-page caches once before serialization
+         * and avoid the per-variation N+1 lookups.
+         *
+         * @see wp-content/plugins/woocommerce/includes/rest-api/Controllers/Version2/class-wc-rest-product-variations-v2-controller.php
+         */
+        add_filter( 'woocommerce_rest_product_variation_object_query', array( $this, 'rest_product_variation_object_query' ), 100, 2 );
 
         /***************************************************************************
          * Product search query clauses customization
@@ -1380,6 +1631,346 @@ JS;
      */
     public static function clear_memoization_cache() {
         self::$memoization_cache = array();
+    }
+
+    /**
+     * Register the per-request serialization-cache priming filter.
+     *
+     * Hooked once per WWOF REST request (from either the product or product
+     * variation query handler). The actual priming happens in
+     * `prime_rest_serialization_caches()` on `the_posts`, which fires after the
+     * page's posts are fetched but before WooCommerce hydrates and serializes
+     * them.
+     *
+     * @since 3.1.0
+     * @return void
+     */
+    private function add_serialization_cache_priming() {
+
+        if ( ! has_filter( 'the_posts', array( $this, 'prime_rest_serialization_caches' ) ) ) {
+            add_filter( 'the_posts', array( $this, 'prime_rest_serialization_caches' ), 10, 1 );
+        }
+    }
+
+    /**
+     * Prime the per-page caches once, before the products/variations are
+     * hydrated and serialized.
+     *
+     * Without this, serializing N variations triggers N independent meta reads
+     * (WooCommerce's `WC_Data::get_meta_data()` issues one query per object),
+     * plus repeated parent term/post lookups. We warm WooCommerce's object-meta
+     * cache for the whole page in a single query and prime the parents' post and
+     * term caches so the enrichment in the `rest_prepare_*` callbacks reads from
+     * cache.
+     *
+     * @param array $posts Posts for the current page (from `the_posts`).
+     *
+     * @since 3.1.0
+     * @return array The unchanged posts.
+     */
+    public function prime_rest_serialization_caches( $posts ) {
+
+        if ( ! $this->rest_request instanceof WP_REST_Request || ! $this->rest_request->get_param( 'wwof' ) || empty( $posts ) ) {
+            return $posts;
+        }
+
+        $object_ids = array();
+        $parent_ids = array();
+        foreach ( $posts as $post ) {
+            if ( ! isset( $post->post_type ) || ! in_array( $post->post_type, array( 'product', 'product_variation' ), true ) ) {
+                continue;
+            }
+
+            $object_ids[] = (int) $post->ID;
+            if ( 'product_variation' === $post->post_type && ! empty( $post->post_parent ) ) {
+                $parent_ids[ (int) $post->post_parent ] = (int) $post->post_parent;
+            }
+        }
+
+        if ( empty( $object_ids ) ) {
+            return $posts;
+        }
+
+        // The collection query can run more than once per request (e.g. the
+        // wholesale price chain re-queries the page), so prime against
+        // WooCommerce's actual cache: if both the first and last object's meta
+        // are already warm, this page has been primed and there is nothing to
+        // do. Spot-checking both ends (rather than only the first) avoids a
+        // partial-overlap re-query — where an earlier query primed a prefix of
+        // this page — short-circuiting and leaving the tail cold.
+        if ( $this->is_object_meta_primed( $object_ids[0] ) && $this->is_object_meta_primed( end( $object_ids ) ) ) {
+            return $posts;
+        }
+
+        $this->prime_object_meta_cache( $object_ids );
+
+        if ( ! empty( $parent_ids ) ) {
+            // Parents are not in the result set, so their term cache is cold. Warm
+            // the parents' object-term cache once so the per-variation category /
+            // tag enrichment reads from cache. The parent product object is only
+            // needed for the conditional SKU-inheritance check and is resolved
+            // lazily by the request-scoped memoization.
+            update_object_term_cache( array_values( $parent_ids ), 'product' );
+        }
+
+        return $posts;
+    }
+
+    /**
+     * Whether WooCommerce's object-meta cache is already warm for an object.
+     *
+     * Used to make the per-request priming idempotent across repeated
+     * collection queries within the same request.
+     *
+     * @param int $object_id Product / variation ID.
+     *
+     * @since 3.1.0
+     * @return bool
+     */
+    private function is_object_meta_primed( $object_id ) {
+
+        if ( ! class_exists( 'WC_Data' ) || ! method_exists( 'WC_Data', 'generate_meta_cache_key' ) ) {
+            return false;
+        }
+
+        $cache_key = \WC_Data::generate_meta_cache_key( (int) $object_id, 'products' );
+
+        return false !== wp_cache_get( $cache_key, 'products' );
+    }
+
+    /**
+     * Warm WooCommerce's object-meta cache for a page of products/variations in
+     * a single query.
+     *
+     * WooCommerce's `WC_Data_Store_WP::read_meta()` issues a raw per-object
+     * query keyed to its own cache group, so priming WP's post-meta cache does
+     * not help. We read every object's meta rows once and hand them to the
+     * matching native primer, `WC_Data::prime_raw_meta_data_cache()`.
+     *
+     * @param int[] $object_ids Product / variation IDs on the current page.
+     *
+     * @since 3.1.0
+     * @return void
+     */
+    private function prime_object_meta_cache( array $object_ids ) {
+
+        global $wpdb;
+
+        if ( ! class_exists( 'WC_Data' ) || ! method_exists( 'WC_Data', 'prime_raw_meta_data_cache' ) ) {
+            return;
+        }
+
+        $object_ids = array_values( array_unique( array_filter( array_map( 'absint', $object_ids ) ) ) );
+        if ( empty( $object_ids ) ) {
+            return;
+        }
+
+        $placeholders = implode( ', ', array_fill( 0, count( $object_ids ), '%d' ) );
+
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $raw_meta = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT post_id, meta_id, meta_key, meta_value FROM {$wpdb->postmeta} WHERE post_id IN ( $placeholders ) ORDER BY post_id ASC, meta_id ASC",
+                $object_ids
+            )
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        $collection = array_fill_keys( $object_ids, array() );
+        foreach ( (array) $raw_meta as $row ) {
+            $collection[ (int) $row->post_id ][] = (object) array(
+                'meta_id'    => $row->meta_id,
+                'meta_key'   => $row->meta_key,
+                'meta_value' => $row->meta_value,
+            );
+        }
+
+        \WC_Data::prime_raw_meta_data_cache( $collection, 'products' );
+    }
+
+    /**
+     * Resolve the variation children of multiple parent products in one query.
+     *
+     * Replaces the per-parent `wc_get_product( $id )->get_children()` expansion
+     * used by "show variations individually". Mirrors the `all` set returned by
+     * `WC_Product_Variable::get_children()` — published and private variation
+     * children, ordered by menu order then ID.
+     *
+     * Note: the bulk `post_parent IN (…)` read below is hand-rolled SQL that no
+     * `WP_Query`-level filter (`pre_get_posts`, `posts_where`, `posts_clauses_request`,
+     * etc.) sees, so it assumes variations are language-neutral / language-scoped.
+     * This holds for standard WPML & Polylang — each language's parent owns its
+     * own variation children and the parent IN-list is already language-scoped —
+     * and the fallback above covers third parties that hook
+     * `woocommerce_get_children` / `woocommerce_variable_children_args`. A site
+     * that independently translates variations as separate posts purely via
+     * `WP_Query` filters is the one shape the bulk path does not honour.
+     *
+     * @param int[] $parent_ids Parent product IDs.
+     *
+     * @since 3.1.0
+     * @return array<int, int[]> Map of parent ID => ordered child variation IDs.
+     */
+    private function get_variation_children_for_parents( array $parent_ids ) {
+
+        global $wpdb;
+
+        $parent_ids = array_values( array_unique( array_filter( array_map( 'absint', $parent_ids ) ) ) );
+        if ( empty( $parent_ids ) ) {
+            return array();
+        }
+
+        // If a third party customizes the variation children query, fall back to
+        // the per-parent resolver so the expanded set stays byte-identical to
+        // core's — the bulk query cannot honour those filters.
+        if ( has_filter( 'woocommerce_variable_children_args' ) || has_filter( 'woocommerce_get_children' ) ) {
+            $children_by_parent = array();
+            foreach ( $parent_ids as $parent_id ) {
+                $product = $this->get_memoized_product( $parent_id );
+                if ( $product instanceof WC_Product ) {
+                    $children = $product->get_children();
+                    if ( ! empty( $children ) ) {
+                        $children_by_parent[ $parent_id ] = $children;
+                    }
+                }
+            }
+
+            return $children_by_parent;
+        }
+
+        $placeholders = implode( ', ', array_fill( 0, count( $parent_ids ), '%d' ) );
+
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT ID, post_parent FROM {$wpdb->posts}
+                WHERE post_parent IN ( $placeholders )
+                AND post_type = 'product_variation'
+                AND post_status IN ( 'publish', 'private' )
+                ORDER BY post_parent ASC, menu_order ASC, ID ASC",
+                $parent_ids
+            )
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+        $children_by_parent = array();
+        foreach ( (array) $rows as $row ) {
+            $children_by_parent[ (int) $row->post_parent ][] = (int) $row->ID;
+        }
+
+        return $children_by_parent;
+    }
+
+    /**
+     * Memoize a value in the request-scoped cache.
+     *
+     * Uses `array_key_exists` (not `isset`) so a factory result of `null` /
+     * `false` / `0` is still treated as cached — the factory runs at most once
+     * per key per request.
+     *
+     * @param string   $key     Cache key.
+     * @param callable $factory Produces the value on the first call for $key.
+     *
+     * @since 3.1.0
+     * @return mixed
+     */
+    private function memoize( $key, callable $factory ) {
+
+        if ( ! array_key_exists( $key, self::$memoization_cache ) ) {
+            self::$memoization_cache[ $key ] = $factory();
+        }
+
+        return self::$memoization_cache[ $key ];
+    }
+
+    /**
+     * Get a parent product's terms for a taxonomy, memoized for the request.
+     *
+     * All variations of a parent share the parent's `product_cat` / `product_tag`
+     * terms, so we look them up once per parent per request instead of once per
+     * variation.
+     *
+     * @param int    $parent_id Parent product ID.
+     * @param string $taxonomy  Taxonomy slug (`product_cat` | `product_tag`).
+     *
+     * @since 3.1.0
+     * @return array
+     */
+    private function get_memoized_parent_terms( $parent_id, $taxonomy ) {
+
+        $parent_id = (int) $parent_id;
+
+        return $this->memoize(
+            'parent_terms_' . $taxonomy . '_' . $parent_id,
+            function () use ( $parent_id, $taxonomy ) {
+
+                return wc_get_object_terms( $parent_id, $taxonomy );
+            }
+        );
+    }
+
+    /**
+     * Get a product object, memoized for the request.
+     *
+     * @param int $product_id Product ID.
+     *
+     * @since 3.1.0
+     * @return \WC_Product|false
+     */
+    private function get_memoized_product( $product_id ) {
+
+        $product_id = (int) $product_id;
+
+        return $this->memoize(
+            'product_object_' . $product_id,
+            function () use ( $product_id ) {
+
+                return wc_get_product( $product_id );
+            }
+        );
+    }
+
+    /**
+     * Get an attribute's taxonomy ID by name, memoized for the request.
+     *
+     * @param string $attribute_name Attribute (taxonomy) name.
+     *
+     * @since 3.1.0
+     * @return int
+     */
+    private function get_memoized_attribute_taxonomy_id( $attribute_name ) {
+
+        return $this->memoize(
+            'attribute_taxonomy_id_' . $attribute_name,
+            function () use ( $attribute_name ) {
+
+                return wc_attribute_taxonomy_id_by_name( $attribute_name );
+            }
+        );
+    }
+
+    /**
+     * Get an attribute's label, memoized for the request.
+     *
+     * Keyed by parent so a custom (product-level) attribute that resolves to a
+     * different label on a different parent is not confused.
+     *
+     * @param string     $attribute_name Attribute name.
+     * @param WC_Product $product        Product the attribute belongs to.
+     * @param int        $parent_id      Parent product ID for cache keying.
+     *
+     * @since 3.1.0
+     * @return string
+     */
+    private function get_memoized_attribute_label( $attribute_name, $product, $parent_id ) {
+
+        return $this->memoize(
+            'attribute_label_' . (int) $parent_id . '_' . $attribute_name,
+            function () use ( $attribute_name, $product ) {
+
+                return wc_attribute_label( $attribute_name, $product );
+            }
+        );
     }
 
     /**

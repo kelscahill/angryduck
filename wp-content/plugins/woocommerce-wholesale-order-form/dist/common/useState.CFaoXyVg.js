@@ -1,0 +1,1 @@
+import{Yt as t,er as n,sr as o}from"./ExclamationCircleFilled.hVlCEKoI.js";function r(t){const n=o("function"==typeof t?t():t);return[n,function(t){n.value=t}]}t();export{r as t};

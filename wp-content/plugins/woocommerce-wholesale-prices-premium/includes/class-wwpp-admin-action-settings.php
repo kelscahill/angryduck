@@ -9,6 +9,8 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
      * Model that houses the logic of WooCommerce Wholesale Prices Premium Settings page.
      *
      * @since 1.0.0
+     * @since 2.1.0 Fix wholesale price cache invalidation when Aelia Currency Switcher is active (issue #1590).
+     * @since 2.1.1 Delegate the product visibility filter meta rebuild to the shared WWPP_Helper_Functions worker.
      */
     class WWPP_Admin_Action_Settings {
 
@@ -25,6 +27,12 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
          * Wholesale price cache key.
          *
          * @since 1.27.8
+         *
+         * SECURITY: Do NOT add another user_meta key starting with this exact string.
+         * `delete_wholesale_price_on_shop_v3_cache()` uses
+         * `LIKE 'wwpp_product_wholesale_price_on_shop_v3_cache%'` to catch Aelia-suffixed
+         * variants — any sibling key sharing this prefix will be silently destroyed on
+         * every cache purge.
          */
         const WHOLESALE_PRICE_CACHE_KEY = 'wwpp_product_wholesale_price_on_shop_v3_cache';
 
@@ -421,6 +429,7 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
          * @param array $options Options.
          *
          * @since  2.0
+         * @since  2.1.0 Strip the "wholesale_only_text" display value before persisting the mapping entry.
          * @access public
          *
          * @return array
@@ -474,6 +483,7 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
                 } else {
                     // Clean $mapping of unnecessary data.
                     unset( $mapping['wholesale_role_text'] );
+                    unset( $mapping['wholesale_only_text'] );
 
                     if ( 'yes' === $mapping['use_non_zoned_shipping_method'] ) {
                         unset( $mapping['non_zoned_shipping_method_text'] );
@@ -503,6 +513,11 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
          * @param array $options Options.
          *
          * @since  2.0
+         * @since  2.1.0 Compare the duplicate-check result and the edited index as strings so editing an entry
+         *               without changing its role/zone/method (e.g. only toggling "Wholesale Only?") is not
+         *               rejected as a duplicate. Strip the row "key" and "wholesale_only_text" display values
+         *               before persisting. Preserve the stored "wholesale_only" flag when the posted mapping
+         *               omits it so a submission from a UI without the toggle does not silently clear it.
          * @access public
          *
          * @return array
@@ -558,20 +573,27 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
                         'status'  => 'error',
                         'message' => __( 'The mapping you wish to edit does not exists', 'woocommerce-wholesale-prices-premium' ),
                     );
-                } elseif ( false !== $mapping_exists_check && $mapping_exists_check !== $index ) {
+                } elseif ( false !== $mapping_exists_check && (string) $mapping_exists_check !== (string) $index ) {
                     $response = array(
                         'status'  => 'error',
                         'message' => __( 'The new mapping data you want to save duplicates with another existing mapping', 'woocommerce-wholesale-prices-premium' ),
                     );
                 } else {
                     // Clean $mapping of unnecessary data.
+                    unset( $mapping['key'] );
                     unset( $mapping['wholesale_role_text'] );
+                    unset( $mapping['wholesale_only_text'] );
 
                     if ( 'yes' === $mapping['use_non_zoned_shipping_method'] ) {
                         unset( $mapping['non_zoned_shipping_method_text'] );
                     } else {
                         unset( $mapping['shipping_zone_text'] );
                         unset( $mapping['shipping_method_text'] );
+                    }
+
+                    // Preserve the "wholesale only" flag when the posted mapping omits it (e.g. an edit submitted from a UI that does not render the toggle).
+                    if ( ! isset( $mapping['wholesale_only'] ) && isset( $wholesale_zone_mapping[ $index ]['wholesale_only'] ) ) {
+                        $mapping['wholesale_only'] = $wholesale_zone_mapping[ $index ]['wholesale_only'];
                     }
 
                     $wholesale_zone_mapping[ $index ] = $mapping;
@@ -1703,9 +1725,17 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
          * @return array
          */
         public function clear_var_prod_price_range_caching() {
+            global $wc_wholesale_prices_premium;
+
             $this->set_settings_meta_hash();
             $this->set_product_category_meta_hash( null, null, 'product_cat' );
             $this->delete_wholesale_price_on_shop_v3_cache();
+
+            // Purge the per-role transient buckets for both price caches. The local cleanup above only
+            // removes legacy pre-2.1.1 per-user usermeta entries; the active caches now live in transients.
+            if ( isset( $wc_wholesale_prices_premium->wwpp_cache ) ) {
+                $wc_wholesale_prices_premium->wwpp_cache->delete_wholesale_price_on_shop_v3_cache();
+            }
 
             $response = array(
                 'status'  => 'success',
@@ -1761,11 +1791,19 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
         /**
          * Delete wholesale price cache.
          *
+         * UPGRADE-ONLY (as of 2.1.1): this method cleans up the legacy per-user `usermeta` cache rows
+         * that pre-2.1.1 wrote. The active caches now live in per-role transients and are purged by
+         * WWPP_Cache::delete_wholesale_price_on_shop_v3_cache() (called alongside this in
+         * clear_var_prod_price_range_caching()). On a fresh 2.1.1+ install this is a perpetual no-op
+         * and should be removed once no pre-2.1.1 upgrade traffic remains. Do NOT copy this usermeta
+         * pattern for new cache logic.
+         *
          * @since 1.27.8
+         * @since 2.1.0 Match Aelia-suffixed cache keys via LIKE so cache busts correctly when Aelia Currency Switcher is active (issue #1590).
          * @access public
          */
         public function delete_wholesale_price_on_shop_v3_cache() {
-            if ( 'yes' !== get_option( 'wwpp_enable_wholesale_price_cache' ) ) {
+            if ( 'yes' !== get_option( 'wwpp_enable_wholesale_price_cache', 'yes' ) ) {
                 return;
             }
 
@@ -1814,30 +1852,51 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
                 }
             }
 
+            // Aelia Currency Switcher stores the cache under per-currency suffixed meta keys
+            // (e.g. wwpp_product_wholesale_price_on_shop_v3_cache_EUR). Match the bare key
+            // and any suffixed variants with a single LIKE so invalidation works in both cases.
+            $meta_key_pattern = $wpdb->esc_like( self::WHOLESALE_PRICE_CACHE_KEY ) . '%';
+
             if ( ! empty( $product_ids ) ) {
 
-                // Get users with wholesale price cache meta.
-                $users_with_cache = $wpdb->get_results( $wpdb->prepare( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = %s", self::WHOLESALE_PRICE_CACHE_KEY ) );
+                $cache_rows = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT user_id, meta_key, meta_value FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+                        $meta_key_pattern
+                    )
+                );
 
-                if ( $users_with_cache ) {
+                if ( $cache_rows ) {
 
-                    // Loop all users with price cache meta.
-                    foreach ( $users_with_cache as $user ) {
-                        $user_cached_data = get_user_meta( $user->user_id, self::WHOLESALE_PRICE_CACHE_KEY, true );
+                    foreach ( $cache_rows as $row ) {
+                        $user_cached_data = maybe_unserialize( $row->meta_value );
 
-                        // Remove only cached related to updated product id.
+                        if ( ! is_array( $user_cached_data ) ) {
+                            continue;
+                        }
+
+                        // Remove only cached entries related to updated product id.
+                        $changed = false;
                         foreach ( $product_ids as $product_id ) {
                             if ( isset( $user_cached_data[ $product_id ] ) ) {
                                 unset( $user_cached_data[ $product_id ] );
+                                $changed = true;
                             }
                         }
 
-                        update_user_meta( $user->user_id, self::WHOLESALE_PRICE_CACHE_KEY, $user_cached_data );
+                        if ( $changed ) {
+                            update_user_meta( $row->user_id, $row->meta_key, $user_cached_data );
+                        }
                     }
                 }
             } else {
-                // Purge all cache.
-                $wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->usermeta WHERE meta_key = %s", self::WHOLESALE_PRICE_CACHE_KEY ) );
+                // Purge all cache (base key and every Aelia currency variant).
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
+                        $meta_key_pattern
+                    )
+                );
             }
         }
 
@@ -1989,351 +2048,14 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
          * @since 1.14.0 Make it handle ajax callback 'wp_ajax_wwpp_initialize_product_visibility_meta'.
          * @since 1.23.9 Set <wholesale_role>_have_wholesale_price meta into the parent group product.
          * @since 1.30.1 Separated the AJAX call so this function can be called from anywhere.
+         * @since 2.1.1 Delegate the shared rebuild to WWPP_Helper_Functions so the batched, database
+         *              friendly query logic lives in a single place.
          * @access public
          * @return bool Operation status.
          */
         public function initialize_product_visibility_filter_meta() {
-            global $wpdb, $wc_wholesale_prices_premium, $wc_wholesale_prices;
 
-            do_action( 'wwpp_before_initialize_product_visibility_filter_meta' );
-
-            /**
-             * In version 1.13.0 we refactored the Wholesale Exclusive Variation feature.
-             * Now it is an enhanced select box instead of the old check box.
-             * This gives us more flexibility including the 'all' value if no wholesale role is selected.
-             * In light to this, we must migrate the old <wholesale_role>_exclusive_variation data to the new 'wwpp_product_visibility_filter'.
-             */
-            foreach ( $this->_all_wholesale_roles as $role_key => $role ) {
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) 
-                        SELECT 
-                            $wpdb->posts.ID, 
-                            'wwpp_product_wholesale_visibility_filter', 
-                            %s
-                        FROM 
-                            $wpdb->posts 
-                        WHERE 
-                            $wpdb->posts.post_type IN ('product_variation') 
-                            AND $wpdb->posts.ID IN (
-                            SELECT 
-                                $wpdb->posts.ID 
-                            FROM 
-                                $wpdb->posts 
-                                INNER JOIN $wpdb->postmeta ON (
-                                $wpdb->posts.ID = $wpdb->postmeta.post_id
-                                ) 
-                            WHERE 
-                                meta_key = %s
-                                AND meta_value = 'yes'
-                            )
-                        ",
-                        $role_key,
-                        $role_key . '_exclusive_variation'
-                    )
-                );
-            }
-
-            /**
-             * Initialize wwpp_product_wholesale_visibility_filter meta
-             * This meta is in charge of product visibility. We need to set this to 'all' as mostly
-             * all imported products will not have this meta. Meaning, all imported products
-             * with no 'wwpp_product_wholesale_visibility_filter' meta set is visible to all users by default.
-             */
-            $wpdb->query(
-                "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) 
-                SELECT 
-                    $wpdb->posts.ID, 
-                    'wwpp_product_wholesale_visibility_filter', 
-                    'all' 
-                FROM 
-                    $wpdb->posts 
-                WHERE 
-                    $wpdb->posts.post_type IN ('product', 'product_variation') 
-                    AND $wpdb->posts.ID NOT IN (
-                        SELECT 
-                            $wpdb->posts.ID 
-                        FROM 
-                            $wpdb->posts 
-                            INNER JOIN $wpdb->postmeta ON (
-                                $wpdb->posts.ID = $wpdb->postmeta.post_id
-                            ) 
-                        WHERE 
-                        meta_key = 'wwpp_product_wholesale_visibility_filter'
-                    )"
-            );
-
-            /**
-             * Address instances where the wwpp_product_wholesale_visibility_filter meta is present but have empty value.
-             * This can possibly occur when importing products using external tool that tries to import meta data but fails to properly save the data.
-             */
-            $wpdb->query(
-                "UPDATE 
-                    $wpdb->postmeta 
-                SET 
-                    meta_value = 'all' 
-                WHERE 
-                    meta_key = 'wwpp_product_wholesale_visibility_filter' 
-                    AND meta_value = ''"
-            );
-
-            /**
-             * Properly set {wholesale_role}_have_wholesale_price meta
-             * There will be cases where users import products from external sources and they
-             * "set up" wholesale prices via external tools prior to importing
-             * We need to handle those cases.
-             */
-            foreach ( $this->_all_wholesale_roles as $role_key => $role ) {
-
-                // We need to delete prior to inserting, else we will have a stacked meta, same multiple meta for a single post.
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "DELETE FROM 
-                            $wpdb->postmeta 
-                        WHERE 
-                            meta_key = %s
-                        ",
-                        $role_key . '_have_wholesale_price'
-                    )
-                );
-
-                // Delete wholesale price set by product cat.
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "DELETE FROM
-                            $wpdb->postmeta
-                        WHERE 
-                            meta_key = %s
-                        ",
-                        $role_key . '_have_wholesale_price_set_by_product_cat'
-                    )
-                );
-
-                // Delete Variations with wholesale price meta. To avoid duplicates or non-existing variation id post.
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "DELETE FROM 
-                            $wpdb->postmeta 
-                        WHERE 
-                            meta_key = %s
-                        ",
-                        $role_key . '_variations_with_wholesale_price'
-                    )
-                );
-
-                /**
-                 * Remove <wholesale_role>_wholesale_price in the variable product meta. This will cause visibility issue.
-                 * This scenario happens when a product was still a simple product type (added a wholesale price) and converted to variable.
-                 * The wholesale price is not gonna be use anymore so we need to delete it.
-                 */
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "DELETE FROM 
-                            $wpdb->postmeta 
-                        WHERE 
-                            meta_key = %s
-                        AND post_id IN (
-                            SELECT 
-                                DISTINCT object_id 
-                            FROM 
-                                $wpdb->term_relationships tr 
-                                LEFT JOIN $wpdb->terms terms ON terms.term_id = tr.term_taxonomy_id 
-                            WHERE 
-                                terms.name = 'variable'
-                        )",
-                        $role_key . '_wholesale_price'
-                    )
-                );
-
-                /**
-                 * Get all variations that has wholesale_price and assign the id of post meta to the parent variable post meta.
-                 * Set <wholesale_role>_variations_with_wholesale_price into post_parent / variable product that has wholesale variations.
-                 */
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) 
-                        SELECT 
-                            p.post_parent, 
-                            %s, 
-                            p.ID 
-                        FROM 
-                            $wpdb->posts p 
-                            LEFT JOIN $wpdb->postmeta pm ON pm.post_id = p.ID 
-                        WHERE 
-                            p.post_type = 'product_variation' 
-                            AND pm.meta_key = %s 
-                            AND pm.meta_value > 0
-                        ",
-                        $role_key . '_variations_with_wholesale_price',
-                        $role_key . '_wholesale_price'
-                    )
-                );
-
-                // Insert have wholesale price.
-                $wpdb->query(
-                    $wpdb->prepare(
-                        "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) 
-                        SELECT 
-                            $wpdb->posts.ID, 
-                            %s, 
-                            'yes' 
-                        FROM 
-                            $wpdb->posts 
-                        WHERE 
-                            $wpdb->posts.post_type = 'product' 
-                            AND $wpdb->posts.ID IN (
-                                SELECT 
-                                    DISTINCT $wpdb->postmeta.post_id 
-                                FROM 
-                                    $wpdb->postmeta 
-                                WHERE 
-                                    (
-                                        (
-                                            meta_key = %s
-                                            AND meta_value > 0
-                                        ) 
-                                        OR (
-                                            meta_key = %s
-                                            AND meta_value != ''
-                                        ) 
-                                        OR (
-                                            meta_key = %s
-                                            AND meta_value = 'yes'
-                                        )
-                                    )
-                            )",
-                        $role_key . '_have_wholesale_price',
-                        $role_key . '_wholesale_price',
-                        $role_key . '_variations_with_wholesale_price',
-                        $role_key . '_have_wholesale_price_set_by_product_cat'
-                    )
-                );
-
-            }
-
-            // Extra visibility fixes for other product types not covered above (Grouped products, Bundled products).
-
-            // Get grouped products.
-            $args = array(
-                'type'   => 'grouped',
-                'return' => 'ids',
-                'limit'  => -1,
-            );
-
-            $grouped_products = wc_get_products( $args );
-
-            if ( ! empty( $grouped_products ) ) {
-
-                /**
-                 * Set parent group product <wholesale_role>_have_wholesale_price so that it will be visible when
-                 * "Only Show Wholesale Products To Wholesale Users" is enabled.
-                 */
-                foreach ( $grouped_products as $product_id ) {
-                    $wc_wholesale_prices->wwp_wholesale_price_grouped_product->insert_have_wholesale_price_meta( $product_id );
-                }
-            }
-
-            // Get bundled products.
-            $bundle_args = array(
-                'type'   => 'bundle',
-                'return' => 'ids',
-                'limit'  => -1,
-            );
-
-            $bundled_products = wc_get_products( $bundle_args );
-
-            if ( ! empty( $bundled_products ) ) {
-
-                /**
-                 * Set parent group product <wholesale_role>_have_wholesale_price so that it will be visible when
-                 * "Only Show Wholesale Products To Wholesale Users" is enabled
-                 */
-                foreach ( $bundled_products as $bundle_product_id ) {
-                    $wc_wholesale_prices_premium->wwpp_wc_bundle_product->set_bundle_product_visibility_meta( $bundle_product_id );
-                }
-            }
-
-            /**
-             * Get all terms and set <wholesale_role>_have_wholesale_price and
-             * <wholesale_role>_have_wholesale_price_set_by_product_cat on category level discounts
-             */
-            $product_terms = get_terms(
-                array(
-                    'taxonomy'   => 'product_cat',
-                    'hide_empty' => false,
-                )
-            );
-
-            foreach ( $product_terms as $term ) {
-                $category_discount = get_option( 'taxonomy_' . $term->term_id );
-
-                if ( ! empty( $category_discount ) ) {
-                    $wholesale_role_with_discounts = array();
-
-                    foreach ( $this->_all_wholesale_roles as $role_key => $role ) {
-                        if ( isset( $category_discount[ $role_key . '_wholesale_discount' ] ) &&
-                            ! empty( $category_discount[ $role_key . '_wholesale_discount' ] ) ) {
-                            $wholesale_role_with_discounts[] = $role_key;
-                        }
-                    }
-
-                    $category_discount_products = wc_get_products(
-                        array(
-                            'category' => array( $term->slug ),
-                            'return'   => 'ids',
-                        )
-                    );
-
-                    $category_discount_products = $wpdb->get_results(
-                        $wpdb->prepare(
-                            "SELECT 
-                                DISTINCT p.ID 
-                            FROM 
-                                $wpdb->posts p 
-                                LEFT JOIN $wpdb->postmeta pm ON (p.ID = pm.post_id) 
-                                LEFT JOIN $wpdb->term_relationships tr ON (p.ID = tr.object_id) 
-                            WHERE 
-                                p.post_status = 'publish' 
-                                AND p.post_type = 'product' 
-                                AND tr.term_taxonomy_id = %d",
-                            $term->term_id
-                        ),
-                        ARRAY_A
-                    );
-
-                    if ( ! empty( $category_discount_products ) ) {
-                        foreach ( $category_discount_products as $product ) {
-                            foreach ( $wholesale_role_with_discounts as $role_key ) {
-                                $wpdb->insert(
-                                    $wpdb->postmeta,
-                                    array(
-                                        'post_id'    => $product['ID'],
-                                        'meta_key'   => $role_key . '_have_wholesale_price',
-                                        'meta_value' => 'yes',
-                                    )
-                                );
-
-                                $wpdb->insert(
-                                    $wpdb->postmeta,
-                                    array(
-                                        'post_id'    => $product['ID'],
-                                        'meta_key'   => $role_key . '_have_wholesale_price_set_by_product_cat',
-                                        'meta_value' => 'yes',
-                                    )
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Clear product id cache.
-            $wc_wholesale_prices_premium->wwpp_cache->clear_product_transients_cache();
-
-            // Clear WC Product Transients Cache.
-            if ( function_exists( 'wc_delete_product_transients' ) ) {
-                wc_delete_product_transients();
-            }
+            WWPP_Helper_Functions::rebuild_product_visibility_filter_meta( $this->_all_wholesale_roles );
 
             $this->_initialize_wholesale_sale_prices_meta();
 
@@ -2379,7 +2101,8 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
                 }
             }
 
-            $wc_wholesale_prices_premium->wwpp_wholesale_prices->scheduled_wholesale_sales();
+            // Run synchronously so the on-sale flags are recomputed before the admin tool returns success.
+            $wc_wholesale_prices_premium->wwpp_wholesale_prices->scheduled_wholesale_sales( true );
 
             return true;
         }
@@ -3001,6 +2724,7 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
          * Execute model.
          *
          * @since  2.0
+         * @since  2.1.1 Gate the wholesale sale price column on the "Hide Wholesale Price on Admin Product Listing" setting.
          * @access public
          */
         public function run() {
@@ -3052,10 +2776,12 @@ if ( ! class_exists( 'WWPP_Admin_Action_Settings' ) ) {
             add_filter( 'wwp_allowed_group_actions', array( $this, 'register_allowed_group_actions' ) );
             add_filter( 'wwp_allowed_trigger_actions', array( $this, 'register_allowed_trigger_actions' ) );
 
-            // wholesale sale column.
-            add_filter( 'manage_product_posts_columns', array( $this, 'add_wholesale_price_sale_column_to_product_cpt_listing' ), 100, 1 );
-            add_action( 'manage_product_posts_custom_column', array( $this, 'render_wholesale_sale_price_column' ), 100, 2 );
-            add_action( 'admin_head', array( $this, 'add_wholesale_sale_price_column_styling' ) );
+            // wholesale sale column. Respect the "Hide Wholesale Price on Admin Product Listing" setting, matching WWP free's behaviour.
+            if ( 'yes' !== get_option( 'wwpp_hide_wholesale_price_on_product_listing' ) ) {
+                add_filter( 'manage_product_posts_columns', array( $this, 'add_wholesale_price_sale_column_to_product_cpt_listing' ), 100, 1 );
+                add_action( 'manage_product_posts_custom_column', array( $this, 'render_wholesale_sale_price_column' ), 100, 2 );
+                add_action( 'admin_head', array( $this, 'add_wholesale_sale_price_column_styling' ) );
+            }
         }
     }
 }

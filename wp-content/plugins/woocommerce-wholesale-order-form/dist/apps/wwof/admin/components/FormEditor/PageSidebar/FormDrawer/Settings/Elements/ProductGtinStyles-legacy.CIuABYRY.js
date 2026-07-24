@@ -1,0 +1,1 @@
+System.register(["../../../../../../../../../common/ExclamationCircleFilled-legacy.BI-ax_ZG.js","../../../../../../../../../common/ElementAlignment-legacy.BvvVMOYl.js"],function(n,e){var t,c,i,l,m;return{setters:[function(n){n.En,t=n.Ln,c=n.Yt,i=n.mn,l=n.xn},function(n){m=n.t}],execute:function(){c(),n("default",l({__name:"ProductGtinStyles",setup:n=>(n,e)=>(t(),i(m))}))}}});

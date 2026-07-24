@@ -13,6 +13,7 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
      * Model that houses the logic of WWPP integration with WC orders.
      *
      * @since 1.14.0
+     * @since 2.1.0 Recalculate wc_order_stats.tax_total from order tax line items so wholesale discount fees do not leak into Analytics tax figures.
      */
     class WWPP_WC_Order {
 
@@ -239,6 +240,51 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
             WWPP_Cache::instance( array() )->invalidate_reports_cache();
 
             $current_order->save();
+        }
+
+        /**
+         * Recalculate the analytics tax_total from order tax line items.
+         *
+         * WWPP applies the cart subtotal-based wholesale discount as a negative cart fee. In WooCommerce versions
+         * with synchronous analytics sync, an intermediate order save can persist the discount amount into the
+         * wc_order_stats.tax_total column, inflating Analytics tax figures. Recalculating tax_total directly from
+         * the order's tax line items at write time keeps the analytics value aligned with the actual tax collected,
+         * regardless of when the sync fires.
+         *
+         * @since 2.1.0
+         * @access public
+         *
+         * @param array                    $data  Data written to the wc_order_stats lookup table.
+         * @param WC_Order|WC_Order_Refund $order Order object being synced; refunds are passed through unchanged.
+         *
+         * @return array Filtered data with tax_total recalculated from tax line items.
+         */
+        public function recalculate_analytics_tax_total( $data, $order ) {
+
+            // WC_Order_Refund extends WC_Abstract_Order (not WC_Order), so refunds skip this branch and let WooCommerce's refund-specific tax_total handling stand.
+            if ( ! $order instanceof WC_Order ) {
+                return $data;
+            }
+
+            $tax_items = $order->get_items( 'tax' );
+
+            // Orders created outside normal checkout (CSV/migration imports, REST POST /orders, some tax plugins)
+            // can store total_tax directly without per-rate tax line items. With nothing to recompute from, leave
+            // WooCommerce core's already-populated value untouched rather than zeroing it.
+            if ( empty( $tax_items ) ) {
+                return $data;
+            }
+
+            $tax_total = 0.0;
+
+            foreach ( $tax_items as $tax_item ) {
+                $tax_total += (float) $tax_item->get_tax_total()
+                            + (float) $tax_item->get_shipping_tax_total();
+            }
+
+            $data['tax_total'] = (float) wc_format_decimal( $tax_total );
+
+            return $data;
         }
 
         /**
@@ -538,9 +584,56 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
         }
 
         /**
+         * Normalise the apply_wholesale request value to a boolean.
+         *
+         * Legitimate callers send the value as a scalar ('true'/'false',
+         * '1'/'0', 1/0), but a crafted payload could send an array, and
+         * wc_string_to_bool() fatals on non-strings under PHP 8. Absent or
+         * non-scalar values normalise to false so every AJAX handler that
+         * reads the flag degrades to retail pricing instead of fataling.
+         *
+         * @since 2.1.0
+         * @access private
+         *
+         * @param array $post_variables The raw request variables.
+         *
+         * @return bool Whether wholesale pricing should be applied.
+         */
+        private function normalize_apply_wholesale_request( $post_variables ) {
+            return isset( $post_variables['apply_wholesale'] ) && is_scalar( $post_variables['apply_wholesale'] )
+                ? wc_string_to_bool( $post_variables['apply_wholesale'] )
+                : false;
+        }
+
+        /**
+         * Build the address arguments passed to WC_Order::calculate_taxes() from the posted variables.
+         *
+         * The order-item AJAX handlers recalculate taxes against the address typed into the admin
+         * order screen before the order is saved. Sanitising the four address fields the same way in
+         * one place keeps the manual-recalc and line-totals paths from drifting apart.
+         *
+         * @since 2.1.0
+         * @access private
+         *
+         * @param array $post_variables The raw request variables.
+         *
+         * @return array The sanitised country/state/postcode/city arguments for calculate_taxes().
+         */
+        private function build_tax_calculation_args( $post_variables ) {
+            return array(
+                'country'  => isset( $post_variables['country'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['country'] ) ) ) : '',
+                'state'    => isset( $post_variables['state'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['state'] ) ) ) : '',
+                'postcode' => isset( $post_variables['postcode'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['postcode'] ) ) ) : '',
+                'city'     => isset( $post_variables['city'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['city'] ) ) ) : '',
+            );
+        }
+
+        /**
          * Process order item data.
          *
          * @since 1.14.0
+         * @since 2.1.0 Normalise the apply_wholesale POST value with wc_string_to_bool() so the integer payload from wwpp-order-data-item-after is honoured. Guard against non-scalar payloads before normalising to avoid a TypeError on PHP 8.
+         * @since 2.1.1 Pass the resolved customer role to the wwpp_order_item_wholesale_priced filter so vendor allowed-role restrictions are honoured on manual orders.
          * @access public
          *
          * @param object $order Order object.
@@ -639,7 +732,7 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                                 $wholesale_price = $product_wholesale_sale_price['wholesale_sale_price'];
                             }
 
-                            if ( ! empty( $post_variables['apply_wholesale'] ) && 'true' === $post_variables['apply_wholesale'] ) {
+                            if ( $this->normalize_apply_wholesale_request( $post_variables ) ) {
                                 $apply_wholesale  = 'yes';
                                 $wholesale_priced = 'yes';
                             } else {
@@ -711,6 +804,7 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                             'wwpp_order_item_wholesale_priced',
                             $wholesale_priced,
                             $product,
+                            $customer_role,
                         );
 
                         if ( ! empty( trim( $apply_wholesale ) ) && 'yes' === $apply_wholesale ) {
@@ -788,9 +882,68 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
         }
 
         /**
+         * Persist the "Apply Wholesale Pricing" checkbox state when an order is saved from the admin order edit screen.
+         *
+         * The checkbox rendered by wholesale_order_custom_checkbox() is considered ticked when either the
+         * `_apply_wholesale_pricing` (form-save) or `_apply_wholesale_pricing_manually` (AJAX toggle) meta is `'yes'`.
+         *
+         * The form-save path previously persisted `_apply_wholesale_pricing` from a callback on `woocommerce_update_order`,
+         * which fires after HPOS has already flushed order meta to the database (persist_updates() runs save_meta_data()
+         * before the action). The queued meta change — in particular unticking the box — was therefore discarded and the
+         * checkbox could never be turned off from the admin order screen. Persisting here, on WooCommerce's dedicated admin
+         * order save hook, runs with full POST data after the core order save (priority 40) so $order->save() writes the
+         * value reliably in both legacy and HPOS storage. Both meta keys are kept in sync with the posted checkbox state so
+         * the rendered checkbox reflects what was saved (a stale `_apply_wholesale_pricing_manually` from a prior AJAX toggle
+         * would otherwise keep the box ticked even after unticking and saving). Orders whose checkbox is rendered disabled
+         * (processing/completed) are skipped, since a disabled checkbox is not submitted and an absent value would otherwise
+         * be misread as "unticked" and wipe the saved state. The skip keys on the render-time companion flag
+         * (`apply_wholesale_pricing_editable`) emitted by wholesale_order_custom_checkbox() rather than the post-save status,
+         * so it still holds when a locked order is transitioned to an editable status in the same save.
+         *
+         * @since 2.1.1
+         * @access public
+         *
+         * @param int $order_id Order ID being saved.
+         */
+        public function save_apply_wholesale_pricing_checkbox( $order_id ) {
+            $post_variables = $_POST; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification handled by WooCommerce admin order save (check_admin_referer) before this hook fires.
+
+            $order = wc_get_order( $order_id );
+
+            if ( ! is_a( $order, 'WC_Order' ) || $order instanceof WC_Order_Refund ) {
+                return;
+            }
+
+            // The checkbox is rendered disabled for locked statuses (processing/completed) and a disabled checkbox is
+            // not submitted. wholesale_order_custom_checkbox() emits the companion `apply_wholesale_pricing_editable`
+            // flag only when the checkbox is editable, so its absence means the checkbox was rendered disabled this
+            // load — an absent value is "locked", not "unticked". Keying on this render-time flag (rather than the
+            // post-save status) also covers saving a locked order while transitioning it to an editable status in the
+            // same submit, where get_status() would already reflect the new editable status.
+            if ( empty( $post_variables['apply_wholesale_pricing_editable'] ) ) {
+                return;
+            }
+
+            // Nothing to do for retail orders that never used wholesale pricing: when the field is absent and neither
+            // meta is set, bail before $order->save() so no redundant 'no' meta is written on every admin order save.
+            $field_present = isset( $post_variables['apply_wholesale_pricing'] );
+            if ( ! $field_present && 'yes' !== $order->get_meta( '_apply_wholesale_pricing' ) && 'yes' !== $order->get_meta( '_apply_wholesale_pricing_manually' ) ) {
+                return;
+            }
+
+            $is_apply = ( $field_present && 'on' === sanitize_text_field( wp_unslash( $post_variables['apply_wholesale_pricing'] ) ) ) ? 'yes' : 'no';
+
+            $order->update_meta_data( '_apply_wholesale_pricing', $is_apply );
+            $order->update_meta_data( '_apply_wholesale_pricing_manually', $is_apply );
+            $order->save();
+        }
+
+        /**
          * Process order item after.
          *
          * @since 1.14.0
+         * @since 2.1.0 Normalise every apply_wholesale read through the shared scalar-guarded helper so a malformed payload degrades to retail pricing instead of fataling on PHP 8.
+         * @since 2.1.0 Re-render the order items table for wholesale customers even when wholesale pricing is not applied, calculating taxes and totals on the existing line items so the tax column and order totals appear immediately after adding a product instead of only after clicking Apply Wholesale Pricing.
          * @access public
          *
          * @return void
@@ -819,6 +972,9 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                 $customer_id = absint( $post_variables['customer_user'] );
             }
 
+            // Both re-render branches below include the same WooCommerce order-items metabox view.
+            $template_path = WC_ABSPATH . 'includes/admin/meta-boxes/views/html-order-items.php';
+
             if ( wc_string_to_bool( $order_obj->get_meta( '_apply_wholesale_pricing_manually' ) ) ) { // once 'Apply Wholesale Pricing' checkbox is clicked, which means meta is saved. now if the user continuously checks 'Apply Wholesale Pricing', and this logic will be triggered only. below will not get triggered.
                 $customer_role = isset( $customer_id ) ? ( new WC_Customer( $customer_id ) )->get_role() : '';
 
@@ -826,19 +982,19 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                     die();
                 }
 
-                $order         = $this->recalculate_order_items_based_on_wholesale_price( $order_obj, $customer_role, $customer_id, wc_string_to_bool( $post_variables['apply_wholesale'] ) );
-                $template_path = WC_ABSPATH . 'includes/admin/meta-boxes/views/html-order-items.php';
+                $order = $this->recalculate_order_items_based_on_wholesale_price( $order_obj, $customer_role, $customer_id, $this->normalize_apply_wholesale_request( $post_variables ) );
                 include $template_path;
                 die();
             }
 
             $pass_to_check = false;
             if ( ! empty( $post_variables['apply_wholesale'] ) ) {
-                $apply_wholesale        = $order_obj->get_meta( '_apply_wholesale_pricing_manually', true );
-                $apply_wholesale_manual = 'yes';
-                if ( true === wc_string_to_bool( $post_variables['apply_wholesale'] ) ) {
+                $apply_wholesale         = $order_obj->get_meta( '_apply_wholesale_pricing_manually', true );
+                $apply_wholesale_manual  = 'yes';
+                $apply_wholesale_request = $this->normalize_apply_wholesale_request( $post_variables );
+                if ( true === $apply_wholesale_request ) {
                     $pass_to_check = true;
-                } elseif ( false === wc_string_to_bool( $post_variables['apply_wholesale'] ) ) {
+                } elseif ( false === $apply_wholesale_request ) {
                     $apply_wholesale_manual = 'no';
 
                     if ( ! empty( trim( $apply_wholesale ) ) ) {
@@ -857,20 +1013,29 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                 $order_obj->save();
             }
 
-            if ( $pass_to_check ) {
-                if ( $customer_id ) {
-                    $customer = new WC_Customer( $customer_id );
-                    if ( $customer ) {
-                        $customer_role = $customer->get_role();
-                    }
+            if ( $customer_id ) {
+                $customer_role = ( new WC_Customer( $customer_id ) )->get_role();
+            }
+
+            // Re-render the order items table for wholesale customers. Doing this on every
+            // item change (not only when wholesale pricing is applied) means the tax column
+            // and order totals appear as soon as a product is added, without first clicking
+            // the Apply Wholesale Pricing toggle.
+            if ( ! empty( $customer_role ) && array_key_exists( $customer_role, $wholesale_roles ) ) {
+                if ( $pass_to_check ) {
+                    // Wholesale pricing is being applied to the order.
+                    $order = $this->recalculate_order_items_based_on_wholesale_price( $order_obj, $customer_role, $customer_id );
+                } else {
+                    // Wholesale pricing is not applied. Leave the existing line prices untouched
+                    // and only (re)calculate taxes and totals for the current items, mirroring
+                    // WooCommerce's native recalculation. The posted address is used so the
+                    // correct tax rates resolve before the order has been saved.
+                    $order_obj->calculate_taxes( $this->build_tax_calculation_args( $post_variables ) );
+                    $order_obj->calculate_totals( false );
+                    $order = $order_obj;
                 }
 
-                // Check if user is wholesale customers.
-                if ( ! empty( $customer_role ) && array_key_exists( $customer_role, $wholesale_roles ) ) {
-                    $order         = $this->recalculate_order_items_based_on_wholesale_price( $order_obj, $customer_role, $customer_id );
-                    $template_path = WC_ABSPATH . 'includes/admin/meta-boxes/views/html-order-items.php';
-                    include $template_path;
-                }
+                include $template_path;
             }
 
             wp_die();
@@ -948,12 +1113,7 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
             // Save order items first.
             wc_save_order_items( $order_id, $items );
 
-            $calculate_tax_args = array(
-                'country'  => isset( $post_variables['country'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['country'] ) ) ) : '',
-                'state'    => isset( $post_variables['state'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['state'] ) ) ) : '',
-                'postcode' => isset( $post_variables['postcode'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['postcode'] ) ) ) : '',
-                'city'     => isset( $post_variables['city'] ) ? wc_strtoupper( wc_clean( wp_unslash( $post_variables['city'] ) ) ) : '',
-            );
+            $calculate_tax_args = $this->build_tax_calculation_args( $post_variables );
 
             $order_obj = wc_get_order( $order_id );
 
@@ -1029,6 +1189,10 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
             <p class="form-field form-field-wide">
                 <span class="order_checkbox_field">
                     <input type="checkbox" id="apply_wholesale_pricing" name="apply_wholesale_pricing" <?php checked( $is_editable, 'yes' ); ?> style="width: 1rem;" data-toggle="tooltip" data-placement="top" title="<?php esc_attr_e( 'Apply wholesale pricing to this order. Only products with wholesale pricing will be affected. This will keep wholesale prices in sync with products in the catalog.', 'woocommerce-wholesale-prices-premium' ); ?>" <?php echo esc_attr( $disable ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped. ?> />
+                    <?php if ( '' === $disable ) : ?>
+                        <?php // Companion flag emitted only when the checkbox is editable. A disabled checkbox is not submitted, so save_apply_wholesale_pricing_checkbox() keys off this field's presence to distinguish "rendered disabled (locked)" from a genuine untick. ?>
+                        <input type="hidden" name="apply_wholesale_pricing_editable" value="1" />
+                    <?php endif; ?>
                     <label for="apply_wholesale_pricing" style="display: inline-block;"><?php esc_html_e( 'Apply Wholesale Pricing', 'woocommerce-wholesale-prices-premium' ); ?></label>
                 </span>
             </p>
@@ -1037,13 +1201,26 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
         }
 
         /**
-         * Re-initialize the order line-items(order products), calculation of order entities like taxes, vat, total, subtotal, etc.
+         * Recalculate order line-item prices, taxes, and wholesale meta in-place.
          *
-         * @param object $order The manually created order object.
-         * @param string $role The wholesale role.
-         * @param int    $customer_id The customer id.
-         * @param bool   $apply_wholesale Apply wholesale on order.
-         * @return object
+         * Mutates each existing order item's subtotal/total/tax/tax-class and updates the
+         * wholesale-pricing meta keys, preserving the order item ID and all other meta
+         * (notably `_reduced_stock`, which WooCommerce uses to track that the item has
+         * already been deducted from inventory). The previous remove + recreate approach
+         * dropped that meta and caused duplicate stock deductions on every subsequent
+         * order save. See issue #1560.
+         *
+         * @since 1.14.0
+         * @since 2.1.0 Mutate existing items in place to preserve `_reduced_stock`.
+         * @since 2.1.1 Apply the wholesale sale price using the schedule-aware is_on_sale flag.
+         * @since 2.1.1 Carry zero line tax for tax-exempt roles and clear aggregate/cart/shipping tax.
+         * @since 2.1.1 Apply the wwpp_order_item_wholesale_priced filter with the resolved customer role so vendor allowed-role restrictions are honoured on manual orders (Path A).
+         *
+         * @param WC_Order $order           Order being recalculated.
+         * @param string   $role            Wholesale role key.
+         * @param int      $customer_id     Customer ID. Defaults to 0.
+         * @param bool     $apply_wholesale Whether to apply wholesale pricing. Defaults to true.
+         * @return WC_Order
          */
         public function recalculate_order_items_based_on_wholesale_price( $order, $role, $customer_id = 0, $apply_wholesale = true ) {
             $order_items = $order->get_items();
@@ -1085,22 +1262,27 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
             $woocommerce_inclusive_exclusive_tax_option = wc_string_to_bool( $woocommerce_inclusive_exclusive_tax_option );
 
             foreach ( $order_items as $order_item_id => $order_item ) {
-                $order->remove_item( $order_item_id );
-            }
-
-            foreach ( $order_items as $order_item_id => $order_item ) {
                 $product = $order_item->get_product();
 
                 if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
                     continue; // Skip invalid product.
                 }
 
+                $wholesale_sale_price_array = WWPP_Wholesale_Prices::get_product_wholesale_sale_price( $product->get_id(), array( $role ) );
+
+                // Reuse the schedule-aware is_on_sale flag (resolved when the sale price is fetched)
+                // instead of re-deriving the sale window here, so manual orders apply the wholesale
+                // sale price on exactly the same condition as the storefront and cart.
+                $can_wholesale_sale_price_be_applied = ! empty( $wholesale_sale_price_array )
+                    && ! empty( $wholesale_sale_price_array['is_on_sale'] )
+                    && isset( $wholesale_sale_price_array['wholesale_sale_price'] );
+
                 $wholesale_price_array              = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $product->get_id(), array( $role ) );
                 $product_price_including_tax        = wc_get_price_including_tax( $product );
                 $product_price_excluding_tax        = wc_get_price_excluding_tax( $product );
-                $wholesale_price                    = isset( $wholesale_price_array['wholesale_price'] ) ? (float) $wholesale_price_array['wholesale_price'] : 0;
-                $wholesale_price_with_tax           = isset( $wholesale_price_array['wholesale_price_with_tax'] ) ? (float) $wholesale_price_array['wholesale_price_with_tax'] : 0;
-                $wholesale_price_with_no_tax        = isset( $wholesale_price_array['wholesale_price_with_no_tax'] ) ? (float) $wholesale_price_array['wholesale_price_with_no_tax'] : 0;
+                $wholesale_price                    = $can_wholesale_sale_price_be_applied ? ( isset( $wholesale_sale_price_array['wholesale_sale_price'] ) ? (float) $wholesale_sale_price_array['wholesale_sale_price'] : 0 ) : ( isset( $wholesale_price_array['wholesale_price'] ) ? (float) $wholesale_price_array['wholesale_price'] : 0 );
+                $wholesale_price_with_tax           = $can_wholesale_sale_price_be_applied ? ( isset( $wholesale_sale_price_array['wholesale_sale_price_with_tax'] ) ? (float) $wholesale_sale_price_array['wholesale_sale_price_with_tax'] : 0 ) : ( isset( $wholesale_price_array['wholesale_price_with_tax'] ) ? (float) $wholesale_price_array['wholesale_price_with_tax'] : 0 );
+                $wholesale_price_with_no_tax        = $can_wholesale_sale_price_be_applied ? ( isset( $wholesale_sale_price_array['wholesale_sale_price_with_no_tax'] ) ? (float) $wholesale_sale_price_array['wholesale_sale_price_with_no_tax'] : 0 ) : ( isset( $wholesale_price_array['wholesale_price_with_no_tax'] ) ? (float) $wholesale_price_array['wholesale_price_with_no_tax'] : 0 );
                 $wholesale_product_subscription_fee = (float) ( $product->get_meta( $role . '_wholesale_signup_fee', true ) ?? 0 );
 
                 if ( ( 'subscription' === $product->get_type() || 'subscription_variation' === $product->get_type() ) && ! empty( $wholesale_product_subscription_fee ) ) {                    // Get signup fee with tax if prices include tax, without tax if prices exclude tax.
@@ -1116,13 +1298,31 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                 $does_product_have_category_based_discount = isset( $category_based_discount_on_product['discount'] ) && ! empty( $category_based_discount_on_product['discount'] ) ? true : false; // flag to check product categort based discount.
                 $does_product_have_wholesale_price         = $does_product_have_wholesale_price || $does_product_have_category_based_discount || $does_the_product_have_per_user_discount || $does_the_product_have_general_discount;
 
+                /**
+                 * Give integrations (e.g. WC Vendors) an opportunity to suppress wholesale pricing
+                 * during the Apply Wholesale Pricing recalc, passing the resolved order customer role.
+                 * The AJAX save path already exposes this filter; Path A previously wrote
+                 * _wwp_wholesale_priced directly with no such hook, so role-based vendor restrictions
+                 * had no chance to run for admin-created orders. Because the price below is derived
+                 * from this flag, a veto here also reverts the line to its regular price. See #1773.
+                 */
+                $does_product_have_wholesale_price = wc_string_to_bool(
+                    apply_filters(
+                        'wwpp_order_item_wholesale_priced',
+                        $does_product_have_wholesale_price ? 'yes' : 'no',
+                        $product,
+                        $role
+                    )
+                );
+
                 if ( $does_the_product_have_per_user_discount ) { // for per user discount, manual calculation is needed to be done because the wholesale_array does not return the correct calculated wholesale prices.
                     $wholesale_price_with_tax    = $product_price_including_tax - ( $product_price_including_tax * ( $per_user_discount_value / 100 ) );
                     $wholesale_price_with_no_tax = $product_price_excluding_tax - ( $product_price_excluding_tax * ( $per_user_discount_value / 100 ) );
-                    $wholesale_price             = ( $woocommerce_inclusive_exclusive_tax_option && ! $tax_exempted_for_current_role ) ? $wholesale_price_with_tax : $wholesale_price_with_no_tax; // if inclusive of tax is enabled from woocommerce and tax exemption is disabled globally or for the role from WWPP settings.
+                    $wholesale_price             = $woocommerce_inclusive_exclusive_tax_option ? $wholesale_price_with_tax : $wholesale_price_with_no_tax; // Keep the gross (inc-tax) figure under inclusive tax — even for tax-exempt roles — so the single unconditional deduction below strips tax exactly once. Storing the net here would double-deduct for exempt roles.
                 }
 
-                $should_deduct_tax                                     = ( $woocommerce_inclusive_exclusive_tax_option && ! $tax_exempted_for_current_role ) || ( $woocommerce_inclusive_exclusive_tax_option && ! $does_product_have_wholesale_price );
+                // When prices include tax the wholesale/regular figure above is gross, so always strip the tax to store the net line amount. This also makes tax-exempt roles fall back to the ex-tax base (e.g. an inc-tax wholesale price of 124 is stored as the net 100), matching the frontend, cart and checkout behaviour.
+                $should_deduct_tax                                     = $woocommerce_inclusive_exclusive_tax_option;
                 $is_tax_exempted_and_does_product_have_wholesale_price = ( $tax_exempted_for_current_role && $does_product_have_wholesale_price );
                 $should_apply_wholesale                                = $does_product_have_wholesale_price && $apply_wholesale;
                 $final_wholesale_price                                 = $woocommerce_inclusive_exclusive_tax_option ? $wholesale_price : $wholesale_price_with_no_tax; // wholesale price.
@@ -1131,31 +1331,44 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
                 $existing_product_quantity = $order_item->get_quantity();
                 $subtotal_or_total         = $should_apply_wholesale ? $existing_product_quantity * $final_wholesale_price : $existing_product_quantity * $final_regular_price; // if 'price inclusive tax' is set to 'yes' then use 'wholesale_price', else use 'wholesale_price_with_no_tax'.
                 $total_tax                 = $should_apply_wholesale ? ( ( $wholesale_price_with_tax - $wholesale_price_with_no_tax ) * $existing_product_quantity ) : ( ( $product_price_including_tax - $product_price_excluding_tax ) * $existing_product_quantity );
-                $new_item                  = new WC_Order_Item_Product();
-                $subtotal_or_total         = $should_deduct_tax ? $subtotal_or_total - $total_tax : $subtotal_or_total; // if 'price inclusive tax' is set to 'yes' and 'tax exemption' is not applied(set to 'no') or if 'price inclusive tax' is set to 'yes' and product does not have wholesale price, then deduct 'total_tax' from 'subtotal_or_total', else do not do anything.
+                $subtotal_or_total         = $should_deduct_tax ? $subtotal_or_total - $total_tax : $subtotal_or_total; // if 'price inclusive tax' is set to 'yes', deduct the tax so the stored line amount is net of tax; otherwise the figure is already net.
+                $item_tax                  = $tax_exempted_for_current_role ? 0 : $total_tax; // Tax-exempt wholesale roles must carry zero tax on the line so the order total stays net (the exemption removes tax for the user, as on the storefront).
                 $order_item_tax_class      = $is_tax_exempted_and_does_product_have_wholesale_price ? 'zero-rate' : ( ( strlen( $tax_class ) > 0 ) ? $tax_class : $product->get_tax_class() );// if tax exemption is set to 'yes' for the current role and has wholesale price set, then set 'zero-rate' tax(as taxes will not apply if tax exemption is set for the current role), else apply taxes based on 'tax mapping' or without 'tax-mapping' for product with wholesale price only.
 
-                $new_item->set_product( $product );
-                $new_item->set_subtotal( $subtotal_or_total );
-                $new_item->set_quantity( $existing_product_quantity );
-                $new_item->set_total_tax( $total_tax );
-                $new_item->set_subtotal_tax( $total_tax );
-                $new_item->set_total( $subtotal_or_total );
-                $new_item->set_tax_class( $order_item_tax_class );
-                $new_item->set_taxes(
+                // Update the existing item in-place to preserve _reduced_stock meta and prevent duplicate stock deductions.
+                $order_item->set_subtotal( $subtotal_or_total );
+                $order_item->set_total( $subtotal_or_total );
+                $order_item->set_total_tax( $item_tax );
+                $order_item->set_subtotal_tax( $item_tax );
+                $order_item->set_tax_class( $order_item_tax_class );
+                $order_item->set_taxes(
                     array(
                         'total'    => array(
-                            $total_tax,
+                            $item_tax,
                         ),
                         'subtotal' => array(
-                            $total_tax,
+                            $item_tax,
                         ),
                     )
                 );
-                $new_item->update_meta_data( '_wwp_wholesale_priced', ( $does_product_have_wholesale_price ? 'yes' : 'no' ) );
-                $new_item->update_meta_data( '_wwp_wholesale_role', $role );
-                $new_item->save();
-                $order->add_item( $new_item );
+                $order_item->update_meta_data( '_wwp_wholesale_priced', ( $does_product_have_wholesale_price ? 'yes' : 'no' ) );
+                $order_item->update_meta_data( '_wwp_wholesale_role', $role );
+                $order_item->save();
+            }
+
+            if ( $tax_exempted_for_current_role ) {
+                /**
+                 * The calculate_totals( false ) call below skips calculate_taxes(), which is
+                 * what normally refreshes the aggregate tax and prunes tax line items. Clearing
+                 * them here ensures the order total reflects the zero-tax exempt lines rather
+                 * than the stale tax captured when the products were first added at their
+                 * regular price.
+                 */
+                foreach ( $order->get_items( 'tax' ) as $tax_item_id => $tax_item ) {
+                    $order->remove_item( $tax_item_id );
+                }
+                $order->set_cart_tax( 0 );
+                $order->set_shipping_tax( 0 );
             }
 
             $order->calculate_totals( $tax_exempted_for_current_role ? false : true );
@@ -1185,6 +1398,7 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
          * Execute model.
          *
          * @since 1.14.0
+         * @since 2.1.0 Register woocommerce_analytics_update_order_stats_data filter to recalculate tax_total from order tax line items.
          * @access public
          */
         public function run() {
@@ -1201,6 +1415,10 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
 
             // Add order type meta on checkout blocks.
             add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'add_order_type_meta_to_wc_orders' ), 10, 1 );
+
+            // Keep wc_order_stats.tax_total aligned with the order's tax line items so wholesale discount fees do not leak into Analytics tax figures.
+            // Priority 9 runs the shop-currency recalc before any currency-conversion filters (e.g. WooCommerce Multi-Currency) hooked at the default priority 10.
+            add_filter( 'woocommerce_analytics_update_order_stats_data', array( $this, 'recalculate_analytics_tax_total' ), 9, 2 );
 
             add_action( 'restrict_manage_posts', array( $this, 'add_wholesale_role_order_listing_filter' ), 10, 1 ); // WordPress posts table.
             add_action( 'woocommerce_order_list_table_restrict_manage_orders', array( $this, 'add_wholesale_role_order_listing_filter' ), 10, 1 ); // WooCommerce orders tables.
@@ -1220,6 +1438,11 @@ if ( ! class_exists( 'WWPP_WC_Order' ) ) {
             // Procees order on save.
             add_action( 'woocommerce_update_order', array( $this, 'wholesale_woocommerce_update_order' ), 11, 2 );
             add_action( 'woocommerce_new_order', array( $this, 'wholesale_woocommerce_update_order' ), 11, 2 );
+
+            // Persist the "Apply Wholesale Pricing" checkbox on admin order save. Priority 60 runs after
+            // WC_Meta_Box_Order_Data::save (priority 40) so the customer is set and $order->save() persists
+            // reliably here, unlike the woocommerce_update_order callback which fires after HPOS flushes meta.
+            add_action( 'woocommerce_process_shop_order_meta', array( $this, 'save_apply_wholesale_pricing_checkbox' ), 60, 1 );
 
             // Process order on save using API.
             add_action( 'woocommerce_rest_insert_shop_order_object', array( $this, 'wholesale_woocommerce_create_order_api' ), 10, 2 );

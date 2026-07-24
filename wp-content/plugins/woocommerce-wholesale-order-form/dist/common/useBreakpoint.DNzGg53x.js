@@ -1,0 +1,1 @@
+import{En as s,Fn as e,Pn as r,Yt as a,er as n,ur as t}from"./ExclamationCircleFilled.hVlCEKoI.js";import{n as l}from"./responsiveObserve.DN1weAjg.js";function o(){const s=t({});let a=null;const n=l();return r(()=>{a=n.value.subscribe(e=>{s.value=e})}),e(()=>{n.value.unsubscribe(a)}),s}a();export{o as t};

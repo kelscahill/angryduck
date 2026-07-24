@@ -54,6 +54,7 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
          * Apply additional discounts based on the cart subtotal.
          *
          * @since 1.26
+         * @since 2.1.1 When applying the discount to wholesale products only, deduct the configured fixed amount (capped at the wholesale products total) instead of the discounted total, and reuse the tier matched by the threshold loop instead of the last mapping row.
          * @access public
          *
          * @param WC_Cart $cart Cart Object.
@@ -84,6 +85,7 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
                 $discount_title                  = '';
                 $wholesale_products_price_total  = 0;
                 $wholesale_price_discount_amount = 0;
+                $matched_mapping                 = null;
 
                 foreach ( $quantity_discount_rule_mapping as $mapping ) {
                     if ( $mapping['wholesale_role'] === $wholesale_role[0] && 0 === $discount_amount && $subtotal >= $mapping['subtotal_price'] ) {
@@ -92,7 +94,8 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
                         } else {
                             $discount_amount = $mapping['discount_amount'];
                         }
-                        $discount_title = $mapping['discount_title'];
+                        $discount_title  = $mapping['discount_title'];
+                        $matched_mapping = $mapping;
                     }
                 }
 
@@ -113,18 +116,18 @@ if ( ! class_exists( 'WWPP_Cart_Discounts' ) ) {
                     }
 
                     /**
-                     * Calculate the discount amount for wholesale products, that will be deducted from subtotal(this amount will be from subtotal $wholesale_price_discount_amount variable).
+                     * Recalculate the discount from the SAME tier the threshold loop matched, using the
+                     * wholesale products price total. A fixed discount is capped at the wholesale products
+                     * total so the fee can never exceed what the wholesale items are worth.
                      */
-                    foreach ( $quantity_discount_rule_mapping as $mapping ) {
-                        if ( $mapping['wholesale_role'] === $wholesale_role[0] ) {
-                            if ( 'percent-discount' === $mapping['discount_type'] ) {
-                                $wholesale_price_discount_amount = $wholesale_products_price_total * ( $mapping['discount_amount'] / 100 );
-                            } else {
-                                $wholesale_price_discount_amount = $wholesale_products_price_total - $mapping['discount_amount'];
-                            }
+                    if ( null !== $matched_mapping ) {
+                        if ( 'percent-discount' === $matched_mapping['discount_type'] ) {
+                            $wholesale_price_discount_amount = $wholesale_products_price_total * ( $matched_mapping['discount_amount'] / 100 );
+                        } else {
+                            $wholesale_price_discount_amount = min( (float) $matched_mapping['discount_amount'], $wholesale_products_price_total );
                         }
+                        $discount_amount = $wholesale_price_discount_amount; // override the default discount amount with new discount amount calculated using wholesale products price total.
                     }
-                    $discount_amount = $wholesale_price_discount_amount; // override the default discount amount with new discount amount calculated using wholesale products price total.
                 }
 
                 if ( $discount_amount > 0 ) {

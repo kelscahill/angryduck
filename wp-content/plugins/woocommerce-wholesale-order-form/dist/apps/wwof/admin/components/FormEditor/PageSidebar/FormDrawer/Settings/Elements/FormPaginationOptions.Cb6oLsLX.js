@@ -1,0 +1,1 @@
+import{En as o,Ln as a,Yt as m,mn as n,xn as s}from"../../../../../../../../../common/ExclamationCircleFilled.hVlCEKoI.js";import{t}from"../../../../../../../../../common/NoOptions.CqLps0RQ.js";m();var i=s({__name:"FormPaginationOptions",setup:o=>(o,m)=>(a(),n(t))});export{i as default};

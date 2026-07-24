@@ -8,8 +8,415 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Model that house various generic plugin helper functions.
  *
  * @since 1.12.8
+ * @since 2.1.1 Add shared product visibility filter meta rebuild used by the bootstrap and admin settings models.
  */
 final class WWPP_Helper_Functions {
+
+    /**
+     * Maximum number of postmeta rows targeted per batched DELETE/INSERT statement.
+     *
+     * Keeps individual statements short so the postmeta table is not locked for
+     * extended periods on large catalogs.
+     *
+     * @since 2.1.1
+     */
+    const POSTMETA_BATCH_SIZE = 500;
+
+    /**
+     * Rebuild the product visibility filter meta and the related wholesale price flags.
+     *
+     * Shared implementation used by both WWPP_Bootstrap and WWPP_Admin_Action_Settings so the
+     * batch sizing and query logic live in a single place. Fires the
+     * 'wwpp_before_initialize_product_visibility_filter_meta' action, then migrates the legacy
+     * exclusive variation data, seeds the default 'all' visibility meta, and rebuilds each
+     * wholesale role's price flags. Callers are responsible for the wholesale sale price meta
+     * step and for firing the 'wwpp_after_initialize_product_visibility_filter_meta' action, as
+     * those differ between the two callers.
+     *
+     * The two statements that scale with the number of variable products, deleting the stale
+     * per role wholesale price meta and inserting the per role variations lookup meta, are run in
+     * bounded batches so they do not hold a long lock on the postmeta table on large catalogs.
+     *
+     * @since 2.1.1
+     *
+     * @param array $wholesale_roles All registered wholesale roles keyed by role key.
+     *
+     * @return void
+     */
+    public static function rebuild_product_visibility_filter_meta( $wholesale_roles ) {
+        global $wpdb, $wc_wholesale_prices_premium, $wc_wholesale_prices;
+
+        do_action( 'wwpp_before_initialize_product_visibility_filter_meta' );
+
+        /**
+         * In version 1.13.0 we refactored the Wholesale Exclusive Variation feature.
+         * Now it is an enhanced select box instead of the old check box.
+         * This gives us more flexibility including the 'all' value if no wholesale role is selected.
+         * In light to this, we must migrate the old <wholesale_role>_exclusive_variation data to the new 'wwpp_product_visibility_filter'.
+         */
+        foreach ( $wholesale_roles as $role_key => $role ) {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value)
+                    SELECT
+                        $wpdb->posts.ID,
+                        'wwpp_product_wholesale_visibility_filter',
+                        %s
+                    FROM
+                        $wpdb->posts
+                    WHERE
+                        $wpdb->posts.post_type IN ('product_variation')
+                        AND $wpdb->posts.ID IN (
+                        SELECT
+                            $wpdb->posts.ID
+                        FROM
+                            $wpdb->posts
+                            INNER JOIN $wpdb->postmeta ON (
+                            $wpdb->posts.ID = $wpdb->postmeta.post_id
+                            )
+                        WHERE
+                            meta_key = %s
+                            AND meta_value = 'yes'
+                        )
+                    ",
+                    $role_key,
+                    $role_key . '_exclusive_variation'
+                )
+            );
+        }
+
+        /**
+         * Initialize wwpp_product_wholesale_visibility_filter meta
+         * This meta is in charge of product visibility. We need to set this to 'all' as mostly
+         * all imported products will not have this meta. Meaning, all imported products
+         * with no 'wwpp_product_wholesale_visibility_filter' meta set is visible to all users by default.
+         */
+        $wpdb->query(
+            "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value)
+            SELECT
+                $wpdb->posts.ID,
+                'wwpp_product_wholesale_visibility_filter',
+                'all'
+            FROM
+                $wpdb->posts
+            WHERE
+                $wpdb->posts.post_type IN ('product', 'product_variation')
+                AND $wpdb->posts.ID NOT IN (
+                    SELECT
+                        $wpdb->posts.ID
+                    FROM
+                        $wpdb->posts
+                        INNER JOIN $wpdb->postmeta ON (
+                            $wpdb->posts.ID = $wpdb->postmeta.post_id
+                        )
+                    WHERE
+                    meta_key = 'wwpp_product_wholesale_visibility_filter'
+                )"
+        );
+
+        /**
+         * Address instances where the wwpp_product_wholesale_visibility_filter meta is present but have empty value.
+         * This can possibly occur when importing products using external tool that tries to import meta data but fails to properly save the data.
+         */
+        $wpdb->query(
+            "UPDATE
+                $wpdb->postmeta
+            SET
+                meta_value = 'all'
+            WHERE
+                meta_key = 'wwpp_product_wholesale_visibility_filter'
+                AND meta_value = ''"
+        );
+
+        /**
+         * Fetch the IDs of variable products once up front. The per role cleanup below deletes
+         * stale wholesale price meta from these products by ID list in batches, which avoids
+         * a DELETE with a subquery that locks the postmeta table on large catalogs.
+         *
+         * The product type term is resolved through the product_type taxonomy so it is found
+         * even on stores where the term_id and term_taxonomy_id of the 'variable' term differ.
+         */
+        $variable_product_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT
+                    DISTINCT tr.object_id
+                FROM
+                    $wpdb->term_relationships tr
+                    INNER JOIN $wpdb->term_taxonomy tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+                    INNER JOIN $wpdb->terms t ON t.term_id = tt.term_id
+                WHERE
+                    tt.taxonomy = %s
+                    AND t.name = %s",
+                'product_type',
+                'variable'
+            )
+        );
+
+        $variable_product_id_batches = array_chunk( $variable_product_ids, self::POSTMETA_BATCH_SIZE );
+
+        /**
+         * Properly set {wholesale_role}_have_wholesale_price meta
+         * There will be cases where users import products from external sources and they
+         * "set up" wholesale prices via external tools prior to importing
+         * We need to handle those cases.
+         */
+        foreach ( $wholesale_roles as $role_key => $role ) {
+
+            // We need to delete prior to inserting, else we will have a stacked meta, same multiple meta for a single post.
+            $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM
+                        $wpdb->postmeta
+                    WHERE
+                        meta_key = %s
+                    ",
+                    $role_key . '_have_wholesale_price'
+                )
+            );
+
+            // Delete wholesale price set by product cat.
+            $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM
+                        $wpdb->postmeta
+                    WHERE
+                        meta_key = %s
+                    ",
+                    $role_key . '_have_wholesale_price_set_by_product_cat'
+                )
+            );
+
+            // Delete Variations with wholesale price meta. To avoid duplicates or non-existing variation id post.
+            $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM
+                        $wpdb->postmeta
+                    WHERE
+                        meta_key = %s
+                    ",
+                    $role_key . '_variations_with_wholesale_price'
+                )
+            );
+
+            /**
+             * Remove <wholesale_role>_wholesale_price in the variable product meta. This will cause visibility issue.
+             * This scenario happens when a product was still a simple product type (added a wholesale price) and converted to variable.
+             * The wholesale price is not gonna be use anymore so we need to delete it.
+             *
+             * Deleting by ID list in short batches instead of a DELETE with a subquery keeps
+             * the postmeta table from being locked for the whole cleanup on large catalogs.
+             */
+            foreach ( $variable_product_id_batches as $variable_product_ids_batch ) {
+                $ids_placeholder = implode( ',', array_fill( 0, count( $variable_product_ids_batch ), '%d' ) );
+
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "DELETE FROM $wpdb->postmeta WHERE meta_key = %s AND post_id IN ( $ids_placeholder )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ids_placeholder is a list of %d placeholders built via array_fill.
+                        array_merge( array( $role_key . '_wholesale_price' ), $variable_product_ids_batch )
+                    )
+                );
+            }
+
+            /**
+             * Get all variations that has wholesale_price and assign the id of post meta to the parent variable post meta.
+             * Set <wholesale_role>_variations_with_wholesale_price into post_parent / variable product that has wholesale variations.
+             *
+             * The qualifying variation IDs are gathered first, then the parent lookup is inserted server side in
+             * bounded batches. Keeping the write as an INSERT ... SELECT avoids pulling every row into PHP while the
+             * batch bound keeps each statement short on catalogs with a large number of wholesale priced variations.
+             */
+            $priced_variation_ids = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT DISTINCT
+                        p.ID
+                    FROM
+                        $wpdb->posts p
+                        INNER JOIN $wpdb->postmeta pm ON pm.post_id = p.ID
+                    WHERE
+                        p.post_type = 'product_variation'
+                        AND pm.meta_key = %s
+                        AND pm.meta_value > 0
+                    ",
+                    $role_key . '_wholesale_price'
+                )
+            );
+
+            foreach ( array_chunk( $priced_variation_ids, self::POSTMETA_BATCH_SIZE ) as $priced_variation_ids_batch ) {
+                $ids_placeholder = implode( ',', array_fill( 0, count( $priced_variation_ids_batch ), '%d' ) );
+
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value)
+                        SELECT p.post_parent, %s, p.ID
+                        FROM $wpdb->posts p
+                        WHERE p.ID IN ( $ids_placeholder )", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $ids_placeholder is a list of %d placeholders built via array_fill.
+                        array_merge( array( $role_key . '_variations_with_wholesale_price' ), $priced_variation_ids_batch )
+                    )
+                );
+            }
+
+            // Insert have wholesale price.
+            $wpdb->query(
+                $wpdb->prepare(
+                    "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value)
+                    SELECT
+                        $wpdb->posts.ID,
+                        %s,
+                        'yes'
+                    FROM
+                        $wpdb->posts
+                    WHERE
+                        $wpdb->posts.post_type = 'product'
+                        AND $wpdb->posts.ID IN (
+                            SELECT
+                                DISTINCT $wpdb->postmeta.post_id
+                            FROM
+                                $wpdb->postmeta
+                            WHERE
+                                (
+                                    (
+                                        meta_key = %s
+                                        AND meta_value > 0
+                                    )
+                                    OR (
+                                        meta_key = %s
+                                        AND meta_value != ''
+                                    )
+                                    OR (
+                                        meta_key = %s
+                                        AND meta_value = 'yes'
+                                    )
+                                )
+                        )",
+                    $role_key . '_have_wholesale_price',
+                    $role_key . '_wholesale_price',
+                    $role_key . '_variations_with_wholesale_price',
+                    $role_key . '_have_wholesale_price_set_by_product_cat'
+                )
+            );
+
+        }
+
+        // Extra visibility fixes for other product types not covered above (Grouped products, Bundled products).
+
+        // Get grouped products.
+        $args = array(
+            'type'   => 'grouped',
+            'return' => 'ids',
+            'limit'  => -1,
+        );
+
+        $grouped_products = wc_get_products( $args );
+
+        if ( ! empty( $grouped_products ) ) {
+
+            /**
+             * Set parent group product <wholesale_role>_have_wholesale_price so that it will be visible when
+             * "Only Show Wholesale Products To Wholesale Users" is enabled.
+             */
+            foreach ( $grouped_products as $product_id ) {
+                $wc_wholesale_prices->wwp_wholesale_price_grouped_product->insert_have_wholesale_price_meta( $product_id );
+            }
+        }
+
+        // Get bundled products.
+        $bundle_args = array(
+            'type'   => 'bundle',
+            'return' => 'ids',
+            'limit'  => -1,
+        );
+
+        $bundled_products = wc_get_products( $bundle_args );
+
+        if ( ! empty( $bundled_products ) ) {
+
+            /**
+             * Set parent group product <wholesale_role>_have_wholesale_price so that it will be visible when
+             * "Only Show Wholesale Products To Wholesale Users" is enabled
+             */
+            foreach ( $bundled_products as $bundle_product_id ) {
+                $wc_wholesale_prices_premium->wwpp_wc_bundle_product->set_bundle_product_visibility_meta( $bundle_product_id );
+            }
+        }
+
+        /**
+         * Get all terms and set <wholesale_role>_have_wholesale_price and
+         * <wholesale_role>_have_wholesale_price_set_by_product_cat on category level discounts
+         */
+        $product_terms = get_terms(
+            array(
+                'taxonomy'   => 'product_cat',
+                'hide_empty' => false,
+            )
+        );
+
+        foreach ( $product_terms as $term ) {
+            $category_discount = get_option( 'taxonomy_' . $term->term_id );
+
+            if ( ! empty( $category_discount ) ) {
+                $wholesale_role_with_discounts = array();
+
+                foreach ( $wholesale_roles as $role_key => $role ) {
+                    if ( isset( $category_discount[ $role_key . '_wholesale_discount' ] ) &&
+                        ! empty( $category_discount[ $role_key . '_wholesale_discount' ] ) ) {
+                        $wholesale_role_with_discounts[] = $role_key;
+                    }
+                }
+
+                $category_discount_products = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT
+                            DISTINCT p.ID
+                        FROM
+                            $wpdb->posts p
+                            LEFT JOIN $wpdb->term_relationships tr ON (p.ID = tr.object_id)
+                        WHERE
+                            p.post_status = 'publish'
+                            AND p.post_type = 'product'
+                            AND tr.term_taxonomy_id = %d",
+                        // term_relationships.term_taxonomy_id must be matched against the term's
+                        // term_taxonomy_id, not its term_id (they differ on some installs). Using
+                        // term_id here silently matched no / the wrong products so category-discount
+                        // products could miss their {role}_have_wholesale_price meta (issue #1166).
+                        $term->term_taxonomy_id
+                    ),
+                    ARRAY_A
+                );
+
+                if ( ! empty( $category_discount_products ) ) {
+                    foreach ( $category_discount_products as $product ) {
+                        foreach ( $wholesale_role_with_discounts as $role_key ) {
+                            $wpdb->insert(
+                                $wpdb->postmeta,
+                                array(
+                                    'post_id'    => $product['ID'],
+                                    'meta_key'   => $role_key . '_have_wholesale_price',
+                                    'meta_value' => 'yes',
+                                )
+                            );
+
+                            $wpdb->insert(
+                                $wpdb->postmeta,
+                                array(
+                                    'post_id'    => $product['ID'],
+                                    'meta_key'   => $role_key . '_have_wholesale_price_set_by_product_cat',
+                                    'meta_value' => 'yes',
+                                )
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clear product id cache.
+        $wc_wholesale_prices_premium->wwpp_cache->clear_product_transients_cache();
+
+        // Clear WC Product Transients Cache.
+        if ( function_exists( 'wc_delete_product_transients' ) ) {
+            wc_delete_product_transients();
+        }
+    }
 
     /**
      * Check if specific user is wwpp tax exempted.
@@ -134,6 +541,144 @@ final class WWPP_Helper_Functions {
         $user_wholesale_discount = $wc_wholesale_prices_premium->wwpp_wholesale_price_wholesale_role->get_user_wholesale_role_level_discount( get_current_user_id(), $user_wholesale_role );
 
         return ! empty( $user_wholesale_discount['discount'] ) ? true : false;
+    }
+
+    /**
+     * Check whether any WWPP wholesale pricing rule of any type is set on the store.
+     *
+     * Returns true as soon as the store has configured at least one wholesale
+     * pricing rule of any kind: a store-wide (per-role general) discount, a cart
+     * quantity-based discount, a cart subtotal-based discount, per-product
+     * quantity-based pricing, category quantity-based pricing, a flat
+     * per-category percentage discount, or a per-user wholesale discount
+     * override. This is a whether-set flag only (no timestamp, no count) exposed
+     * for WWP's first-year-activation check-in via the 'wwp_activation_signals'
+     * filter (see WWPP_Bootstrap::run()).
+     *
+     * The per-product wholesale price itself is intentionally excluded here — the
+     * free WWP plugin already owns that signal ('wholesale_price_set'); this flag
+     * covers WWPP's own rule-based pricing. Checks are ordered cheapest-first and
+     * short-circuit, so the three option reads run before any database query.
+     *
+     * @since 2.1.1
+     * @access public
+     *
+     * @return bool True if at least one wholesale pricing rule exists, false otherwise.
+     */
+    public static function is_wholesale_pricing_rule_set() {
+
+        // Store-wide per-role general discount.
+        if ( ! empty( get_option( WWPP_OPTION_WHOLESALE_ROLE_GENERAL_DISCOUNT_MAPPING, array() ) ) ) {
+            return true;
+        }
+
+        // Cart quantity-based discount.
+        if ( ! empty( get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_QTY_BASED_DISCOUNT_MAPPING, array() ) ) ) {
+            return true;
+        }
+
+        // Cart subtotal-based discount.
+        if ( ! empty( get_option( WWPP_OPTION_WHOLESALE_ROLE_CART_SUBTOTAL_PRICE_BASED_DISCOUNT_MAPPING, array() ) ) ) {
+            return true;
+        }
+
+        global $wpdb;
+
+        // Per-product quantity-based pricing (any product with the feature enabled).
+        $has_product_quantity_rule = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Whether-set lookup for an infrequent telemetry check-in; a persistent cache would risk reporting stale rule state.
+            $wpdb->prepare(
+                "SELECT 1 FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s LIMIT 1",
+                WWPP_POST_META_ENABLE_QUANTITY_DISCOUNT_RULE,
+                'yes'
+            )
+        );
+
+        if ( $has_product_quantity_rule ) {
+            return true;
+        }
+
+        // Category quantity-based pricing (any product category with the feature enabled).
+        $has_category_quantity_rule = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- See note above; infrequent telemetry read, staleness must be avoided.
+            $wpdb->prepare(
+                "SELECT 1 FROM {$wpdb->termmeta} WHERE meta_key = %s AND meta_value = %s LIMIT 1",
+                'wwpp_enable_quantity_based_wholesale_discount',
+                'yes'
+            )
+        );
+
+        if ( $has_category_quantity_rule ) {
+            return true;
+        }
+
+        // Per-user wholesale discount override (a discount negotiated for an individual
+        // customer that applies even when no role-level rule is set). WWPP only honours
+        // it when the override toggle is on AND a non-empty discount value is present —
+        // its gate is ! empty( $puwd ), for which both '' and the string '0' are empty,
+        // so a value left behind with the toggle off, or a literal '0', is not an active
+        // rule and is excluded here to match that gate exactly.
+        $has_user_discount_override = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- See note above; infrequent telemetry read, staleness must be avoided.
+            $wpdb->prepare(
+                "SELECT 1 FROM {$wpdb->usermeta} toggle
+                 INNER JOIN {$wpdb->usermeta} discount ON toggle.user_id = discount.user_id
+                 WHERE toggle.meta_key = %s AND toggle.meta_value = %s
+                 AND discount.meta_key = %s AND discount.meta_value NOT IN ( %s, %s )
+                 LIMIT 1",
+                'wwpp_override_wholesale_discount',
+                'yes',
+                'wwpp_wholesale_discount',
+                '',
+                '0'
+            )
+        );
+
+        if ( $has_user_discount_override ) {
+            return true;
+        }
+
+        /*
+         * Flat per-category percentage discount. Category discounts are stored as
+         * legacy WordPress term options (option name "taxonomy_{term_id}"), each an
+         * array that may hold a "{role}_wholesale_discount" entry. Narrow to the
+         * candidate options in SQL and walk them in keyset-paginated batches so a
+         * store with thousands of edited categories never loads every row at once,
+         * returning on the first confirmed non-empty discount value.
+         */
+        $discount_suffix = '_wholesale_discount';
+        $batch_size      = 100;
+        $last_option_id  = 0;
+
+        do {
+            $rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- See note above; infrequent telemetry read, staleness must be avoided.
+                $wpdb->prepare(
+                    "SELECT option_id, option_value FROM {$wpdb->options}
+                     WHERE option_id > %d AND option_name LIKE %s AND option_value LIKE %s
+                     ORDER BY option_id ASC LIMIT %d",
+                    $last_option_id,
+                    $wpdb->esc_like( 'taxonomy_' ) . '%',
+                    '%' . $wpdb->esc_like( $discount_suffix ) . '%',
+                    $batch_size
+                )
+            );
+
+            $fetched_count = count( $rows );
+
+            foreach ( $rows as $row ) {
+                $last_option_id    = (int) $row->option_id;
+                $category_settings = maybe_unserialize( $row->option_value );
+
+                if ( ! is_array( $category_settings ) ) {
+                    continue;
+                }
+
+                foreach ( $category_settings as $key => $value ) {
+                    if ( substr( (string) $key, -strlen( $discount_suffix ) ) === $discount_suffix && ! empty( $value ) ) {
+                        return true;
+                    }
+                }
+            }
+        } while ( $batch_size === $fetched_count );
+
+        return false;
     }
 
     /**
@@ -401,7 +946,12 @@ final class WWPP_Helper_Functions {
     }
 
     /**
-     * Properly calculate product prices using its wholesale price with taxing applied.
+     * Properly calculate the cart subtotal using each product's raw wholesale price.
+     *
+     * The subtotal returned here is used solely for the minimum order subtotal
+     * requirement check, so it is built from the raw wholesale prices (no tax
+     * adjustment) to keep the comparison consistent regardless of the store's
+     * tax-inclusive/exclusive and display settings.
      *
      * @param int     $cart_total          Cart Totals from WWP.
      * @param WC_Cart $cart_object         Cart Object.
@@ -410,13 +960,20 @@ final class WWPP_Helper_Functions {
      * @since  1.23.5
      * @since  1.27.1 Make ACFW coupon discount on override compatible
      * @since  1.29   Include calculation of non-wholesale priced product if WC Tax is disabled
+     * @since  2.1.0  Coerce wholesale unit price through wc_format_decimal() before multiplying by quantity
+     *                to avoid fatal when WPML / other plugins return a localized price string.
+     *                $quantity is multiplied as-is (no integer cast) so decimal-quantity plugins
+     *                (Measurement Price Calculator, weight-based products, etc.) are not silently truncated.
+     *                Log a warning whenever the input is non-numeric (e.g. a localized currency string whose
+     *                decimal separator does not match wc_get_price_decimal_separator()) so QA can surface both
+     *                fully-unparseable inputs and silently-wrong locale-mismatched values.
+     * @since  2.1.0  Use the raw wholesale price instead of the tax-adjusted price so the minimum order
+     *                subtotal check is not skewed by the store's tax-inclusive/exclusive and display settings.
      * @access public
      *
-     * @return int
+     * @return float|int Wholesale-price cart subtotal, or the supplied $cart_total when no wholesale-priced items are present.
      */
     public static function calculate_cart_totals( $cart_total, $cart_object, $user_wholesale_role ) {
-
-        global $wc_wholesale_prices_premium;
 
         $cart_wholesale_price_total   = 0;
         $acfw_bogo_entries            = WC()->session->get( 'acfw_bogo_entries' );
@@ -439,9 +996,7 @@ final class WWPP_Helper_Functions {
 
         foreach ( $cart_object->cart_contents as $cart_item_key => $cart_item ) {
 
-            $product_id      = WWP_Helper_Functions::wwp_get_product_id( $cart_item['data'] );
-            $active_currency = get_woocommerce_currency();
-            $quantity        = $cart_item['quantity'];
+            $quantity = $cart_item['quantity'];
 
             if ( isset( $cart_item['acfw_add_product_discount_type'] ) && isset( $cart_item['acfw_add_product_discount_value'] ) ) {
 
@@ -464,7 +1019,7 @@ final class WWPP_Helper_Functions {
              * Note: The 0 price is only used for subtotal calculation and does not
              * affect the actual cart item price displayed to the customer.
              *
-             * @since 2.0.8 Fix for issue #1453
+             * @since 2.0.8 Exclude retail products from the wholesale subtotal calculation.
              */
             // Use strict empty string check since get_product_wholesale_price_on_cart() returns '' when no wholesale price exists.
             $price = ( '' !== $wholesale_price ) ? $wholesale_price : 0;
@@ -473,8 +1028,26 @@ final class WWPP_Helper_Functions {
                 continue;
             }
 
-            add_filter( 'wc_price', array( 'WWPP_Helper_Functions', 'return_unformatted_price' ), 10, 4 );
-            $unformatted_price = $wc_wholesale_prices_premium->wwpp_wholesale_prices->get_product_shop_price_with_taxing_applied( wc_get_product( $product_id ), $price, array( 'currency' => $active_currency ), $user_wholesale_role );
+            /***************************************************************************
+             * Use the raw wholesale price for the minimum order subtotal check
+             ***************************************************************************
+             *
+             * The minimum order subtotal is compared against the sum of raw wholesale
+             * prices, not tax-adjusted prices. Passing the price through
+             * get_product_shop_price_with_taxing_applied() ties the subtotal basis to the
+             * store's tax-inclusive/exclusive and display settings: with prices entered
+             * inclusive of tax and the shop display set to exclusive, tax is stripped from
+             * the wholesale price and the subtotal drops below a threshold the merchant
+             * entered in tax-inclusive terms, wrongly reverting wholesale pricing to retail.
+             *
+             * The threshold and the wholesale prices both live in the store's native tax
+             * basis, so comparing raw wholesale prices keeps the check consistent across
+             * every tax configuration. See this method's docblock for the recorded intent.
+             *
+             * @since 2.1.0 Use raw wholesale price instead of tax-adjusted price for the
+             *              minimum order subtotal check.
+             */
+            $unformatted_price = $price;
 
             if ( ! empty( $unformatted_price ) ) {
 
@@ -496,7 +1069,27 @@ final class WWPP_Helper_Functions {
                     $acfw_bogo_price = $acfw_bogo_price * $acfw_bogo_deals[ $cart_item_key ]['quantity'];
                 }
 
-                $cart_item_price = $unformatted_price * $quantity;
+                $coerced_unit_price = (float) wc_format_decimal( $unformatted_price );
+
+                // Surface any non-numeric input handed to the cart-totals math. This includes fully
+                // unparseable values (coerce to 0.0) and locale-mismatched currency strings whose decimal
+                // separator does not match wc_get_price_decimal_separator() (e.g. WPML / WCML / Aelia
+                // configurations where the separator filter is not aligned with the currency feeding the
+                // price pipeline — those coerce to a silently-wrong non-zero float). The coerced value is
+                // included in the log so QA can immediately distinguish the two cases. Multiplication still
+                // proceeds so the cart is not fataled.
+                if ( ! is_numeric( $unformatted_price ) ) {
+                    wc_get_logger()->warning(
+                        sprintf(
+                            'WWPP calculate_cart_totals: coerced non-numeric $unformatted_price (%s) to %s.',
+                            wp_json_encode( $unformatted_price ),
+                            wp_json_encode( $coerced_unit_price )
+                        ),
+                        array( 'source' => 'wwpp' )
+                    );
+                }
+
+                $cart_item_price = $coerced_unit_price * $quantity;
 
                 // Add bogo deal calculated price to the cart item price.
                 if ( isset( $acfw_bogo_price ) && is_numeric( $acfw_bogo_price ) ) {
@@ -505,31 +1098,9 @@ final class WWPP_Helper_Functions {
 
                 $cart_wholesale_price_total += $cart_item_price;
             }
-
-            remove_filter( 'wc_price', array( 'WWPP_Helper_Functions', 'return_unformatted_price' ), 10, 4 );
-
         }
 
         return ! empty( $cart_wholesale_price_total ) ? $cart_wholesale_price_total : $cart_total;
-    }
-
-    /**
-     * This is wc_price filter. Instead of formatted price, return the unformatted so we can calculate the wholesale
-     * price totals properly.
-     *
-     * @param string $output            Formatted Price.
-     * @param int    $price             Raw Price.
-     * @param array  $args              WC Price Args.
-     * @param int    $unformatted_price Unformatted Price.
-     *
-     * @since  1.23.5
-     * @access public
-     *
-     * @return int
-     */
-    public static function return_unformatted_price( $output, $price, $args, $unformatted_price ) {
-
-        return $unformatted_price;
     }
 
     /**
@@ -770,27 +1341,25 @@ final class WWPP_Helper_Functions {
      * @param array   $cart_item           Cart item.
      * @param WC_Cart $cart_object         WC_Cart instance.
      * @param array   $user_wholesale_role Current user wholesale roles.
-     * @param float   $wholesale_price     Wholesale price.
+     * @param float   $wholesale_price     Wholesale price. Retained for backwards compatibility; the requirement
+     *                                     check depends only on quantity meta and does not read this value.
      *
      * @since  1.15.0
      * @since  1.16.0 Add support for wholesale order quantity step.
+     * @since  2.1.1 Drop the dead-code wholesale price recomputation and precompute per-parent variation quantity
+     *               sums once per request instead of looping the cart contents on every variation row.
      * @access public
      *
-     * @return array|boolean Array of error notices on if current cart item fails product requirement, boolean true if
-     *                       passed and should apply wholesale pricing.
+     * @return boolean True when the cart item fails its per-product wholesale minimum requirement, false otherwise.
      */
-    public static function apply_wholesale_price_per_product_level_min_condition( $cart_item, $cart_object, $user_wholesale_role, $wholesale_price ) {
-
-        global $wc_wholesale_prices_premium;
+    public static function apply_wholesale_price_per_product_level_min_condition( $cart_item, $cart_object, $user_wholesale_role, $wholesale_price ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- $wholesale_price kept for backwards compatibility with existing callers of this public method; the requirement check does not read it.
 
         if ( ! apply_filters( 'wwp_include_cart_item_on_cart_totals_computation', true, $cart_item, $user_wholesale_role ) ) {
             return false;
         }
 
-        $did_not_meet    = false;
-        $product_id      = $cart_item['data']->get_id();
-        $active_currency = get_woocommerce_currency();
-        $wholesale_price = WWP_Wholesale_Prices::get_product_wholesale_price_on_cart( $product_id, $user_wholesale_role, $cart_item, $cart_object );
+        $did_not_meet = false;
+        $product_id   = $cart_item['data']->get_id();
 
         if ( in_array( $cart_item['data']->get_type(), array( 'simple', 'bundle', 'composite' ), true ) ) {
 
@@ -816,19 +1385,13 @@ final class WWPP_Helper_Functions {
         } elseif ( $cart_item['data']->get_type() === 'variation' ) {
 
             // Process variable level wholesale minimum order quantity.
-            $variable_id    = $cart_item['data']->get_parent_id();
-            $variation_id   = $cart_item['data']->get_id();
-            $variable_total = 0;
+            $variable_id  = $cart_item['data']->get_parent_id();
+            $variation_id = $cart_item['data']->get_id();
 
-            // Get total items of a variable product in cart ( Total items of its variations ).
-            foreach ( $cart_object->cart_contents as $cart_item_key => $ci ) {
-                $parent_product_type = $ci['data']->get_type();
-                $parent_variable_id  = $ci['data']->get_parent_id();
-
-                if ( 'variation' === $parent_product_type && $parent_variable_id === $variable_id ) {
-                    $variable_total += $ci['quantity'];
-                }
-            }
+            // Total quantity of all variations of this variable product in the cart. Precomputed once per request
+            // so this filter stays linear in cart size instead of looping the cart contents on every variation row.
+            $variation_totals = self::get_variable_product_cart_quantity_totals( $cart_object );
+            $variable_total   = isset( $variation_totals[ $variable_id ] ) ? $variation_totals[ $variable_id ] : 0;
 
             // Check variable product requirements.
             $check_result = self::check_if_variable_product_requirement_is_meet( $variable_id, $variation_id, $cart_item, $variable_total, $user_wholesale_role[0] );
@@ -839,6 +1402,59 @@ final class WWPP_Helper_Functions {
         }
 
         return $did_not_meet;
+    }
+
+    /**
+     * Build a map of variable product id to the total quantity of its variations in the cart.
+     *
+     * The totals are summed in a single pass over the cart and memoized against the cart object
+     * instance, so the per-product minimum-requirement check builds the map once per request and every
+     * subsequent variation row reuses it with an O(1) lookup, instead of re-walking the whole cart on
+     * each row (which made the display filter O(n^2) over cart size). This is a display-only helper whose
+     * only caller operates on the single live WC()->cart instance for the request, so its object id is a
+     * stable, cheap cache key. spl_object_id() values can be reused after an object is freed, but that
+     * cannot occur under this usage (one cart instance lives for the whole request), so there is no
+     * stale-cache risk here.
+     *
+     * @since 2.1.1
+     * @access private
+     *
+     * @param WC_Cart $cart_object WC_Cart instance.
+     *
+     * @return array Map of variable (parent) product id to summed variation quantity.
+     */
+    private static function get_variable_product_cart_quantity_totals( $cart_object ) {
+
+        static $cache     = array();
+        static $cache_key = null;
+
+        $signature = is_object( $cart_object ) ? spl_object_id( $cart_object ) : null;
+
+        if ( null !== $signature && $signature === $cache_key ) {
+            return $cache;
+        }
+
+        $cart_contents = isset( $cart_object->cart_contents ) && is_array( $cart_object->cart_contents ) ? $cart_object->cart_contents : array();
+
+        $totals = array();
+        foreach ( $cart_contents as $ci ) {
+            if ( ! isset( $ci['data'] ) || ! is_object( $ci['data'] ) || 'variation' !== $ci['data']->get_type() ) {
+                continue;
+            }
+
+            $parent_variable_id = $ci['data']->get_parent_id();
+
+            if ( ! isset( $totals[ $parent_variable_id ] ) ) {
+                $totals[ $parent_variable_id ] = 0;
+            }
+
+            $totals[ $parent_variable_id ] += $ci['quantity'];
+        }
+
+        $cache     = $totals;
+        $cache_key = $signature;
+
+        return $cache;
     }
 
     /**

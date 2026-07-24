@@ -56,9 +56,9 @@ jQuery( document ).ready( function ( $ ) {
             } )
             .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                toastr.error( jqXHR.responseText , wwpp_wws_license_settings_params.i18n_fail_save_wholesale_price , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Save Wholesale Prices License Details', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                console.log( wwpp_wws_license_settings_params.i18n_fail_save_wholesale_price );
+                console.log( wp.i18n.__( 'Failed To Save Wholesale Prices License Details', 'woocommerce-wholesale-prices-premium' ) );
                 console.log( jqXHR );
                 console.log( '----------' );
 

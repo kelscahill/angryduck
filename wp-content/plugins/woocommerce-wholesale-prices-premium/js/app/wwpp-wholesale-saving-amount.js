@@ -27,7 +27,7 @@ jQuery(document).ready(function ($) {
             "<!--Begin: #wwwpp-settings-show-saving-amount-settings-->" +
             "<div id='wwwpp-settings-show-saving-amount-settings' style='max-width: 680px !important; display: none;'>" +
             "<div class='wwwpp-settings-show-saving-amount-page'>" +
-            "<h4>"+ wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_page_title_header +"</h4>" +
+            "<h4>"+ wp.i18n.__( 'What Pages to Show the Saving Text', 'woocommerce-wholesale-prices-premium' ) +"</h4>" +
             //----------------------------------------------------------------------------------------------------------
             // Show Saved Wholesale Amount in pages
             //----------------------------------------------------------------------------------------------------------
@@ -36,37 +36,37 @@ jQuery(document).ready(function ($) {
             "<tr valign='top'><td>" +
             "<label for='wwpp_settings_show_saving_amount_page_shop' style='padding-right: 20px;'><input id='wwpp_settings_show_saving_amount_page_shop' name='wwpp_settings_show_saving_amount_page_shop' class='wwpp_settings_show_saving_amount_page_shop' type='checkbox' value='yes'" +
             show_wholesale_saving_amount_page_shop +
-            "> "+ wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_page_shop_title +"</label>" +
+            "> "+ wp.i18n.__( 'Shop Page', 'woocommerce-wholesale-prices-premium' ) +"</label>" +
             "</td></tr>" +
             "<tr valign='top'><td>" +
             "<label for='wwpp_settings_show_saving_amount_page_single_product' style='padding-right: 20px;'><input id='wwpp_settings_show_saving_amount_page_single_product' name='wwpp_settings_show_saving_amount_page_single_product' class='wwpp_settings_show_saving_amount_page_single_product' type='checkbox' value='yes'" +
             show_wholesale_saving_amount_page_single_product +
-            "> "+ wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_page_single_product_title +"</label>" +
+            "> "+ wp.i18n.__( 'Single Product Page', 'woocommerce-wholesale-prices-premium' ) +"</label>" +
             "</td></tr>" +
             "<tr valign='top'><td>" +
             "<label for='wwpp_settings_show_saving_amount_page_cart' style='padding-right: 20px;'><input id='wwpp_settings_show_saving_amount_page_cart' name='wwpp_settings_show_saving_amount_page_cart' class='wwpp_settings_show_saving_amount_page_cart' type='checkbox' value='yes'" +
             show_wholesale_saving_amount_page_cart +
-            "> "+ wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_page_cart_title +"</label>" +
+            "> "+ wp.i18n.__( 'Cart/Checkout/Order Page', 'woocommerce-wholesale-prices-premium' ) +"</label>" +
             "</td></tr>" +
             "<tr valign='top'><td>" +
             "<label for='wwpp_settings_show_saving_amount_page_invoice' style='padding-right: 20px;'><input id='wwpp_settings_show_saving_amount_page_invoice' name='wwpp_settings_show_saving_amount_page_invoice' class='wwpp_settings_show_saving_amount_page_invoice' type='checkbox' value='yes'" +
             show_wholesale_saving_amount_page_invoice +
-            "> "+ wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_page_invoice_title +"</label>" +
+            "> "+ wp.i18n.__( 'Email Invoice', 'woocommerce-wholesale-prices-premium' ) +"</label>" +
             "</td></tr>" +
             "</tbody>" +
             "</table>" +
             "</div><hr/>" +
             // Consumer Key
             "<div class='wwwpp-settings-show-saving-amount-text'>" +
-            "<h4>"+ wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_tags_title +"</h4>" +
+            "<h4>"+ wp.i18n.__( 'List of Tags Available', 'woocommerce-wholesale-prices-premium' ) +"</h4>" +
             "<ul style='list-style: initial; padding-inline-start: 40px;'>" +
             "<li>" +
             "<code>{saved_amount}</code> : " +
-            wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_tags_saved_amount_desc +
+            wp.i18n.__( 'Show saved amount', 'woocommerce-wholesale-prices-premium' ) +
             "</li>" +
             "<li>" +
             "<code>{saved_percentage}</code> : " +
-            wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_tags_saved_percentage_desc +
+            wp.i18n.__( 'Show saved percentage', 'woocommerce-wholesale-prices-premium' ) +
             "</li>" +
             "</ul>" +
             "<table class='form-table'>" +
@@ -74,7 +74,7 @@ jQuery(document).ready(function ($) {
             "<tr valign='top'>" +
             "<th class='titledesc' scope='row'>" +
             "<label for='wwpp_settings_show_saving_amount_text'>" +
-            wwpp_wholesale_saving_amount_var.i18n_wwpp_show_wholesale_saving_amount_text_title +
+            wp.i18n.__( 'Wholesale Saving Amount Text', 'woocommerce-wholesale-prices-premium' ) +
             wwpp_wholesale_saving_amount_var.wwpp_show_wholesale_saving_amount_text_tooltip +
             "</label>" +
             "</th>" +

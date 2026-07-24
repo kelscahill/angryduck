@@ -201,7 +201,8 @@ if ( ! class_exists( 'WWPP_Settings' ) ) {
         public function save_editor_custom_field_type( $settings ) { // phpcs:ignore
             if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'woocommerce-settings' ) ) {
                 if ( isset( $_POST['wwpp_editor'] ) && ! empty( $_POST['wwpp_editor'] ) ) {
-                    foreach ( $_POST['wwpp_editor'] as $index => $content ) {
+                    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Editor values are rich HTML intentionally preserved and encoded via htmlentities() below for safe storage. Nonce verified above.
+                    foreach ( wp_unslash( $_POST['wwpp_editor'] ) as $index => $content ) {
                         $_POST[ $index ] = htmlentities( wpautop( $content ) );
                     }
                 }
@@ -903,17 +904,19 @@ if ( ! class_exists( 'WWPP_Settings' ) ) {
                 ),
 
                 array(
-                    'name' => __( 'Enable wholesale price caching', 'woocommerce-wholesale-prices-premium' ),
-                    'type' => 'checkbox',
-                    'desc' => __( 'When enabled, products with wholesale price will be cached to improve loading time when the product has multiple tier of wholesale prices.', 'woocommerce-wholesale-prices-premium' ),
-                    'id'   => 'wwpp_enable_wholesale_price_cache',
+                    'name'    => __( 'Enable wholesale price caching', 'woocommerce-wholesale-prices-premium' ),
+                    'type'    => 'checkbox',
+                    'desc'    => __( 'When enabled, wholesale prices are cached per wholesale role to improve loading time, so the first customer in a role warms the cache for everyone else in that role. Enabled by default; uncheck to turn it off.', 'woocommerce-wholesale-prices-premium' ),
+                    'id'      => 'wwpp_enable_wholesale_price_cache',
+                    'default' => 'yes',
                 ),
 
                 array(
-                    'name' => __( 'Enable variable product price range caching', 'woocommerce-wholesale-prices-premium' ),
-                    'type' => 'checkbox',
-                    'desc' => __( 'When enabled, wholesale price ranges for variable products will be cached by the system. This speeds up the loading of your category pages and single product pages.', 'woocommerce-wholesale-prices-premium' ),
-                    'id'   => 'wwpp_enable_var_prod_price_range_caching',
+                    'name'    => __( 'Enable variable product price range caching', 'woocommerce-wholesale-prices-premium' ),
+                    'type'    => 'checkbox',
+                    'desc'    => __( 'When enabled, wholesale price ranges for variable products are cached per wholesale role, speeding up category and single product pages for every customer in the role after the first. Enabled by default; uncheck to turn it off.', 'woocommerce-wholesale-prices-premium' ),
+                    'id'      => 'wwpp_enable_var_prod_price_range_caching',
+                    'default' => 'yes',
                 ),
 
                 array(

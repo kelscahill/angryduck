@@ -43,7 +43,7 @@ class WWOF {
     public const FORM_SETTINGS = 'settings';
 
     /**
-     * User favourites meta key.
+     * User favorites meta key.
      */
     public const FAVOURITES_META_KEY = 'wwof_favourites';
 
@@ -306,21 +306,33 @@ class WWOF {
 
         $wholesale_roles = $wc_wholesale_prices->wwp_wholesale_roles->getAllRegisteredWholesaleRoles();
 
+        // WWP guarantees `roleName` in each entry returned by
+        // getAllRegisteredWholesaleRoles(); the isset() check is defense
+        // against future WWP API drift, not a real branch today.
+        $wholesale_role_options = array();
+        foreach ( $wholesale_roles as $role_key => $role_data ) {
+            $wholesale_role_options[] = array(
+                'label' => isset( $role_data['roleName'] ) ? $role_data['roleName'] : $role_key,
+                'value' => $role_key,
+            );
+        }
+
         $app_user = self::get_app_user();
 
         $constant_properties = array(
-            'appContext'     => 'view',
-            'isRTL'          => is_rtl(),
-            'wpNonce'        => wp_create_nonce( 'wp_rest' ),
-            'wcNonce'        => wp_create_nonce( 'wc_store_api' ),
-            'restUrl'        => rest_url(),
-            'restNamespace'  => Order_Form_REST::instance()->namespace,
-            'loginUrl'       => wp_login_url(),
-            'placeholderImg' => wc_placeholder_img_src(),
-            'appUser'        => $app_user,
-            'userFavourites' => self::get_favourite_products(),
-            'wholesaleRoles' => array_keys( $wholesale_roles ),
-            'myAccountUrl'   => esc_url( wc_get_page_permalink( 'myaccount' ) ),
+            'appContext'           => 'view',
+            'isRTL'                => is_rtl(),
+            'wpNonce'              => wp_create_nonce( 'wp_rest' ),
+            'wcNonce'              => wp_create_nonce( 'wc_store_api' ),
+            'restUrl'              => rest_url(),
+            'restNamespace'        => Order_Form_REST::instance()->namespace,
+            'loginUrl'             => wp_login_url(),
+            'placeholderImg'       => wc_placeholder_img_src(),
+            'appUser'              => $app_user,
+            'userFavourites'       => self::get_favourite_products(),
+            'wholesaleRoles'       => array_keys( $wholesale_roles ),
+            'wholesaleRoleOptions' => $wholesale_role_options,
+            'myAccountUrl'         => esc_url( wc_get_page_permalink( 'myaccount' ) ),
         );
 
         $constant_properties = array_merge(
@@ -347,10 +359,24 @@ class WWOF {
         $defaults = apply_filters(
             'wwof_order_form_app_common_l10n_defaults',
             array(
-                'maxRequests'       => 8,
-                'allowedTags'       => $allowed_tags,
-                'allowedAttrs'      => $allowed_attrs,
-                '_fields'           => array(
+                'maxRequests'           => 8,
+                /**
+                 * Filter the maximum number of concurrent variation-list requests.
+                 *
+                 * A separate, higher concurrency budget than `maxRequests` so that
+                 * 20+ variable products don't serialize behind the heavier
+                 * product-list requests. The returned value is clamped to a
+                 * minimum of 1 — a non-positive concurrency would deadlock the
+                 * front-end request throttle. See issue #996.
+                 *
+                 * @param int $variations_max_requests The maximum number of concurrent variation-list requests. Default 12.
+                 *
+                 * @since 3.1.0
+                 */
+                'variationsMaxRequests' => max( 1, (int) apply_filters( 'wwof_variations_max_requests', 12 ) ),
+                'allowedTags'           => $allowed_tags,
+                'allowedAttrs'          => $allowed_attrs,
+                '_fields'               => array(
                     'attribute_summary',
                     'attributes',
                     'backorders',
@@ -382,7 +408,7 @@ class WWOF {
                     'weight',
                     'dimensions',
                 ),
-                'thirdPartyPlugins' => array(),
+                'thirdPartyPlugins'     => array(),
             )
         );
 
@@ -545,7 +571,7 @@ class WWOF {
     }
 
     /**
-     * Get favourite products.
+     * Get favorite products.
      *
      * @param int $user_id The user ID.
      *
@@ -564,7 +590,7 @@ class WWOF {
     }
 
     /**
-     * Save a product to favourites.
+     * Save a product to favorites.
      *
      * @param int $product_id The product ID.
      * @param int $user_id    The user ID.
@@ -601,7 +627,7 @@ class WWOF {
     }
 
     /**
-     * Remove a product from favourites.
+     * Remove a product from favorites.
      *
      * @param int $product_id The product ID.
      * @param int $user_id    The user ID.

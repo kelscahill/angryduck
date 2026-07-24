@@ -1,0 +1,1 @@
+System.register(["./ExclamationCircleFilled-legacy.BI-ax_ZG.js","./Col-legacy.arhDTMvy.js"],function(t,e){var n,c,i;return{setters:[function(t){n=t.vt},function(t){c=t.n,i=t.t}],execute:function(){t("n",n(i)),t("t",n(c))}}});

@@ -190,7 +190,7 @@ jQuery(document).ready(function ($) {
       })
       .fail(function (jqxhr, text_status, error_thrown) {
         console.log(jqxhr);
-        alert(wwpp_user_profile_args.i18n_failed_to_get_zoned_methods);
+        alert( wp.i18n.__( 'Failed to get shipping methods for the selected shipping zone', 'woocommerce-wholesale-prices-premium' ) );
       })
       .always(function () {
         $this.removeAttr("disabled");

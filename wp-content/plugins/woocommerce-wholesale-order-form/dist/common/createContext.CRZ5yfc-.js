@@ -1,0 +1,1 @@
+import{Dn as s,En as t,Gt as n,Jn as a,Yt as e,ar as r,er as o,zn as c}from"./ExclamationCircleFilled.hVlCEKoI.js";function i(t){const e=Symbol("contextKey");return{useProvide:(s,t)=>{const o=r({});return c(e,o),a(()=>{n(o,s,t||{})}),o},useInject:()=>s(e,t)||{}}}e();export{i as t};

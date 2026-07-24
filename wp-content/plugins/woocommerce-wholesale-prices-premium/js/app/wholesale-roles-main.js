@@ -41,8 +41,8 @@ jQuery(document).ready(function ($) {
 
         if (roleName == "") {
             toastr.error(
-                wwpp_wholesale_roles_main_params.i18n_enter_role_name,
-                wwpp_wholesale_roles_main_params.i18n_error_wholesale_form,
+                wp.i18n.__( 'Please Enter Role Name', 'woocommerce-wholesale-prices-premium' ),
+                wp.i18n.__( 'Error in Wholesale Form', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: errorToastrShowDuration }
             );
             checkPoint = false;
@@ -53,8 +53,8 @@ jQuery(document).ready(function ($) {
             // role key should only contain lowercase letters, numbers, hyphens, and underscores other than that show error
             if(!roleKey.match($regexname)){
                 toastr.error(
-                    wwpp_wholesale_roles_main_params.i18n_error_role_key,
-                    wwpp_wholesale_roles_main_params.i18n_failed_add_new_role,
+                    wp.i18n.__( 'Role Key must contain only lowercase letters, numbers, hyphens, and underscores', 'woocommerce-wholesale-prices-premium' ),
+                    wp.i18n.__( 'Failed to Add New Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                     { closeButton: true, showDuration: errorToastrShowDuration }
                 );
                 checkPoint = false;
@@ -77,9 +77,12 @@ jQuery(document).ready(function ($) {
                     if (response.status == "success") {
                         wwppWholesaleRolesListingActions.addRole(response.data);
                         toastr.success(
-                            response.data.roleName +
-                                " " +
-                                wwpp_wholesale_roles_main_params.i18n_role_successfully_added,
+                            wp.i18n.sprintf(
+                                /* translators: %s: wholesale role name */
+                                wp.i18n.__( '%s Wholesale Role Successfully Added', 'woocommerce-wholesale-prices-premium' ),
+                                response.data.roleName
+                            ),
+                            wp.i18n.__( 'Successfully Added New Role', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: successToastrShowDuration,
@@ -88,7 +91,7 @@ jQuery(document).ready(function ($) {
                     } else {
                         toastr.error(
                             response.error_message,
-                            wwpp_wholesale_roles_main_params.i18n_failed_add_new_role,
+                            wp.i18n.__( 'Failed to Add New Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: errorToastrShowDuration,
@@ -103,7 +106,7 @@ jQuery(document).ready(function ($) {
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     toastr.error(
                         jqXHR.responseText,
-                        wwpp_wholesale_roles_main_params.i18n_failed_add_new_role,
+                        wp.i18n.__( 'Failed to Add New Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: errorToastrShowDuration,
@@ -111,7 +114,7 @@ jQuery(document).ready(function ($) {
                     );
 
                     console.log(
-                        wwpp_wholesale_roles_main_params.i18n_failed_add_new_role
+                        wp.i18n.__( 'Failed to Add New Wholesale Role', 'woocommerce-wholesale-prices-premium' )
                     );
                     console.log(jqXHR);
                     console.log("----------");
@@ -138,8 +141,8 @@ jQuery(document).ready(function ($) {
 
         if (roleName == "") {
             toastr.error(
-                wwpp_wholesale_roles_main_params.i18n_enter_role_name,
-                wwpp_wholesale_roles_main_params.i18n_error_wholesale_form,
+                wp.i18n.__( 'Please Enter Role Name', 'woocommerce-wholesale-prices-premium' ),
+                wp.i18n.__( 'Error in Wholesale Form', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: errorToastrShowDuration }
             );
             checkPoint = false;
@@ -150,8 +153,8 @@ jQuery(document).ready(function ($) {
             // role key should only contain letters, numbers, hyphens, and underscores other than that show error
             if(!roleKey.match($regexname)){
                 toastr.error(
-                    wwpp_wholesale_roles_main_params.i18n_error_role_key,
-                    wwpp_wholesale_roles_main_params.i18n_error_wholesale_form,
+                    wp.i18n.__( 'Role Key must contain only lowercase letters, numbers, hyphens, and underscores', 'woocommerce-wholesale-prices-premium' ),
+                    wp.i18n.__( 'Error in Wholesale Form', 'woocommerce-wholesale-prices-premium' ),
                     { closeButton: true, showDuration: errorToastrShowDuration }
                 );
                 checkPoint = false;
@@ -173,10 +176,12 @@ jQuery(document).ready(function ($) {
                     if (response.status == "success") {
                         wwppWholesaleRolesListingActions.editRole(response.data);
                         toastr.success(
-                            response.data.roleName +
-                                " " +
-                                wwpp_wholesale_roles_main_params.i18n_role_successfully_edited,
-                            wwpp_wholesale_roles_main_params.i18n_successfully_edited_role,
+                            wp.i18n.sprintf(
+                                /* translators: %s: wholesale role name */
+                                wp.i18n.__( '%s Wholesale Role Successfully Edited', 'woocommerce-wholesale-prices-premium' ),
+                                response.data.roleName
+                            ),
+                            wp.i18n.__( 'Successfully Edited Role', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: successToastrShowDuration,
@@ -185,7 +190,7 @@ jQuery(document).ready(function ($) {
                     } else {
                         toastr.error(
                             response.error_message,
-                            wwpp_wholesale_roles_main_params.i18n_failed_edit_role,
+                            wp.i18n.__( 'Failed to Edit Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: errorToastrShowDuration,
@@ -201,7 +206,7 @@ jQuery(document).ready(function ($) {
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     toastr.error(
                         jqXHR.responseText,
-                        wwpp_wholesale_roles_main_params.i18n_failed_edit_role,
+                        wp.i18n.__( 'Failed to Edit Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: errorToastrShowDuration,
@@ -209,7 +214,7 @@ jQuery(document).ready(function ($) {
                     );
 
                     console.log(
-                        wwpp_wholesale_roles_main_params.i18n_failed_edit_role
+                        wp.i18n.__( 'Failed to Edit Wholesale Role', 'woocommerce-wholesale-prices-premium' )
                     );
                     console.log(jqXHR);
                     console.log("----------");
@@ -255,17 +260,23 @@ jQuery(document).ready(function ($) {
         var $currentRow = $(this).closest("tr"),
             roleKey = $.trim($currentRow.find(".column-role-key").text());
 
-        if (confirm("Delete " + roleKey + " Wholesale Role?")) {
+        if (confirm( wp.i18n.sprintf(
+            /* translators: %s: wholesale role key */
+            wp.i18n.__( 'Delete %s Wholesale Role?', 'woocommerce-wholesale-prices-premium' ),
+            roleKey
+        ) )) {
             wwppBackendAjaxServices
                 .deleteWholesaleRole(roleKey)
                 .done(function (data, textStatus, jqXHR) {
                     if (data.status == "success") {
                         wwppWholesaleRolesListingActions.deleteRole(roleKey);
                         toastr.success(
-                            roleKey +
-                                " " +
-                                wwpp_wholesale_roles_main_params.i18n_role_successfully_deleted,
-                            wwpp_wholesale_roles_main_params.i18n_successfully_deleted_role,
+                            wp.i18n.sprintf(
+                                /* translators: %s: wholesale role name */
+                                wp.i18n.__( '%s Wholesale Role Successfully Deleted', 'woocommerce-wholesale-prices-premium' ),
+                                roleKey
+                            ),
+                            wp.i18n.__( 'Successfully Deleted Role', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: successToastrShowDuration,
@@ -285,7 +296,7 @@ jQuery(document).ready(function ($) {
                         } else {
                             toastr.error(
                                 data.error_message,
-                                wwpp_wholesale_roles_main_params.i18n_failed_delete_role,
+                                wp.i18n.__( 'Failed to Delete Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                                 {
                                     closeButton: true,
                                     showDuration: errorToastrShowDuration,
@@ -298,7 +309,7 @@ jQuery(document).ready(function ($) {
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     toastr.error(
                         jqXHR.responseText,
-                        wwpp_wholesale_roles_main_params.i18n_failed_delete_role,
+                        wp.i18n.__( 'Failed to Delete Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: errorToastrShowDuration,
@@ -306,7 +317,7 @@ jQuery(document).ready(function ($) {
                     );
 
                     console.log(
-                        wwpp_wholesale_roles_main_params.i18n_failed_delete_role
+                        wp.i18n.__( 'Failed to Delete Wholesale Role', 'woocommerce-wholesale-prices-premium' )
                     );
                     console.log(jqXHR);
                     console.log("----------");

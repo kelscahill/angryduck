@@ -1,0 +1,1 @@
+System.register(["../../../../../../../../../common/ExclamationCircleFilled-legacy.BI-ax_ZG.js","../../../../../../../../../common/NoOptions-legacy.BFg5WbyO.js"],function(n,t){var e,o,i,c,a;return{setters:[function(n){n.En,e=n.Ln,o=n.Yt,i=n.mn,c=n.xn},function(n){a=n.t}],execute:function(){o(),n("default",c({__name:"FormPaginationOptions",setup:n=>(n,t)=>(e(),i(a))}))}}});

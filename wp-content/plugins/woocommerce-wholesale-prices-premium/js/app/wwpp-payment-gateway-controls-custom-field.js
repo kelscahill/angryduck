@@ -55,20 +55,61 @@ jQuery(document).ready(function ($) {
     $wwpp_surcharge_taxable.val("").trigger("chosen:updated");
   }
 
+  // Reduce a string to a positive decimal: digits and at most one decimal
+  // point. Used to keep the Surcharge Amount field to a value it can hold, so
+  // it never shows characters it would silently discard. See issue #1873.
+  function sanitizePositiveDecimal(value) {
+    var cleaned = value.replace(/[^0-9.]/g, ""),
+      firstDot = cleaned.indexOf(".");
+
+    // Keep only the first decimal point.
+    if (firstDot !== -1)
+      cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+
+    return cleaned;
+  }
+
+  // Sanitize on every input method (typing, paste, drag-and-drop, IME) in one
+  // place, preserving the caret. The "input" event fires for all of them, so a
+  // single handler covers cases a keydown/paste filter would miss.
+  function onSurchargeAmountInput(e) {
+    var input = e.currentTarget,
+      original = input.value,
+      cursor = input.selectionStart,
+      cleaned = sanitizePositiveDecimal(original);
+
+    if (cleaned === original) return;
+
+    // Place the caret after the same run of valid characters the user had, so
+    // stripping an invalid character does not jump the cursor to the end.
+    var newCursor = sanitizePositiveDecimal(original.slice(0, cursor)).length;
+
+    input.value = cleaned;
+    input.setSelectionRange(newCursor, newCursor);
+  }
+
+  // Strip a trailing/lone decimal point (e.g. "12." or ".") once the field
+  // loses focus, since that is not a value the surcharge amount can keep.
+  function onSurchargeAmountBlur(e) {
+    var input = e.currentTarget;
+
+    if (input.value.slice(-1) === ".") input.value = input.value.slice(0, -1);
+  }
+
   function validateFields() {
     error_fields = [];
 
-    if ($.trim($wwpp_wholesale_roles.val()) == "") error_fields.push("Wholesale Role");
+    if ($.trim($wwpp_wholesale_roles.val()) == "") error_fields.push( wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ) );
 
-    if ($.trim($wwpp_payment_gateway.val()) == "") error_fields.push("Payment Gateway");
+    if ($.trim($wwpp_payment_gateway.val()) == "") error_fields.push( wp.i18n.__( 'Payment Gateway', 'woocommerce-wholesale-prices-premium' ) );
 
-    if ($.trim($wwpp_surcharge_title.val()) == "") error_fields.push("Surcharge Title");
+    if ($.trim($wwpp_surcharge_title.val()) == "") error_fields.push( wp.i18n.__( 'Surcharge Title', 'woocommerce-wholesale-prices-premium' ) );
 
-    if ($.trim($wwpp_surcharge_type.val()) == "") error_fields.push("Surcharge Type");
+    if ($.trim($wwpp_surcharge_type.val()) == "") error_fields.push( wp.i18n.__( 'Surcharge Type', 'woocommerce-wholesale-prices-premium' ) );
 
-    if ($.trim($wwpp_surcharge_amount.val()) == "") error_fields.push("Surcharge Value");
+    if ($.trim($wwpp_surcharge_amount.val()) == "") error_fields.push( wp.i18n.__( 'Surcharge Value', 'woocommerce-wholesale-prices-premium' ) );
 
-    if ($.trim($wwpp_surcharge_taxable.val()) == "") error_fields.push("Surcharge Taxable");
+    if ($.trim($wwpp_surcharge_taxable.val()) == "") error_fields.push( wp.i18n.__( 'Surcharge Taxable', 'woocommerce-wholesale-prices-premium' ) );
 
     return error_fields;
   }
@@ -88,13 +129,13 @@ jQuery(document).ready(function ($) {
     var error_fields = validateFields();
 
     if (error_fields.length > 0) {
-      var msg = wwpp_payment_gateway_controls_custom_field_params.i18n_specify_field_values_with_colon + "<br/><ul>";
+      var msg = wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) + "<br/><ul>";
 
       for (var i = 0; i < error_fields.length; i++) msg += "<li>" + error_fields[i] + "</li>";
 
       msg += "</ul>";
 
-      toastr.error(msg, wwpp_payment_gateway_controls_custom_field_params.i18n_form_error, {
+      toastr.error(msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: errorMessageDuration,
       });
@@ -120,7 +161,7 @@ jQuery(document).ready(function ($) {
       .addPaymentGatewaySurcharge(surchargeData, wwpp_payment_gateway_controls_custom_field_params.user_id)
       .done(function (data, textStatus, jqXHR) {
         if (data.status == "success") {
-          toastr.success("", wwpp_payment_gateway_controls_custom_field_params.i18n_payment_gateway_added, {
+          toastr.success("", wp.i18n.__( 'Successfully Added Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: successMessageDuration,
           });
@@ -192,11 +233,11 @@ jQuery(document).ready(function ($) {
         } else {
           toastr.error(
             data.error_message,
-            wwpp_payment_gateway_controls_custom_field_params.i18n_failed_add_payment_gateway,
+            wp.i18n.__( 'Failed To Add New Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: errorMessageDuration }
           );
 
-          console.log(wwpp_payment_gateway_controls_custom_field_params.i18n_failed_add_payment_gateway);
+          console.log(wp.i18n.__( 'Failed To Add New Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ));
           console.log(data);
           console.log("----------");
         }
@@ -204,11 +245,11 @@ jQuery(document).ready(function ($) {
       .fail(function (jqXHR, textStatus, errorThrown) {
         toastr.error(
           jqXHR.responseText,
-          wwpp_payment_gateway_controls_custom_field_params.i18n_failed_add_payment_gateway,
+          wp.i18n.__( 'Failed To Add New Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
           { closeButton: true, showDuration: errorMessageDuration }
         );
 
-        console.log(wwpp_payment_gateway_controls_custom_field_params.i18n_failed_add_payment_gateway);
+        console.log(wp.i18n.__( 'Failed To Add New Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ));
         console.log(jqXHR);
         console.log("----------");
       })
@@ -227,13 +268,13 @@ jQuery(document).ready(function ($) {
     var error_fields = validateFields();
 
     if (error_fields.length > 0) {
-      var msg = wwpp_payment_gateway_controls_custom_field_params.i18n_specify_field_values_with_colon + "<br/><ul>";
+      var msg = wp.i18n.__( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ) + "<br/><ul>";
 
       for (var i = 0; i < error_fields.length; i++) msg += "<li>" + error_fields[i] + "</li>";
 
       msg += "</ul>";
 
-      toastr.error(msg, wwpp_payment_gateway_controls_custom_field_params.i18n_form_error, {
+      toastr.error(msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: errorMessageDuration,
       });
@@ -308,18 +349,18 @@ jQuery(document).ready(function ($) {
 
           $button_controls.removeClass("edit-mode").addClass("add-mode");
 
-          toastr.success("", wwpp_payment_gateway_controls_custom_field_params.i18n_payment_gateway_updated, {
+          toastr.success("", wp.i18n.__( 'Successfully Updated Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: successMessageDuration,
           });
         } else {
           toastr.error(
             data.error_message,
-            wwpp_payment_gateway_controls_custom_field_params.i18n_failed_update_payment_gateway,
+            wp.i18n.__( 'Failed To Update Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: errorMessageDuration }
           );
 
-          console.log(wwpp_payment_gateway_controls_custom_field_params.i18n_failed_update_payment_gateway);
+          console.log(wp.i18n.__( 'Failed To Update Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ));
           console.log(data);
           console.log("----------");
         }
@@ -327,13 +368,13 @@ jQuery(document).ready(function ($) {
       .fail(function (jqXHR, textStatus, errorThrown) {
         toastr.error(
           jqXHR.responseText,
-          wwpp_payment_gateway_controls_custom_field_params.i18n_failed_update_payment_gateway,
+          wp.i18n.__( 'Failed To Update Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
           { closeButton: true, showDuration: errorMessageDuration }
         );
 
         console.log(
           jqXHR.responseText,
-          wwpp_payment_gateway_controls_custom_field_params.i18n_failed_update_payment_gateway
+          wp.i18n.__( 'Failed To Update Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' )
         );
         console.log(data);
         console.log("----------");
@@ -390,7 +431,7 @@ jQuery(document).ready(function ($) {
 
     $currentTr.addClass("edited");
 
-    if (confirm(wwpp_payment_gateway_controls_custom_field_params.i18n_click_ok_remove_payment_gateway)) {
+    if (confirm(wp.i18n.__( 'Clicking OK will remove the current payment gateway surcharge mapping', 'woocommerce-wholesale-prices-premium' ))) {
       var idx = $.trim($currentTr.find(".meta").find(".index").text());
 
       $wholesale_payment_gateway_surcharge.find(".controls .dashicons").css("display", "none");
@@ -411,25 +452,25 @@ jQuery(document).ready(function ($) {
                   .html(
                     '<tr class="no-items">' +
                       '<td class="colspanchange" colspan="6">' +
-                      wwpp_payment_gateway_controls_custom_field_params.i18n_no_mapping_found +
+                      wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) +
                       "</td>" +
                       "</tr>"
                   );
               }
             });
 
-            toastr.success("", wwpp_payment_gateway_controls_custom_field_params.i18n_payment_gateway_deleted, {
+            toastr.success("", wp.i18n.__( 'Successfully Deleted Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: successMessageDuration,
             });
           } else {
             toastr.error(
               data.error_message,
-              wwpp_payment_gateway_controls_custom_field_params.i18n_failed_delete_payment_gateway,
+              wp.i18n.__( 'Failed To Delete Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
               { closeButton: true, showDuration: errorMessageDuration }
             );
 
-            console.log(wwpp_payment_gateway_controls_custom_field_params.i18n_failed_delete_payment_gateway);
+            console.log(wp.i18n.__( 'Failed To Delete Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ));
             console.log(data);
             console.log("----------");
           }
@@ -437,11 +478,11 @@ jQuery(document).ready(function ($) {
         .fail(function (jqXHR, textStatus, errorThrown) {
           toastr.error(
             jqXHR.responseText,
-            wwpp_payment_gateway_controls_custom_field_params.i18n_failed_delete_payment_gateway,
+            wp.i18n.__( 'Failed To Delete Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: errorMessageDuration }
           );
 
-          console.log(wwpp_payment_gateway_controls_custom_field_params.i18n_failed_delete_payment_gateway);
+          console.log(wp.i18n.__( 'Failed To Delete Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ));
           console.log(jqXHR);
           console.log("----------");
         })
@@ -458,6 +499,9 @@ jQuery(document).ready(function ($) {
      | On Page Load
      |------------------------------------------------------------------------------------------------------------------
      */
+
+  $wwpp_surcharge_amount.on("input", onSurchargeAmountInput);
+  $wwpp_surcharge_amount.on("blur", onSurchargeAmountBlur);
 
   $surcharge_controls.find("#wwpp-wholesale-roles").chosen({ allow_single_deselect: true });
   $surcharge_controls.find("#wwpp-payment-gateway").chosen({ allow_single_deselect: true });

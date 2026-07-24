@@ -1,1 +1,0 @@
-System.register(["./hooks-legacy.BRKQHcMP.js"],function(e,t){"use strict";var n,r,s,c,o;return{setters:[e=>{n=e.i,r=e.a2,s=e.A,c=e.b,o=e.p}],execute:function(){e("c",function(e){const t=Symbol("contextKey");return{useProvide:(e,n)=>{const u=c({});return o(t,u),r(()=>{s(u,e,n||{})}),u},useInject:()=>n(t,e)||{}}})}}});

@@ -1,0 +1,1 @@
+import{En as a,Ln as e,Yt as t,mn as m,xn as n}from"../../../../../../../../../common/ExclamationCircleFilled.hVlCEKoI.js";import{t as o}from"../../../../../../../../../common/ElementAlignment.B_FfA3ws.js";t();var s=n({__name:"ProductMetaStyles",setup:a=>(a,t)=>(e(),m(o,{"default-value":"center"}))});export{s as default};

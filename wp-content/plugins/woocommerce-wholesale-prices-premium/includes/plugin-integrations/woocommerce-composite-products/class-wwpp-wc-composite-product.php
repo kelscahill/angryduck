@@ -155,7 +155,7 @@ if ( ! class_exists( 'WWPP_WC_Composite_Product' ) ) {
 
             foreach ( $component_options as $product_id ) {
 
-                $curr_product_wholesale_filter = get_post_meta( $product_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER );
+                $curr_product_wholesale_filter = get_post_meta( $product_id, WWPP_PRODUCT_WHOLESALE_VISIBILITY_FILTER, false );
                 if ( ! is_array( $curr_product_wholesale_filter ) ) {
                     $curr_product_wholesale_filter = array();
                 }
@@ -176,6 +176,9 @@ if ( ! class_exists( 'WWPP_WC_Composite_Product' ) ) {
          * Note this filter callback is only for WC less than 2.7
          *
          * @since 1.3.1
+         * @deprecated Orphaned since the `wwp_third_party_product_id` add_filter
+         *             registration was removed in #548; retained intentionally
+         *             per the issue author.
          * @access public
          *
          * @param int        $product_id Product id.
@@ -523,9 +526,6 @@ if ( ! class_exists( 'WWPP_WC_Composite_Product' ) ) {
                 add_action( 'woocommerce_product_options_pricing', array( $this, 'add_wholesale_price_fields' ), 11 );
                 add_action( 'woocommerce_process_product_meta_composite', array( $this, 'save_wholesale_price_fields' ), 20, 1 );
                 add_action( 'woocommerce_process_product_meta_composite', array( $this, 'save_minimum_order_quantity_fields' ), 20, 1 );
-
-                // WC 2.7.
-                add_filter( 'wwp_third_party_product_id', array( $this, 'get_product_id' ), 10, 2 );
 
                 // Quick edit support.
                 add_filter( 'wwp_quick_edit_allowed_product_types', array( $this, 'support_for_quick_edit_fields' ), 10, 2 );

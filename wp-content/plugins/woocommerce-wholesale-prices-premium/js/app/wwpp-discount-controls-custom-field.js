@@ -84,12 +84,12 @@ jQuery( document ).ready( function ( $ ) {
             discount = $.trim( $discount_controls.find( "#wwpp-wholesale-discount" ).val() );
 
         if ( wholesale_role == "" ) {
-            toastr.error( wwpp_discount_controls_custom_field_params.i18n_specify_wholesale_role , wwpp_discount_controls_custom_field_params.i18n_form_error , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( wp.i18n.__( 'Please Specify Wholesale Role', 'woocommerce-wholesale-prices-premium' ) , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
             checkPoint = false;
         }
 
         if ( discount <= 0 || discount == "" || !isNumber( discount ) ) {
-            toastr.error( wwpp_discount_controls_custom_field_params.i18n_input_discount_properly , wwpp_discount_controls_custom_field_params.i18n_form_error , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( wp.i18n.__( 'Please Input Discount Properly', 'woocommerce-wholesale-prices-premium' ) , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
             checkPoint = false;
         }
 
@@ -106,7 +106,7 @@ jQuery( document ).ready( function ( $ ) {
 
                     if ( data.status == 'success' ) {
 
-                        toastr.success( '' , wwpp_discount_controls_custom_field_params.i18n_role_successfully_added , { "closeButton" : true , "showDuration" : successMessageDuration } );
+                        toastr.success( '' , wp.i18n.__( 'Successfully Added Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : successMessageDuration } );
 
                         removeTableNoItemsPlaceholder( $wholesale_role_general_discount_mapping );
 
@@ -132,9 +132,9 @@ jQuery( document ).ready( function ( $ ) {
 
                     } else {
 
-                        toastr.error( data.error_message , wwpp_discount_controls_custom_field_params.i18n_fail_role_add , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                        toastr.error( data.error_message , wp.i18n.__( 'Failed To Add New Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                        console.log( wwpp_discount_controls_custom_field_params.i18n_fail_role_add );
+                        console.log( wp.i18n.__( 'Failed To Add New Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) );
                         console.log( data );
                         console.log( '----------' );
 
@@ -143,9 +143,9 @@ jQuery( document ).ready( function ( $ ) {
                 } )
                 .fail( function ( jqXHR , textStatus , data ) {
 
-                    toastr.error( jqXHR.responseText , wwpp_discount_controls_custom_field_params.i18n_fail_role_add , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                    toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Add New Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                    console.log( wwpp_discount_controls_custom_field_params.i18n_fail_role_add );
+                    console.log( wp.i18n.__( 'Failed To Add New Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( jqXHR );
                     console.log( '----------' );
 
@@ -179,12 +179,12 @@ jQuery( document ).ready( function ( $ ) {
             discount = $.trim( $discount_controls.find( "#wwpp-wholesale-discount" ).val() );
 
         if ( wholesale_role == "" ) {
-            toastr.error( wwpp_discount_controls_custom_field_params.i18n_specify_wholesale_role , wwpp_discount_controls_custom_field_params.i18n_form_error , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( wp.i18n.__( 'Please Specify Wholesale Role', 'woocommerce-wholesale-prices-premium' ) , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
             checkPoint = false;
         }
 
         if ( discount <= 0 || discount == "" || !isNumber( discount ) ) {
-            toastr.error( wwpp_discount_controls_custom_field_params.i18n_input_discount_properly , wwpp_discount_controls_custom_field_params.i18n_form_error , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+            toastr.error( wp.i18n.__( 'Please Input Discount Properly', 'woocommerce-wholesale-prices-premium' ) , wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
             checkPoint = false;
         }
 
@@ -221,13 +221,13 @@ jQuery( document ).ready( function ( $ ) {
                             .removeClass( "edit-mode" )
                             .addClass( "add-mode" );
 
-                        toastr.success( '' , wwpp_discount_controls_custom_field_params.i18n_role_successfully_updated , { "closeButton" : true , "showDuration" : successMessageDuration } );
+                        toastr.success( '' , wp.i18n.__( 'Successfully Updated Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : successMessageDuration } );
 
                     } else {
 
-                        toastr.error( data.error_message , wwpp_discount_controls_custom_field_params.i18n_fail_role_update , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                        toastr.error( data.error_message , wp.i18n.__( 'Failed To Update Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                        console.log( wwpp_discount_controls_custom_field_params.i18n_fail_role_update );
+                        console.log( wp.i18n.__( 'Failed To Update Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) );
                         console.log( data );
                         console.log( '----------' );
 
@@ -236,9 +236,9 @@ jQuery( document ).ready( function ( $ ) {
                 } )
                 .fail( function ( jqXHR , textStatus , data ) {
 
-                    toastr.error( jqXHR.responseText , wwpp_discount_controls_custom_field_params.i18n_fail_role_update , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                    toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Update Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                    console.log( wwpp_discount_controls_custom_field_params.i18n_fail_role_update );
+                    console.log( wp.i18n.__( 'Failed To Update Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( jqXHR );
                     console.log( '----------' );
 
@@ -304,7 +304,7 @@ jQuery( document ).ready( function ( $ ) {
 
         $currentTr.addClass( "edited" );
 
-        if ( confirm( wwpp_discount_controls_custom_field_params.i18n_click_ok_remove_mapping ) ) {
+        if ( confirm( wp.i18n.__( 'Clicking OK will remove the current role/discount mapping', 'woocommerce-wholesale-prices-premium' ) ) ) {
 
             var wholesaleRole = $.trim( $currentTr.find( ".meta.hidden" ).find( '.wholesale-role' ).text() );
 
@@ -328,20 +328,20 @@ jQuery( document ).ready( function ( $ ) {
                                 $wholesale_role_general_discount_mapping
                                     .find("tbody")
                                     .html(  '<tr class="no-items">' +
-                                                '<td class="colspanchange" colspan="3">' + wwpp_discount_controls_custom_field_params.i18n_no_mappings_found + '</td>' +
+                                                '<td class="colspanchange" colspan="3">' + wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) + '</td>' +
                                             '</tr>');
 
                             }
 
                         } );
 
-                        toastr.success( '' , wwpp_discount_controls_custom_field_params.i18n_role_successfully_deleted , { "closeButton" : true , "showDuration" : successMessageDuration } );
+                        toastr.success( '' , wp.i18n.__( 'Successfully Deleted Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : successMessageDuration } );
 
                     } else {
 
-                        toastr.error( data.error_message , wwpp_discount_controls_custom_field_params.i18n_fail_delete_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                        toastr.error( data.error_message , wp.i18n.__( 'Failed To Delete Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                        console.log( wwpp_discount_controls_custom_field_params.i18n_fail_delete_role );
+                        console.log( wp.i18n.__( 'Failed To Delete Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) );
                         console.log( data );
                         console.log( '----------' );
 
@@ -350,9 +350,9 @@ jQuery( document ).ready( function ( $ ) {
                 } )
                 .fail( function ( jqXHR , textStatus , errorThrown ) {
 
-                    toastr.error( jqXHR.responseText , wwpp_discount_controls_custom_field_params.i18n_fail_delete_role , { "closeButton" : true , "showDuration" : errorMessageDuration } );
+                    toastr.error( jqXHR.responseText , wp.i18n.__( 'Failed To Delete Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) , { "closeButton" : true , "showDuration" : errorMessageDuration } );
 
-                    console.log( wwpp_discount_controls_custom_field_params.i18n_fail_delete_role );
+                    console.log( wp.i18n.__( 'Failed To Delete Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ) );
                     console.log( jqXHR );
                     console.log( '----------' );
 

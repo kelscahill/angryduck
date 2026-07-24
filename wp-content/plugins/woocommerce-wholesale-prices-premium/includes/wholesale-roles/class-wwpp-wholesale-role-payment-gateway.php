@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Model that houses the logic of payment gateways.
  *
  * @since 1.3.0
+ * @since 2.1.1 Treat payment gateways mapped to the current user's wholesale role as enabled on front end and Store API requests so they appear in the checkout block even when disabled globally.
  */
 class WWPP_Wholesale_Role_Payment_Gateway {
 
@@ -128,6 +129,40 @@ class WWPP_Wholesale_Role_Payment_Gateway {
         }
 
         return $payment_gateway_surcharge;
+    }
+
+    /**
+     * Determine whether the current customer has any payment gateway surcharge mapping configured.
+     *
+     * Used to gate the order pay page surcharge script so it only loads for customers who actually
+     * use the feature (issue #1756).
+     *
+     * @since 2.1.0
+     * @access private
+     *
+     * @return bool True when at least one surcharge mapping applies to the current user's wholesale role.
+     */
+    private function current_user_has_payment_gateway_surcharge() {
+
+        $user_wholesale_role = $this->_wwpp_wholesale_roles->getUserWholesaleRole();
+
+        if ( empty( $user_wholesale_role ) ) {
+            return false;
+        }
+
+        $payment_gateway_surcharge = $this->get_payment_gateway_surcharge();
+
+        if ( empty( $payment_gateway_surcharge ) ) {
+            return false;
+        }
+
+        foreach ( $payment_gateway_surcharge as $mapping ) {
+            if ( isset( $mapping['wholesale_role'] ) && $mapping['wholesale_role'] === $user_wholesale_role[0] ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -927,6 +962,95 @@ class WWPP_Wholesale_Role_Payment_Gateway {
     }
 
     /**
+     * Treat payment gateways mapped to the current user's wholesale role as enabled for the current request.
+     *
+     * The classic checkout re-enables mapped gateways through the `woocommerce_available_payment_gateways`
+     * filter, but the WooCommerce cart and checkout blocks build their client side payment method list from
+     * each gateway's settings option (`woocommerce_{gateway_id}_settings`), which WooCommerce Blocks reads
+     * when it initializes its payment method registry on `init` priority 5. A gateway disabled globally in
+     * WooCommerce > Settings > Payments therefore never gets its checkout block payment method registered,
+     * even when it is mapped to the current user's wholesale role.
+     *
+     * This method runs on `init` priority 4, before the payment method registry reads the settings, and
+     * filters the settings option of each mapped gateway so it is treated as enabled in memory for the
+     * current front end or Store API request only. Every admin context is excluded, including
+     * admin-AJAX: is_admin() is true for both wp-admin page loads and admin-ajax.php requests, so bailing
+     * on is_admin() alone keeps WooCommerce > Settings > Payments showing the real enabled state and
+     * prevents the admin-AJAX gateway enable/disable toggle from reading the forced enabled value. The
+     * front end checkout paths this filter targets run with is_admin() false (the classic checkout
+     * wc-ajax endpoint runs on template_redirect and the checkout block reads settings over the Store
+     * API), so they are unaffected. The stored option is never modified.
+     *
+     * The only gate beyond the admin screen exclusion is that the current user must have a wholesale role
+     * with mapped payment gateways (get_wholesale_user_payment_gateways() returns a non empty list). Guests
+     * and retail users bail out because that list is empty. A user with the manage_options capability is not
+     * excluded on the front end: a shop owner who is also a wholesale customer therefore still sees their
+     * mapped gateways on the front end checkout block, while their admin screens stay untouched via the
+     * is_admin() guard above.
+     *
+     * The filter is not restricted to a specific checkout page: WooCommerce Blocks snapshots each
+     * gateway's settings when it initializes its payment method registry on `init` priority 5, which is
+     * before the main query has run and before WordPress knows which page (or Store API route) is being
+     * served, so the checkout page cannot be reliably detected this early. The checkout block may also be
+     * placed on any page, not just the WooCommerce checkout page. The filter therefore applies to every
+     * non-admin front end and Store API request for a wholesale user with mapped gateways, mirroring the
+     * unconditional front end behaviour of the classic `woocommerce_available_payment_gateways` filter
+     * (filter_available_payment_gateways()), which already replaces the available gateway list with the
+     * mapped gateways for such users regardless of page.
+     *
+     * @since 2.1.1
+     * @access public
+     *
+     * @return void
+     */
+    public function maybe_enable_mapped_payment_gateways() {
+
+        // Leave every admin context untouched, including admin-AJAX, so payment gateway settings show
+        // their real enabled state. is_admin() is true for wp-admin page loads and for admin-ajax.php
+        // requests; it is false for the front end checkout paths this filter targets (the classic
+        // checkout wc-ajax endpoint runs on template_redirect and the checkout block reads settings over
+        // the Store API), so bailing on is_admin() alone keeps those paths working while excluding the
+        // admin-AJAX gateway enable/disable toggle that would otherwise misread the forced enabled state.
+        if ( is_admin() ) {
+            return;
+        }
+
+        // Returns an empty array for guests and non wholesale users, so they bail out here.
+        $user_payment_gateways = $this->get_wholesale_user_payment_gateways();
+
+        if ( empty( $user_payment_gateways ) ) {
+            return;
+        }
+
+        foreach ( $user_payment_gateways as $gateway_id ) {
+            add_filter( 'option_woocommerce_' . $gateway_id . '_settings', array( $this, 'enable_payment_gateway_setting' ) );
+        }
+    }
+
+    /**
+     * Force the enabled flag of a payment gateway settings option value to yes.
+     *
+     * Only hooked for gateways mapped to the current user's wholesale role, so the WooCommerce
+     * checkout block treats them as active for the current request. The stored option itself is
+     * never modified.
+     *
+     * @since 2.1.1
+     * @access public
+     *
+     * @param array $settings The payment gateway settings option value.
+     *
+     * @return array The payment gateway settings with the enabled flag forced to yes.
+     */
+    public function enable_payment_gateway_setting( $settings ) {
+
+        if ( is_array( $settings ) ) {
+            $settings['enabled'] = 'yes';
+        }
+
+        return $settings;
+    }
+
+    /**
      * Reset selected payment method on checkout block
      *
      * @since 2.0.0
@@ -1009,6 +1133,7 @@ class WWPP_Wholesale_Role_Payment_Gateway {
      *
      * @since 2.0.3
      * @since 2.0.9 Require order ownership verification (logged-in customer match or guest order_key match) before applying surcharges.
+     * @since 2.1.0 Return the recalculated order totals markup so the client can update them inline instead of reloading the page (issue #1756).
      * @access public
      */
     public function update_order_pay_payment_method() {
@@ -1056,13 +1181,58 @@ class WWPP_Wholesale_Role_Payment_Gateway {
         // Apply surcharges based on the selected payment method.
         $this->apply_payment_gateway_surcharge_on_order_pay();
 
-        wp_send_json_success();
+        // Re-fetch the order so the totals reflect the surcharge that was just applied,
+        // then return the rendered totals markup so the client can update them inline
+        // without reloading the page (issue #1756).
+        $order = wc_get_order( $order_id );
+
+        wp_send_json_success(
+            array(
+                'totals_html' => $order ? $this->get_order_pay_totals_html( $order ) : '',
+            )
+        );
+    }
+
+    /**
+     * Render the order totals rows (table footer) markup for the order pay page.
+     *
+     * Mirrors the totals section of WooCommerce's `checkout/form-pay.php` template so the
+     * markup can be swapped in via AJAX when the payment method changes, replacing the
+     * previous full-page reload behaviour (issue #1756).
+     *
+     * @since 2.1.0
+     * @access private
+     *
+     * @param WC_Order $order Order object.
+     * @return string Rendered table rows for the order totals, or an empty string when there are no totals.
+     */
+    private function get_order_pay_totals_html( $order ) {
+
+        $totals = $order->get_order_item_totals();
+
+        if ( empty( $totals ) ) {
+            return '';
+        }
+
+        ob_start();
+
+        foreach ( $totals as $total ) {
+            ?>
+            <tr>
+                <th scope="row" colspan="2"><?php echo wp_kses_post( $total['label'] ); ?></th>
+                <td class="product-total"><?php echo wp_kses_post( $total['value'] ); ?></td>
+            </tr>
+            <?php
+        }
+
+        return ob_get_clean();
     }
 
     /**
      * Enqueue order pay page scripts.
      *
      * @since 2.0.3
+     * @since 2.1.0 Only enqueue when the current customer has payment gateway surcharge mappings configured (issue #1756).
      * @access public
      */
     public function enqueue_order_pay_scripts() {
@@ -1073,14 +1243,18 @@ class WWPP_Wholesale_Role_Payment_Gateway {
             $order_id = absint( $wp->query_vars['order-pay'] );
             $order    = wc_get_order( $order_id );
 
-            if ( $order ) {
+            // Only load the surcharge script when the current customer actually has surcharge
+            // mappings. This avoids unnecessary side effects — and the historical reload loop
+            // with 3rd party gateways (issue #1756) — for everyone who does not use the feature.
+            if ( $order && $this->current_user_has_payment_gateway_surcharge() ) {
                 wp_enqueue_script(
                     'wwpp-order-pay-page',
                     WWPP_JS_URL . 'app/wwpp-order-pay-page.js',
-                    array( 'jquery' ),
+                    array( 'jquery', 'wp-i18n' ),
                     $this->_wwpp_current_version,
                     true
                 );
+                wp_set_script_translations( 'wwpp-order-pay-page', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp-order-pay-page',
@@ -1123,6 +1297,7 @@ class WWPP_Wholesale_Role_Payment_Gateway {
      * Execute model.
      *
      * @since  1.14.0
+     * @since  2.1.1 Treat wholesale mapped payment gateways as enabled before WooCommerce Blocks reads gateway settings on init priority 5, so mapped gateways appear in the checkout block.
      * @access public
      */
     public function run() {
@@ -1131,6 +1306,10 @@ class WWPP_Wholesale_Role_Payment_Gateway {
         add_filter( 'woocommerce_cart_totals_fee_html', array( $this, 'apply_taxable_notice_on_surcharge' ), 10, 2 );
         add_filter( 'woocommerce_available_payment_gateways', array( $this, 'filter_available_payment_gateways' ), 100, 1 );
         add_action( 'woocommerce_payment_token_set_default', array( $this, 'undefault_payment_token' ), 10, 2 );
+
+        // Priority 4 so the gateway settings option filters are in place before WooCommerce Blocks
+        // initializes its payment method registry on init priority 5.
+        add_action( 'init', array( $this, 'maybe_enable_mapped_payment_gateways' ), 4 );
 
         add_action( 'init', array( $this, 'register_ajax_handler' ) );
 
@@ -1357,13 +1536,16 @@ class WWPP_Wholesale_Role_Payment_Gateway {
      * Apply payment gateway surcharge on order pay page (for AJAX requests).
      *
      * @since 2.0.3
+     * @since 2.1.0 Allow execution during the order-pay AJAX update. Previously the `is_wc_endpoint_url( 'order-pay' )` guard always failed in the admin-ajax context (its only caller), so the surcharge was never recalculated on payment method change — the result only appeared correct because the page was fully reloaded (issue #1756).
      * @access public
      */
     public function apply_payment_gateway_surcharge_on_order_pay() {
         global $wp;
 
-        // Only apply on order pay page or AJAX requests.
-        if ( ! is_wc_endpoint_url( 'order-pay' ) ) {
+        // Run on the order pay page itself or during the order-pay AJAX update. This method is only
+        // ever called from the nonce- and ownership-verified update_order_pay_payment_method() handler,
+        // so allowing the AJAX context here is safe.
+        if ( ! is_wc_endpoint_url( 'order-pay' ) && ! wp_doing_ajax() ) {
             return;
         }
 

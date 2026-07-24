@@ -1,0 +1,1 @@
+System.register(["./ExclamationCircleFilled-legacy.BI-ax_ZG.js"],function(e,t){var n;return{setters:[function(e){n=e.G}],execute:function(){e("t",(e,t,i)=>{n(e,`[ant-design-vue: ${t}] ${i}`)})}}});

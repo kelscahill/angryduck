@@ -490,40 +490,54 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
          *
          * @since 1.9.0
          * @since 1.13.0 Refactor codebase and move to its own model.
+         * @since 2.1.2 Load and save the product once regardless of registered role count; delete empty meta instead of writing empty rows.
          * @access public
          *
          * @param int $post_id Product id.
          */
         public function save_variable_product_level_wholesale_min_order_qty_custom_field( $post_id ) {
             // phpcs:disable WordPress.Security.NonceVerification.Missing
+            // Load the product once and save once, regardless of how many wholesale roles are registered.
+            $product = wc_get_product( $post_id );
+            $dirty   = false;
+
             foreach ( $this->_registered_wholesale_roles as $roleKey => $role ) {
 
-                if ( isset( $_POST[ $roleKey . '_variable_level_wholesale_minimum_order_quantity' ] ) ) {
-                    // Get product object.
-                    $product = wc_get_product( $post_id );
+                if ( ! isset( $_POST[ $roleKey . '_variable_level_wholesale_minimum_order_quantity' ] ) ) {
+                    continue;
+                }
 
-                    $variable_level_moq = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_minimum_order_quantity' ] ) ); //phpcs:ignore
+                $variable_level_moq = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_minimum_order_quantity' ] ) ); //phpcs:ignore
 
-                    if ( ! empty( $variable_level_moq ) ) {
+                if ( ! empty( $variable_level_moq ) ) {
 
-                        if ( ! is_numeric( $variable_level_moq ) ) {
-                            $variable_level_moq = '';
-                        } elseif ( $variable_level_moq < 0 ) {
-                            $variable_level_moq = 0;
-                        } else {
-                            $variable_level_moq = wc_format_decimal( $variable_level_moq );
-                        }
-
-                        $variable_level_moq = round( $variable_level_moq );
-
+                    if ( ! is_numeric( $variable_level_moq ) ) {
+                        $variable_level_moq = '';
+                    } elseif ( $variable_level_moq < 0 ) {
+                        $variable_level_moq = 0;
+                    } else {
+                        $variable_level_moq = wc_format_decimal( $variable_level_moq );
                     }
 
-                    $variable_level_moq = wc_clean( apply_filters( 'wwpp_before_save_variable_level_wholesale_minimum_order_quantity', $variable_level_moq, $roleKey, $post_id ) );
-                    $product->update_meta_data( $roleKey . '_variable_level_wholesale_minimum_order_quantity', $variable_level_moq );
+                    $variable_level_moq = round( $variable_level_moq );
 
-                    // Save the data.
-                    $product->save();
                 }
+
+                $variable_level_moq = wc_clean( apply_filters( 'wwpp_before_save_variable_level_wholesale_minimum_order_quantity', $variable_level_moq, $roleKey, $post_id ) );
+
+                // Only persist a row when a value is supplied; clear the meta otherwise to avoid empty-row bloat.
+                if ( '' === $variable_level_moq || null === $variable_level_moq ) {
+                    $product->delete_meta_data( $roleKey . '_variable_level_wholesale_minimum_order_quantity' );
+                } else {
+                    $product->update_meta_data( $roleKey . '_variable_level_wholesale_minimum_order_quantity', $variable_level_moq );
+                }
+
+                $dirty = true;
+            }
+
+            // Save the data once.
+            if ( $dirty ) {
+                $product->save();
             }
             // phpcs:enable WordPress.Security.NonceVerification.Missing
         }
@@ -532,40 +546,54 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
          * Save variable product level wholesale order quantity step custom field.
          *
          * @since 1.16.0
+         * @since 2.1.2 Load and save the product once regardless of registered role count; delete empty meta instead of writing empty rows.
          * @access public
          *
          * @param int $post_id Product id.
          */
         public function save_variable_product_level_wholesale_order_qty_step_custom_field( $post_id ) {
             // phpcs:disable WordPress.Security.NonceVerification.Missing
+            // Load the product once and save once, regardless of how many wholesale roles are registered.
+            $product = wc_get_product( $post_id );
+            $dirty   = false;
+
             foreach ( $this->_registered_wholesale_roles as $roleKey => $role ) {
 
-                if ( isset( $_POST[ $roleKey . '_variable_level_wholesale_order_quantity_step' ] ) ) {
-                    // Get product object.
-                    $product = wc_get_product( $post_id );
+                if ( ! isset( $_POST[ $roleKey . '_variable_level_wholesale_order_quantity_step' ] ) ) {
+                    continue;
+                }
 
-                    $variable_level_oqs = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_order_quantity_step' ] ) ); //phpcs:ignore
+                $variable_level_oqs = trim( esc_attr( $_POST[ $roleKey . '_variable_level_wholesale_order_quantity_step' ] ) ); //phpcs:ignore
 
-                    if ( ! empty( $variable_level_oqs ) ) {
+                if ( ! empty( $variable_level_oqs ) ) {
 
-                        if ( ! is_numeric( $variable_level_oqs ) ) {
-                            $variable_level_oqs = '';
-                        } elseif ( $variable_level_oqs < 0 ) {
-                            $variable_level_oqs = 0;
-                        } else {
-                            $variable_level_oqs = wc_format_decimal( $variable_level_oqs );
-                        }
-
-                        $variable_level_oqs = round( $variable_level_oqs );
-
+                    if ( ! is_numeric( $variable_level_oqs ) ) {
+                        $variable_level_oqs = '';
+                    } elseif ( $variable_level_oqs < 0 ) {
+                        $variable_level_oqs = 0;
+                    } else {
+                        $variable_level_oqs = wc_format_decimal( $variable_level_oqs );
                     }
 
-                    $variable_level_oqs = wc_clean( apply_filters( 'wwpp_before_save_variable_level_wholesale_order_quantity_step', $variable_level_oqs, $roleKey, $post_id ) );
-                    $product->update_meta_data( $roleKey . '_variable_level_wholesale_order_quantity_step', $variable_level_oqs );
+                    $variable_level_oqs = round( $variable_level_oqs );
 
-                    // Save the data.
-                    $product->save();
                 }
+
+                $variable_level_oqs = wc_clean( apply_filters( 'wwpp_before_save_variable_level_wholesale_order_quantity_step', $variable_level_oqs, $roleKey, $post_id ) );
+
+                // Only persist a row when a value is supplied; clear the meta otherwise to avoid empty-row bloat.
+                if ( '' === $variable_level_oqs || null === $variable_level_oqs ) {
+                    $product->delete_meta_data( $roleKey . '_variable_level_wholesale_order_quantity_step' );
+                } else {
+                    $product->update_meta_data( $roleKey . '_variable_level_wholesale_order_quantity_step', $variable_level_oqs );
+                }
+
+                $dirty = true;
+            }
+
+            // Save the data once.
+            if ( $dirty ) {
+                $product->save();
             }
             // phpcs:enable WordPress.Security.NonceVerification.Missing
         }
@@ -728,6 +756,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
          * @since 1.2.0
          * @since 1.8.0 Add support for custom variations bulk actions.
          * @since 1.13.0 Refactor codebase and move to its own model.
+         * @since 2.1.2 Invert to variation-outer/role-inner and save once per variation; delete empty meta instead of writing empty rows.
          *
          * @param int        $post_id         Variable product id.
          * @param array      $wholesale_roles Array of all wholesale roles in which this minimum order quantity requirement is to be saved.
@@ -745,49 +774,63 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                 $variable_post_id = $variation_ids ? $variation_ids : $_POST['variable_post_id']; //phpcs:ignore
                 $max_loop         = max( array_keys( $variable_post_id ) );
 
-                foreach ( $wholesale_roles as $role_key => $role ) {
+                // Loop variations on the outside so each variation object is loaded and saved only once,
+                // regardless of how many wholesale roles are registered.
+                for ( $i = 0; $i <= $max_loop; $i++ ) {
 
-                    if ( ! $wholesale_moqs && ! isset( $_POST[ $role_key . '_wholesale_minimum_order_quantity' ] ) ) {
+                    if ( ! isset( $variable_post_id[ $i ] ) ) {
                         continue;
                     }
 
-                    $wholesale_moq = $wholesale_moqs ? $wholesale_moqs : $_POST[ $role_key . '_wholesale_minimum_order_quantity' ]; //phpcs:ignore
+                    $variation_id = (int) $variable_post_id[ $i ];
 
-                    for ( $i = 0; $i <= $max_loop; $i++ ) {
+                    // Get variant product object.
+                    $variation_product = wc_get_product( $variation_id );
+                    $variation_dirty   = false;
 
-                        if ( ! isset( $variable_post_id[ $i ] ) ) {
+                    foreach ( $wholesale_roles as $role_key => $role ) {
+
+                        if ( ! $wholesale_moqs && ! isset( $_POST[ $role_key . '_wholesale_minimum_order_quantity' ] ) ) {
                             continue;
                         }
 
-                        $variation_id = (int) $variable_post_id[ $i ];
+                        $wholesale_moq = $wholesale_moqs ? $wholesale_moqs : $_POST[ $role_key . '_wholesale_minimum_order_quantity' ]; //phpcs:ignore
 
-                        // Get variant product object.
-                        $variation_product = wc_get_product( $variation_id );
+                        if ( ! isset( $wholesale_moq[ $i ] ) ) {
+                            continue;
+                        }
 
-                        if ( isset( $wholesale_moq[ $i ] ) ) {
+                        $value = trim( esc_attr( $wholesale_moq[ $i ] ) );
 
-                            $wholesale_moq[ $i ] = trim( esc_attr( $wholesale_moq[ $i ] ) );
+                        if ( ! empty( $value ) ) {
 
-                            if ( ! empty( $wholesale_moq[ $i ] ) ) {
-
-                                if ( ! is_numeric( $wholesale_moq[ $i ] ) ) {
-                                    $wholesale_moq[ $i ] = '';
-                                } elseif ( $wholesale_moq[ $i ] < 0 ) {
-                                    $wholesale_moq[ $i ] = 0;
-                                } else {
-                                    $wholesale_moq[ $i ] = wc_format_decimal( $wholesale_moq[ $i ] );
-                                }
-
-                                $wholesale_moq[ $i ] = round( $wholesale_moq[ $i ] );
-
+                            if ( ! is_numeric( $value ) ) {
+                                $value = '';
+                            } elseif ( $value < 0 ) {
+                                $value = 0;
+                            } else {
+                                $value = wc_format_decimal( $value );
                             }
 
-                            $wholesale_moq[ $i ] = wc_clean( apply_filters( 'wwpp_filter_before_save_wholesale_minimum_order_quantity', $wholesale_moq[ $i ], $role_key, $variation_id, 'variation' ) );
-                            $variation_product->update_meta_data( $role_key . '_wholesale_minimum_order_quantity', $wholesale_moq[ $i ] );
+                            $value = round( $value );
 
-                            // Save the data.
-                            $variation_product->save();
                         }
+
+                        $value = wc_clean( apply_filters( 'wwpp_filter_before_save_wholesale_minimum_order_quantity', $value, $role_key, $variation_id, 'variation' ) );
+
+                        // Only persist a row when a value is supplied; clear the meta otherwise to avoid empty-row bloat.
+                        if ( '' === $value || null === $value ) {
+                            $variation_product->delete_meta_data( $role_key . '_wholesale_minimum_order_quantity' );
+                        } else {
+                            $variation_product->update_meta_data( $role_key . '_wholesale_minimum_order_quantity', $value );
+                        }
+
+                        $variation_dirty = true;
+                    }
+
+                    // Save the data once per variation.
+                    if ( $variation_dirty ) {
+                        $variation_product->save();
                     }
                 }
             }
@@ -798,6 +841,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
          * Save order quantity step custom field value for variations of a variable product on product edit page.
          *
          * @since 1.16.0
+         * @since 2.1.2 Invert to variation-outer/role-inner and save once per variation; delete empty meta instead of writing empty rows.
          * @access public
          *
          * @param int        $post_id         Variable product id.
@@ -816,48 +860,63 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                 $variable_post_id = $variation_ids ? $variation_ids : $_POST['variable_post_id']; //phpcs:ignore
                 $max_loop         = max( array_keys( $variable_post_id ) );
 
-                foreach ( $wholesale_roles as $role_key => $role ) {
-                    if ( ! $wholesale_oqss && ! isset( $_POST[ $role_key . '_wholesale_order_quantity_step' ] ) ) {
+                // Loop variations on the outside so each variation object is loaded and saved only once,
+                // regardless of how many wholesale roles are registered.
+                for ( $i = 0; $i <= $max_loop; $i++ ) {
+
+                    if ( ! isset( $variable_post_id[ $i ] ) ) {
                         continue;
                     }
 
-                    $wholesale_oqs = $wholesale_oqss ? $wholesale_oqss : $_POST[ $role_key . '_wholesale_order_quantity_step' ]; //phpcs:ignore
+                    $variation_id = (int) $variable_post_id[ $i ];
 
-                    for ( $i = 0; $i <= $max_loop; $i++ ) {
+                    // Get variant product object.
+                    $variation_product = wc_get_product( $variation_id );
+                    $variation_dirty   = false;
 
-                        if ( ! isset( $variable_post_id[ $i ] ) ) {
+                    foreach ( $wholesale_roles as $role_key => $role ) {
+
+                        if ( ! $wholesale_oqss && ! isset( $_POST[ $role_key . '_wholesale_order_quantity_step' ] ) ) {
                             continue;
                         }
 
-                        $variation_id = (int) $variable_post_id[ $i ];
+                        $wholesale_oqs = $wholesale_oqss ? $wholesale_oqss : $_POST[ $role_key . '_wholesale_order_quantity_step' ]; //phpcs:ignore
 
-                        // Get variant product object.
-                        $variation_product = wc_get_product( $variation_id );
+                        if ( ! isset( $wholesale_oqs[ $i ] ) ) {
+                            continue;
+                        }
 
-                        if ( isset( $wholesale_oqs[ $i ] ) ) {
+                        $value = trim( esc_attr( $wholesale_oqs[ $i ] ) );
 
-                            $wholesale_oqs[ $i ] = trim( esc_attr( $wholesale_oqs[ $i ] ) );
+                        if ( ! empty( $value ) ) {
 
-                            if ( ! empty( $wholesale_oqs[ $i ] ) ) {
-
-                                if ( ! is_numeric( $wholesale_oqs[ $i ] ) ) {
-                                    $wholesale_oqs[ $i ] = '';
-                                } elseif ( $wholesale_oqs[ $i ] < 0 ) {
-                                    $wholesale_oqs[ $i ] = 0;
-                                } else {
-                                    $wholesale_oqs[ $i ] = wc_format_decimal( $wholesale_oqs[ $i ] );
-                                }
-
-                                $wholesale_oqs[ $i ] = round( $wholesale_oqs[ $i ] );
-
+                            if ( ! is_numeric( $value ) ) {
+                                $value = '';
+                            } elseif ( $value < 0 ) {
+                                $value = 0;
+                            } else {
+                                $value = wc_format_decimal( $value );
                             }
 
-                            $wholesale_oqs[ $i ] = wc_clean( apply_filters( 'wwpp_filter_before_save_wholesale_order_quantity_step', $wholesale_oqs[ $i ], $role_key, $variation_id, 'variation' ) );
-                            $variation_product->update_meta_data( $role_key . '_wholesale_order_quantity_step', $wholesale_oqs[ $i ] );
+                            $value = round( $value );
 
-                            // Save the data.
-                            $variation_product->save();
                         }
+
+                        $value = wc_clean( apply_filters( 'wwpp_filter_before_save_wholesale_order_quantity_step', $value, $role_key, $variation_id, 'variation' ) );
+
+                        // Only persist a row when a value is supplied; clear the meta otherwise to avoid empty-row bloat.
+                        if ( '' === $value || null === $value ) {
+                            $variation_product->delete_meta_data( $role_key . '_wholesale_order_quantity_step' );
+                        } else {
+                            $variation_product->update_meta_data( $role_key . '_wholesale_order_quantity_step', $value );
+                        }
+
+                        $variation_dirty = true;
+                    }
+
+                    // Save the data once per variation.
+                    if ( $variation_dirty ) {
+                        $variation_product->save();
                     }
                 }
             }
@@ -1201,9 +1260,10 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
         }
 
         /**
-         * Save wholesale sale prices custom field value for simple products on product edit page.
+         * Save wholesale sale prices custom field value for variations of a variable product on product edit page.
          *
          * @since 1.30.1
+         * @since 2.1.2 Load the variation once, accumulate all role meta, and save once; derive the have-sale-price helper meta a single time.
          *
          * @param int $variation_id The product id.
          * @param int $i            Loop position.
@@ -1213,6 +1273,9 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
             $registered_wholesale_roles = $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles();
             $decimal_sep                = wc_get_price_decimal_separator();
             $thousand_sep               = wc_get_price_thousand_separator();
+
+            // Load the variation once and accumulate every role's meta on the same object so we only save once.
+            $variation_product = wc_get_product( $variation_id );
 
             if ( WWP_ACS_Integration_Helper::aelia_currency_switcher_active() ) {
                 $wacs_enabled_currencies = WWP_ACS_Integration_Helper::enabled_currencies(); // Get all active currencies.
@@ -1235,36 +1298,43 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
 
                         }
 
-                        $this->_save_wholesale_sale_price_fields( $variation_id, $i, $role_key, $meta_field_key, $thousand_sep, $decimal_sep, true, $is_base_currency, $currency_code );
+                        $this->_save_wholesale_sale_price_fields( $variation_product, $i, $role_key, $meta_field_key, $thousand_sep, $decimal_sep, true, $is_base_currency, $currency_code );
 
                     }
                 }
             } else {
                 foreach ( $registered_wholesale_roles as $role_key => $role ) {
-                    $this->_save_wholesale_sale_price_fields( $variation_id, $i, $role_key, $role_key, $thousand_sep, $decimal_sep );
+                    $this->_save_wholesale_sale_price_fields( $variation_product, $i, $role_key, $role_key, $thousand_sep, $decimal_sep );
                 }
             }
+
+            // Persist all accumulated role meta in a single save.
+            $variation_product->save();
+
+            // Derive the "have wholesale sale price" helper meta once from the persisted values.
+            WWPP_Admin_Custom_Fields_Product::maybe_set_have_wholesale_sale_price_meta( $variation_id, $this->_registered_wholesale_roles );
         }
 
         /**
          * Save product wholesale sale price.
          *
          * @since 1.30.1
+         * @since 2.1.2 Accept the already-loaded variation product object so the caller can batch all roles into a single save.
+         *              Delete the sale price date metas when cleared instead of writing empty rows.
          *
-         * @param int     $variation_id                   Product variation id.
-         * @param int     $i                              Loop.
-         * @param string  $role_key                       Wholesale role key.
-         * @param string  $meta_field_key                 Meta field key.
-         * @param string  $thousand_sep                   Thousand separator.
-         * @param string  $decimal_sep                    Decimal separator.
-         * @param boolean $aelia_currency_switcher_active Flag that detemines if aelia currency switcher is active or not.
-         * @param boolean $is_base_currency               Flag that determines if this is a base currency.
-         * @param mixed   $currency_code                  String of current currency code or null.
+         * @param WC_Product $variation_product              Variation product object (loaded and saved by the caller).
+         * @param int        $i                              Loop.
+         * @param string     $role_key                       Wholesale role key.
+         * @param string     $meta_field_key                 Meta field key.
+         * @param string     $thousand_sep                   Thousand separator.
+         * @param string     $decimal_sep                    Decimal separator.
+         * @param boolean    $aelia_currency_switcher_active Flag that detemines if aelia currency switcher is active or not.
+         * @param boolean    $is_base_currency               Flag that determines if this is a base currency.
+         * @param mixed      $currency_code                  String of current currency code or null.
          */
-        private function _save_wholesale_sale_price_fields( $variation_id, $i, $role_key, $meta_field_key, $thousand_sep, $decimal_sep, $aelia_currency_switcher_active = false, $is_base_currency = false, $currency_code = null ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+        private function _save_wholesale_sale_price_fields( $variation_product, $i, $role_key, $meta_field_key, $thousand_sep, $decimal_sep, $aelia_currency_switcher_active = false, $is_base_currency = false, $currency_code = null ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 
-            // Get variation product object.
-            $variation_product = wc_get_product( $variation_id );
+            $variation_id = $variation_product->get_id();
 
             // phpcs:disable WordPress.Security.NonceVerification.Missing
             $wholesale_discount_type = isset( $_POST[ "{$meta_field_key}_wholesale_discount_type" ][ $i ] ) ? trim( esc_attr( $_POST[ "{$meta_field_key}_wholesale_discount_type" ][ $i ] ) ) : ''; //phpcs:ignore
@@ -1328,7 +1398,11 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                 }
             }
 
-            $variation_product->update_meta_data( $meta_field_key . '_wholesale_sale_price_dates_from', $date_on_sale_from );
+            if ( '' !== $date_on_sale_from ) {
+                $variation_product->update_meta_data( $meta_field_key . '_wholesale_sale_price_dates_from', $date_on_sale_from );
+            } else {
+                $variation_product->delete_meta_data( $meta_field_key . '_wholesale_sale_price_dates_from' );
+            }
 
             // Force date to to the end of the day.
             if ( isset( $_POST[ "{$meta_field_key}_wholesale_sale_price_dates_to" ][ $i ] ) ) {
@@ -1339,9 +1413,11 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                 }
             }
 
-            $variation_product->update_meta_data( $meta_field_key . '_wholesale_sale_price_dates_to', $date_on_sale_to );
-
-            WWPP_Admin_Custom_Fields_Product::maybe_set_have_wholesale_sale_price_meta( $variation_id, $this->_registered_wholesale_roles );
+            if ( '' !== $date_on_sale_to ) {
+                $variation_product->update_meta_data( $meta_field_key . '_wholesale_sale_price_dates_to', $date_on_sale_to );
+            } else {
+                $variation_product->delete_meta_data( $meta_field_key . '_wholesale_sale_price_dates_to' );
+            }
             // phpcs:enable WordPress.Security.NonceVerification.Missing
 
             // Check if the product type is subscription.
@@ -1364,9 +1440,6 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Variable_Product' ) ) {
                     }
                 }
             }
-
-            // Save the data.
-            $variation_product->save();
         }
 
         /**

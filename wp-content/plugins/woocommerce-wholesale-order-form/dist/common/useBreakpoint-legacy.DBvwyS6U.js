@@ -1,1 +1,0 @@
-System.register(["./hooks-legacy.BRKQHcMP.js","./responsiveObserve-legacy.XVfEk8uT.js"],function(e,s){"use strict";var u,t,n,r;return{setters:[e=>{u=e.C,t=e.s,n=e.K},e=>{r=e.u}],execute:function(){e("u",function(){const e=t({});let s=null;const c=r();return u(()=>{s=c.value.subscribe(s=>{e.value=s})}),n(()=>{c.value.unsubscribe(s)}),e})}}});

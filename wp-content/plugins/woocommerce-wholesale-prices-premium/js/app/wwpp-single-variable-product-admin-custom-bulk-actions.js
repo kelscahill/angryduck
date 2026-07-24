@@ -7,7 +7,7 @@ jQuery( document ).ready( function( $ ) {
     
         function wholesale_role_wholesale_sale_prices( event , data ) {
             
-            var value = window.prompt( wwpp_custom_bulk_actions_params.i18n_wholesale_sale_price_prompt_message );
+            var value = window.prompt( wp.i18n.__( 'Enter a value (leave blank to remove wholesale sale price)', 'woocommerce-wholesale-prices-premium' ) );
     
             if ( value === null || value === undefined ) {
                 return;
@@ -22,7 +22,7 @@ jQuery( document ).ready( function( $ ) {
     
         function wholesale_role_wholesale_minimum_order_quantity( event , data ) {
     
-            var value = window.prompt( wwpp_custom_bulk_actions_params.i18n_moq_prompt_message );
+            var value = window.prompt( wp.i18n.__( 'Enter a value (leave blank to remove min order quantity)', 'woocommerce-wholesale-prices-premium' ) );
     
             if ( value === null || value === undefined ) {
                 return;
@@ -37,7 +37,7 @@ jQuery( document ).ready( function( $ ) {
     
         function wholesale_role_wholesale_order_quantity_step( event , data ) {
     
-            var value = window.prompt( wwpp_custom_bulk_actions_params.i18n_oqs_prompt_message );
+            var value = window.prompt( wp.i18n.__( 'Enter a value (leave blank to remove order quantity step)', 'woocommerce-wholesale-prices-premium' ) );
     
             if ( value === null || value === undefined ) {
                 return;

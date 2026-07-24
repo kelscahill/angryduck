@@ -9,11 +9,11 @@ jQuery( document ).ready( function ( $ ) {
      * @since 1.30.1
      */ 
      Object.assign(woocommerce_admin,{
-        'i18n_wholesale_price_is_empty_error'                 : $params.i18n_wholesale_price_is_empty_error,
-        'i18n_wholesale_discount_is_empty_error'              : $params.i18n_wholesale_discount_is_empty_error,
-        'i18n_wholesale_sale_less_than_wholesale_price_error' : $params.i18n_wholesale_sale_less_than_wholesale_price_error,
-        'i18n_sale_discount_greater_than_100_percent_error'   : $params.i18n_sale_discount_greater_than_100_percent_error,
-        'i18n_sale_discount_less_than_0_percent_error'        : $params.i18n_sale_discount_less_than_0_percent_error
+        'i18n_wholesale_price_is_empty_error'                 : wp.i18n.__( 'The wholesale price value can not be empty.', 'woocommerce-wholesale-prices-premium' ),
+        'i18n_wholesale_discount_is_empty_error'              : wp.i18n.__( 'The wholesale discount value can not be empty.', 'woocommerce-wholesale-prices-premium' ),
+        'i18n_wholesale_sale_less_than_wholesale_price_error' : wp.i18n.__( 'Please enter in a value less than the wholesale price.', 'woocommerce-wholesale-prices-premium' ),
+        'i18n_sale_discount_greater_than_100_percent_error'   : wp.i18n.__( 'Please enter in a value not greater than 100 percent.', 'woocommerce-wholesale-prices-premium' ),
+        'i18n_sale_discount_less_than_0_percent_error'        : wp.i18n.__( 'Please enter in a value not less than 0 percent', 'woocommerce-wholesale-prices-premium' )
     });
 
     /**

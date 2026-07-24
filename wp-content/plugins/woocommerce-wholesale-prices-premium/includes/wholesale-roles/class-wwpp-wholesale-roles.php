@@ -57,6 +57,8 @@ class WWPP_Wholesale_Roles extends WWP_Wholesale_Roles {
      *
      * @since 1.0.0
      * @since 1.14.0 Refactor codebase and move it to its proper model.
+     * @since 2.1.1 Require the manage_woocommerce capability before exposing the role configuration over
+     *              AJAX so low-privilege authenticated users cannot enumerate the wholesale-role setup.
      * @access public
      *
      * @return array|void Array of registered wholesale roles.
@@ -65,6 +67,16 @@ class WWPP_Wholesale_Roles extends WWP_Wholesale_Roles {
         $all_registered_wholesale_roles = $this->getAllRegisteredWholesaleRoles();
 
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+
+            // This AJAX endpoint is only consumed by store-management screens; do not disclose the
+            // wholesale-role configuration to users who cannot manage the store.
+            if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                wp_send_json_error(
+                    array( 'message' => __( 'You are not allowed to perform this action.', 'woocommerce-wholesale-prices-premium' ) ),
+                    403
+                );
+            }
+
             @header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) ); // phpcs:ignore
             echo wp_json_encode( $all_registered_wholesale_roles );
             wp_die();

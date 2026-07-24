@@ -1,0 +1,1 @@
+import{En as a,Ln as m,Yt as t,mn as o,xn as e}from"../../../../../../../../../common/ExclamationCircleFilled.hVlCEKoI.js";import{t as n}from"../../../../../../../../../common/ElementAlignment.B_FfA3ws.js";t();var s=e({__name:"ProductCategoryStyles",setup:a=>(a,t)=>(m(),o(n))});export{s as default};

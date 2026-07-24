@@ -1,7 +1,7 @@
 jQuery(document).ready(function($) {
   $("#clear-var-prod-price-range-cache").click(function() {
     
-    if(confirm(wwpp_settings_cache_args.i18n_confirm_clear_cache)){
+    if(confirm(wp.i18n.__( 'Are you sure want to clear the cache?', 'woocommerce-wholesale-prices-premium' ))){
 
       var $this = $(this);
 
@@ -28,7 +28,7 @@ jQuery(document).ready(function($) {
         })
         .fail(function(jqxhr) {
           alert(
-            wwpp_settings_cache_args.i18n_fail_var_prod_price_range_clear_cache
+            wp.i18n.__( 'Failed to clear variable product price range cache', 'woocommerce-wholesale-prices-premium' )
           );
           console.log(jqxhr);
         })
@@ -45,7 +45,7 @@ jQuery(document).ready(function($) {
 
   $("#wwpp_clear_product_caching").click(function() {
 
-    if(confirm(wwpp_settings_cache_args.i18n_confirm_clear_cache)){
+    if(confirm(wp.i18n.__( 'Are you sure want to clear the cache?', 'woocommerce-wholesale-prices-premium' ))){
 
       var $this = $(this);
 
@@ -73,7 +73,7 @@ jQuery(document).ready(function($) {
         })
         .fail(function(jqxhr) {
           alert(
-            wwpp_settings_cache_args.i18n_fail_clear_product_transients_cache
+            wp.i18n.__( 'Failed to clear products transient cache', 'woocommerce-wholesale-prices-premium' )
           );
           console.log(jqxhr);
         })

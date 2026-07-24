@@ -165,14 +165,8 @@ class App {
             return; // Don't load the plugin if dependencies are missing.
         }
 
-        // Check WWP version after dependencies are confirmed.
-        $wwp_plugin_file = 'woocommerce-wholesale-prices/woocommerce-wholesale-prices.bootstrap.php';
-        $wwp_plugin_data = get_plugin_data(
-            WP_PLUGIN_DIR . "/$wwp_plugin_file",
-            false,
-            false
-        );
-
+        // Check WWP version after dependencies are confirmed. Reuse the plugin
+        // data already read above instead of reading the file from disk again.
         if ( version_compare( $wwp_plugin_data['Version'], '2.1.3', '<' ) ) {
             add_action( 'admin_notices', array( $this, 'show_wwp_version_notice' ) );
             return; // Don't load the plugin if WWP version is too old.
@@ -360,9 +354,31 @@ App::instance()->register_objects(
     array_merge(
         require_once WWOF_PLUGIN_DIR_PATH . 'bootstrap/rest-objects.php',
         require_once WWOF_PLUGIN_DIR_PATH . 'bootstrap/class-objects.php',
-        require_once WWOF_PLUGIN_DIR_PATH . 'bootstrap/integration-objects.php',
         require_once WWOF_PLUGIN_DIR_PATH . 'bootstrap/shortcode-objects.php'
     )
+);
+
+/***************************************************************************
+ * Register integration objects on setup_theme
+ ***************************************************************************
+ *
+ * Integration objects gate their own instantiation on whether the relevant
+ * third-party dependency is active (see bootstrap/integration-objects.php).
+ * Those checks rely on class_exists()/is_plugin_active(), which only return
+ * reliable results once every plugin has loaded. Requiring the file here, at
+ * plugin-include time, would run the checks before dependencies that load
+ * after WWOF (e.g. WP Rocket) are available and silently disable their
+ * integrations. Defer to `setup_theme` (priority 50, before App::run() at
+ * priority 100) where all plugins are guaranteed loaded. See #990.
+ */
+add_action(
+    'setup_theme',
+    static function () {
+        App::instance()->register_objects(
+            require WWOF_PLUGIN_DIR_PATH . 'bootstrap/integration-objects.php'
+        );
+    },
+    50
 );
 
 return App::instance();

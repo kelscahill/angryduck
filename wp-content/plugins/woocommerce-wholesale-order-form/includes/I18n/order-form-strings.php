@@ -105,10 +105,10 @@ __( 'Leave blank to display the full short description text.', 'woocommerce-whol
 // -----------------------------------------------------------------
 // Form Editor — settings / sidebar.
 // -----------------------------------------------------------------
-__( 'Allow Favourites', 'woocommerce-wholesale-order-form' );
+__( 'Allow Favorites', 'woocommerce-wholesale-order-form' );
 __( 'Allow searching by SKU', 'woocommerce-wholesale-order-form' );
 __( 'Allow searching by Tag', 'woocommerce-wholesale-order-form' );
-__( 'Allow users to add products to their favourites.', 'woocommerce-wholesale-order-form' );
+__( 'Allow users to add products to their favorites.', 'woocommerce-wholesale-order-form' );
 __( 'Categories', 'woocommerce-wholesale-order-form' );
 __( 'Default Category', 'woocommerce-wholesale-order-form' );
 __( 'Enable Add to Cart Notification', 'woocommerce-wholesale-order-form' );
@@ -135,7 +135,7 @@ __( 'Product Sorting', 'woocommerce-wholesale-order-form' );
 __( 'Product Sorting By', 'woocommerce-wholesale-order-form' );
 __( 'Products per page', 'woocommerce-wholesale-order-form' );
 __( 'SKU Search', 'woocommerce-wholesale-order-form' );
-__( 'Select Favourite Icon', 'woocommerce-wholesale-order-form' );
+__( 'Select Favorite Icon', 'woocommerce-wholesale-order-form' );
 __( 'Show Variations Individually', 'woocommerce-wholesale-order-form' );
 __( 'Show products that have zero inventory.', 'woocommerce-wholesale-order-form' );
 __( 'Show this specific products at the top of the list in the order form. Variations are excluded in the selection.', 'woocommerce-wholesale-order-form' );
@@ -179,7 +179,7 @@ __( 'Select User Role(s) to Allow Access', 'woocommerce-wholesale-order-form' );
 // -----------------------------------------------------------------
 __( 'Add', 'woocommerce-wholesale-order-form' );
 __( 'Add Selected to Cart', 'woocommerce-wholesale-order-form' );
-__( 'Add to Favourite', 'woocommerce-wholesale-order-form' );
+__( 'Add to Favorite', 'woocommerce-wholesale-order-form' );
 __( 'Add to cart', 'woocommerce-wholesale-order-form' );
 __( 'Adding products to cart...', 'woocommerce-wholesale-order-form' );
 __( 'Adding...', 'woocommerce-wholesale-order-form' );
@@ -188,8 +188,8 @@ __( 'Choose an option', 'woocommerce-wholesale-order-form' );
 __( 'Delete', 'woocommerce-wholesale-order-form' );
 __( 'Error', 'woocommerce-wholesale-order-form' );
 __( 'No records found!', 'woocommerce-wholesale-order-form' );
-__( 'Only show favourites', 'woocommerce-wholesale-order-form' );
-__( 'Only show products on users favourites list.', 'woocommerce-wholesale-order-form' );
+__( 'Only show favorites', 'woocommerce-wholesale-order-form' );
+__( 'Only show products on users favorites list.', 'woocommerce-wholesale-order-form' );
 __( 'Order Form Table', 'woocommerce-wholesale-order-form' );
 __( 'Remove from cart', 'woocommerce-wholesale-order-form' );
 __( 'Removing...', 'woocommerce-wholesale-order-form' );
@@ -217,7 +217,6 @@ __( 'URL of the login page. Uses default WordPress login URL if left blank.', 'w
 __( 'Weight', 'woocommerce-wholesale-order-form' );
 __( 'Wholesale Quantity Based Pricing Tables', 'woocommerce-wholesale-order-form' );
 __( 'Width', 'woocommerce-wholesale-order-form' );
-__( 'cm', 'woocommerce-wholesale-order-form' );
 
 // -----------------------------------------------------------------
 // Frontend — out-of-stock and inventory.
@@ -233,7 +232,7 @@ __( 'Default: %s', 'woocommerce-wholesale-order-form' );
 /* translators: %s: variation attribute name */
 __( 'Select %s', 'woocommerce-wholesale-order-form' );
 /* translators: %1$s: opening login link tag, %2$s: closing link tag */
-__( 'Please %1$slogin%2$s to view the form with your favourite products.', 'woocommerce-wholesale-order-form' );
+__( 'Please %1$slogin%2$s to view the form with your favorite products.', 'woocommerce-wholesale-order-form' );
 /* translators: %1$d: quantity, %2$d: total items */
 __( 'x %1$d = total %2$d item(s)', 'woocommerce-wholesale-order-form' );
 __( 'Pre-Text', 'woocommerce-wholesale-order-form' );
@@ -256,7 +255,7 @@ __( 'Cart Subtotal', 'woocommerce-wholesale-order-form' );
 __( 'Category Filter', 'woocommerce-wholesale-order-form' );
 __( 'Form Pagination', 'woocommerce-wholesale-order-form' );
 __( 'In Stock Amount', 'woocommerce-wholesale-order-form' );
-__( 'Only Show Favourites', 'woocommerce-wholesale-order-form' );
+__( 'Only Show Favorites', 'woocommerce-wholesale-order-form' );
 __( 'Product Category', 'woocommerce-wholesale-order-form' );
 __( 'Product Count', 'woocommerce-wholesale-order-form' );
 __( 'Product ID', 'woocommerce-wholesale-order-form' );

@@ -224,8 +224,8 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          */
         public function save_minimum_order_quantity_fields( $post_id, $product_type = 'simple' ) {
             if (
-                ( isset( $_POST['woocommerce_meta_nonce'] ) && wp_verify_nonce( wp_unslash( $_POST['woocommerce_meta_nonce'] ), 'woocommerce_save_data' ) ) ||
-                ( isset( $_POST['woocommerce_quick_edit_nonce'] ) && wp_verify_nonce( wp_unslash( $_POST['woocommerce_quick_edit_nonce'] ), 'woocommerce_quick_edit_nonce' ) )
+                ( isset( $_POST['woocommerce_meta_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) ||
+                ( isset( $_POST['woocommerce_quick_edit_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_quick_edit_nonce'] ) ), 'woocommerce_quick_edit_nonce' ) )
             ) {
                 // Get product object.
                 $product = wc_get_product( $post_id );
@@ -238,7 +238,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
                         continue;
                     }
 
-                    $wholesale_moq = trim( esc_attr( $_POST[ $role_key . '_simple_wholesale_minimum_order_quantity' ] ) );
+                    $wholesale_moq = trim( wc_clean( wp_unslash( $_POST[ $role_key . '_simple_wholesale_minimum_order_quantity' ] ) ) );
 
                     if ( ! empty( $wholesale_moq ) ) {
 
@@ -274,8 +274,8 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          */
         public function save_order_quantity_step_fields( $post_id, $product_type = 'simple' ) {
             if (
-                ( isset( $_POST['woocommerce_meta_nonce'] ) && wp_verify_nonce( wp_unslash( $_POST['woocommerce_meta_nonce'] ), 'woocommerce_save_data' ) ) ||
-                ( isset( $_POST['woocommerce_quick_edit_nonce'] ) && wp_verify_nonce( wp_unslash( $_POST['woocommerce_quick_edit_nonce'] ), 'woocommerce_quick_edit_nonce' ) )
+                ( isset( $_POST['woocommerce_meta_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) ||
+                ( isset( $_POST['woocommerce_quick_edit_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_quick_edit_nonce'] ) ), 'woocommerce_quick_edit_nonce' ) )
             ) {
                 // Get product object.
                 $product = wc_get_product( $post_id );
@@ -288,7 +288,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
                         continue;
                     }
 
-                    $wholesale_oqs = trim( esc_attr( $_POST[ $role_key . '_simple_wholesale_order_quantity_step' ] ) );
+                    $wholesale_oqs = trim( wc_clean( wp_unslash( $_POST[ $role_key . '_simple_wholesale_order_quantity_step' ] ) ) );
 
                     if ( ! empty( $wholesale_oqs ) ) {
 
@@ -321,7 +321,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          * @since 1.16.0 Add wholesale order quantity step fields
          * @access public
          *
-         * @param Array $all_wholesale_roles list of wholesale roles.
+         * @param array $all_wholesale_roles list of wholesale roles.
          */
         public function quick_edit_display_wwpp_fields( $all_wholesale_roles ) {
 
@@ -367,7 +367,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          * @access public
          *
          * @param string $field_title  Field title.
-         * @param strin  $field_name   Field name.
+         * @param string $field_name   Field name.
          * @param string $place_holder Field placeholder.
          */
         private function _add_wholesale_minimum_order_quantity_field_on_quick_edit_screen( $field_title, $field_name, $place_holder = '' ) {
@@ -389,7 +389,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          * @access public
          *
          * @param string $field_title  Field title.
-         * @param strin  $field_name   Field name.
+         * @param string $field_name   Field name.
          * @param string $place_holder Field placeholder.
          */
         private function _add_wholesale_order_quantity_step_field_on_quick_edit_screen( $field_title, $field_name, $place_holder = '' ) {
@@ -412,7 +412,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          * @since 1.16.0 Add support for wholesale order quantity step.
          * @access public
          *
-         * @param Array $all_wholesale_roles   list of wholesale roles.
+         * @param array $all_wholesale_roles   list of wholesale roles.
          * @param int   $product_id            Product ID.
          */
         public function add_wwpp_fields_data_to_product_listing_column( $all_wholesale_roles, $product_id ) {
@@ -439,6 +439,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          *
          * @since 1.14.4
          * @since 1.16.0 Add support for wholesale order quantity step.
+         * @since 2.1.1 Recompute the wholesale sale price activation flags so a sale price saved via Quick Edit applies at checkout.
          * @access public
          *
          * @param WC_Product $product               Product object.
@@ -451,6 +452,11 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
 
             // Save order quantity step fields.
             $this->save_order_quantity_step_fields( $product_id );
+
+            // WWP saves the wholesale sale price during Quick Edit but does not refresh the activation flags
+            // ( '{role}_have_wholesale_sale_price' and '{role}_have_on_sale_wholesale_sale_price' ) the pricing
+            // engine relies on. Recompute them here so a wholesale sale price set via Quick Edit is honoured at checkout.
+            WWPP_Admin_Custom_Fields_Product::maybe_set_have_wholesale_sale_price_meta( $product_id, $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles() );
         }
 
         /**
@@ -633,14 +639,14 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
          */
         private function _save_wholesale_sale_price_fields( $post_id, $role_key, $meta_field_key, $thousand_sep, $decimal_sep, $aelia_currency_switcher_active = false, $is_base_currency = false, $currency_code = null ) {
 
-            if ( wp_verify_nonce( wp_unslash( $_POST['woocommerce_meta_nonce'] ), 'woocommerce_save_data' ) ) {
+            if ( isset( $_POST['woocommerce_meta_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) {
                 // Get product object.
                 $product = wc_get_product( $post_id );
 
-                $wholesale_discount_type = isset( $_POST [ $meta_field_key . '_wholesale_discount_type' ] ) ? trim( esc_attr( $_POST[ $meta_field_key . '_wholesale_discount_type' ] ) ) : '';
+                $wholesale_discount_type = isset( $_POST[ $meta_field_key . '_wholesale_discount_type' ] ) ? trim( wc_clean( wp_unslash( $_POST[ $meta_field_key . '_wholesale_discount_type' ] ) ) ) : '';
 
                 if ( isset( $_POST[ $meta_field_key . '_wholesale_sale_price' ] ) && '' !== $_POST[ $meta_field_key . '_wholesale_sale_price' ] ) {
-                    $wholesale_sale_price = trim( esc_attr( $_POST[ $meta_field_key . '_wholesale_sale_price' ] ) );
+                    $wholesale_sale_price = trim( wc_clean( wp_unslash( $_POST[ $meta_field_key . '_wholesale_sale_price' ] ) ) );
 
                     if ( $thousand_sep ) {
                         $wholesale_sale_price = str_replace( $thousand_sep, '', $wholesale_sale_price );
@@ -667,7 +673,7 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
                 }
 
                 if ( 'percentage' === $wholesale_discount_type ) {
-                    $wholesale_sale_discount = trim( esc_attr( $_POST[ $meta_field_key . '_wholesale_sale_discount' ] ) );
+                    $wholesale_sale_discount = isset( $_POST[ $meta_field_key . '_wholesale_sale_discount' ] ) ? trim( wc_clean( wp_unslash( $_POST[ $meta_field_key . '_wholesale_sale_discount' ] ) ) ) : '';
                     if ( $decimal_sep ) {
                         $wholesale_sale_discount = str_replace( $decimal_sep, '.', $wholesale_sale_discount );
                     }
@@ -711,10 +717,10 @@ if ( ! class_exists( 'WWPP_Admin_Custom_Fields_Simple_Product' ) ) {
 
                 $product->update_meta_data( $meta_field_key . '_wholesale_sale_price_dates_to', $date_on_sale_to );
 
-                WWPP_Admin_Custom_Fields_Product::maybe_set_have_wholesale_sale_price_meta( $post_id, $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles() );
-
-                // Save the product.
+                // Persist the sale price before deriving the flag; maybe_set re-reads from the DB.
                 $product->save();
+
+                WWPP_Admin_Custom_Fields_Product::maybe_set_have_wholesale_sale_price_meta( $post_id, $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles() );
             }
         }
 

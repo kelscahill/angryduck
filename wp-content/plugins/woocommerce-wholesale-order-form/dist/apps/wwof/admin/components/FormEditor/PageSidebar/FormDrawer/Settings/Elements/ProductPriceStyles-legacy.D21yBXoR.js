@@ -1,0 +1,1 @@
+System.register(["../../../../../../../../../common/ExclamationCircleFilled-legacy.BI-ax_ZG.js","../../../../../../../../../common/ElementAlignment-legacy.BvvVMOYl.js"],function(e,n){var t,c,i,l,m;return{setters:[function(e){e.En,t=e.Ln,c=e.Yt,i=e.mn,l=e.xn},function(e){m=e.t}],execute:function(){c(),e("default",l({__name:"ProductPriceStyles",setup:e=>(e,n)=>(t(),i(m))}))}}});

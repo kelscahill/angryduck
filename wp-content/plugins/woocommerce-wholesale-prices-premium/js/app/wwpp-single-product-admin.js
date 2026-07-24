@@ -42,25 +42,25 @@ jQuery(document).ready(function ($) {
 
         if (wholesale_role == "")
             err_fields.push(
-                wwpp_single_product_admin_params.i18n_wholesale_role
+                wp.i18n.__( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' )
             );
 
         if (min <= 0 || min == "" || isNaN(min))
-            err_fields.push(wwpp_single_product_admin_params.i18n_starting_qty);
+            err_fields.push( wp.i18n.__( 'Starting Qty', 'woocommerce-wholesale-prices-premium' ) );
 
         if (max === 0 || isNaN(max) || max < 0)
-            err_fields.push(wwpp_single_product_admin_params.i18n_ending_qty);
+            err_fields.push( wp.i18n.__( 'Ending Qty', 'woocommerce-wholesale-prices-premium' ) );
 
         if (price_type == "")
-            err_fields.push(wwpp_single_product_admin_params.i18n_price_type);
+            err_fields.push( wp.i18n.__( 'Price Type', 'woocommerce-wholesale-prices-premium' ) );
 
         if (price <= 0 || price == "")
             err_fields.push(
-                wwpp_single_product_admin_params.i18n_wholesale_price
+                wp.i18n.__( 'Wholesale Price', 'woocommerce-wholesale-prices-premium' )
             );
 
         if (currency == "")
-            err_fields.push(wwpp_single_product_admin_params.i18n_currency);
+            err_fields.push( wp.i18n.__( 'Currency', 'woocommerce-wholesale-prices-premium' ) );
 
         return err_fields;
     }
@@ -119,7 +119,7 @@ jQuery(document).ready(function ($) {
                 .find(".pqbwp_enabled_currencies")
                 .find(
                     "option:contains('" +
-                        wwpp_single_product_admin_params.i18n_base_currency +
+                        wp.i18n.__( '(Base Currency)', 'woocommerce-wholesale-prices-premium' ) +
                         "')"
                 )
                 .attr("selected", "selected");
@@ -159,13 +159,14 @@ jQuery(document).ready(function ($) {
             $price_field
                 .find("label")
                 .text(
-                    wwpp_single_product_admin_params.i18n_fixed_price_wholesale_label
+                    /* translators: %s: currency symbol */
+                    wp.i18n.sprintf( wp.i18n.__( 'Wholesale Price %s', 'woocommerce-wholesale-prices-premium' ), wwpp_single_product_admin_params.currency_symbol )
                 );
         else if ($this.val() == "percent-price")
             $price_field
                 .find("label")
                 .text(
-                    wwpp_single_product_admin_params.i18n_percent_price_wholesale_label
+                    wp.i18n.__( 'Wholesale Price (%)', 'woocommerce-wholesale-prices-premium' )
                 );
     });
 
@@ -239,10 +240,10 @@ jQuery(document).ready(function ($) {
 
                     if (enable == "yes")
                         err_msg =
-                            wwpp_single_product_admin_params.i18n_fail_enable_product_quantity;
+                            wp.i18n.__( 'Failed to enable Product Quantity Based Wholesale Pricing options.', 'woocommerce-wholesale-prices-premium' );
                     else
                         err_msg =
-                            wwpp_single_product_admin_params.i18n_fail_disable_product_quantity;
+                            wp.i18n.__( 'Failed to disable Product Quantity Based Wholesale Pricing options.', 'woocommerce-wholesale-prices-premium' );
 
                     toastr.error("", err_msg, {
                         closeButton: true,
@@ -259,10 +260,10 @@ jQuery(document).ready(function ($) {
 
                 if (enable == "yes")
                     err_msg =
-                        wwpp_single_product_admin_params.i18n_fail_enable_product_quantity;
+                        wp.i18n.__( 'Failed to enable Product Quantity Based Wholesale Pricing options.', 'woocommerce-wholesale-prices-premium' );
                 else
                     err_msg =
-                        wwpp_single_product_admin_params.i18n_fail_disable_product_quantity;
+                        wp.i18n.__( 'Failed to disable Product Quantity Based Wholesale Pricing options.', 'woocommerce-wholesale-prices-premium' );
 
                 toastr.error("", err_msg, {
                     closeButton: true,
@@ -328,7 +329,7 @@ jQuery(document).ready(function ($) {
         if (is_parent_varibale && price_type == "fixed-price") {
             toastr.error(
                 err_msg,
-                wwpp_single_product_admin_params.i18n_parent_variable_price_type_error,
+                wp.i18n.__( 'Discount % is the only allowed price type of variable level quantity discount.', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: error_message_duration }
             );
 
@@ -352,7 +353,7 @@ jQuery(document).ready(function ($) {
 
         if (err_fields.length > 0) {
             var err_msg =
-                wwpp_single_product_admin_params.i18n_fill_fields_properly +
+                wp.i18n.__( 'The following fields are not properly filled:', 'woocommerce-wholesale-prices-premium' ) +
                 "<br/><br/></ul>";
 
             for (var i = 0; i < err_fields.length; i++)
@@ -362,7 +363,7 @@ jQuery(document).ready(function ($) {
 
             toastr.error(
                 err_msg,
-                wwpp_single_product_admin_params.i18n_fill_form_properly,
+                wp.i18n.__( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: error_message_duration }
             );
 
@@ -378,7 +379,7 @@ jQuery(document).ready(function ($) {
         if (!validate_quantity_fields(start_qty, end_qty)) {
             toastr.error(
                 "",
-                wwpp_single_product_admin_params.i18n_ending_qty_must_not_be_less_start_qty,
+                wp.i18n.__( 'Ending Qty must not be less than Starting Qty', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: error_message_duration }
             );
 
@@ -426,7 +427,7 @@ jQuery(document).ready(function ($) {
                 if (data.status == "success") {
                     toastr.success(
                         "",
-                        wwpp_single_product_admin_params.i18n_success_add_discount_mapping,
+                        wp.i18n.__( 'Successfully Added Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: success_message_duration,
@@ -515,7 +516,7 @@ jQuery(document).ready(function ($) {
 
                     toastr.error(
                         data.error_message,
-                        wwpp_single_product_admin_params.i18n_fail_add_discount_mapping,
+                        wp.i18n.__( 'Failed To Add Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: error_message_duration,
@@ -523,7 +524,7 @@ jQuery(document).ready(function ($) {
                     );
 
                     console.log(
-                        wwpp_single_product_admin_params.i18n_fail_add_discount_mapping
+                        wp.i18n.__( 'Failed To Add Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' )
                     );
                     console.log(data);
                     console.log("----------");
@@ -532,12 +533,12 @@ jQuery(document).ready(function ($) {
             .fail(function (jqXHR, textStatus, errorThrown) {
                 toastr.error(
                     jqXHR.responseText,
-                    wwpp_single_product_admin_params.i18n_fail_add_discount_mapping,
+                    wp.i18n.__( 'Failed To Add Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                     { closeButton: true, showDuration: error_message_duration }
                 );
 
                 console.log(
-                    wwpp_single_product_admin_params.i18n_fail_add_discount_mapping
+                    wp.i18n.__( 'Failed To Add Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' )
                 );
                 console.log(jqXHR);
                 console.log("----------");
@@ -600,7 +601,7 @@ jQuery(document).ready(function ($) {
 
         if (err_fields.length > 0) {
             var err_msg =
-                wwpp_single_product_admin_params.i18n_fill_fields_properly +
+                wp.i18n.__( 'The following fields are not properly filled:', 'woocommerce-wholesale-prices-premium' ) +
                 "<br/><br/></ul>";
 
             for (var i = 0; i < err_fields.length; i++)
@@ -610,7 +611,7 @@ jQuery(document).ready(function ($) {
 
             toastr.error(
                 err_msg,
-                wwpp_single_product_admin_params.i18n_fill_form_properly,
+                wp.i18n.__( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: error_message_duration }
             );
 
@@ -626,7 +627,7 @@ jQuery(document).ready(function ($) {
         if (!validate_quantity_fields(start_qty, end_qty)) {
             toastr.error(
                 "",
-                wwpp_single_product_admin_params.i18n_ending_qty_must_not_be_less_start_qty,
+                wp.i18n.__( 'Ending Qty must not be less than Starting Qty', 'woocommerce-wholesale-prices-premium' ),
                 { closeButton: true, showDuration: error_message_duration }
             );
 
@@ -711,7 +712,7 @@ jQuery(document).ready(function ($) {
 
                     toastr.success(
                         "",
-                        wwpp_single_product_admin_params.i18n_success_update_discount_mapping,
+                        wp.i18n.__( 'Successfully Updated Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: success_message_duration,
@@ -736,7 +737,7 @@ jQuery(document).ready(function ($) {
 
                     toastr.error(
                         data.error_message,
-                        wwpp_single_product_admin_params.i18n_fail_update_discount_mapping,
+                        wp.i18n.__( 'Failed To Update Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: error_message_duration,
@@ -744,7 +745,7 @@ jQuery(document).ready(function ($) {
                     );
 
                     console.log(
-                        wwpp_single_product_admin_params.i18n_fail_update_discount_mapping
+                        wp.i18n.__( 'Failed To Update Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' )
                     );
                     console.log(data);
                     console.log("----------");
@@ -753,12 +754,12 @@ jQuery(document).ready(function ($) {
             .fail(function (jqXHR, textStatus, errorThrown) {
                 toastr.error(
                     jqXHR.responseText,
-                    wwpp_single_product_admin_params.i18n_fail_update_discount_mapping,
+                    wp.i18n.__( 'Failed To Update Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                     { closeButton: true, showDuration: error_message_duration }
                 );
 
                 console.log(
-                    wwpp_single_product_admin_params.i18n_fail_update_discount_mapping
+                    wp.i18n.__( 'Failed To Update Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' )
                 );
                 console.log(jqXHR);
                 console.log("----------");
@@ -858,7 +859,7 @@ jQuery(document).ready(function ($) {
 
         if (
             confirm(
-                wwpp_single_product_admin_params.i18n_click_ok_remove_discount_mapping
+                wp.i18n.__( 'Clicking OK will remove the current quantity discount rule mapping', 'woocommerce-wholesale-prices-premium' )
             )
         ) {
             wwppBackendAjaxServices
@@ -880,7 +881,7 @@ jQuery(document).ready(function ($) {
                                     .html(
                                         '<tr class="no-items">' +
                                             '<td class="colspanchange" colspan="5">' +
-                                            wwpp_single_product_admin_params.i18n_no_quantity_discount +
+                                            wp.i18n.__( 'No Quantity Discount Rules Found', 'woocommerce-wholesale-prices-premium' ) +
                                             "</td>" +
                                             "</tr>"
                                     );
@@ -889,7 +890,7 @@ jQuery(document).ready(function ($) {
 
                         toastr.success(
                             "",
-                            wwpp_single_product_admin_params.i18n_success_delete_discount,
+                            wp.i18n.__( 'Successfully Deleted Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: success_message_duration,
@@ -898,7 +899,7 @@ jQuery(document).ready(function ($) {
                     } else {
                         toastr.error(
                             data.error_message,
-                            wwpp_single_product_admin_params.i18n_fail_delete_discount,
+                            wp.i18n.__( 'Failed to Delete Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                             {
                                 closeButton: true,
                                 showDuration: error_message_duration,
@@ -906,7 +907,7 @@ jQuery(document).ready(function ($) {
                         );
 
                         console.log(
-                            wwpp_single_product_admin_params.i18n_fail_delete_discount
+                            wp.i18n.__( 'Failed to Delete Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' )
                         );
                         console.log(data);
                         console.log("----------");
@@ -915,7 +916,7 @@ jQuery(document).ready(function ($) {
                 .fail(function (jqXHR, textStatus, errorThrown) {
                     toastr.error(
                         jqXHR.responseText,
-                        wwpp_single_product_admin_params.i18n_fail_delete_discount,
+                        wp.i18n.__( 'Failed to Delete Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
                         {
                             closeButton: true,
                             showDuration: error_message_duration,
@@ -923,7 +924,7 @@ jQuery(document).ready(function ($) {
                     );
 
                     console.log(
-                        wwpp_single_product_admin_params.i18n_fail_delete_discount
+                        wp.i18n.__( 'Failed to Delete Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' )
                     );
                     console.log(jqXHR);
                     console.log("----------");

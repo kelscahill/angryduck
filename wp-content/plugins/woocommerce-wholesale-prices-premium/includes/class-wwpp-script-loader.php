@@ -10,6 +10,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
      * Model that houses the logic of loading in scripts to various pages of the plugin.
      *
      * @since 1.14.0
+     * @since 2.1.0 Stop firing the wholesale recalculation trigger after a regular order save.
      */
     class WWPP_Script_Loader {
 
@@ -125,6 +126,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
          *
          * @since 1.0.0
          * @since 1.4.0 Refactor codebase and move to its own model.
+         * @since 2.1.0 Stop firing the wholesale recalculation trigger after a regular order save so manual line-item price edits persist.
          * @access public
          *
          * @param string $handle Hook suffix for the current admin page.
@@ -148,42 +150,20 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // Wholesale roles page JS.
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_wholesaleRolesListingActions_js', WWPP_JS_URL . 'app/modules/WholesaleRolesListingActions.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_wholesaleRolesListingActions_js', WWPP_JS_URL . 'app/modules/WholesaleRolesListingActions.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesaleRolesListingActions_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
                 wp_enqueue_script( 'wwpp_wholesaleRolesFormActions_js', WWPP_JS_URL . 'app/modules/WholesaleRolesFormActions.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_wholesale_roles_main_js', WWPP_JS_URL . 'app/wholesale-roles-main.js', array( 'jquery', 'jquery-tiptip' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_wholesale_roles_main_js', WWPP_JS_URL . 'app/wholesale-roles-main.js', array( 'jquery', 'jquery-tiptip', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesale_roles_main_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 // Wholesale roles page translations.
                 wp_localize_script(
                     'wwpp_wholesaleRolesListingActions_js',
                     'wwpp_wholesaleRolesListingActions_params',
                     array(
-                        'i18n_edit'                    => __( 'Edit', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_delete'                  => __( 'Delete', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_yes'                     => __( 'Yes', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no'                      => __( 'No', 'woocommerce-wholesale-prices-premium' ),
                         'add_new_wholesale_role_nonce' => wp_create_nonce( 'add_new_wholesale_role' ),
                         'edit_wholesale_role_nonce'    => wp_create_nonce( 'edit_wholesale_role' ),
                         'delete_wholesale_role_nonce'  => wp_create_nonce( 'delete_wholesale_role' ),
-                    )
-                );
-
-                wp_localize_script(
-                    'wwpp_wholesale_roles_main_js',
-                    'wwpp_wholesale_roles_main_params',
-                    array(
-                        'i18n_enter_role_name'           => __( 'Please Enter Role Name', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_error_wholesale_form'      => __( 'Error in Wholesale Form', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_enter_role_key'            => __( 'Please Enter Role Key', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_error_role_key'            => __( 'Role Key must contain only lowercase letters, numbers, hyphens, and underscores', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_added'   => __( 'Wholesale Role Successfully Added', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_successfully_added_role'   => __( 'Successfully Added New Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_add_new_role'       => __( 'Failed to Add New Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_edited'  => __( 'Wholesale Role Successfully Edited', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_successfully_edited_role'  => __( 'Successfully Edited Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_edit_role'          => __( 'Failed to Edit Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_deleted' => __( 'Wholesale Role Successfully Deleted', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_successfully_deleted_role' => __( 'Successfully Deleted Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_delete_role'        => __( 'Failed to Delete Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
                     )
                 );
 
@@ -212,8 +192,10 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_single_product_admin_js', WWPP_JS_URL . 'app/wwpp-single-product-admin.js', array( 'jquery', 'jquery-tiptip' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_single_variable_product_admin_custom_bulk_actions_js', WWPP_JS_URL . 'app/wwpp-single-variable-product-admin-custom-bulk-actions.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_single_product_admin_js', WWPP_JS_URL . 'app/wwpp-single-product-admin.js', array( 'jquery', 'jquery-tiptip', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_single_product_admin_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
+                wp_enqueue_script( 'wwpp_single_variable_product_admin_custom_bulk_actions_js', WWPP_JS_URL . 'app/wwpp-single-variable-product-admin-custom-bulk-actions.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_single_variable_product_admin_custom_bulk_actions_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_single_product_admin_js',
@@ -231,10 +213,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                     'wwpp_single_variable_product_admin_custom_bulk_actions_js',
                     'wwpp_custom_bulk_actions_params',
                     array(
-                        'wholesale_roles'         => $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles(),
-                        'i18n_wholesale_sale_price_prompt_message' => __( 'Enter a value (leave blank to remove wholesale sale price)', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_moq_prompt_message' => __( 'Enter a value (leave blank to remove min order quantity)', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_oqs_prompt_message' => __( 'Enter a value (leave blank to remove order quantity step)', 'woocommerce-wholesale-prices-premium' ),
+                        'wholesale_roles' => $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles(),
                     )
                 );
 
@@ -250,30 +229,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 }
 
                 $wwpp_single_product_admin_params = array(
-                    'i18n_wholesale_role'                  => __( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_starting_qty'                    => __( 'Starting Qty', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_ending_qty'                      => __( 'Ending Qty', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_price_type'                      => __( 'Price Type', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_wholesale_price'                 => __( 'Wholesale Price', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_currency'                        => __( 'Currency', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fail_enable_product_quantity'    => __( 'Failed to enable Product Quantity Based Wholesale Pricing options.', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fail_disable_product_quantity'   => __( 'Failed to disable Product Quantity Based Wholesale Pricing options.', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fill_fields_properly'            => __( 'The following fields are not properly filled:', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fill_form_properly'              => __( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_ending_qty_must_not_be_less_start_qty' => __( 'Ending Qty must not be less than Starting Qty', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_success_add_discount_mapping'    => __( 'Successfully Added Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fail_add_discount_mapping'       => __( 'Failed To Add Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_success_update_discount_mapping' => __( 'Successfully Updated Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_click_ok_remove_discount_mapping' => __( 'Clicking OK will remove the current quantity discount rule mapping', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_no_quantity_discount'            => __( 'No Quantity Discount Rules Found', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_success_delete_discount'         => __( 'Successfully Deleted Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fail_delete_discount'            => __( 'Failed to Delete Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_base_currency'                   => __( '(Base Currency)', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_fail_update_discount_mapping'    => __( 'Failed To Update Quantity Discount Rule Mapping', 'woocommerce-wholesale-prices-premium' ),
-                    /* Translators: $1 is Currency symbol */
-                    'i18n_fixed_price_wholesale_label'     => sprintf( __( 'Wholesale Price %1$s', 'woocommerce-wholesale-prices-premium' ), $currencySymbol ),
-                    'i18n_percent_price_wholesale_label'   => __( 'Wholesale Price (%)', 'woocommerce-wholesale-prices-premium' ),
-                    'i18n_parent_variable_price_type_error' => __( 'Discount % is the only allowed price type of variable level quantity discount.', 'woocommerce-wholesale-prices-premium' ),
+                    'currency_symbol' => $currencySymbol,
                     'required_base_wholesale_price_err_msg' => array(),
                 );
 
@@ -289,7 +245,8 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
 
                 // Wholesale sale prices.
                 if ( version_compare( $wwp_plugin_data['Version'], '2.1.6', '>=' ) ) {
-                    wp_enqueue_script( 'wwpp_wholesale_sale_prices_js', WWPP_JS_URL . 'app/wwpp-wholesale-sale-prices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                    wp_enqueue_script( 'wwpp_wholesale_sale_prices_js', WWPP_JS_URL . 'app/wwpp-wholesale-sale-prices.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                    wp_set_script_translations( 'wwpp_wholesale_sale_prices_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                     wp_localize_script(
                         'wwpp_wholesale_sale_prices_js',
@@ -301,11 +258,6 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                             'decimal_num'                => wc_get_price_decimals(),
                             'thousand_sep'               => wc_get_price_thousand_separator(),
                             'calculation_decimal_places' => apply_filters( 'wwp_percentage_discount_calculation_decimal_places', 6 ),
-                            'i18n_wholesale_price_is_empty_error' => __( 'The wholesale price value can not be empty.', 'woocommerce-wholesale-prices-premium' ),
-                            'i18n_wholesale_discount_is_empty_error' => __( 'The wholesale discount value can not be empty.', 'woocommerce-wholesale-prices-premium' ),
-                            'i18n_wholesale_sale_less_than_wholesale_price_error' => __( 'Please enter in a value less than the wholesale price.', 'woocommerce-wholesale-prices-premium' ),
-                            'i18n_sale_discount_greater_than_100_percent_error' => __( 'Please enter in a value not greater than 100 percent.', 'woocommerce-wholesale-prices-premium' ),
-                            'i18n_sale_discount_less_than_0_percent_error' => __( 'Please enter in a value not less than 0 percent', 'woocommerce-wholesale-prices-premium' ),
                         )
                     );
                 }
@@ -372,25 +324,25 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                             if (typeof objData.action !== "undefined" && objData.action == "woocommerce_add_order_item") {
                                 $( document.body ).trigger( "wwpp-order-data-item-after", {} );
                             }
-                            if (typeof objData.action !== "undefined" && objData.action == "woocommerce_save_order_items") {
-                                $( document.body ).trigger( "wwpp-order-data-item-after", {} );
-                            }
+                            // Intentionally do not trigger wwpp-order-data-item-after for woocommerce_save_order_items.
+                            // The Save button persists manual line-item edits; re-running the wholesale recalculation
+                            // here would overwrite admin-entered prices with the role wholesale price.
                         });
                     })( jQuery );
                 ';
 
                 wp_add_inline_script( 'wc-admin-order-meta-boxes', $inline_script, 'before' );
 
-                wp_enqueue_script( 'wwpp_wholesale_prices_order_js', WWPP_JS_URL . 'app/wwpp-wholesale-prices-order.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_wholesale_prices_order_js', WWPP_JS_URL . 'app/wwpp-wholesale-prices-order.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesale_prices_order_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_wholesale_prices_order_js',
                     'wwpp_wholesale_prices_order_params',
                     array(
-                        'wwpp_order_nonce'     => wp_create_nonce( 'wwpp_order_nonce' ),
-                        'admin_ajax_url'       => admin_url( 'admin-ajax.php' ),
-                        'wc_tax_based_on'      => esc_attr( get_option( 'woocommerce_tax_based_on' ) ),
-                        'confirmation_message' => __( 'Are you sure you want to apply wholesale pricing to this order?', 'woocommerce-wholesale-prices-premium' ),
+                        'wwpp_order_nonce' => wp_create_nonce( 'wwpp_order_nonce' ),
+                        'admin_ajax_url'   => admin_url( 'admin-ajax.php' ),
+                        'wc_tax_based_on'  => esc_attr( get_option( 'woocommerce_tax_based_on' ) ),
                     )
                 );
             }
@@ -409,14 +361,14 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // WWPP License Settings Page JS.
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), 1, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_wws_license_settings_js', WWPP_JS_URL . 'app/wwpp-wws-license-settings.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_wws_license_settings_js', WWPP_JS_URL . 'app/wwpp-wws-license-settings.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wws_license_settings_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_wws_license_settings_js',
                     'wwpp_wws_license_settings_params',
                     array(
-                        'nonce_activate_license'         => wp_create_nonce( 'wwpp_activate_license' ),
-                        'i18n_fail_save_wholesale_price' => __( 'Failed To Save Wholesale Prices License Details', 'woocommerce-wholesale-prices-premium' ),
+                        'nonce_activate_license' => wp_create_nonce( 'wwpp_activate_license' ),
                     )
                 );
 
@@ -437,7 +389,8 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_order_requirement_per_wholesale_role_js', WWPP_JS_URL . 'app/wwpp-order-requirement-per-wholesale-role.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_order_requirement_per_wholesale_role_js', WWPP_JS_URL . 'app/wwpp-order-requirement-per-wholesale-role.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_order_requirement_per_wholesale_role_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 $wholesale_role_order_requirement_mapping = get_option( WWPP_OPTION_WHOLESALE_ROLE_ORDER_REQUIREMENT_MAPPING );
                 if ( ! is_array( $wholesale_role_order_requirement_mapping ) ) {
@@ -463,36 +416,9 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                     'wwpp_order_requirement_per_wholesale_role_js',
                     'wwpp_order_requirement_per_wholesale_role_var',
                     array(
-                        'wholesale_role_txt_with_col'      => __( 'Wholesale Role:', 'woocommerce-wholesale-prices-premium' ),
-                        'min_order_qty_txt_with_col'       => __( 'Minimum Order Quantity:', 'woocommerce-wholesale-prices-premium' ),
-                        'wholesale_role_txt'               => __( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'min_order_qty_txt'                => __( 'Minimum Order Quantity', 'woocommerce-wholesale-prices-premium' ),
-                        'no_mapping_txt'                   => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'choose_wholesale_role_txt'        => __( 'Choose wholesale role...', 'woocommerce-wholesale-prices-premium' ),
-                        'empty_fields_txt'                 => __( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ),
-                        'negative_value_fields_txt'        => __( 'Value must be greater than or equal to 0', 'woocommerce-wholesale-prices-premium' ),
-                        'form_error_txt'                   => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'success_add_mapping_txt'          => __( 'Successfully Added Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_add_mapping_txt'           => __( 'Failed To Add New Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'success_edit_mapping_txt'         => __( 'Successfully Updated Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_edit_mapping_txt'          => __( 'Failed To Update Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'delete_mapping_prompt_txt'        => __( 'Clicking OK will remove the current wholesale role order requirement mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'success_delete_mapping_txt'       => __( 'Successfully Deleted Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_delete_mapping_txt'        => __( 'Failed To Delete Wholesale Role Order Requirement Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        /* Translators: $1 is WooCommerce currency symbol */
-                        'minimum_subtotal_txt_with_col'    => sprintf( __( 'Minimum Sub-total Amount (%1$s):', 'woocommerce-wholesale-prices-premium' ), get_woocommerce_currency_symbol() ),
-                        'minimum_order_logic_txt_with_col' => __( 'Minimum Order Logic:', 'woocommerce-wholesale-prices-premium' ),
-                        /* Translators: $1 is WooCommerce currency symbol */
-                        'minimum_subtotal_txt'             => sprintf( __( 'Minimum Sub-total Amount (%1$s)', 'woocommerce-wholesale-prices-premium' ), get_woocommerce_currency_symbol() ),
-                        'minimum_order_logic_txt'          => __( 'Minimum Order Logic', 'woocommerce-wholesale-prices-premium' ),
-                        'and_txt'                          => __( 'AND', 'woocommerce-wholesale-prices-premium' ),
-                        'or_txt'                           => __( 'OR', 'woocommerce-wholesale-prices-premium' ),
-                        'cancel_txt'                       => __( 'Cancel', 'woocommerce-wholesale-prices-premium' ),
-                        'save_mapping_txt'                 => __( 'Save Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'add_mapping_txt'                  => __( 'Add Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'add_new_mapping_txt'              => __( 'Add New Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'wholesale_roles'                  => $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles(),
-                        'order_requirement'                => ( $filtered_wholesale_role_order_requirement_mapping ) ? $filtered_wholesale_role_order_requirement_mapping : array(),
+                        'currency_symbol'   => get_woocommerce_currency_symbol(),
+                        'wholesale_roles'   => $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles(),
+                        'order_requirement' => ( $filtered_wholesale_role_order_requirement_mapping ) ? $filtered_wholesale_role_order_requirement_mapping : array(),
                         'add_wholesale_role_order_requirement_nonce' => wp_create_nonce( 'wwpp_add_wholesale_role_order_requirement' ),
                         'edit_wholesale_role_order_requirement_nonce' => wp_create_nonce( 'wwpp_edit_wholesale_role_order_requirement' ),
                         'delete_wholesale_role_order_requirement_nonce' => wp_create_nonce( 'wwpp_delete_wholesale_role_order_requirement' ),
@@ -509,27 +435,18 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // WWPP Prices Settings.
 
                 // Show Wholesale Saving Amount JS.
-                wp_enqueue_script( 'wwpp_wholesale_saving_amount_js', WWPP_JS_URL . 'app/wwpp-wholesale-saving-amount.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_wholesale_saving_amount_js', WWPP_JS_URL . 'app/wwpp-wholesale-saving-amount.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesale_saving_amount_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
                 wp_localize_script(
                     'wwpp_wholesale_saving_amount_js',
                     'wwpp_wholesale_saving_amount_var',
                     array(
-                        'i18n_wwpp_show_wholesale_saving_amount_page_title_header'          => __( 'What Pages to Show the Saving Text', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_page_shop_title'            => __( 'Shop Page', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_page_single_product_title'  => __( 'Single Product Page', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_page_cart_title'            => __( 'Cart/Checkout/Order Page', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_page_invoice_title'         => __( 'Email Invoice', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_tags_title'                 => __( 'List of Tags Available', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_tags_saved_amount_desc'     => __( 'Show saved amount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_tags_saved_percentage_desc' => __( 'Show saved percentage', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wwpp_show_wholesale_saving_amount_text_title'                 => __( 'Wholesale Saving Amount Text', 'woocommerce-wholesale-prices-premium' ),
-
-                        'wwpp_show_wholesale_saving_amount_page_shop'                       => get_option( 'wwpp_settings_show_saving_amount_page_shop' ),
-                        'wwpp_show_wholesale_saving_amount_page_single_product'             => get_option( 'wwpp_settings_show_saving_amount_page_single_product' ),
-                        'wwpp_show_wholesale_saving_amount_page_cart'                       => get_option( 'wwpp_settings_show_saving_amount_page_cart' ),
-                        'wwpp_show_wholesale_saving_amount_page_invoice'                    => get_option( 'wwpp_settings_show_saving_amount_page_invoice' ),
-                        'wwpp_show_wholesale_saving_amount_text_value'                      => get_option( 'wwpp_settings_show_saving_amount_text' ),
-                        'wwpp_show_wholesale_saving_amount_text_tooltip'                    => wc_help_tip( __( 'The text to be shown on the defined pages. Default is \'You are saving {saved_amount} ({saved_percentage}) off RRP on this order\'', 'woocommerce-wholesale-prices-premium' ) ),
+                        'wwpp_show_wholesale_saving_amount_page_shop'            => get_option( 'wwpp_settings_show_saving_amount_page_shop' ),
+                        'wwpp_show_wholesale_saving_amount_page_single_product'  => get_option( 'wwpp_settings_show_saving_amount_page_single_product' ),
+                        'wwpp_show_wholesale_saving_amount_page_cart'            => get_option( 'wwpp_settings_show_saving_amount_page_cart' ),
+                        'wwpp_show_wholesale_saving_amount_page_invoice'         => get_option( 'wwpp_settings_show_saving_amount_page_invoice' ),
+                        'wwpp_show_wholesale_saving_amount_text_value'           => get_option( 'wwpp_settings_show_saving_amount_text' ),
+                        'wwpp_show_wholesale_saving_amount_text_tooltip'         => wc_help_tip( __( 'The text to be shown on the defined pages. Default is \'You are saving {saved_amount} ({saved_percentage}) off RRP on this order\'', 'woocommerce-wholesale-prices-premium' ) ),
                     )
                 );
             }
@@ -549,26 +466,17 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_settings_tax_js', WWPP_JS_URL . 'app/wwpp-settings-tax.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_settings_tax_class_js', WWPP_JS_URL . 'app/wwpp-settings-tax-class.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_settings_tax_js', WWPP_JS_URL . 'app/wwpp-settings-tax.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_settings_tax_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
+                wp_enqueue_script( 'wwpp_settings_tax_class_js', WWPP_JS_URL . 'app/wwpp-settings-tax-class.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_settings_tax_class_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_settings_tax_js',
                     'wwpp_settings_tax_var',
                     array(
-                        'wholesale_role_txt'         => __( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'empty_fields_txt'           => __( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ),
-                        'form_error_txt'             => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'no_mappings_found_txt'      => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'success_add_mapping_txt'    => __( 'Successfully Added Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_add_mapping_txt'     => __( 'Failed To Add New Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'success_edit_mapping_txt'   => __( 'Successfully Updated Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_edit_mapping_txt'    => __( 'Failed To Update Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'delete_mapping_prompt_confirm_txt' => __( 'Clicking OK will remove the current wholesale role tax option mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'success_delete_mapping_txt' => __( 'Successfully Deleted Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_delete_mapping_txt'  => __( 'Failed To Delete Wholesale Role Tax Option Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'wwpp_add_wholesale_role_tax_option_nonce' => wp_create_nonce( 'wwpp_add_wholesale_role_tax_option' ),
-                        'wwpp_edit_wholesale_role_tax_option_nonce' => wp_create_nonce( 'wwpp_edit_wholesale_role_tax_option' ),
+                        'wwpp_add_wholesale_role_tax_option_nonce'    => wp_create_nonce( 'wwpp_add_wholesale_role_tax_option' ),
+                        'wwpp_edit_wholesale_role_tax_option_nonce'   => wp_create_nonce( 'wwpp_edit_wholesale_role_tax_option' ),
                         'wwpp_delete_wholesale_role_tax_option_nonce' => wp_create_nonce( 'wwpp_delete_wholesale_role_tax_option' ),
                     )
                 );
@@ -577,14 +485,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                     'wwpp_settings_tax_class_js',
                     'wwpp_settings_tax_class_var',
                     array(
-                        'please_specify_wholesale_role' => __( 'Please specify a wholesale role', 'woocommerce-wholesale-prices-premium' ),
-                        'please_specify_tax_classes'    => __( 'Please specify tax class', 'woocommerce-wholesale-prices-premium' ),
-                        'no_mappings_found'             => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'form_error'                    => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_save_mapping_entry'     => __( 'Failed to save mapping entry', 'woocommerce-wholesale-prices-premium' ),
-                        'confirm_delete_mapping_entry'  => __( 'Clicking OK will remove the current selected mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_delete_mapping_entry'   => __( 'Failed to delete specified mapping entry', 'woocommerce-wholesale-prices-premium' ),
-                        'ajax_save_tax_class_mapping_nonce' => wp_create_nonce( 'ajax_save_tax_class_mapping' ),
+                        'ajax_save_tax_class_mapping_nonce'   => wp_create_nonce( 'ajax_save_tax_class_mapping' ),
                         'ajax_delete_tax_class_mapping_nonce' => wp_create_nonce( 'ajax_delete_tax_class_mapping' ),
                     )
                 );
@@ -606,43 +507,14 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_shipping_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-shipping-controls-custom-field.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_shipping_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-shipping-controls-custom-field.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_shipping_controls_custom_field_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_shipping_controls_custom_field_js',
                     'wwpp_shipping_controls_custom_field_params',
                     array(
-                        'i18n_wholesale_role'              => __( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_shopping_method'             => __( 'Shipping Method', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_shipping_zone_method'        => __( 'Shipping Zone Method', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_specify_field_values'        => __( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_form_error'                  => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_success_add_shipping_mapping' => __( 'Successfully Added Role/Shipping Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_add_shipping_mapping'   => __( 'Failed To Add New Role/Shipping Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_success_update_shipping_mapping' => __( 'Successfully Updated Role/Shipping Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_update_shipping_mapping' => __( 'Failed To Update Role/Shipping Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_click_ok_remove_shipping_mapping' => __( 'Clicking OK will remove the current role/shipping mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_mappings_found'           => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_success_delete_shipping_mapping' => __( 'Successfully Deleted Role/Shipping Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_delete_shipping_mapping' => __( 'Failed To Delete Role/Shipping Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_retrieve_table_rate_shipping_zone_methods' => __( 'Failed To Retrieve Table Rate Shipping Zone Methods', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_retrieve_shipping_zone_table_rates' => __( 'Failed To Retrieve Shipping Zone Table Rates', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_retrieve_table_rate_shipping_zones' => __( 'Failed To Retrieve Table Rate Shipping Zones', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_select_shipping_method' => __( '--Select Shipping Zone Method--', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_failed_to_retrieve_shipping_zone_methods' => __( 'Failed to retrieve shipping zone methods', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_empty_wholesale_role'  => __( 'Empty wholesale role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_empty_non_zoned_shipping_method' => __( 'Empty non-zoned shipping method', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_empty_shipping_zone'   => __( 'Empty shipping zone', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_empty_shipping_method' => __( 'Empty shipping method', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_please_fill_the_form_properly' => __( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_successfully_add_new_mapping' => __( 'Successfully added new wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_failed_to_add_new_mapping' => __( 'Failed to add new wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_successfully_edited_mapping' => __( 'Successfully edited wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_failed_edited_mapping' => __( 'Failed to edit wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_no_mappings_found'     => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_successfully_deleted_mapping' => __( 'Successfully deleted wholesale / shipping zone mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wc2_6_failed_deleted_mapping' => __( 'Failed to delete wholesale / shipping zone mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'wwpp_get_zone_shipping_methods_nonce' => wp_create_nonce( 'wwpp_get_zone_shipping_methods' ),
+                        'wwpp_get_zone_shipping_methods_nonce'  => wp_create_nonce( 'wwpp_get_zone_shipping_methods' ),
                         'wwpp_add_wholesale_zone_mapping_nonce' => wp_create_nonce( 'wwpp_add_wholesale_zone_mapping' ),
                         'wwpp_edit_wholesale_zone_mapping_nonce' => wp_create_nonce( 'wwpp_edit_wholesale_zone_mapping' ),
                         'wwpp_delete_wholesale_zone_mapping_nonce' => wp_create_nonce( 'wwpp_delete_wholesale_zone_mapping' ),
@@ -665,28 +537,20 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_discount_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-discount-controls-custom-field.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-cart-qty-based-wholesale-discount.js', array( 'jquery', 'jquery-tiptip' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_cart_subtotal_price_based_discount_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-cart-subtotal-price-based-discount.js', array( 'jquery', 'jquery-tiptip' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_discount_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-discount-controls-custom-field.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_discount_controls_custom_field_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
+                wp_enqueue_script( 'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-cart-qty-based-wholesale-discount.js', array( 'jquery', 'jquery-tiptip', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
+                wp_enqueue_script( 'wwpp_cart_subtotal_price_based_discount_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-cart-subtotal-price-based-discount.js', array( 'jquery', 'jquery-tiptip', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_cart_subtotal_price_based_discount_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 // General wholesale discount.
                 wp_localize_script(
                     'wwpp_discount_controls_custom_field_js',
                     'wwpp_discount_controls_custom_field_params',
                     array(
-                        'i18n_specify_wholesale_role'    => __( 'Please Specify Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_form_error'                => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_input_discount_properly'   => __( 'Please Input Discount Properly', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_added'   => __( 'Successfully Added Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_role_add'             => __( 'Failed To Add New Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_updated' => __( 'Successfully Updated Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_role_update'          => __( 'Failed To Update Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_click_ok_remove_mapping'   => __( 'Clicking OK will remove the current role/discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_mappings_found'         => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_deleted' => __( 'Successfully Deleted Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_delete_role'          => __( 'Failed To Delete Role/Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'add_wholesale_role_general_discount_mapping_nonce' => wp_create_nonce( 'wwppAddWholesaleRoleGeneralDiscountMapping' ),
-                        'edit_wholesale_role_general_discount_mapping_nonce' => wp_create_nonce( 'wwppEditWholesaleRoleGeneralDiscountMapping' ),
+                        'add_wholesale_role_general_discount_mapping_nonce'    => wp_create_nonce( 'wwppAddWholesaleRoleGeneralDiscountMapping' ),
+                        'edit_wholesale_role_general_discount_mapping_nonce'   => wp_create_nonce( 'wwppEditWholesaleRoleGeneralDiscountMapping' ),
                         'delete_wholesale_role_general_discount_mapping_nonce' => wp_create_nonce( 'wwppDeleteWholesaleRoleGeneralDiscountMapping' ),
                     )
                 );
@@ -696,20 +560,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                     'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js',
                     'wwpp_wrcqbwd_params',
                     array(
-                        'user_id'                        => 0,
-                        'i18n_please_specify_wholesale_role' => __( 'Please specify wholesale role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_start_qty'         => __( 'Invalid start quantity', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_end_qty'           => __( 'Invalid end quantity', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_percent_discount'  => __( 'Invalid percent discount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_form_error'                => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_mappings_found'         => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_add_mapping_error'         => __( 'Add Mapping Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_to_record_new_mapping_entry' => __( 'Failed to record new mapping entry', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_confirm_remove_mapping'    => __( 'Clicking OK will remove the current wholesale role/discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_delete_mapping_error'      => __( 'Delete Mapping Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_to_deleted_mapping' => __( 'Failed to delete specified mapping entry', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_edit_mapping_error'        => __( 'Edit Mapping Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_edit_mapping'       => __( 'Failed to edit mapping entry', 'woocommerce-wholesale-prices-premium' ),
+                        'user_id' => 0,
                         'add_wholesale_role_qty_based_discount_mapping_nonce' => wp_create_nonce( 'wwpp_add_wholesale_role_qty_based_discount_mapping' ),
                         'edit_wholesale_role_qty_based_discount_mapping_nonce' => wp_create_nonce( 'wwpp_edit_wholesale_role_qty_based_discount_mapping' ),
                         'delete_wholesale_role_qty_based_discount_mapping_nonce' => wp_create_nonce( 'wwpp_delete_wholesale_role_qty_based_discount_mapping' ),
@@ -721,24 +572,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                     'wwpp_cart_subtotal_price_based_discount_js',
                     'cart_subtotal_price_based_discount_params',
                     array(
-                        'i18n_please_specify_wholesale_role' => __( 'Please specify wholesale role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_subtotal_price'    => __( 'Invalid cart subtotal price', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_discount_type'     => __( 'Invalid discount type', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_discount_amount'   => __( 'Invalid discount amount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_discount_title'    => __( 'Invalid discount title', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_form_error'                => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_added'   => __( 'Successfully Added Subtotal Price Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_updated' => __( 'Successfully Updated Subtotal Price Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_role_successfully_deleted' => __( 'Successfully Deleted Subtotal Price Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_click_ok_remove_mapping'   => __( 'Clicking OK will remove the current Subtotal Price Discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_delete_role'          => __( 'Failed To Delete Subtotal Price Discount Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_mappings_found'         => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_confirm_remove_mapping'    => __( 'Clicking OK will remove the current Subtotal Price Discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_discount_type'             => array(
-                            'percent-discount' => __( 'Percent Discount', 'woocommerce-wholesale-prices-premium' ),
-                            'fixed-discount'   => __( 'Fixed Discount', 'woocommerce-wholesale-prices-premium' ),
-                        ),
-                        'wholesale_roles'                => $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles(),
+                        'wholesale_roles' => $this->_wwpp_wholesale_roles->getAllRegisteredWholesaleRoles(),
                         'add_wholesale_role_cart_subtotal_discount_mapping_nonce' => wp_create_nonce( 'wwpp_add_wholesale_role_cart_subtotal_discount_mapping' ),
                         'edit_wholesale_role_cart_subtotal_discount_mapping_nonce' => wp_create_nonce( 'wwpp_edit_wholesale_role_cart_subtotal_discount_mapping' ),
                         'delete_wholesale_role_cart_subtotal_discount_mapping_nonce' => wp_create_nonce( 'wwpp_delete_wholesale_role_cart_subtotal_discount_mapping' ),
@@ -763,49 +597,22 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_payment_gateway_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-payment-gateway-controls-custom-field.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-payment-gateway-mapping-controls-custom-field.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_payment_gateway_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-payment-gateway-controls-custom-field.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_payment_gateway_controls_custom_field_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
+                wp_enqueue_script( 'wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-payment-gateway-mapping-controls-custom-field.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_payment_gateway_controls_custom_field_js',
                     'wwpp_payment_gateway_controls_custom_field_params',
                     array(
-                        'user_id'                         => 0,
-                        'i18n_specify_field_values'       => __( 'Please specify values for the following field/s', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_payment_gateway_added'      => __( 'Successfully Added Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_add_payment_gateway' => __( 'Failed To Add New Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_specify_field_values_with_colon' => __( 'Please specify values for the following field/s:', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_form_error'                 => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_payment_gateway_updated'    => __( 'Successfully Updated Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_update_payment_gateway' => __( 'Failed To Update Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_click_ok_remove_payment_gateway' => __( 'Clicking OK will remove the current payment gateway surcharge mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_mapping_found'           => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_payment_gateway_deleted'    => __( 'Successfully Deleted Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_delete_payment_gateway' => __( 'Failed To Delete Payment Gateway Surcharge Mapping', 'woocommerce-wholesale-prices-premium' ),
+                        'user_id' => 0,
                         'add_wholesale_role_payment_gateway_mapping_nonce' => wp_create_nonce( 'wwppAddWholesaleRolePaymentGatewayMapping' ),
                         'update_wholesale_role_payment_gateway_mapping_nonce' => wp_create_nonce( 'wwppUpdateWholesaleRolePaymentGatewayMapping' ),
                         'delete_wholesale_role_payment_gateway_mapping_nonce' => wp_create_nonce( 'wwppDeleteWholesaleRolePaymentGatewayMapping' ),
                         'add_payment_gateway_surcharge_nonce' => wp_create_nonce( 'wwppAddPaymentGatewaySurcharge' ),
                         'update_payment_gateway_surcharge_nonce' => wp_create_nonce( 'wwppUpdatePaymentGatewaySurcharge' ),
                         'delete_payment_gateway_surcharge_nonce' => wp_create_nonce( 'wwppDeletePaymentGatewaySurcharge' ),
-                    )
-                );
-
-                wp_localize_script(
-                    'wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_js',
-                    'wwpp_wholesale_role_payment_gateway_mapping_controls_custom_field_params',
-                    array(
-                        'i18n_wholesale_role'             => __( 'Wholesale Role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_payment_gateways'           => __( 'Payment Gateways', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_form_error'                 => __( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_success_add_wholesale_role' => __( 'Successfully Added Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_add_wholesale_role'    => __( 'Failed To Add New Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_success_update_wholesale_role' => __( 'Successfully Updated Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_update_wholesale_role' => __( 'Failed To Update Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_click_ok_remove_wholesale_role' => __( 'Clicking OK will remove the current wholesale role / payment gateway mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_mappings_found'          => __( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_success_delete_wholesale_role' => __( 'Successfully Deleted Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_fail_delete_wholesale_role' => __( 'Failed to Delete Wholesale Role / Payment Gateway Mapping', 'woocommerce-wholesale-prices-premium' ),
                     )
                 );
 
@@ -818,16 +625,14 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // phpcs:enable
 
                 // WWPP Cache Settings JS.
-                wp_enqueue_script( 'wwpp_settings_cache_js', WWPP_JS_URL . 'app/wwpp-settings-cache.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_settings_cache_js', WWPP_JS_URL . 'app/wwpp-settings-cache.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_settings_cache_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
                 wp_localize_script(
                     'wwpp_settings_cache_js',
                     'wwpp_settings_cache_args',
                     array(
                         'nonce_regenerate_new_cache_hash' => wp_create_nonce( 'wwpp_regenerate_new_cache_hash' ),
-                        'i18n_fail_var_prod_price_range_clear_cache' => __( 'Failed to clear variable product price range cache', 'woocommerce-wholesale-prices-premium' ),
                         'nonce_clear_product_transients_cache' => wp_create_nonce( 'wwpp_clear_product_transients_cache' ),
-                        'i18n_fail_clear_product_transients_cache' => __( 'Failed to clear products transient cache', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_confirm_clear_cache'        => __( 'Are you sure want to clear the cache?', 'woocommerce-wholesale-prices-premium' ),
                     )
                 );
 
@@ -846,21 +651,16 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // WWPP Help Settings JS.
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_settings_debug_js', WWPP_JS_URL . 'app/wwpp-settings-debug.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_settings_debug_js', WWPP_JS_URL . 'app/wwpp-settings-debug.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_settings_debug_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
                 wp_localize_script(
                     'wwpp_settings_debug_js',
                     'wwpp_settings_debug_var',
                     array(
-                        'success_initialize_visibility_meta_txt' => __( 'Visibility Meta Successfully Initialized', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_initialize_visibility_meta_txt' => __( 'Failed To Initialize Visibility Meta', 'woocommerce-wholesale-prices-premium' ),
-                        'success_clear_unused_product_meta_txt' => __( 'Successfully cleared unused product meta.', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_clear_unused_product_meta_txt' => __( 'Failed to clear unused product meta.', 'woocommerce-wholesale-prices-premium' ),
-                        'success_force_fetch_update_data_txt' => __( 'Successfully re-fetched plugin update data', 'woocommerce-wholesale-prices-premium' ),
-                        'failed_force_fetch_update_data_txt' => __( 'Failed to re-fetch plugin update data', 'woocommerce-wholesale-prices-premium' ),
                         'wwpp_initialize_product_visibility_filter_meta_nonce' => wp_create_nonce( 'wwpp_initialize_product_visibility_filter_meta_nonce' ),
-                        'wwpp_clear_unused_product_meta_nonce' => wp_create_nonce( 'wwpp_clear_unused_product_meta_nonce' ),
-                        'wwpp_force_fetch_update_data_nonce' => wp_create_nonce( 'wwpp_force_fetch_update_data_nonce' ),
+                        'wwpp_clear_unused_product_meta_nonce'                 => wp_create_nonce( 'wwpp_clear_unused_product_meta_nonce' ),
+                        'wwpp_force_fetch_update_data_nonce'                   => wp_create_nonce( 'wwpp_force_fetch_update_data_nonce' ),
                     )
                 );
 
@@ -885,33 +685,8 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_add_inline_script( 'wwpp_chosen_js', 'jQuery(document).ready( function( $ ) { $( "#wholesale_role_filter" ).chosen(); } );' );
-                wp_enqueue_script( 'wwpp_per-order-qty-wholesale-discount-cat-level_js', WWPP_JS_URL . 'app/wwpp-per-order-qty-wholesale-discount-cat-level.js', array( 'jquery', 'jquery-tiptip' ), $this->_wwpp_current_version, true );
-
-                wp_localize_script(
-                    'wwpp_per-order-qty-wholesale-discount-cat-level_js',
-                    'poqwdcl_params',
-                    array(
-                        'i18n_failed_enable_feature'     => __( 'Fail to enable quantity based wholesale discount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_enable_mode_2'      => __( 'Fail to enable quantity based wholesale discount mode 2', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_disable_feature'    => __( 'Fail to disable quantity based wholesale discount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_please_specify_wholesale_role' => __( 'Please specify wholesale role', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_please_specify_start_qty'  => __( 'Please specify start quantity', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_please_specify_wholesale_discount' => __( 'Please specify wholesale discount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_start_qty'         => __( 'Invalid start quantity', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_end_qty'           => __( 'Invalid end quantity', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_invalid_percent_discount'  => __( 'Invalid percent discount', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_please_specify_index_of_entry_to_edit' => __( 'Please specify the index of the entry you want to edit', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_please_fill_form_properly' => __( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_new_wholesale_discount_mapping_added' => __( 'New wholesale discount mapping added successfully', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_to_add_new_wholesale_discount_mapping' => __( 'Failed to add new wholesale discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wholesale_discount_mapping_edited' => __( 'Wholesale discount mapping edited successfully', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_to_edit_wholesale_discount_mapping' => __( 'Failed to edit new wholesale discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_confirm_remove_wholesale_discount_mapping' => __( 'Are you sure to remove this wholesale discount mapping?', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_no_quantity_discount_rules_found' => __( 'No Quantity Discount Rules Found', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_wholesale_discount_mapping_deleted' => __( 'Wholesale discount mapping deleted successfully', 'woocommerce-wholesale-prices-premium' ),
-                        'i18n_failed_to_delete_wholesale_discount_mapping' => __( 'Failed to delete wholesale discount mapping', 'woocommerce-wholesale-prices-premium' ),
-                    )
-                );
+                wp_enqueue_script( 'wwpp_per-order-qty-wholesale-discount-cat-level_js', WWPP_JS_URL . 'app/wwpp-per-order-qty-wholesale-discount-cat-level.js', array( 'jquery', 'jquery-tiptip', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_per-order-qty-wholesale-discount-cat-level_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
 
             }
 
@@ -926,10 +701,13 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // Wholesale user profile page JS.
                 wp_enqueue_script( 'wwpp_toastr_js', WWPP_JS_URL . 'lib/toastr/toastr.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
                 wp_enqueue_script( 'wwpp_chosen_js', WWPP_JS_URL . 'lib/chosen/chosen.jquery.min.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_user_profile_js', WWPP_JS_URL . 'app/wwpp-user-profile.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-cart-qty-based-wholesale-discount.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_user_profile_js', WWPP_JS_URL . 'app/wwpp-user-profile.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_user_profile_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
+                wp_enqueue_script( 'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js', WWPP_JS_URL . 'app/wwpp-wholesale-role-cart-qty-based-wholesale-discount.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_wholesale_role_cart_qty_based_wholesale_discount_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
                 wp_enqueue_script( 'wwpp_backEndAjaxServices_js', WWPP_JS_URL . 'app/modules/BackEndAjaxServices.js', array( 'jquery' ), $this->_wwpp_current_version, true );
-                wp_enqueue_script( 'wwpp_payment_gateway_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-payment-gateway-controls-custom-field.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_enqueue_script( 'wwpp_payment_gateway_controls_custom_field_js', WWPP_JS_URL . 'app/wwpp-payment-gateway-controls-custom-field.js', array( 'jquery', 'wp-i18n' ), $this->_wwpp_current_version, true );
+                wp_set_script_translations( 'wwpp_payment_gateway_controls_custom_field_js', 'woocommerce-wholesale-prices-premium', WWPP_PLUGIN_DIR_PATH . 'languages' );
             }
 
             if ( 'woocommerce_page_wc-settings' === $screen->id && isset( $_GET['section'] ) && 'wwpp_setting_upgrade_section' === $_GET['section'] ) { // phpcs:ignore
@@ -942,6 +720,11 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 // WWPP Getting Started CSS & JS.
                 wp_enqueue_style( 'wwpp_getting_started_css', WWPP_CSS_URL . 'wwpp-getting-started.css', array(), $this->_wwpp_current_version, 'all' );
                 wp_enqueue_script( 'wwpp_getting_started_js', WWPP_JS_URL . 'app/wwpp-getting-started.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                wp_localize_script(
+                    'wwpp_getting_started_js',
+                    'wwpp_getting_started_params',
+                    array( 'nonce' => wp_create_nonce( 'wwpp_getting_started_notice_hide' ) )
+                );
             }
         }
 
@@ -953,6 +736,7 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
          * @since 1.14.0 Refactor codebase and move to its own model.
          * @since 1.14.5 Bug Fix. Per parent variable product minimum wholesale order quantity requirement not shown. (WWPP-417).
          * @since 2.0.3 - Added WC Vendors integration styles.
+         * @since 2.1.0 Enqueue the quantity discount table positioning script when a non-default position is set.
          * @access public
          */
         public function load_front_end_styles_and_scripts() {
@@ -981,6 +765,20 @@ if ( ! class_exists( 'WWPP_Script_Loader' ) ) {
                 }
             } elseif ( is_product() ) {
                 wp_enqueue_style( 'wwpp_single_product_page_css', WWPP_CSS_URL . 'wwpp-single-product-page.css', array(), $this->_wwpp_current_version, 'all' );
+
+                // Load the script that positions the quantity discount table when a non-default position is configured.
+                $quantity_discount_table_position = $this->_wwpp_wholesale_prices->get_quantity_discount_table_position();
+
+                if ( 'after_price' !== $quantity_discount_table_position && ! empty( $this->_wwpp_wholesale_roles->getUserWholesaleRole() ) ) {
+                    wp_enqueue_script( 'wwpp_quantity_discount_table_position_js', WWPP_JS_URL . 'app/wwpp-quantity-discount-table-position.js', array( 'jquery' ), $this->_wwpp_current_version, true );
+                    wp_localize_script(
+                        'wwpp_quantity_discount_table_position_js',
+                        'wwpp_quantity_discount_table_position_params',
+                        array(
+                            'position' => $quantity_discount_table_position,
+                        )
+                    );
+                }
 
                 if ( get_option( 'wwpp_settings_show_saving_amount', false ) === 'yes' &&
                     ( get_option( 'wwpp_settings_show_saving_amount_page_single_product', false ) === 'yes' || get_option( 'wwpp_settings_show_saving_amount_page_shop', false ) === 'yes' )

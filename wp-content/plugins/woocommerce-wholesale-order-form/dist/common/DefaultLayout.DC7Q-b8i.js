@@ -1,0 +1,1 @@
+import{Cr as a,En as s,Ln as t,Un as n,Yt as e,gn as l,xn as o,yn as r}from"./ExclamationCircleFilled.hVlCEKoI.js";e();var w={class:"wwof-tw-w-full wwof-tw-py-2"},u=o({__name:"DefaultLayout",setup:a=>(a,s)=>{const e=n("RouterView");return t(),l("div",w,[r(e)])}}),f=a({default:()=>i}),i=u;export{f as n,i as t};

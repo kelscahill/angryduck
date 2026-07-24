@@ -1,4 +1,4 @@
-<?php if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly 
+<?php if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 $taxable = array(
     'yes' => __( 'Yes' , 'woocommerce-wholesale-prices-premium' ),
@@ -63,7 +63,7 @@ $taxable = array(
         <div class="field-container">
 
             <label for="wwpp-surcharge-amount"><?php _e( 'Surcharge Amount' , 'woocommerce-wholesale-prices-premium' ); ?></label>
-            <input type="number" id="wwpp-surcharge-amount" class="regular-text" value="" step="any"/>
+            <input type="text" inputmode="decimal" id="wwpp-surcharge-amount" class="regular-text" value="" autocomplete="off"/>
             <p class="desc"><?php _e( 'If surcharge type is percentage, then input amount in percent (%). Ex. 3 percent then input 3, 30 percent then input 30, 0.3 percent then input 0.3.' , 'woocommerce-wholesale-prices-premium' ); ?></p>
             
         </div>

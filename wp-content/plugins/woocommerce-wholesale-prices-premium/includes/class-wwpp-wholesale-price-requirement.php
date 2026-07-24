@@ -17,6 +17,17 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
     class WWPP_Wholesale_Price_Requirement {
 
         /**
+         * Child quantity input-name tokens emitted by WC Product Bundles / WC Composite Products in
+         * their (private) markup. Detection of bundle/composite child quantity inputs relies on these,
+         * so the third-party coupling lives in one place — if either integration renames its field the
+         * match must be updated here.
+         *
+         * @since 2.1.1
+         */
+        const BUNDLED_QTY_INPUT_NAME   = 'bundle_quantity_';
+        const COMPOSITE_QTY_INPUT_NAME = 'wccp_component_quantity';
+
+        /**
          * Class Properties
          */
 
@@ -79,6 +90,24 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
         private $cart_variation_qty_total = array();
 
         /**
+         * Render-nesting depth for bundled (WC Product Bundles) / composite (WC Composite Products)
+         * child items currently rendering on the single product page. Incremented while those
+         * integrations render their child items — including each child's price html — so the
+         * standalone wholesale minimum-order-quantity label can be suppressed for the child (the
+         * parent controls the child's quantity, so the standalone MOQ is not enforced for it).
+         *
+         * A depth counter (rather than a bool) so that a composite containing a bundle component —
+         * or any nested bundle/composite — keeps the label suppressed for every child: an inner
+         * render closing does not prematurely re-enable the label for the outer parent's remaining
+         * children.
+         *
+         * @since  2.1.1
+         * @access private
+         * @var    int
+         */
+        private $bundle_or_composite_child_render_depth = 0;
+
+        /**
          * Class Methods
          */
 
@@ -134,11 +163,20 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * @since  1.15.3 Improvement. Move the variable product min order requirement label onto the variable product price instead of the variation price.
          * @since  1.16.0 Add support for wholesale order quantity step.
          * @since  1.30.2 Add filter hook to allow 3rd party to modify the minimum order quantity requirement label.
+         * @since  2.1.1  Skip the label while rendering a bundled/composite child item.
          * @access public
          *
          * @return string Filtered wholesale price markup.
          */
         public function display_minimum_wholesale_order_quantity( $wholesale_price_html, $price, $product, $user_wholesale_role ) {
+
+            // Bundled (WC Product Bundles) and composite (WC Composite Products) child items have their
+            // quantity controlled by the parent, so the standalone wholesale minimum order quantity is not
+            // enforced for them. Rendering the "Min: X" / "Increments of X" label against a child's price on
+            // the bundle/composite product page is therefore misleading, so suppress it here.
+            if ( $this->is_rendering_bundle_or_composite_child() ) {
+                return $wholesale_price_html;
+            }
 
             if ( ! empty( $user_wholesale_role ) ) {
 
@@ -190,6 +228,85 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
         }
 
         /**
+         * Mark the start of a bundled/composite child item render.
+         *
+         * Hooked to WC Product Bundles' 'woocommerce_before_bundled_items' and WC Composite Products'
+         * 'woocommerce_composite_before_components' actions, which bracket the rendering of the child
+         * items on a bundle/composite single product page (including each child's price html). While
+         * the render depth is above zero, display_minimum_wholesale_order_quantity() suppresses the
+         * standalone wholesale minimum order quantity label for the child being rendered. Incrementing
+         * (rather than setting a bool) keeps nested bundle/composite renders balanced.
+         *
+         * @since  2.1.1
+         * @access public
+         */
+        public function mark_bundle_or_composite_child_render_start() {
+            ++$this->bundle_or_composite_child_render_depth;
+        }
+
+        /**
+         * Mark the end of a bundled/composite child item render.
+         *
+         * Hooked to WC Product Bundles' 'woocommerce_after_bundled_items' and WC Composite Products'
+         * 'woocommerce_composite_after_components' actions. Decrements the render depth, clamped at
+         * zero so an unbalanced close cannot drive it negative.
+         *
+         * @since  2.1.1
+         * @access public
+         */
+        public function mark_bundle_or_composite_child_render_end() {
+            $this->bundle_or_composite_child_render_depth = max( 0, $this->bundle_or_composite_child_render_depth - 1 );
+        }
+
+        /**
+         * Whether a bundled (WC Product Bundles) or composite (WC Composite Products) child item is
+         * currently being rendered on the single product page.
+         *
+         * @since  2.1.1
+         * @access public
+         *
+         * @return bool True while a bundle/composite child item is being rendered.
+         */
+        public function is_rendering_bundle_or_composite_child() {
+            return $this->bundle_or_composite_child_render_depth > 0;
+        }
+
+        /**
+         * Strip the standalone wholesale minimum-order-quantity label from a variation's price html
+         * while its variation data is being built for a bundled/composite child.
+         *
+         * For variable children, WooCommerce bakes each variation's price html (with the "Min: X"
+         * label appended by display_minimum_wholesale_order_quantity()) into the variation data that
+         * ships to the front end — the inline `data-product_variations` JSON, or the `wc-ajax=get_variation`
+         * response. That price html is built and cached the first time `get_available_variations()` runs,
+         * which can be *before* WC PB / WC Composite set the render-depth flag (e.g. for a child that is
+         * NOT priced individually, the price is computed during the parent's aggregate calculation). So
+         * the early-return guard in display_minimum_wholesale_order_quantity() can't catch it. This filter
+         * runs while the integrations build the child's variation data (the depth flag is set via their
+         * price-filter brackets) and removes the already-baked label from the markup. Standalone variable
+         * products are unaffected — the flag is false there, so the label is left intact.
+         *
+         * @since  2.1.1
+         * @access public
+         *
+         * @param array $variation_data The variation data passed to the front end (includes price_html).
+         *
+         * @return array Filtered variation data.
+         */
+        public function strip_min_order_qty_label_from_bundled_variation( $variation_data ) {
+
+            if ( $this->is_rendering_bundle_or_composite_child() && ! empty( $variation_data['price_html'] ) && false !== strpos( $variation_data['price_html'], 'wholesale_price_minimum_order_quantity' ) ) {
+                $variation_data['price_html'] = preg_replace(
+                    '/\s*<span class="wholesale_price_(?:minimum_order_quantity|order_quantity_step)"[^>]*>.*?<\/span>/s',
+                    '',
+                    $variation_data['price_html']
+                );
+            }
+
+            return $variation_data;
+        }
+
+        /**
          * Set order quantity attribute values for non variable product if one is set.
          *
          * @param array      $args    Quantity field input args.
@@ -203,6 +320,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * @since  1.24   Fix Wholesale Minimum Order Quantity and Wholesale Order Quantity Step not working on Cart and Checkout.
          * @since  1.30.1 Fix Allow add to cart below product minimum is not working if the min qty has its qty step.
          * @since  2.0.3  Check if variable product is a valid product object.
+         * @since  2.1.1  Skip override for bundled/composite child quantity inputs. (WWPP-1828)
          * @access public
          *
          * @return array Filtered quantity field input args.
@@ -219,7 +337,14 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
             // Remove restriction for Wholesale Minimum Order Quantity and Wholesale Order Quantity Step on cart and checkout
             // Should work on Single product, cart and checkout page or any page using 'woocommerce_quantity_input_args' filter.
             // Check if product is a valid product object.
-            if ( ! empty( $user_wholesale_role ) && $product && is_a( $product, 'WC_Product' ) ) {
+            //
+            // Bundled (WC Product Bundles) and composite (WC Composite Products) child items manage their
+            // own quantity (the parent controls it), so skip the wholesale minimum order quantity override
+            // for their quantity inputs — both integrations render those inputs through this same filter.
+            // Skipping leaves $filtered_args === $args, which the shared return at the end of this method
+            // passes through unchanged (WWPP-1828).
+            if ( ! $this->is_bundled_or_composite_quantity_input( $filtered_args )
+                && ! empty( $user_wholesale_role ) && $product && is_a( $product, 'WC_Product' ) ) {
 
                 // No need for variable product, we don't need it be applied on a price range
                 // We need it to be applied per variation for variable products.
@@ -308,11 +433,38 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
         }
 
         /**
+         * Check if the quantity input args belong to a bundled (WC Product Bundles) or composite
+         * (WC Composite Products) child item.
+         *
+         * Both integrations render their child quantity inputs through the
+         * 'woocommerce_quantity_input_args' filter using a consistent input name convention:
+         * 'bundle_quantity_{id}' for bundled items and 'wccp_component_quantity[{id}]' for composite
+         * components.
+         *
+         * @param array $args Quantity field input args.
+         *
+         * @since  2.1.1
+         * @access private
+         *
+         * @return bool True if the input belongs to a bundled/composite child item.
+         */
+        private function is_bundled_or_composite_quantity_input( $args ) {
+
+            if ( empty( $args['input_name'] ) || ! is_string( $args['input_name'] ) ) {
+                return false;
+            }
+
+            return false !== strpos( $args['input_name'], self::BUNDLED_QTY_INPUT_NAME )
+                || false !== strpos( $args['input_name'], self::COMPOSITE_QTY_INPUT_NAME );
+        }
+
+        /**
          * Set minimum order quantity requirement for product.
          *
          * @param WC_Cart $cart Cart object.
          *
          * @since  2.0.1
+         * @since  2.1.1 Skip enforcement on bundled/composite child cart items. (WWPP-1828)
          * @access public
          */
         public function set_cart_item_quantity( $cart ) {
@@ -322,6 +474,15 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
                 // Check if cart is not empty.
                 if ( ! WC()->cart->is_empty() ) {
                     foreach ( $cart->get_cart() as $cart_item_key => $cart_item ) {
+                        // Bundled (WC Product Bundles) and composite (WC Composite Products) child
+                        // items have their quantity controlled by the parent, so the wholesale
+                        // minimum order quantity must not be enforced on them here. This exemption is
+                        // unconditional, unlike filter_if_cart_item_is_included_on_cart_totals_computation(),
+                        // which only exempts children that are NOT priced individually.
+                        if ( ! empty( $cart_item['bundled_by'] ) || ! empty( $cart_item['composite_parent'] ) ) {
+                            continue;
+                        }
+
                         $product_id   = $cart_item['data']->get_id();
                         $product_type = $cart_item['data']->get_type();
 
@@ -374,6 +535,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * @param array $user_wholesale_role User wholesale role.
          *
          * @since  2.0.1
+         * @since  2.1.1 Skip bundled/composite child cart items so they don't inflate the aggregation.
          * @access private
          *
          * @return array
@@ -385,6 +547,13 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
             $cart                           = WC()->cart->get_cart();
 
             foreach ( $cart as $cart_item_key => $cart_item ) {
+                // Bundled (WC Product Bundles) and composite (WC Composite Products) child items have their
+                // quantity controlled by the parent, so they must not count toward a standalone variable
+                // product's wholesale minimum order quantity aggregation.
+                if ( ! empty( $cart_item['bundled_by'] ) || ! empty( $cart_item['composite_parent'] ) ) {
+                    continue;
+                }
+
                 $product_id         = $cart_item['data']->get_id();
                 $parent_variable_id = $cart_item['data']->get_parent_id();
                 $product_type       = $cart_item['data']->get_type();
@@ -571,9 +740,20 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * @since  1.15.3
          * @since  1.16.0  Add support for wholesale order quantity step.
          * @since  1.16.7
+         * @since  2.2.3   Fall back to the variable-level wholesale order quantity step so a step set on the parent variable product (not per variation) is enforced on the qty field.
          * @return array Filtered array of variation arguments.
          */
         public function enforce_min_order_qty_requirement_on_qty_field( $args, $variable, $variation ) {
+
+            // Bundled (WC Product Bundles) and composite (WC Composite Products) child items have their
+            // quantity controlled by the parent, so the standalone wholesale minimum order quantity is not
+            // enforced for them. Skip both the quantity-field enforcement (input_value / min_value / step)
+            // and the "Min: X" / "Increments of X" label this filter injects into the variation price html
+            // while a bundle/composite child is rendering — mirroring the suppression in
+            // display_minimum_wholesale_order_quantity().
+            if ( $this->is_rendering_bundle_or_composite_child() ) {
+                return $args;
+            }
 
             $variable_id         = WWP_Helper_Functions::wwp_get_product_id( $variable );
             $variation_id        = WWP_Helper_Functions::wwp_get_product_id( $variation );
@@ -611,6 +791,12 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
                     }
 
                     $order_qty_step = $variation->get_meta( $user_wholesale_role[0] . '_wholesale_order_quantity_step', true );
+
+                    // Per parent variable level. Mirrors the minimum order quantity fallback above so a
+                    // step set on the variable parent (not per variation) is still enforced on the qty field.
+                    if ( ! $order_qty_step ) {
+                        $order_qty_step = $variable->get_meta( $user_wholesale_role[0] . '_variable_level_wholesale_order_quantity_step', true );
+                    }
 
                     if ( $order_qty_step ) {
 
@@ -745,6 +931,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * @param float   $wholesale_price       Wholesale price.
          *
          * @since  1.16.0 Add support for wholesale order quantity step.
+         * @since  2.1.1  Skip the MOQ pricing gate for bundled/composite child cart items. (WWPP-1828)
          * @access public
          *
          * @since  1.15.0
@@ -756,6 +943,16 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
 
             if ( ! $this->filter_if_cart_item_is_included_on_cart_totals_computation( true, $cart_item, $user_wholesale_role ) ) {
                 return false;
+            }
+
+            // Bundled (WC Product Bundles) and composite (WC Composite Products) child items have their
+            // quantity controlled by the parent, so the child's standalone wholesale minimum order quantity
+            // must not gate wholesale pricing here. Without this, a priced-individually child sitting below
+            // its MOQ (now that its quantity is no longer forced up to it) would be denied wholesale pricing
+            // and charged the regular price. Apply wholesale pricing at the bundle/composite-defined
+            // quantity (WWPP-1828).
+            if ( ! empty( $cart_item['bundled_by'] ) || ! empty( $cart_item['composite_parent'] ) ) {
+                return $apply_wholesale_price;
             }
 
             $notice                    = array();
@@ -908,7 +1105,10 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          * Filter if apply wholesale price per cart level. Validate if cart level requirements are meet or not.
          *
          * @param boolean $apply_wholesale_price Boolean flag that determines either to apply or not wholesale pricing per cart level.
-         * @param float   $cart_total            Cart total calculation.
+         * @param float   $cart_total            Cart total supplied by the caller. NOTE: as of v2.1.0 this
+         *                                       argument is discarded inside the callback and recomputed via
+         *                                       `WWPP_Helper_Functions::calculate_cart_totals()` so it shares
+         *                                       the same basis used by the minimum-order notice.
          * @param array   $cart_items            Aray of cart items.
          * @param WC_Cart $cart_object           WC_Cart instance.
          * @param array   $user_wholesale_role   Current user wholesale roles.
@@ -922,12 +1122,20 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          *                and do not count the added product to the min order quantity requirement.
          * @since  1.30.1  Fix minimum order subtotal price not calculating properly if ACFW BOGO or Add Products discount is applied.
          * @since  1.30.2  Move the proces of the minimum order subtotal price filter to helper.
+         * @since  2.1.0   Recompute `$cart_total` via `calculate_cart_totals()` so the wholesale-price
+         *                 application check uses the same basis (the raw wholesale-price subtotal) as
+         *                 the minimum-order notice.
          * @access public
          *
          * @return array|boolean Array of error notices on if current cart item fails cart requirements, boolean true if passed and should apply wholesale pricing.
          */
         public function filter_if_apply_wholesale_price_cart_level( $apply_wholesale_price, $cart_total, $cart_items, $cart_object, $user_wholesale_role ) {
-
+            // Recompute $cart_total via calculate_cart_totals() so the threshold check uses the same
+            // basis as minimum_order_requirement_notice() — the raw wholesale-price subtotal. Without
+            // this, the price-application check would compare against WC's cart_contents_total (the
+            // actual line totals) instead of the wholesale-price subtotal the notice uses, so the two
+            // could diverge near the threshold.
+            $cart_total            = WWPP_Helper_Functions::calculate_cart_totals( $cart_object->cart_contents_total, $cart_object, $user_wholesale_role );
             $apply_wholesale_price = WWPP_Helper_Functions::apply_wholesale_price_per_cart_level_min_condition( $cart_total, $cart_object, $user_wholesale_role );
 
             // Avoid returning array if wholesale price is not applied,
@@ -1357,11 +1565,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
          */
         public function cart_checkout_block_notices() {
 
-            $l10n = array(
-                'i18n' => array(
-                    'minOrderQtyNotice' => __( 'Please adjust your cart to meet all of the wholesale requirements in order to proceed.', 'woocommerce-wholesale-prices-premium' ),
-                ),
-            );
+            $l10n = array();
             if ( WWPP_Helper_Functions::has_wc_cart_block() ) {
 
                 $l10n = array_merge(
@@ -1375,7 +1579,7 @@ if ( ! class_exists( 'WWPP_Wholesale_Price_Requirement' ) ) {
                 $script = new \RymeraWebCo\WWPP\Vite_App(
                     'wwpp-cart-checkout-block-notices',
                     'src/vanilla/cart-checkout-min-req.ts',
-                    array(),
+                    array( 'wp-i18n' ),
                     $l10n
                 );
                 $script->enqueue();
@@ -1412,10 +1616,18 @@ CSS;
                     $script = new \RymeraWebCo\WWPP\Vite_App(
                         'wwpp-cart-checkout-block-notices',
                         'src/vanilla/cart-checkout-min-req.ts',
-                        array(),
+                        array( 'wp-i18n' ),
                         $l10n
                     );
                     $script->enqueue();
+
+                    $css = <<<'CSS'
+                        body.wwpp-block-checkout-place-order-hide .wc-block-checkout__actions_row .wc-block-components-checkout-place-order-button {
+                            display: none;
+                        }
+                    CSS;
+
+                    wp_add_inline_style( 'wc-blocks-style', $css );
                 }
             }
         }
@@ -1507,6 +1719,74 @@ CSS;
         }
 
         /**
+         * Remove cart items with no wholesale price configured for the current wholesale role,
+         * and block checkout for items still resolving to retail price due to unmet minimum-order
+         * requirements.
+         *
+         * Fires on woocommerce_check_cart_items, which WooCommerce calls on both the cart page and
+         * during checkout processing. Items with no wholesale price configured are removed and a
+         * user-facing notice is shown. Items whose wholesale pricing was withheld because minimum-order
+         * requirements were not met are left in the cart but block checkout with an error notice.
+         *
+         * @since  2.1.0
+         * @access public
+         * @return void
+         */
+        public function validate_cart_wholesale_pricing() {
+
+            $user_wholesale_role                                 = $this->_wwpp_wholesale_roles->getUserWholesaleRole();
+            $remove_retail_product_from_cart_for_wholesale_users = wc_string_to_bool( get_option( 'wwpp_settings_remove_retail_products_for_wholesale_customers_in_cart' ) ); // get the option.
+
+            if ( empty( $user_wholesale_role ) || ! $remove_retail_product_from_cart_for_wholesale_users ) {
+                return;
+            }
+
+            $cart             = WC()->cart;
+            $blocked_products = array();
+
+            foreach ( $cart->get_cart() as $cart_item_key => $cart_item ) {
+
+                // Re-check whether a wholesale price is actually configured for this product.
+                $product_id      = WWP_Helper_Functions::wwp_get_product_id( $cart_item['data'] );
+                $wholesale_price = WWP_Wholesale_Prices::get_product_wholesale_price_on_cart( $product_id, $user_wholesale_role, $cart_item, $cart );
+                $product_name    = $cart_item['data']->get_name();
+
+                if ( empty( $wholesale_price ) ) {
+                    $cart->remove_cart_item( $cart_item_key );
+
+                    wc_add_notice(
+                        sprintf(
+                            /* translators: %s: product name */
+                            __( '"%s" was removed from your cart because no wholesale price is configured for your role. Please contact the store if you believe this is in error.', 'woocommerce-wholesale-prices-premium' ),
+                            esc_html( $product_name )
+                        ),
+                        'notice'
+                    );
+                } elseif ( ! isset( $cart_item['wwp_data']['wholesale_priced'] ) || 'no' === $cart_item['wwp_data']['wholesale_priced'] ) {
+                    // Wholesale price exists but wasn't applied (e.g. min subtotal not met) — collect for aggregated error notice.
+                    $blocked_products[] = $product_name;
+                }
+            }
+
+            // Emit one aggregated error notice for all blocked products to avoid notice stacking.
+            if ( ! empty( $blocked_products ) ) {
+                wc_add_notice(
+                    sprintf(
+                        /* translators: %s: comma-separated product names */
+                        _n(
+                            '"%s" could not be priced at the wholesale rate. Please adjust your cart to meet wholesale pricing requirements before continuing.',
+                            'The following products could not be priced at the wholesale rate: %s. Please adjust your cart to meet wholesale pricing requirements before continuing.',
+                            count( $blocked_products ),
+                            'woocommerce-wholesale-prices-premium'
+                        ),
+                        esc_html( wc_format_list_of_items( $blocked_products ) )
+                    ),
+                    'error'
+                );
+            }
+        }
+
+        /**
          * Execute model.
          *
          * @since  1.12.8
@@ -1516,6 +1796,37 @@ CSS;
 
             // Add order minimum order quantity data on product wholesale price fields.
             add_filter( 'wwp_filter_wholesale_price_html', array( $this, 'display_minimum_wholesale_order_quantity' ), 100, 4 );
+
+            // Track when WC Product Bundles / WC Composite Products render their child items so the
+            // standalone wholesale minimum order quantity label is suppressed for those children (the
+            // parent controls the child's quantity). These actions bracket the child rendering — including
+            // each child's price html — on the bundle/composite single product page.
+            add_action( 'woocommerce_before_bundled_items', array( $this, 'mark_bundle_or_composite_child_render_start' ) );
+            add_action( 'woocommerce_after_bundled_items', array( $this, 'mark_bundle_or_composite_child_render_end' ) );
+            add_action( 'woocommerce_composite_before_components', array( $this, 'mark_bundle_or_composite_child_render_start' ) );
+            add_action( 'woocommerce_composite_after_components', array( $this, 'mark_bundle_or_composite_child_render_end' ) );
+
+            // The before/after actions above bracket the *inline* child render only. When a variable
+            // child has more variations than WooCommerce's ajax_variation_threshold, its variation
+            // price html is built during a separate `wc-ajax=get_variation` request where those actions
+            // never fire — so the standalone "Min: X" label leaked back onto the variation price. WC PB
+            // and WC Composite both bracket a child's price computation (including that ajax request)
+            // with their own filter add/remove actions, so hook those too. The render-depth counter
+            // keeps the overlapping brackets balanced.
+            add_action( 'woocommerce_bundled_product_price_filters_added', array( $this, 'mark_bundle_or_composite_child_render_start' ) );
+            add_action( 'woocommerce_bundled_product_price_filters_removed', array( $this, 'mark_bundle_or_composite_child_render_end' ) );
+            add_action( 'woocommerce_composite_products_apply_product_filters', array( $this, 'mark_bundle_or_composite_child_render_start' ) );
+            add_action( 'woocommerce_composite_products_remove_product_filters', array( $this, 'mark_bundle_or_composite_child_render_end' ) );
+
+            // A variable child's per-variation price html is built and cached (into the variation data /
+            // ajax get_variation response) before the brackets above set the depth flag — and for a child
+            // that is NOT priced individually the price html is built during the parent's aggregate
+            // calculation, outside any child-render window. The depth-flag guard in
+            // display_minimum_wholesale_order_quantity() therefore can't suppress the label for those
+            // variations. Strip the already-baked label from the variation data while the integrations
+            // build the child's variations (flag set via the price-filter brackets).
+            add_filter( 'woocommerce_available_variation', array( $this, 'strip_min_order_qty_label_from_bundled_variation' ), 99, 1 );
+
             add_filter( 'woocommerce_quantity_input_args', array( $this, 'set_order_quantity_attribute_values' ), 11, 2 );
             add_filter( 'wwof_variation_quantity_input_args', array( $this, 'set_order_quantity_attribute_values' ), 10, 2 );
 
@@ -1547,6 +1858,9 @@ CSS;
             // Print minimum order requirement notice.
             add_action( 'woocommerce_before_cart', array( $this, 'minimum_order_requirement_notice' ), 10 );
             add_action( 'woocommerce_before_checkout_form', array( $this, 'minimum_order_requirement_notice' ), 10 );
+
+            // Remove cart items with no wholesale price configured for the current role.
+            add_action( 'woocommerce_check_cart_items', array( $this, 'validate_cart_wholesale_pricing' ) );
 
             // Apply minimum order quantity when adding product to cart via shop page.
             add_filter( 'woocommerce_loop_add_to_cart_args', array( $this, 'apply_minimum_order_quantity_on_shop_page_add_to_cart' ), 10, 2 );

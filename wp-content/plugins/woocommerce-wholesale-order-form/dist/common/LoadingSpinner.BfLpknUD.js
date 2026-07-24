@@ -1,0 +1,1 @@
+import{En as a,Ln as n,Yt as s,a as i,er as r,hr as t,mn as o,wn as e,xn as p}from"./ExclamationCircleFilled.hVlCEKoI.js";import{t as l}from"./spin.BD2i9Mhn.js";s();var m=p({__name:"LoadingSpinner",setup(a){const s=e(i,{style:{fontSize:"24px"},spin:!0});return(a,i)=>(n(),o(t(l),{indicator:t(s)},null,8,["indicator"]))}});export{m as t};

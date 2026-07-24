@@ -9,7 +9,8 @@ jQuery(document).ready(function ($) {
                 url: ajaxurl,
                 type: "POST",
                 data: {
-                    action: "wwpp_getting_started_notice_hide"
+                    action: "wwpp_getting_started_notice_hide",
+                    nonce: (typeof wwpp_getting_started_params !== "undefined" ? wwpp_getting_started_params.nonce : "")
                 },
                 dataType: "json"
             })

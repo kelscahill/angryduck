@@ -244,19 +244,23 @@ class Order_Form {
          * @param array  $form_body The form body meta.
          * @param int    $post_id   The post ID.
          * @param string $meta_key  The meta key.
+         * @param string $context   The order form context. One of:
+         *                          - 'view' — the order form is rendered for an end user on the frontend.
+         *                          - 'edit' — the order form is loaded into the admin form-editor preview.
+         *                          Third-party subscribers that registered this filter with
+         *                          `accepted_args` of 1, 2, or 3 will simply not receive this fourth
+         *                          argument; subscribers that switch their `accepted_args` to 4 must
+         *                          handle the documented value set above (do not assume a typical
+         *                          filter-context shape like a WP_Query args array).
          *
          * @since 3.0
+         * @since 3.1.0 Added the $context argument so subscribers can skip
+         *              filtering when the form is loaded for the admin
+         *              editor preview.
          */
         $this->form_body = apply_filters(
             'wwof_order_form_body_meta',
             wp_parse_args(
-            /**
-             * Filter form body meta.
-             *
-             * @param array $form_body The form body meta.
-             *
-             * @since 3.0
-             */
                 array_filter( (array) get_post_meta( $post->ID, 'form_body', true ) ),
                 array(
                     'columns'  => array(),
@@ -267,7 +271,8 @@ class Order_Form {
                 )
             ),
             $post->ID,
-            'form_body'
+            'form_body',
+            $this->context
         );
 
         /**

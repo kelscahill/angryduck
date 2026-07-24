@@ -1,0 +1,1 @@
+import{En as m,Ln as t,Yt as a,mn as n,xn as o}from"../../../../../../../../../common/ExclamationCircleFilled.hVlCEKoI.js";import{t as s}from"../../../../../../../../../common/ElementAlignment.B_FfA3ws.js";a();var e=o({__name:"ProductGtinStyles",setup:m=>(m,a)=>(t(),n(s))});export{e as default};

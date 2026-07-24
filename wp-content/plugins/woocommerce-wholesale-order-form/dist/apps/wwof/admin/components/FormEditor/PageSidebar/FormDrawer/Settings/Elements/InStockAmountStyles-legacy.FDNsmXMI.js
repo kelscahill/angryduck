@@ -1,0 +1,1 @@
+System.register(["../../../../../../../../../common/ExclamationCircleFilled-legacy.BI-ax_ZG.js","../../../../../../../../../common/ElementAlignment-legacy.BvvVMOYl.js"],function(n,e){var t,c,m,o,l;return{setters:[function(n){n.En,t=n.Ln,c=n.Yt,m=n.mn,o=n.xn},function(n){l=n.t}],execute:function(){c(),n("default",o({__name:"InStockAmountStyles",setup:n=>(n,e)=>(t(),m(l))}))}}});

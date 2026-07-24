@@ -176,7 +176,7 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
 
             add_filter( 'woocommerce_cart_item_price', array( $this, 'filter_cart_item_price' ), 300, 2 );
             add_filter( 'wwp_get_product_raw_wholesale_price', array( $this, 'filter_raw_wholesale_price' ), 11, 2 );
-            add_filter( 'wwpp_order_item_wholesale_priced', array( $this, 'filter_order_item_wholesale_priced' ), 11, 2 );
+            add_filter( 'wwpp_order_item_wholesale_priced', array( $this, 'filter_order_item_wholesale_priced' ), 11, 3 );
             add_action( 'wwp_add_order_item_meta', array( $this, 'update_order_item_meta' ) );
 
             /**
@@ -325,7 +325,7 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
          */
         public function wholesale_admin_settings_tabs( $tabs ) {
             $tabs['wholesale_prices']['child']['wcvendors'] = array(
-                'sort'     => 7,
+                'sort'     => 11,
                 'key'      => 'wcvendors',
                 'label'    => __( 'WC Vendors', 'woocommerce-wholesale-prices-premium' ),
                 'sections' => array(
@@ -514,7 +514,7 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
                 return;
             }
 
-            if ( empty( $_POST['_wcv-save_store_settings'] ) || ! wp_verify_nonce( $_POST['_wcv-save_store_settings'], 'wcv-save_store_settings' ) || ! is_user_logged_in() ) {
+            if ( empty( $_POST['_wcv-save_store_settings'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wcv-save_store_settings'] ) ), 'wcv-save_store_settings' ) || ! is_user_logged_in() ) {
                 return;
             }
 
@@ -536,9 +536,9 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
                 isset( $_POST['wwp_non_wholesale_show_in_shop'] ) ? 'yes' : 'no'
             );
 
-            $vendor_wholesale_customer_roles = isset( $_POST['wwp_non_wholesale_wholesale_role_select2'] ) ? $_POST['wwp_non_wholesale_wholesale_role_select2'] : array();
+            $vendor_wholesale_customer_roles = isset( $_POST['wwp_non_wholesale_wholesale_role_select2'] ) ? array_map( 'sanitize_text_field', (array) wp_unslash( $_POST['wwp_non_wholesale_wholesale_role_select2'] ) ) : array();
 
-            $wholesale_roles = array_unique( array_map( 'sanitize_text_field', $vendor_wholesale_customer_roles ) );
+            $wholesale_roles = array_unique( $vendor_wholesale_customer_roles );
 
             update_user_meta(
                 $vendor_id,
@@ -824,7 +824,7 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
                 return;
             }
 
-            if ( empty( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'] ) || ! wp_verify_nonce( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'], 'wwpp_save_vendor_product_wholesale_prices' ) ) {
+            if ( empty( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'] ) ), 'wwpp_save_vendor_product_wholesale_prices' ) ) {
                 return;
             }
 
@@ -857,7 +857,7 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
                 return;
             }
 
-            if ( empty( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'] ) || ! wp_verify_nonce( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'], 'wwpp_save_vendor_product_wholesale_prices' ) ) {
+            if ( empty( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wwpp_save_vendor_product_wholesale_prices_nonce'] ) ), 'wwpp_save_vendor_product_wholesale_prices' ) ) {
                 return;
             }
 
@@ -1052,16 +1052,36 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
          * Filter vendor order item wholesale priced meta.
          *
          * Checks if wholesale is disabled for the vendor, and sets the wholesale priced meta to no.
+         * Also honours the vendor allowed-role restriction in the order context: manual orders are
+         * created in wp-admin, where filter_raw_wholesale_price()'s `! is_admin()` guard is skipped,
+         * so the restriction is enforced here using the order customer's resolved wholesale role.
+         *
+         * @since 2.1.1 Enforce the vendor allowed-role restriction using the order customer role, and
+         *              leave store-owned (non-vendor) products untouched.
          *
          * @param string     $wholesale_priced Is item wholesale priced. yes|no.
-         * @param WC_Product $product The product object.
+         * @param WC_Product $product          The product object.
+         * @param string     $role             The order customer's wholesale role. Empty when unknown.
          * @return mixed
          */
-        public function filter_order_item_wholesale_priced( $wholesale_priced, $product ) {
+        public function filter_order_item_wholesale_priced( $wholesale_priced, $product, $role = '' ) {
             $vendor_id = WCV_Vendors::get_vendor_from_product( $product->get_id() );
 
+            // Only govern products that actually belong to a vendor. Store-owned products must be
+            // left to the core wholesale logic (otherwise is_wholesale_enabled_for_vendor() below
+            // would wrongly disable their wholesale pricing).
+            if ( ! WCV_Vendors::is_vendor( $vendor_id ) ) {
+                return $wholesale_priced;
+            }
+
             if ( ! $this->is_wholesale_enabled_for_vendor( $vendor_id ) || ! $this->is_wholesale_enabled() ) {
-                $wholesale_priced = 'no';
+                return 'no';
+            }
+
+            // Honour the vendor allowed-role restriction: a vendor product is only wholesale-priced
+            // for roles the store has enabled for vendors. Mirrors filter_raw_wholesale_price().
+            if ( '' !== $role && ! in_array( $role, $this->get_vendor_allowed_roles(), true ) ) {
+                return 'no';
             }
 
             return $wholesale_priced;
@@ -1360,15 +1380,15 @@ if ( ! class_exists( 'WWPP_WC_Vendors' ) ) {
         public function get_posted_data( $key, $loop = null, $default_value = '' ) {
             $is_variation = ! is_null( $loop ) && is_numeric( $loop ) ? true : false;
 
-            if ( ! isset( $_POST['_wcv-save_product'] ) || ! wp_verify_nonce( $_POST['_wcv-save_product'], 'wcv-save_product' ) || ! is_user_logged_in() ) {
+            if ( ! isset( $_POST['_wcv-save_product'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wcv-save_product'] ) ), 'wcv-save_product' ) || ! is_user_logged_in() ) {
                 return;
             }
 
             if ( $is_variation ) {
-                return isset( $_POST[ $key ][ $loop ] ) ? $_POST[ $key ][ $loop ] : $default_value;
+                return isset( $_POST[ $key ][ $loop ] ) ? wc_clean( wp_unslash( $_POST[ $key ][ $loop ] ) ) : $default_value;
             }
 
-            return isset( $_POST[ $key ] ) ? $_POST[ $key ] : $default_value;
+            return isset( $_POST[ $key ] ) ? wc_clean( wp_unslash( $_POST[ $key ] ) ) : $default_value;
         }
 
         /**

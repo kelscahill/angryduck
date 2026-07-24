@@ -55,7 +55,8 @@ jQuery(function ($) {
     jQuery("#apply_wholesale_pricing").on('change', function () {
         const is_enabled = $(this).is(":checked");
         if (is_enabled) {
-            if (confirm(wwpp_wholesale_prices_order_params.confirmation_message)) {
+            // translators: Confirmation dialog shown when admin toggles wholesale pricing on an order.
+            if ( confirm( wp.i18n.__( 'Are you sure you want to apply wholesale pricing to this order?', 'woocommerce-wholesale-prices-premium' ) ) ) {
                 $(document).trigger('wwpp-order-data-item-after');
             } else {
                 jQuery("#apply_wholesale_pricing").prop('checked', false);

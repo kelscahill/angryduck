@@ -36,7 +36,7 @@ jQuery(document).ready(function ($) {
     $non_zoned_shipping_methods.val("").trigger("change");
     $shipping_zones.val("").trigger("change");
     $shipping_zone_methods.html(
-      '<option value="">' + wwpp_shipping_controls_custom_field_params.i18n_wc2_6_select_shipping_method + "</option>"
+      '<option value="">' + wp.i18n.__( '--Select Shipping Zone Method--', 'woocommerce-wholesale-prices-premium' ) + "</option>"
     );
     $shipping_zone_methods.trigger("change");
 
@@ -141,7 +141,7 @@ jQuery(document).ready(function ($) {
           if (data.status == "success") {
             var shipping_method_options =
               '<option value="">' +
-              wwpp_shipping_controls_custom_field_params.i18n_wc2_6_select_shipping_method +
+              wp.i18n.__( '--Select Shipping Zone Method--', 'woocommerce-wholesale-prices-premium' ) +
               "</option>";
 
             for (var method_instance_id in data.shipping_methods) {
@@ -167,7 +167,7 @@ jQuery(document).ready(function ($) {
             console.log(data);
             toastr.error(
               data.error_message,
-              wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_to_retrieve_shipping_zone_methods,
+              wp.i18n.__( 'Failed to retrieve shipping zone methods', 'woocommerce-wholesale-prices-premium' ),
               { closeButton: true, showDuration: errorMessageDuration }
             );
           }
@@ -176,7 +176,7 @@ jQuery(document).ready(function ($) {
           console.log(jqxhr);
           toastr.error(
             "",
-            wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_to_retrieve_shipping_zone_methods,
+            wp.i18n.__( 'Failed to retrieve shipping zone methods', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: errorMessageDuration }
           );
         })
@@ -201,17 +201,17 @@ jQuery(document).ready(function ($) {
     $(".woocommerce-save-button").attr("disabled", "disabled");
 
     if (mapping["wholesale_role"] == "")
-      errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_wholesale_role + "<br/>");
+      errors.push(wp.i18n.__( 'Empty wholesale role', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
 
     if (mapping["use_non_zoned_shipping_method"] == "yes") {
       if (mapping["non_zoned_shipping_method"] == "")
-        errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_non_zoned_shipping_method + "<br/>");
+        errors.push(wp.i18n.__( 'Empty non-zoned shipping method', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
     } else {
       if (mapping["shipping_zone"] == "")
-        errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_shipping_zone + "<br/>");
+        errors.push(wp.i18n.__( 'Empty shipping zone', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
 
       if (mapping["shipping_method"] == "")
-        errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_shipping_method + "<br/>");
+        errors.push(wp.i18n.__( 'Empty shipping method', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
     }
 
     if (errors.length > 0) {
@@ -219,7 +219,7 @@ jQuery(document).ready(function ($) {
 
       for (var i = 0; i < errors.length; i++) err_msg += errors[i];
 
-      toastr.error(err_msg, wwpp_shipping_controls_custom_field_params.i18n_wc2_6_please_fill_the_form_properly, {
+      toastr.error(err_msg, wp.i18n.__( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: errorMessageDuration,
       });
@@ -306,7 +306,7 @@ jQuery(document).ready(function ($) {
 
             $mapping_table.find("tbody").append(tr);
 
-            toastr.success("", wwpp_shipping_controls_custom_field_params.i18n_wc2_6_successfully_add_new_mapping, {
+            toastr.success("", wp.i18n.__( 'Successfully added new wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: successMessageDuration,
             });
@@ -314,14 +314,14 @@ jQuery(document).ready(function ($) {
             console.log(data);
             toastr.error(
               data.error_message,
-              wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_to_add_new_mapping,
+              wp.i18n.__( 'Failed to add new wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ),
               { closeButton: true, showDuration: errorMessageDuration }
             );
           }
         })
         .fail(function (jqxhr, text_status, error_thrown) {
           console.log(jqxhr);
-          toastr.error("", wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_to_add_new_mapping, {
+          toastr.error("", wp.i18n.__( 'Failed to add new wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: errorMessageDuration,
           });
@@ -376,17 +376,17 @@ jQuery(document).ready(function ($) {
     $(".woocommerce-save-button").attr("disabled", "disabled");
 
     if (mapping["wholesale_role"] == "")
-      errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_wholesale_role + "<br/>");
+      errors.push(wp.i18n.__( 'Empty wholesale role', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
 
     if (mapping["use_non_zoned_shipping_method"] == "yes") {
       if (mapping["non_zoned_shipping_method"] == "")
-        errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_non_zoned_shipping_method + "<br/>");
+        errors.push(wp.i18n.__( 'Empty non-zoned shipping method', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
     } else {
       if (mapping["shipping_zone"] == "")
-        errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_shipping_zone + "<br/>");
+        errors.push(wp.i18n.__( 'Empty shipping zone', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
 
       if (mapping["shipping_method"] == "")
-        errors.push(wwpp_shipping_controls_custom_field_params.i18n_wc2_6_empty_shipping_method + "<br/>");
+        errors.push(wp.i18n.__( 'Empty shipping method', 'woocommerce-wholesale-prices-premium' ) + "<br/>");
     }
 
     if (errors.length > 0) {
@@ -394,7 +394,7 @@ jQuery(document).ready(function ($) {
 
       for (var i = 0; i < errors.length; i++) err_msg += errors[i];
 
-      toastr.error(err_msg, wwpp_shipping_controls_custom_field_params.i18n_wc2_6_please_fill_the_form_properly, {
+      toastr.error(err_msg, wp.i18n.__( 'Please fill the form properly', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: errorMessageDuration,
       });
@@ -483,7 +483,7 @@ jQuery(document).ready(function ($) {
             $button_controls.trigger("add_mode");
             $mapping_table.find("tr").removeClass("processing").end().find(".dashicons").css("visibility", "visible");
 
-            toastr.success("", wwpp_shipping_controls_custom_field_params.i18n_wc2_6_successfully_edited_mapping, {
+            toastr.success("", wp.i18n.__( 'Successfully edited wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: successMessageDuration,
             });
@@ -491,14 +491,14 @@ jQuery(document).ready(function ($) {
             console.log(data);
             toastr.error(
               data.error_message,
-              wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_edited_mapping,
+              wp.i18n.__( 'Failed to edit wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ),
               { closeButton: true, showDuration: errorMessageDuration }
             );
           }
         })
         .fail(function (jqxhr, text_status, error_thrown) {
           console.log(jqxhr);
-          toastr.error("", wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_edited_mapping, {
+          toastr.error("", wp.i18n.__( 'Failed to edit wholesale / shipping mapping', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: errorMessageDuration,
           });
@@ -544,12 +544,12 @@ jQuery(document).ready(function ($) {
               .append(
                 '<tr class="no-items">' +
                   '<td class="colspanchange" colspan="5">' +
-                  wwpp_shipping_controls_custom_field_params.i18n_wc2_6_no_mappings_found +
+                  wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) +
                   "</td>" +
                   "</tr>"
               );
 
-          toastr.success("", wwpp_shipping_controls_custom_field_params.i18n_wc2_6_successfully_deleted_mapping, {
+          toastr.success("", wp.i18n.__( 'Successfully deleted wholesale / shipping zone mapping', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: successMessageDuration,
           });
@@ -557,14 +557,14 @@ jQuery(document).ready(function ($) {
           console.log(data);
           toastr.error(
             data.error_message,
-            wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_deleted_mapping,
+            wp.i18n.__( 'Failed to delete wholesale / shipping zone mapping', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: errorMessageDuration }
           );
         }
       })
       .fail(function (jqxhr, text_status, error_thrown) {
         console.log(jqxhr);
-        toastr.error(data.error_message, wwpp_shipping_controls_custom_field_params.i18n_wc2_6_failed_deleted_mapping, {
+        toastr.error(data.error_message, wp.i18n.__( 'Failed to delete wholesale / shipping zone mapping', 'woocommerce-wholesale-prices-premium' ), {
           closeButton: true,
           showDuration: errorMessageDuration,
         });

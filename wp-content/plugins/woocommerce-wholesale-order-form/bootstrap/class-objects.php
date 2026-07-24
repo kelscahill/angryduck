@@ -7,7 +7,9 @@
  */
 
 use RymeraWebCo\WWOF\Classes\License_Manager;
+use RymeraWebCo\WWOF\Classes\Order_Source;
 use RymeraWebCo\WWOF\Classes\Update_Manager;
+use RymeraWebCo\WWOF\Classes\Variations_Response_Cache;
 use RymeraWebCo\WWOF\Post_Types\Order_Form_Post_Type;
 use RymeraWebCo\WWOF\Classes\Order_Forms_Admin_Page;
 use RymeraWebCo\WWOF\Classes\WP_Admin;
@@ -20,4 +22,6 @@ return array(
     Order_Forms_Admin_Page::instance(),
     License_Manager::instance(),
     Update_Manager::instance(),
+    Order_Source::instance(),
+    Variations_Response_Cache::instance(),
 );

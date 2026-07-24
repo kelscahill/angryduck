@@ -1,0 +1,1 @@
+import{En as o,Ln as a,Yt as m,mn as n,xn as s}from"../../../../../../../../../common/ExclamationCircleFilled.hVlCEKoI.js";import{t}from"../../../../../../../../../common/CommonStyleControls.DYKveA6t.js";m();var r=s({__name:"FormPaginationStyles",setup:o=>(o,m)=>(a(),n(t))});export{r as default};

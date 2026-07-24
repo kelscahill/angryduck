@@ -6,13 +6,13 @@ Plugin URI:           https://wholesalesuiteplugin.com/
 Update URI:           wholesalesuiteplugin.com
 Description:          WooCommerce Premium Extension for the Woocommerce Wholesale Prices Plugin
 Author:               Rymera Web Co
-Version:              2.0.9
+Version:              2.1.1.1
 Author URI:           http://rymera.com.au/
 Text Domain:          woocommerce-wholesale-prices-premium
 Requires at least:    6.5
 Tested up to:         7.0
 WC requires at least: 4.0
-WC tested up to:      10.7
+WC tested up to:      10.9
 */
 
 // This file is the main plugin boot loader..

@@ -1,0 +1,1 @@
+System.register(["./modal-legacy.DeQ1DJ8b.js"],function(e,n){var r,t,c,s,i,o;return{setters:[function(e){r=e.t}],execute:function(){({info:t,success:c,error:s,warning:i,confirm:o}=r),e("t",o)}}});

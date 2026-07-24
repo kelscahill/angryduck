@@ -1,0 +1,1 @@
+import{En as m,Ln as n,Yt as t,mn as a,xn as o}from"../../../../../../../../../common/ExclamationCircleFilled.hVlCEKoI.js";import{t as s}from"../../../../../../../../../common/ElementAlignment.B_FfA3ws.js";t();var e=o({__name:"InStockAmountStyles",setup:m=>(m,t)=>(n(),a(s))});export{e as default};

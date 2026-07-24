@@ -671,6 +671,7 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
 
                     if ( WC_Subscriptions_Product::is_subscription( $product ) ) {
                         $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                        $wholesale_price = $this->get_pricing_data_based_on_pricing_levels( $wholesale_price, $product, $user_wholesale_role );
 
                         $cart_item['data']->set_price( $wholesale_price );
 
@@ -696,9 +697,20 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
          * @param WC_Product $product Product object.
          *
          * @since 2.0.2
+         * @since 2.1.0 Added per-product re-entrancy guard to prevent infinite recursion when
+         *              wholesale price helpers re-fire `woocommerce_product_*_get_price`.
          * @return float
          */
         public function set_subscription_prices_for_calculation( $price, $product ) {
+            // Prevent infinite recursion: wholesale price lookup methods call $product->get_price()
+            // internally, which re-fires this filter for the same product.
+            static $calculating_ids = array();
+
+            $product_id = $product->get_id();
+            if ( in_array( $product_id, $calculating_ids, true ) ) {
+                return $price;
+            }
+
             $user_wholesale_role = $this->_get_current_user_wholesale_role();
 
             if ( empty( $user_wholesale_role ) ) {
@@ -717,9 +729,16 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
                 if ( $trial_length > 0 ) {
                     $price = $sign_up_fee;
                 } else {
-                    $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
-                    $wholesale_price = $this->get_pricing_data_based_on_pricing_levels( $wholesale_price, $product, $user_wholesale_role );
-                    $price           = (float) $wholesale_price + $sign_up_fee; // Casting to float for php8 compatibility.
+                    $calculating_ids[] = $product_id;
+                    try {
+                        $wholesale_price = $this->get_wholesale_subscription_price( $product, $user_wholesale_role );
+                        $wholesale_price = $this->get_pricing_data_based_on_pricing_levels( $wholesale_price, $product, $user_wholesale_role );
+                        $price           = (float) $wholesale_price + $sign_up_fee; // Casting to float for php8 compatibility.
+                    } finally {
+                        // Pop the just-pushed product ID. Pushes/pops are balanced because the
+                        // re-entrancy guard above prevents pushing the same ID twice in one frame.
+                        array_pop( $calculating_ids );
+                    }
                 }
             }
 
@@ -837,15 +856,27 @@ if ( ! class_exists( 'WWPP_WC_Subscriptions' ) ) {
         /**
          * Get the final wholesale price for subscription based products.
          *
-         * @param int    $price Price of the product.
-         * @param object $product Product Object.
-         * @param strin  $user_wholesale_role User role.
-         * @return int
+         * Falls back to the category-level (and global) wholesale price when no
+         * product-level price is set. The raw, resolved price is returned so it is on
+         * the same basis as the product-level price returned by
+         * `get_wholesale_subscription_price()` (tax-exclusive when prices are stored
+         * excluding tax). Callers feed this value into `set_price()` /
+         * `line_subtotal`, which expect the stored-price basis; returning the
+         * tax-inclusive price here would make WooCommerce apply tax a second time on
+         * tax-enabled stores, overcharging the customer by the tax amount.
+         *
+         * @param int|float|string $price Product-level wholesale price, if any.
+         * @param object           $product Product Object.
+         * @param string           $user_wholesale_role User role.
+         *
+         * @since 2.1.0 Return the raw resolved price instead of the tax-inclusive
+         *              value to avoid double taxation on tax-enabled stores.
+         * @return int|float|string
          */
         public function get_pricing_data_based_on_pricing_levels( $price, $product, $user_wholesale_role ) {
             if ( empty( $price ) ) { // for subscriptions products that do not have product level pricing.
                 $price_array = WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $product->get_id(), array( $user_wholesale_role ) );
-                $price       = wc_tax_enabled() ? $price_array['wholesale_price_with_tax'] : $price_array['wholesale_price_with_no_tax'];
+                $price       = $price_array['wholesale_price_raw'];
             }
             return $price;
         }

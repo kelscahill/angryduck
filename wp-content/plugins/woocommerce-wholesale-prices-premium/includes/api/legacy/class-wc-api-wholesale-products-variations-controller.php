@@ -214,7 +214,7 @@ if ( ! class_exists( 'WWPP_API_Wholesale_Products_Variations_Controller' ) ) {
                         AND p.post_parent = %d
                         AND (
                             pm1.meta_key IN ( $meta_placeholders )
-                            AND CAST(pm1.meta_value AS SIGNED) > 0
+                            AND CAST(pm1.meta_value AS DECIMAL(10,2)) > 0
                         )",
                     $prepare_args
                 ),

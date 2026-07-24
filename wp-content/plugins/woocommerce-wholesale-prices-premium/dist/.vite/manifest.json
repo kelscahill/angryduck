@@ -1,17 +1,17 @@
 {
   "src/apps/wwpp-reports/index-legacy.ts": {
-    "file": "apps/wwpp-reports/index-legacy.C8W-xG4P.js",
+    "file": "apps/wwpp-reports/index-legacy.CE3_FdlW.js",
     "name": "apps/wwpp-reports/index",
     "src": "src/apps/wwpp-reports/index-legacy.ts",
     "isEntry": true
   },
   "src/apps/wwpp-reports/index.ts": {
-    "file": "apps/wwpp-reports/index.5Vs_CfL6.js",
+    "file": "apps/wwpp-reports/index.DZexvmsI.js",
     "name": "apps/wwpp-reports/index",
     "src": "src/apps/wwpp-reports/index.ts",
     "isEntry": true,
     "css": [
-      "css/index.kJnW7gJp.css"
+      "css/index.BebhOhLH.css"
     ]
   },
   "src/blocks/woocommerce/wholesale-savings/index-legacy.tsx": {
@@ -56,13 +56,13 @@
     "isEntry": true
   },
   "src/vanilla/cart-checkout-min-req-legacy.ts": {
-    "file": "vanilla/cart-checkout-min-req-legacy.B6onLm7Y.js",
+    "file": "vanilla/cart-checkout-min-req-legacy.B-lW457G.js",
     "name": "vanilla/cart-checkout-min-req",
     "src": "src/vanilla/cart-checkout-min-req-legacy.ts",
     "isEntry": true
   },
   "src/vanilla/cart-checkout-min-req.ts": {
-    "file": "vanilla/cart-checkout-min-req.ChnlXRGm.js",
+    "file": "vanilla/cart-checkout-min-req.ZfDLQSWg.js",
     "name": "vanilla/cart-checkout-min-req",
     "src": "src/vanilla/cart-checkout-min-req.ts",
     "isEntry": true

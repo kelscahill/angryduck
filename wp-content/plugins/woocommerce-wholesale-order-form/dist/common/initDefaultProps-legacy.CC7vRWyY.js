@@ -1,1 +1,0 @@
-System.register(["./hooks-legacy.BRKQHcMP.js"],function(e,t){"use strict";var r;return{setters:[e=>{r=e.A}],execute:function(){e("i",(e,t)=>{const o=r({},e);return Object.keys(t).forEach(e=>{const r=o[e];if(!r)throw new Error(`not have ${e} prop`);r.type||r.default?r.default=t[e]:r.def?r.def(t[e]):o[e]={type:r,default:t[e]}}),o})}}});

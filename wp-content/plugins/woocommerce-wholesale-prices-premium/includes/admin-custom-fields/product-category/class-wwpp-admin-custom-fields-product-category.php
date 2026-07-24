@@ -127,6 +127,52 @@ class WWPP_Admin_Custom_Fields_Product_Category {
     }
 
     /**
+     * Check whether a product still has a non-zero wholesale discount for a role via any of its
+     * directly-assigned product categories, excluding the category currently being saved.
+     *
+     * Mirrors the term-scanning logic in get_base_term_id_and_wholesale_discount(), which keys the
+     * category-level wholesale price off the product's directly-assigned terms only (it does not walk
+     * true ancestors). Used to avoid clearing a product's visibility meta when a sibling/parent
+     * category the product also belongs to still provides a discount.
+     *
+     * The saved term is excluded because its option value has not yet been written to the database at
+     * the point this runs; the caller only invokes this when the saved term's new discount is empty/0,
+     * so excluding it loses nothing.
+     *
+     * @since 2.1.1
+     * @access private
+     *
+     * @param int    $product_id      Product id.
+     * @param string $role_key        Wholesale role key.
+     * @param int    $exclude_term_id Term id currently being saved, excluded from the scan.
+     * @return bool True if another category still provides a non-zero discount for the role.
+     */
+    private function product_has_other_category_wholesale_discount( $product_id, $role_key, $exclude_term_id ) {
+
+        $terms = get_the_terms( $product_id, 'product_cat' );
+        if ( ! is_array( $terms ) ) {
+            $terms = array();
+        }
+
+        foreach ( $terms as $term ) {
+
+            if ( (int) $term->term_id === (int) $exclude_term_id ) {
+                continue;
+            }
+
+            $category_wholesale_prices = get_option( 'taxonomy_' . $term->term_id );
+
+            if ( is_array( $category_wholesale_prices )
+                && array_key_exists( $role_key . '_wholesale_discount', $category_wholesale_prices )
+                && ! empty( $category_wholesale_prices[ $role_key . '_wholesale_discount' ] ) ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Wholesale price per category level
      */
 
@@ -207,23 +253,48 @@ class WWPP_Admin_Custom_Fields_Product_Category {
     }
 
     /**
+     * Fail-closed authorization guard shared by the product-category term save handlers.
+     *
+     * Resolves the add/edit term nonce, verifies it against the add-tag or update-tag action, and
+     * confirms the current user can manage product terms. Shared so the two save handlers cannot
+     * drift apart.
+     *
+     * @since 2.1.1
+     * @access private
+     *
+     * @param int $term_id Term id used to build the update-tag nonce action.
+     *
+     * @return bool True when the request is an authorized term save, false otherwise.
+     */
+    private function passes_term_save_guard( $term_id ) {
+        $nonce = isset( $_POST['_wpnonce_add-tag'] )
+            ? sanitize_text_field( wp_unslash( $_POST['_wpnonce_add-tag'] ) )
+            : ( isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '' );
+
+        return $nonce
+            && ( wp_verify_nonce( $nonce, 'add-tag' ) || wp_verify_nonce( $nonce, 'update-tag_' . $term_id ) )
+            && current_user_can( 'manage_product_terms' ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- WooCommerce maps the product_cat taxonomy manage_terms capability to manage_product_terms (see WC_Post_Types::register_taxonomies()).
+    }
+
+    /**
      * Save wholesale price fields data on product category taxonomy add and edit page.
      *
      * @since 1.0.5
      * @since 1.7.0 Bug fix. Properly set have_post_meta value to all products under the edited product category.
      * @since 1.14.0 Refactor codebase and move to its own model.
+     * @since 2.1.1 Harden nonce verification to fail closed and require the term-management capability.
+     * @since 2.1.1 Extract the fail-closed guard into passes_term_save_guard() shared with the role-filter handler.
      * @access public
      *
      * @param int $term_id Term id.
      * @param int $taxonomy_term_id Taxonomy ID.
      */
     public function product_category_save_custom_fields( $term_id, $taxonomy_term_id ) { // phpcs:ignore
-        if ( ( isset( $_REQUEST['_wpnonce_add-tag'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce_add-tag'] ) ), 'add-tag' ) ) ||
-            ( isset( $_REQUEST['_wpnonce'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'update-tag_' . $term_id ) )
-        ) {
+        if ( ! $this->passes_term_save_guard( $term_id ) ) {
             return;
         }
 
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce and capability verified above by passes_term_save_guard(); this sniff cannot trace the cross-method check.
         if ( isset( $_POST['term_meta'] ) ) {
 
             $t_id      = $term_id;
@@ -267,12 +338,17 @@ class WWPP_Admin_Custom_Fields_Product_Category {
                                 $product = wc_get_product( $p->ID );
 
                                 if ( 'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price', true ) &&
-                                    'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price_set_by_product_cat', true ) ) {
+                                    'yes' === $product->get_meta( $wholesale_role . '_have_wholesale_price_set_by_product_cat', true ) &&
+                                    ! $this->product_has_other_category_wholesale_discount( $p->ID, $wholesale_role, $term_id ) ) {
 
                                     /**
                                      * Meaning, product have wholesale price meta that was set by the category
                                      * Don't bother changing the meta for products that have no _have_wholesale_price_set_by_product_cat meta
                                      * it means that those products have wholesale price set on per product level.
+                                     *
+                                     * Also skip products that still receive a non-zero discount from another category
+                                     * they belong to (e.g. a parent category), otherwise zeroing this category's
+                                     * discount would wrongly hide them when "Only Show Wholesale Products" is enabled.
                                      */
 
                                     // Set have post meta to no.
@@ -293,6 +369,7 @@ class WWPP_Admin_Custom_Fields_Product_Category {
             // Save the option array.
             update_option( "taxonomy_$t_id", $term_meta, 'no' );
         }
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
     }
 
     /*
@@ -366,18 +443,18 @@ class WWPP_Admin_Custom_Fields_Product_Category {
      * Save wholesale role filter custom fields.
      *
      * @since 1.16.0
+     * @since 2.1.1 Harden nonce verification to fail closed and require the term-management capability.
      * @access public
      *
      * @param int $term_id          Term Id.
      * @param int $taxonomy_term_id Taxonomy Term Id.
      */
     public function wholesale_role_filter_save_custom_fields( $term_id, $taxonomy_term_id ) { // phpcs:ignore
-        if ( ( isset( $_POST['_wpnonce_add-tag'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce_add-tag'] ) ), 'add-tag' ) ) ||
-            ( isset( $_POST['_wpnonce'] ) && ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'update-tag_' . $term_id ) )
-        ) {
+        if ( ! $this->passes_term_save_guard( $term_id ) ) {
             return;
         }
 
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce and capability verified above by passes_term_save_guard(); this sniff cannot trace the cross-method check.
         $product_cat_wholesale_role_filter = get_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER );
         if ( ! is_array( $product_cat_wholesale_role_filter ) ) {
             $product_cat_wholesale_role_filter = array();
@@ -392,6 +469,7 @@ class WWPP_Admin_Custom_Fields_Product_Category {
         }
 
         update_option( WWPP_OPTION_PRODUCT_CAT_WHOLESALE_ROLE_FILTER, $product_cat_wholesale_role_filter, 'no' );
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
     }
 
     /**

@@ -35,9 +35,9 @@ jQuery(document).ready(function ($) {
       error = [],
       data = {};
 
-    if (wholesale_role_key === "") error.push(wwpp_settings_tax_class_var.please_specify_wholesale_role);
+    if (wholesale_role_key === "") error.push(wp.i18n.__( 'Please specify a wholesale role', 'woocommerce-wholesale-prices-premium' ));
 
-    if (tax_class === "") error.push(wwpp_settings_tax_class_var.please_specify_tax_classes);
+    if (tax_class === "") error.push(wp.i18n.__( 'Please specify tax class', 'woocommerce-wholesale-prices-premium' ));
 
     if (error.length <= 0) {
       data = {
@@ -99,7 +99,7 @@ jQuery(document).ready(function ($) {
         .append(
           '<tr class="no-items">' +
             '<td class="colspanchange" colspan="3">' +
-            wwpp_settings_tax_class_var.no_mappings_found +
+            wp.i18n.__( 'No Mappings Found', 'woocommerce-wholesale-prices-premium' ) +
             "</td>" +
             "</tr>"
         );
@@ -132,7 +132,7 @@ jQuery(document).ready(function ($) {
 
       for (var i = 0; i < d.error.length; i++) err_msg += d.error[i] + "\n";
 
-      toastr.error(err_msg, wwpp_settings_tax_class_var.form_error, {
+      toastr.error(err_msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
         closeButton: true,
         showDuration: error_message_duration,
       });
@@ -159,7 +159,7 @@ jQuery(document).ready(function ($) {
             table_row_normal_mode($mapping_table);
           } else {
             console.log(data);
-            toastr.error(data.error_msg, wwpp_settings_tax_class_var.form_error, {
+            toastr.error(data.error_msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: error_message_duration,
             });
@@ -167,7 +167,7 @@ jQuery(document).ready(function ($) {
         })
         .fail(function (jqxhr) {
           console.log(jqxhr);
-          toastr.error(wwpp_settings_tax_class_var.failed_save_mapping_entry, wwpp_settings_tax_class_var.form_error, {
+          toastr.error(wp.i18n.__( 'Failed to save mapping entry', 'woocommerce-wholesale-prices-premium' ), wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
             closeButton: true,
             showDuration: error_message_duration,
           });
@@ -213,7 +213,7 @@ jQuery(document).ready(function ($) {
 
     table_row_processing_mode($mapping_table, $tr);
 
-    if (confirm(wwpp_settings_tax_class_var.confirm_delete_mapping_entry)) {
+    if (confirm(wp.i18n.__( 'Clicking OK will remove the current selected mapping', 'woocommerce-wholesale-prices-premium' ))) {
       var wholesale_role_key = $.trim($tr.find(".meta .wholesale-role").text());
 
       $.ajax({
@@ -231,7 +231,7 @@ jQuery(document).ready(function ($) {
             remove_mapping_entry_to_table($mapping_table, wholesale_role_key);
           } else {
             console.log(data);
-            toastr.error(data.error_msg, wwpp_settings_tax_class_var.form_error, {
+            toastr.error(data.error_msg, wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ), {
               closeButton: true,
               showDuration: error_message_duration,
             });
@@ -240,8 +240,8 @@ jQuery(document).ready(function ($) {
         .fail(function (jqxhr) {
           console.log(jqxhr);
           toastr.error(
-            wwpp_settings_tax_class_var.failed_delete_mapping_entry,
-            wwpp_settings_tax_class_var.form_error,
+            wp.i18n.__( 'Failed to delete specified mapping entry', 'woocommerce-wholesale-prices-premium' ),
+            wp.i18n.__( 'Form Error', 'woocommerce-wholesale-prices-premium' ),
             { closeButton: true, showDuration: error_message_duration }
           );
         })

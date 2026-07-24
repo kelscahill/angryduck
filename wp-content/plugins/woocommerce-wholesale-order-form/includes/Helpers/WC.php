@@ -22,7 +22,7 @@ class WC {
      */
     public static function get_script_l10n() {
 
-        $login_url = ( WWLC::is_active()
+        $login_url = ( WWLC::is_active() && function_exists( 'wwlc_get_url_of_page_option' )
             ? wwlc_get_url_of_page_option( 'wwlc_general_login_page' )
             : ( get_permalink( wc_get_page_id( 'myaccount' ) )
                 ? get_permalink( wc_get_page_id( 'myaccount' ) )
@@ -65,6 +65,8 @@ class WC {
                     'shop' => get_option( 'woocommerce_tax_display_shop' ),
                     'cart' => get_option( 'woocommerce_tax_display_cart' ),
                 ),
+                'dimensionUnit'      => get_option( 'woocommerce_dimension_unit' ),
+                'weightUnit'         => get_option( 'woocommerce_weight_unit' ),
             ),
         );
     }

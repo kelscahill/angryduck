@@ -1,0 +1,1 @@
+import{t as r}from"./modal.12gZZt72.js";var{info:o,success:s,error:a,warning:i,confirm:m}=r;export{m as t};
