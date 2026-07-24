@@ -1,23 +1,23 @@
 // #region [Imports] ===================================================================================================
 
 // Libraries
-import { useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
-import { bindActionCreators, Dispatch } from "redux";
-import { connect } from "react-redux";
+import { useEffect, useState } from 'react';
+import { useHistory } from 'react-router-dom';
+import { bindActionCreators, Dispatch } from 'redux';
+import { connect } from 'react-redux';
 
 // Actions
-import { PageActions } from "../../store/actions/page";
+import { PageActions } from '../../store/actions/page';
 
 // Types
-import { IStore } from "../../types/store";
-import { ISingleNotice } from "../../types/notices";
+import { IStore } from '../../types/store';
+import { ISingleNotice } from '../../types/notices';
 
 // Helpers
-import { getPathPrefix } from "../../helpers/utils";
+import { getPathPrefix } from '../../helpers/utils';
 
 // SCSS
-import "./index.scss";
+import './index.scss';
 
 // #endregion [Imports]
 
@@ -46,7 +46,7 @@ interface IProps {
 
 const CouponsNav = (props: IProps) => {
   const { page, notices, actions } = props;
-  const [prevPage, setPrevPage] = useState("");
+  const [prevPage, setPrevPage] = useState('');
   const history = useHistory();
   const pathPrefix = getPathPrefix();
 
@@ -63,6 +63,12 @@ const CouponsNav = (props: IProps) => {
   const handleMenuClick = (id: string) => {
     history.push(`${pathPrefix}admin.php?page=${id}`);
     actions.setStorePage({ data: id });
+
+    // Notify the main app's BrowserRouter of the URL change.
+    // The sidebar nav and main app use separate BrowserRouter instances,
+    // and history.push() (pushState) does not fire popstate, so the main
+    // app's router won't see the new URL without this event.
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   /**
@@ -102,16 +108,8 @@ const CouponsNav = (props: IProps) => {
         <li className="wp-submenu-head" aria-hidden="true">
           {toplevel}
         </li>
-        <li
-          key="acfw-dashboard"
-          className={`wp-first-item ${
-            "acfw-dashboard" === page ? "current" : ""
-          }`}
-        >
-          <button
-            className={`buttonlink dashboard-link`}
-            onClick={() => handleMenuClick(`acfw-dashboard`)}
-          >
+        <li key="acfw-dashboard" className={`wp-first-item ${'acfw-dashboard' === page ? 'current' : ''}`}>
+          <button className={`buttonlink dashboard-link`} onClick={() => handleMenuClick(`acfw-dashboard`)}>
             {dashboard}
           </button>
         </li>
@@ -121,11 +119,8 @@ const CouponsNav = (props: IProps) => {
           </li>
         ))}
         {app_pages.map(({ slug, label }: any) => (
-          <li key={slug} className={slug === page ? `current` : ""}>
-            <button
-              className={`buttonlink ${slug}-link`}
-              onClick={() => handleMenuClick(slug)}
-            >
+          <li key={slug} className={slug === page ? `current` : ''}>
+            <button className={`buttonlink ${slug}-link`} onClick={() => handleMenuClick(slug)}>
               {label}
             </button>
           </li>

@@ -24,10 +24,10 @@ export function save_bogo_deals() {
   const { post_status, upsell } = acfw_edit_coupon;
 
   const condition_rows: NodeList = module_block.querySelectorAll(
-      '.bogo-conditions-block table.acfw-styled-table tbody td.object,.bogo-conditions-block .any-products-trigger-form'
+      '.bogo-conditions-block table.acfw-styled-table tbody td.object,.bogo-conditions-block .any-products-trigger-form',
     ),
     deal_rows: NodeList = module_block.querySelectorAll(
-      '.bogo-product-deals-block table.acfw-styled-table tbody td.object'
+      '.bogo-product-deals-block table.acfw-styled-table tbody td.object',
     ),
     overlay = module_block.querySelector('.acfw-overlay') as HTMLElement,
     type_field = module_block.querySelector("input[name='bogo_type']:checked") as HTMLInputElement,
@@ -108,6 +108,12 @@ export function save_bogo_deals() {
     notice_type: $notice_options.find("select[name='acfw_bogo_notice_type']").val(),
   };
 
+  // Behaviour when the deal no longer applies: 'keep' (default) or 'remove'.
+  const remove_field = module_block.querySelector(
+    "input[name='bogo_remove_unqualified_deal']:checked",
+  ) as HTMLInputElement | null;
+  const remove_unqualified_deal: string = remove_field?.value || 'keep';
+
   toggle_overlay(overlay, 'show');
 
   $(module_block).trigger('save_bogo_deals');
@@ -120,6 +126,7 @@ export function save_bogo_deals() {
     repeat_limit: repeat_limit,
     type: type,
     notice_settings: notice_settings,
+    remove_unqualified_deal: remove_unqualified_deal,
     nonce: $(module_block).data('nonce'),
   };
 
@@ -154,7 +161,7 @@ export function save_bogo_deals() {
       toggle_editing_mode(false);
       toggle_overlay(overlay, 'hide');
     },
-    'json'
+    'json',
   );
 }
 
@@ -180,6 +187,7 @@ function get_data(rows: NodeList, type: string): any {
 
     case 'combination-products':
     case 'product-categories':
+    case 'product-brands':
       data = $(rows).closest('table.combined-objects-form').data('combined');
       break;
 
@@ -207,7 +215,7 @@ export function clear_bogo_deals() {
   if (!confirm($button.data('prompt'))) return;
 
   const condition_rows = module_block.querySelector(
-      '.bogo-conditions-block table.acfw-styled-table tbody'
+      '.bogo-conditions-block table.acfw-styled-table tbody',
     ) as HTMLElement,
     deal_rows = module_block.querySelector('.bogo-product-deals-block table.acfw-styled-table tbody') as HTMLElement,
     overlay = module_block.querySelector('.acfw-overlay') as HTMLElement,
@@ -243,7 +251,7 @@ export function clear_bogo_deals() {
 
       toggle_overlay(overlay, 'hide');
     },
-    'json'
+    'json',
   );
 }
 
@@ -261,7 +269,11 @@ export function update_combined_objects_list() {
     quantity: number = parseInt($table.find('input.condition-quantity').val() + ''),
     dataType: string = $table.data('type').toString(),
     conditions: any =
-      'category' === dataType ? { categories: [], quantity: quantity } : { products: [], quantity: quantity },
+      'category' === dataType
+        ? { categories: [], quantity: quantity }
+        : 'brand' === dataType
+          ? { brands: [], quantity: quantity }
+          : { products: [], quantity: quantity },
     is_deals: string = $table.data('isdeals');
 
   if (is_deals) {
@@ -286,6 +298,11 @@ export function update_combined_objects_list() {
     if ('category' === dataType)
       conditions.categories.push({
         category_id: $temp.val(),
+        label: $temp.text(),
+      });
+    else if ('brand' === dataType)
+      conditions.brands.push({
+        brand_id: $temp.val(),
         label: $temp.text(),
       });
     else

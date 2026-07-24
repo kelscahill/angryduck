@@ -24,7 +24,7 @@ import type {
 	BulkPurchaseOrder,
 	ManualPackageSelections,
 	ManualServiceSelections,
-	OrderShippingContextRecord,
+	PurchasableBulkPurchaseOrder,
 	RateRequestOrder,
 } from 'data/bulk-labels';
 import { CarrierIcon } from 'components/carrier-icon';
@@ -33,40 +33,17 @@ import { Toolbar, type ApplyOption, type FilterMode } from './toolbar';
 import { ApplyDropdown } from './apply-dropdown';
 import { Sidebar } from './sidebar';
 import type { BulkPurchaseModalProps } from './types';
+import {
+	AUTO_PACKAGE_VALUE,
+	MANUAL_PACKAGE_VALUE,
+	formatLocality,
+	getOrderEditUrl,
+	toBulkRequestPackage,
+	toPurchaseDestination,
+	toPurchaseOrigin,
+	toSelectedBatchRate,
+} from './utils';
 import './style.scss';
-
-/**
- * Sentinel values for the "Apply to all" package dropdown. They sit
- * alongside real package keys, so they use a prefix no package key uses
- * (`AssignablePackage.key` is `custom:…` / `predef:…`).
- */
-const AUTO_PACKAGE_VALUE = '__auto__';
-const MANUAL_PACKAGE_VALUE = '__manual__';
-
-/**
- * wp-admin edit URL for an order. The modal always opens from the orders
- * list, so the current page tells us whether the store is on HPOS
- * (`page=wc-orders`) or legacy post-table orders. URLs are relative to
- * wp-admin (same convention as the analytics order links).
- */
-const getOrderEditUrl = ( orderId: number ): string =>
-	window.location.href.includes( 'page=wc-orders' )
-		? `admin.php?page=wc-orders&action=edit&id=${ orderId }`
-		: `post.php?post=${ orderId }&action=edit`;
-
-/**
- * "City, ST Postcode" — the compact line under the recipient name.
- */
-const formatLocality = (
-	destination: OrderShippingContextRecord[ 'destination' ]
-): string => {
-	const stateAndZip = [ destination?.state, destination?.postcode ]
-		.filter( Boolean )
-		.join( ' ' );
-	return [ destination?.city, stateAndZip ]
-		.filter( ( p ): p is string => Boolean( p?.trim() ) )
-		.join( ', ' );
-};
 
 export const BulkPurchaseModal = ( {
 	orderIds,
@@ -272,6 +249,14 @@ export const BulkPurchaseModal = ( {
 		error: rateRequestError,
 	} = useOrderRates( origin, rateRequestOrders );
 
+	const rateRequestOrderById = useMemo( () => {
+		const map = new Map< number, RateRequestOrder >();
+		rateRequestOrders.forEach( ( order ) => {
+			map.set( order.order_id, order );
+		} );
+		return map;
+	}, [ rateRequestOrders ] );
+
 	// A failed origin lookup or a top-level batch-rate rejection isn't a
 	// "no rates for this order" result — surface it once at the modal
 	// level so rows don't all just read "No rates available".
@@ -300,28 +285,6 @@ export const BulkPurchaseModal = ( {
 		return map;
 	}, [ orders, rates, serviceApplyMode, manualServiceSelections ] );
 
-	// Sidebar totals follow the actually-selected rates: subtotal is the
-	// full retail price, the WooCommerce Shipping discount is what the
-	// account rate saves off retail, and the total is what's charged.
-	const rateSummary = useMemo( () => {
-		let subtotal = 0;
-		let total = 0;
-		orders.forEach( ( order ) => {
-			const rate = selectedRateByOrder[ order.order_id ];
-			if ( ! rate ) {
-				return;
-			}
-			subtotal += rate.retailRate;
-			total += rate.rate;
-		} );
-		const round = ( n: number ) => Math.round( n * 100 ) / 100;
-		return {
-			subtotal: round( subtotal ),
-			discount: round( Math.max( subtotal - total, 0 ) ),
-			total: round( total ),
-		};
-	}, [ orders, selectedRateByOrder ] );
-
 	// Readiness must reflect rates too: a row with no selectable rate
 	// (a definitive empty/error result, or a global origin/rate request
 	// failure) is "needs fix", not "ready". Rows still resolving stay as
@@ -334,7 +297,7 @@ export const BulkPurchaseModal = ( {
 				map[ id ] = 'needs_fix';
 				return;
 			}
-			if ( selectedRateByOrder[ id ] ) {
+			if ( toSelectedBatchRate( selectedRateByOrder[ id ] ) ) {
 				map[ id ] = 'ready';
 				return;
 			}
@@ -369,6 +332,69 @@ export const BulkPurchaseModal = ( {
 		} );
 		return { readyCount, needsFixCount };
 	}, [ orders, effectiveStatusById ] );
+
+	const purchasableOrders = useMemo< PurchasableBulkPurchaseOrder[] >(
+		() =>
+			orders.flatMap( ( order ) => {
+				if (
+					( effectiveStatusById[ order.order_id ] ??
+						order.status ) !== 'ready'
+				) {
+					return [];
+				}
+
+				const selectedRate = toSelectedBatchRate(
+					selectedRateByOrder[ order.order_id ]
+				);
+				const rateRequestOrder = rateRequestOrderById.get(
+					order.order_id
+				);
+				if ( ! selectedRate || ! rateRequestOrder ) {
+					return [];
+				}
+
+				return [
+					{
+						...order,
+						service: {
+							...order.service,
+							carrier: selectedRate.carrier_id,
+							name: selectedRate.service_name,
+						},
+						cost: selectedRate.rate,
+						cost_savings: Math.max(
+							selectedRate.retail_rate - selectedRate.rate,
+							0
+						),
+						selected_rate: selectedRate,
+						request_package:
+							toBulkRequestPackage( rateRequestOrder ),
+						purchase_destination: toPurchaseDestination( order ),
+					},
+				];
+			} ),
+		[
+			orders,
+			effectiveStatusById,
+			selectedRateByOrder,
+			rateRequestOrderById,
+		]
+	);
+
+	const purchaseRateSummary = useMemo( () => {
+		let subtotal = 0;
+		let total = 0;
+		purchasableOrders.forEach( ( order ) => {
+			subtotal += order.selected_rate.retail_rate;
+			total += order.selected_rate.rate;
+		} );
+		const round = ( n: number ) => Math.round( n * 100 ) / 100;
+		return {
+			subtotal: round( subtotal ),
+			discount: round( Math.max( subtotal - total, 0 ) ),
+			total: round( total ),
+		};
+	}, [ purchasableOrders ] );
 
 	const handleSelectRate = useCallback(
 		( orderId: number, rateId: string ) => {
@@ -958,19 +984,23 @@ export const BulkPurchaseModal = ( {
 					</div>
 
 					<Sidebar
-						readyCount={ readinessCounts.readyCount }
-						needsFixCount={ readinessCounts.needsFixCount }
-						subtotal={ rateSummary.subtotal }
-						discount={ rateSummary.discount }
-						total={ rateSummary.total }
+						readyCount={ purchasableOrders.length }
+						needsFixCount={
+							orders.length - purchasableOrders.length
+						}
+						subtotal={ purchaseRateSummary.subtotal }
+						discount={ purchaseRateSummary.discount }
+						total={ purchaseRateSummary.total }
 						onPurchase={ () => {
-							const readyOrders = orders.filter(
-								( o ) => o.status === 'ready'
-							);
-							if ( readyOrders.length === 0 ) {
+							if ( purchasableOrders.length === 0 || ! origin ) {
 								return;
 							}
-							onCreateLabels?.( readyOrders );
+							onCreateLabels?.(
+								purchasableOrders,
+								toPurchaseOrigin(
+									origin as Record< string, unknown >
+								)
+							);
 						} }
 					/>
 				</div>

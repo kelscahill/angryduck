@@ -14,7 +14,7 @@ export interface RequestPackage
 	is_letter: boolean;
 }
 
-interface LabelRequestPackages {
+export interface LabelRequestPackages {
 	id: string;
 	box_id: string;
 	carrier_id: string;

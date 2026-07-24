@@ -213,7 +213,18 @@ class AddressRESTController extends WCShippingRESTController {
 			return rest_ensure_response( $error->get_error_response() );
 		}
 
-		return rest_ensure_response( $this->normalization_service->get_normalization_response( $address ) );
+		/*
+		 * Optional — older clients didn't send it. Default to `destination`
+		 * so the request still works for them. The connect server has
+		 * accepted `destination` since forever and now also accepts
+		 * `origin` per WOOSHIP-2230.
+		 */
+		$address_type = $request->get_param( 'addressType' );
+		$address_type = 'origin' === $address_type ? 'origin' : 'destination';
+
+		return rest_ensure_response(
+			$this->normalization_service->get_normalization_response( $address, $address_type )
+		);
 	}
 
 

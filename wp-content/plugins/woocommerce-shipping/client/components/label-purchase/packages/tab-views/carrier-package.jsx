@@ -76,20 +76,23 @@ export const CarrierPackage = withBoundary(
 				! getShipmentTotalWeight() ||
 				( isExtraLabelPurchase() && ! isExtraLabelPurchaseValid() );
 
-			const getRates = useCallback( () => {
-				const tracksProperties = {
-					package_id: selectedPackage?.id,
-					is_letter: selectedPackage?.isLetter,
-					width: selectedPackage?.width,
-					height: selectedPackage?.height,
-					length: selectedPackage?.length,
-				};
-				recordEvent(
-					'label_purchase_get_rates_clicked',
-					tracksProperties
-				);
-				fetchRates( selectedPackage );
-			}, [ selectedPackage, fetchRates ] );
+			const getRates = useCallback(
+				( userInitiated = true ) => {
+					const tracksProperties = {
+						package_id: selectedPackage?.id,
+						is_letter: selectedPackage?.isLetter,
+						width: selectedPackage?.width,
+						height: selectedPackage?.height,
+						length: selectedPackage?.length,
+					};
+					recordEvent(
+						'label_purchase_get_rates_clicked',
+						tracksProperties
+					);
+					fetchRates( selectedPackage, { userInitiated } );
+				},
+				[ selectedPackage, fetchRates ]
+			);
 
 			const selectedCarrierId = selectedPackage
 				? getSelectedCarrierIdFromPackage(
@@ -108,7 +111,8 @@ export const CarrierPackage = withBoundary(
 					! availableRates &&
 					! errors.endpoint // It should bail if there are errors reported by the endpoint
 				) {
-					getRates();
+					// System-driven refetch: don't clear purchase/status errors.
+					getRates( false );
 				}
 				// We only want to run this if no rates available
 				// eslint-disable-next-line react-hooks/exhaustive-deps

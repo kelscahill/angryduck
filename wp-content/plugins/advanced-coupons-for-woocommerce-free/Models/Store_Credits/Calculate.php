@@ -140,13 +140,31 @@ class Calculate implements Model_Interface, Deactivatable_Interface {
 
         $sources = \ACFWF()->Store_Credits_Registry->get_initial_counters( 'increase' );
 
+        /**
+         * Filter the store credit action types that are considered restorations.
+         *
+         * Restoration actions represent reversals of prior spend (e.g. cancelled orders, refunds),
+         * not new credit issuances. They offset the claimed counter instead of inflating the total.
+         *
+         * @since 4.7.3
+         *
+         * @param array $restoration_actions List of restoration action type slugs.
+         */
+        $restoration_actions = apply_filters( 'acfw_store_credit_restoration_action_types', array( 'cancelled_order', 'refund' ) );
+        $restoration_actions = is_array( $restoration_actions ) ? $restoration_actions : array();
+
         foreach ( $entries as $entry ) {
             $action = $entry['action'];
 
             if ( 'increase' === $entry['type'] ) {
 
-                // increment all "increase" credits to the total counter.
-                $status['total'] += $entry['amount'];
+                if ( in_array( $action, $restoration_actions, true ) ) {
+                    // Restoration entries offset the claimed counter instead of inflating the total.
+                    $status['claimed'] -= $entry['amount'];
+                } else {
+                    // increment all "increase" credits to the total counter.
+                    $status['total'] += $entry['amount'];
+                }
 
                 // increment source counter.
                 if ( isset( $sources[ $action ] ) ) {
@@ -167,6 +185,9 @@ class Calculate implements Model_Interface, Deactivatable_Interface {
                 }
             }
         }
+
+        // Clamp claimed to zero to prevent negative values from data inconsistencies.
+        $status['claimed'] = max( 0, $status['claimed'] );
 
         // calculate unclaimed credits by deducting the claimed, expired and deducted credits from the total.
         $status['unclaimed'] = $status['total'] - $status['claimed'] - $status['expired'] - $status['deducted'];
@@ -465,7 +486,7 @@ class Calculate implements Model_Interface, Deactivatable_Interface {
             }
         }
 
-        update_option( Plugin_Constants::STORE_CREDITS_EXPIRY_CHECK_DATE, time() );
+        update_option( Plugin_Constants::STORE_CREDITS_EXPIRY_CHECK_DATE, time(), false );
     }
 
     /*

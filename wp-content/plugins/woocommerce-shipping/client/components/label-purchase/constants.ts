@@ -4,6 +4,134 @@ import {
 } from './packages/constants';
 import { CustomPackage } from 'types';
 
+export const OPEN_DESTINATION_ADDRESS_MODAL_EVENT =
+	'wcshipping:open-destination-address-modal';
+
+export const DESTINATION_ADDRESS_MODAL_FOCUS_FIELD = {
+	PHONE: 'phone',
+} as const;
+
+export type DestinationAddressModalFocusField =
+	( typeof DESTINATION_ADDRESS_MODAL_FOCUS_FIELD )[ keyof typeof DESTINATION_ADDRESS_MODAL_FOCUS_FIELD ];
+
+export const requestDestinationAddressModal = (
+	focusField: DestinationAddressModalFocusField = DESTINATION_ADDRESS_MODAL_FOCUS_FIELD.PHONE
+) => {
+	if ( typeof window === 'undefined' ) {
+		return;
+	}
+
+	window.dispatchEvent(
+		new CustomEvent( OPEN_DESTINATION_ADDRESS_MODAL_EVENT, {
+			detail: { focusField },
+		} )
+	);
+};
+
+const getFieldLabelText = ( field: HTMLInputElement ) => {
+	const fieldLabels = Array.from( field.labels ?? [] )
+		.map( ( label ) => label.textContent ?? '' )
+		.join( ' ' );
+	const labelledBy = field.getAttribute( 'aria-labelledby' );
+	const ariaLabelText = labelledBy
+		? labelledBy
+				.split( /\s+/ )
+				.map(
+					( id ) => document.getElementById( id )?.textContent ?? ''
+				)
+				.join( ' ' )
+		: '';
+
+	return `${ fieldLabels } ${ ariaLabelText }`.trim();
+};
+
+const findDestinationPhoneField = ( modal: Element ) => {
+	const stablePhoneField = modal.querySelector< HTMLInputElement >(
+		'input[name="phone"], input[id="phone"], input[id$="-phone"]'
+	);
+
+	if ( stablePhoneField ) {
+		return stablePhoneField;
+	}
+
+	const labelledPhoneField = Array.from(
+		modal.querySelectorAll< HTMLInputElement >( 'input' )
+	).find( ( field ) =>
+		/^phone(\s*\(optional\))?$/i.test( getFieldLabelText( field ) )
+	);
+
+	if ( labelledPhoneField ) {
+		return labelledPhoneField;
+	}
+
+	return modal.querySelector< HTMLInputElement >(
+		'input[placeholder*="212"], input[placeholder*="555"]'
+	);
+};
+
+const isVisibleElement = ( element: Element ) => {
+	const htmlElement = element as HTMLElement;
+
+	return Boolean(
+		htmlElement.offsetParent ?? htmlElement.getClientRects().length
+	);
+};
+
+const findVisibleDestinationPhoneField = () => {
+	const modals = Array.from(
+		document.querySelectorAll(
+			'.edit-address-modal, .components-modal__content'
+		)
+	);
+
+	const visibleModals = modals.filter( isVisibleElement );
+	const visiblePhoneField = visibleModals
+		.map( findDestinationPhoneField )
+		.find( Boolean );
+
+	if ( visiblePhoneField ) {
+		return visiblePhoneField;
+	}
+
+	return modals.map( findDestinationPhoneField ).find( Boolean );
+};
+
+const focusDestinationPhoneFieldWithRetry = ( remainingAttempts = 5 ) => {
+	if ( typeof document === 'undefined' ) {
+		return;
+	}
+
+	const phoneField = findVisibleDestinationPhoneField();
+
+	if ( phoneField ) {
+		phoneField.focus();
+
+		if ( remainingAttempts > 0 ) {
+			window.setTimeout( () => {
+				if ( phoneField.ownerDocument.activeElement !== phoneField ) {
+					focusDestinationPhoneFieldWithRetry(
+						remainingAttempts - 1
+					);
+				}
+			}, 50 );
+		}
+
+		return;
+	}
+
+	if ( remainingAttempts <= 0 ) {
+		return;
+	}
+
+	window.setTimeout( () => {
+		focusDestinationPhoneFieldWithRetry( remainingAttempts - 1 );
+	}, 50 );
+};
+
+export const focusDestinationPhoneField = () => {
+	focusDestinationPhoneFieldWithRetry();
+};
+
 export const mainModalContentSelector =
 	'.label-purchase-modal > .components-modal__content';
 

@@ -265,7 +265,7 @@ class Template_Processor {
                     $field['i18n'] = isset( $fields_i18n['cart_condition_fields'][ $field_type ] ) ? $this->_helper_functions->decode_html_entities_recursive( $fields_i18n['cart_condition_fields'][ $field_type ] ) : array();
 
                     // Append user role options to the role related cart condition fields.
-                    if ( strpos( $field['type'], 'customer-user-role' ) !== false ) {
+                    if ( str_contains( $field['type'], 'customer-user-role' ) ) {
                         $field['i18n']['options'] = $this->_helper_functions->get_default_allowed_user_roles();
                     }
 

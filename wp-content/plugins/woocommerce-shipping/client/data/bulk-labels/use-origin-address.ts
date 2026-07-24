@@ -11,10 +11,11 @@ interface UseOriginAddressResult {
 }
 
 /**
- * Raw origin row from GET /wcshipping/v1/address/origins. Only the
- * fields the batch rate request needs are modeled.
+ * Raw origin row from GET /wcshipping/v1/address/origins. Includes
+ * fields needed by both rate requests and purchase persistence.
  */
 interface RawOriginAddress {
+	id?: string;
 	company?: string;
 	name?: string;
 	first_name?: string;
@@ -30,7 +31,9 @@ interface RawOriginAddress {
 	is_verified?: boolean;
 }
 
-const toOrigin = ( raw: RawOriginAddress ): Partial< LocationResponse > => {
+export const toOrigin = (
+	raw: RawOriginAddress
+): Partial< LocationResponse > => {
 	const trimmedName = raw.name?.trim();
 	const name =
 		trimmedName && trimmedName.length > 0
@@ -41,6 +44,7 @@ const toOrigin = ( raw: RawOriginAddress ): Partial< LocationResponse > => {
 					.join( ' ' );
 
 	return {
+		id: raw.id,
 		company: raw.company,
 		name,
 		phone: raw.phone,
@@ -50,6 +54,7 @@ const toOrigin = ( raw: RawOriginAddress ): Partial< LocationResponse > => {
 		state: raw.state,
 		postcode: raw.postcode,
 		country: raw.country,
+		is_verified: raw.is_verified,
 	};
 };
 

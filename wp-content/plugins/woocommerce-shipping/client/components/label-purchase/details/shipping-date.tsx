@@ -1,11 +1,6 @@
-import {
-	useState,
-	useRef,
-	useLayoutEffect,
-	useCallback,
-} from '@wordpress/element';
+import { useState, useRef, useCallback } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { isDate, uniqueId } from 'lodash';
+import { uniqueId } from 'lodash';
 import {
 	DatePicker,
 	Popover,
@@ -33,8 +28,6 @@ export const ShippingDate = ( {
 
 	// Use ISO string format for date storage
 	const today = getDateTS( null, true );
-
-	const datePickerRef = useRef< HTMLDivElement >( null );
 
 	// Validation state
 	const [ validationError, setValidationError ] = useState< string | null >(
@@ -118,46 +111,20 @@ export const ShippingDate = ( {
 		setIsPopoverOpen( false );
 	};
 
-	const disablePastDayButtons = useCallback( () => {
-		if ( ! datePickerRef.current ) {
-			return;
-		}
-
-		// Get all day buttons in the calendar
-		const allDayButtons =
-			datePickerRef.current.querySelectorAll< HTMLButtonElement >(
-				'button'
-			) ?? [];
-
-		// Loop through each button and check its date
-		allDayButtons.forEach( ( button ) => {
-			const buttonLabel = button.getAttribute( 'aria-label' );
-
-			if ( buttonLabel ) {
-				// Extract the date from the aria-label
-				try {
-					// The aria-label format is like "January 1, 2023"
-					const buttonDate = getDateTS( buttonLabel, true );
-
-					// Only disable the button if its date is before today
-					// and is a valid date (not NaN)
-					if ( isDate( buttonDate ) && buttonDate < today ) {
-						button.disabled = true;
-					}
-				} catch {
-					// If we can't parse the date, just continue
-				}
-			}
-		} );
-	}, [ today ] );
-
-	useLayoutEffect( () => {
-		if ( ! isPopoverOpen || ! datePickerRef.current ) {
-			return;
-		}
-
-		disablePastDayButtons();
-	}, [ isPopoverOpen, disablePastDayButtons ] );
+	// Disable any day before today. DatePicker passes the calendar's own Date
+	// for each cell (in the browser-local frame it renders in), so we compare it
+	// against today in the same frame. Earlier we parsed the day's aria-label
+	// through getDate, which reinterpreted it in the store timezone and disabled
+	// "today" for merchants whose device timezone sits behind the store
+	// timezone, forcing the minimum selectable date to tomorrow (WOOSHIP-2252).
+	const isInvalidDate = useCallback(
+		( date: Date ) => {
+			const day = new Date( date );
+			day.setHours( 0, 0, 0, 0 );
+			return day < today;
+		},
+		[ today ]
+	);
 
 	return (
 		<>
@@ -220,7 +187,6 @@ export const ShippingDate = ( {
 							onFocusOutside={ () => setIsPopoverOpen( false ) }
 							position="bottom center"
 							className="shipping-date-popover"
-							ref={ datePickerRef }
 							focusOnMount={ false }
 						>
 							<DatePicker
@@ -229,10 +195,7 @@ export const ShippingDate = ( {
 									today.toISOString()
 								}
 								onChange={ handleDateChange }
-								onMonthPreviewed={ () => {
-									// Defer the disablePastDayButtons call to allow the calendar to render
-									setTimeout( disablePastDayButtons, 1 );
-								} }
+								isInvalidDate={ isInvalidDate }
 							/>
 						</Popover>
 					) }

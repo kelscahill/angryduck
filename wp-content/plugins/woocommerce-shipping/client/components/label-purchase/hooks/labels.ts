@@ -58,6 +58,9 @@ interface UseLabelsStateProps {
 		typeof useHazmatState
 	>[ 'getShipmentHazmat' ];
 	isFetching: ReturnType< typeof useRatesState >[ 'isFetching' ];
+	userRateFetchNonce?: ReturnType<
+		typeof useRatesState
+	>[ 'userRateFetchNonce' ];
 	resetRates: ReturnType< typeof useRatesState >[ 'resetRates' ];
 	getShipmentOrigin: ReturnType<
 		typeof useShipmentState
@@ -121,7 +124,7 @@ export function useLabelsState( {
 	getSelectionItems,
 	totalWeight,
 	getShipmentHazmat,
-	isFetching,
+	userRateFetchNonce = 0,
 	resetRates,
 	getShipmentOrigin,
 	customs: { maybeApplyCustomsToPackage, getCustomsState },
@@ -189,13 +192,15 @@ export function useLabelsState( {
 		string[]
 	>( [] );
 
-	// Dismiss the top-of-view purchase error notice when the merchant kicks
-	// off a fresh rate fetch — they've moved on from the failed attempt.
+	// Dismiss the top-of-view purchase error notice only when the merchant
+	// explicitly triggers a rate fetch (clicking "Get rates" or changing
+	// shipment inputs) — i.e. they've moved on from the failed attempt. We key
+	// off `userRateFetchNonce` rather than `isFetching` so that system-driven
+	// refetches (e.g. the auto-fetch that runs after a failed purchase resets
+	// rates) don't wipe the error before the merchant can read it.
 	useEffect( () => {
-		if ( isFetching ) {
-			setLabelStatusUpdateErrors( [] );
-		}
-	}, [ isFetching ] );
+		setLabelStatusUpdateErrors( [] );
+	}, [ userRateFetchNonce ] );
 
 	const hasPurchasedLabel = useCallback(
 		(

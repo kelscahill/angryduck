@@ -169,8 +169,7 @@ class MailChimp_WooCommerce_Rest_Api
      */
     public function permission_callback()
     {
-        $cap = mailchimp_get_allowed_capability();
-        return ($cap === 'manage_woocommerce' || $cap === 'manage_options' || $cap === 'administrator');
+        return current_user_can(mailchimp_get_allowed_capability());
     }
 
 	/**

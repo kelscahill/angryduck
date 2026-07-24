@@ -697,7 +697,7 @@ class Feature_Custom_Taxonomy extends Base_Model implements Model_Interface, Act
         // Check if taxonomy exists.
         if ( ! taxonomy_exists( Plugin_Constants::FEATURE_CUSTOM_TAXONOMY ) ) {
             // Mark as completed even if taxonomy doesn't exist yet.
-            update_option( 'acfwf_feature_counts_initialized', time() );
+            update_option( 'acfwf_feature_counts_initialized', time(), false );
             return true;
         }
 
@@ -706,7 +706,7 @@ class Feature_Custom_Taxonomy extends Base_Model implements Model_Interface, Act
 
         if ( empty( $valid_feature_slugs ) ) {
             // Mark as completed even if no features.
-            update_option( 'acfwf_feature_counts_initialized', time() );
+            update_option( 'acfwf_feature_counts_initialized', time(), false );
             return true;
         }
 
@@ -732,7 +732,7 @@ class Feature_Custom_Taxonomy extends Base_Model implements Model_Interface, Act
                 );
 
                 $option_key = $this->_get_feature_count_option_key( $feature_slug );
-                update_option( $option_key, (int) $count );
+                update_option( $option_key, (int) $count, false );
 
             } catch ( Exception $e ) {
                 $errors[] = "Failed to calculate count for {$feature_slug}: " . $e->getMessage();
@@ -744,7 +744,7 @@ class Feature_Custom_Taxonomy extends Base_Model implements Model_Interface, Act
         do_action( 'acfw_calculate_feature_taxonomy_counts', $errors );
 
         // Mark initialization as complete with timestamp.
-        update_option( 'acfwf_feature_counts_initialized', time() );
+        update_option( 'acfwf_feature_counts_initialized', time(), false );
 
         return empty( $errors );
     }
@@ -823,7 +823,7 @@ class Feature_Custom_Taxonomy extends Base_Model implements Model_Interface, Act
             $current_count = get_option( $option_key, 0 );
             $new_count     = max( 0, (int) $current_count + $change );
 
-            update_option( $option_key, $new_count );
+            update_option( $option_key, $new_count, false );
         }
     }
 
@@ -939,7 +939,7 @@ class Feature_Custom_Taxonomy extends Base_Model implements Model_Interface, Act
         }
 
         // Additional validation: ensure slug follows expected format.
-        if ( strpos( $slug, 'acfw-' ) !== 0 || strpos( $slug, '-module' ) === false ) {
+        if ( ! str_starts_with( $slug, 'acfw-' ) || ! str_contains( $slug, '-module' ) ) {
             // Invalid format, don't display.
             return '';
         }

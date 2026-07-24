@@ -153,17 +153,17 @@ class Plugin_Installer extends Base_Model implements Model_Interface, Initializa
     private function _update_plugin_install_information( $plugin_slug ) {
         // Update uncanny automator source option.
         if ( 'uncanny-automator' === $plugin_slug ) {
-            update_option( 'uncannyautomator_source', 'acoupons' );
+            update_option( 'uncannyautomator_source', 'acoupons', false );
         }
 
         // Update StoreAgent AI source option when StoreAgent AI is installed.
         if ( 'storeagent-ai-for-woocommerce' === $plugin_slug ) {
-            update_option( 'storeagent_installed_by', 'acfw' );
+            update_option( 'storeagent_installed_by', 'acfw', false );
         }
 
         // Update WooCommerce Wholesale Prices source option when WooCommerce Wholesale Prices is installed.
         if ( 'woocommerce-wholesale-prices' === $plugin_slug ) {
-            update_option( 'wwp_installed_by', 'acfw' );
+            update_option( 'wwp_installed_by', 'acfw', false );
         }
     }
 

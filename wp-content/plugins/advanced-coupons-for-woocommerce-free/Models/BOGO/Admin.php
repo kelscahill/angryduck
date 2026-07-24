@@ -135,7 +135,7 @@ class Admin implements Model_Interface, Initializable_Interface, Activatable_Int
                 WHERE t1.meta_key = 'discount_type'"
             );
 
-            update_option( 'acfwf_bogo_migrate_coupon_type', Plugin_Constants::VERSION );
+            update_option( 'acfwf_bogo_migrate_coupon_type', Plugin_Constants::VERSION, false );
         }
     }
 
@@ -311,16 +311,21 @@ class Admin implements Model_Interface, Initializable_Interface, Activatable_Int
             $deals_type      = sanitize_text_field( $post_data['deals_type'] ?? '' );
             $notice_settings = (array) $post_data['notice_settings'] ?? array();
 
+            // behaviour when the deal no longer applies: 'keep' (default) or 'remove'.
+            $remove_unqualified_deal = sanitize_text_field( $post_data['remove_unqualified_deal'] ?? 'keep' );
+            $remove_unqualified_deal = in_array( $remove_unqualified_deal, array( 'keep', 'remove' ), true ) ? $remove_unqualified_deal : 'keep';
+
             // prepare bogo deals data.
             $coupon_id  = intval( $post_data['coupon_id'] );
             $bogo_deals = array(
-                'conditions'      => $this->_sanitize_product_data( $post_data['conditions'], $conditions_type ),
-                'deals'           => $this->_sanitize_product_data( $post_data['deals'], $deals_type ),
-                'conditions_type' => $conditions_type,
-                'deals_type'      => $deals_type,
-                'repeat_limit'    => intval( $post_data['repeat_limit'] ?? 0 ),
-                'type'            => sanitize_text_field( $post_data['type'] ),
-                'notice_settings' => array(
+                'conditions'              => $this->_sanitize_product_data( $post_data['conditions'], $conditions_type ),
+                'deals'                   => $this->_sanitize_product_data( $post_data['deals'], $deals_type ),
+                'conditions_type'         => $conditions_type,
+                'deals_type'              => $deals_type,
+                'repeat_limit'            => intval( $post_data['repeat_limit'] ?? 0 ),
+                'type'                    => sanitize_text_field( $post_data['type'] ),
+                'remove_unqualified_deal' => $remove_unqualified_deal,
+                'notice_settings'         => array(
                     'message'     => sanitize_text_field( $notice_settings['message'] ) ?? '',
                     'button_text' => sanitize_text_field( $notice_settings['button_text'] ) ?? '',
                     'button_url'  => esc_url_raw( $notice_settings['button_url'] ?? '' ),
@@ -439,5 +444,4 @@ class Admin implements Model_Interface, Initializable_Interface, Activatable_Int
         add_filter( 'woocommerce_coupon_discount_types', array( $this, 'register_bogo_coupon_type' ) );
         add_action( 'woocommerce_order_item_get_discount', array( $this, 'append_bogo_discount_to_edit_order_coupon_value' ), 10, 2 );
     }
-
 }

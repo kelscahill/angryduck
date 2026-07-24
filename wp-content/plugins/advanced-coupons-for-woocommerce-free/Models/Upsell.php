@@ -1661,7 +1661,7 @@ class Upsell extends Base_Model implements Model_Interface, Initializable_Interf
             return;
         }
 
-        update_option( Plugin_Constants::SHOW_UPGRADE_NOTICE, 'yes' );
+        update_option( Plugin_Constants::SHOW_UPGRADE_NOTICE, 'yes', false );
     }
 
     /**
@@ -1774,7 +1774,7 @@ class Upsell extends Base_Model implements Model_Interface, Initializable_Interf
             return $knowledge_base;
         }
 
-        $category = strpos( $transient, 'coupon' ) !== false ? 'coupons' : 'marketing';
+        $category = str_contains( $transient, 'coupon' ) ? 'coupons' : 'marketing';
 
         $wws_ebook_check = ! empty( $knowledge_base ) ? array_filter(
             $knowledge_base,
@@ -1994,7 +1994,7 @@ class Upsell extends Base_Model implements Model_Interface, Initializable_Interf
     public function register_loyalty_program_upsell_localized_data( $data ) {
         $data['loyalty_program'] = array(
             'title'         => __( 'Increase Customer Loyalty & Repeat Orders With A Loyalty Program', 'advanced-coupons-for-woocommerce-free' ),
-            'description'   => __( 'Loyalty Program for WooCommerce is proven to increase customer loyalty and help you get more repeat orders. It’s a great way to incentivize your customers without having to give steep discounts.', 'advanced-coupons-for-woocommerce-free' ),
+            'description'   => __( 'Advanced Loyalty Program is proven to increase customer loyalty and help you get more repeat orders. It’s a great way to incentivize your customers without having to give steep discounts.', 'advanced-coupons-for-woocommerce-free' ),
             'plugin_image'  => array(
                 'src' => $this->_constants->IMAGES_ROOT_URL . 'lpfw-icon.png',
                 'alt' => __( 'Loyalty Program plugin icon', 'advanced-coupons-for-woocommerce-free' ),
@@ -2009,7 +2009,7 @@ class Upsell extends Base_Model implements Model_Interface, Initializable_Interf
             'steps_list'    => array(
                 array(
                     'step_count'  => '1',
-                    'title'       => __( 'Purchase & Install Loyalty Program for WooCommerce', 'advanced-coupons-for-woocommerce-free' ),
+                    'title'       => __( 'Purchase & Install Advanced Loyalty Program', 'advanced-coupons-for-woocommerce-free' ),
                     'description' => __( 'Your customers will love being able to earn points for their orders so they can redeem them for coupons on future orders. Get set up and running in a few minutes.', 'advanced-coupons-for-woocommerce-free' ),
                     'is_active'   => ! $this->_helper_functions->is_plugin_installed( Plugin_Constants::LOYALTY_PLUGIN ),
                     'action_text' => __( 'Get Loyalty Program', 'advanced-coupons-for-woocommerce-free' ),
@@ -2019,7 +2019,7 @@ class Upsell extends Base_Model implements Model_Interface, Initializable_Interf
                 array(
                     'step_count'  => '2',
                     'title'       => __( 'Configure Loyalty Program Settings', 'advanced-coupons-for-woocommerce-free' ),
-                    'description' => __( 'Loyalty Program for WooCommerce lets you configure an amazing points & rewards program in minutes. It comes mostly configured out of the box, but there’s loads of great customizations you can deploy.', 'advanced-coupons-for-woocommerce-free' ),
+                    'description' => __( 'Advanced Loyalty Program lets you configure an amazing points & rewards program in minutes. It comes mostly configured out of the box, but there’s loads of great customizations you can deploy.', 'advanced-coupons-for-woocommerce-free' ),
                     'is_active'   => $this->_helper_functions->is_plugin_installed( Plugin_Constants::LOYALTY_PLUGIN ),
                     'action_text' => __( 'Start Setup', 'advanced-coupons-for-woocommerce-free' ),
                     'link'        => sprintf( 'plugins.php?action=activate&plugin=%s&plugin_status=all&s&_wpnonce=%s', 'loyalty-program-for-woocommerce%2Floyalty-program-for-woocommerce.php', wp_create_nonce( 'activate-plugin_' . Plugin_Constants::LOYALTY_PLUGIN ) ),

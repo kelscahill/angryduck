@@ -437,16 +437,16 @@ class Admin {
 
 	/**
 	 * Check if the invoice number search is enabled.
+	 * 
+	 * @param  bool $check_partial Check if the partial search is enabled.
+	 * 
+	 * @return bool
 	 */
-	public function invoice_number_search_enabled() {
-		$is_enabled       = false;
+	public function invoice_number_search_enabled( bool $check_partial = false ): bool {
 		$invoice_settings = get_option( 'wpo_wcpdf_documents_settings_invoice', array() );
+		$setting_key      = $check_partial ? 'invoice_number_partial_search' : 'invoice_number_search';
 
-		if ( isset( $invoice_settings['invoice_number_search'] ) ) {
-			$is_enabled = true;
-		}
-
-		return $is_enabled;
+		return isset( $invoice_settings[ $setting_key ] );
 	}
 
 
@@ -1506,8 +1506,9 @@ class Admin {
 
 				if ( $is_new ) {
 					WPO_WCPDF()->main->log_document_creation_to_order_notes( $invoice, 'document_data' );
-					WPO_WCPDF()->main->mark_document_printed( $invoice, 'document_data' );
 				}
+
+				WPO_WCPDF()->main->mark_document_printed( $invoice, 'document_data' );
 			}
 
 			// allow other documents to hook here and save their form data
@@ -1687,6 +1688,7 @@ class Admin {
 				if ( 'regenerate' === $action_type && $document->exists() ) {
 					$document->regenerate( $order, $document_data );
 					WPO_WCPDF()->main->log_document_creation_trigger_to_order_meta( $document, 'document_data', true, $request );
+					WPO_WCPDF()->main->mark_document_printed( $document, 'document_data' );
 					$response = array(
 						'message' => $notice_messages[$notice]['success'],
 					);
@@ -1718,9 +1720,10 @@ class Admin {
 					if ( $is_new ) {
 						WPO_WCPDF()->main->log_document_creation_to_order_notes( $document, 'document_data' );
 						WPO_WCPDF()->main->log_document_creation_trigger_to_order_meta( $document, 'document_data', false, $request );
-						WPO_WCPDF()->main->mark_document_printed( $document, 'document_data' );
 					}
-					$response      = array(
+
+					WPO_WCPDF()->main->mark_document_printed( $document, 'document_data' );
+					$response = array(
 						'message' => $notice_messages[$notice]['success'],
 					);
 

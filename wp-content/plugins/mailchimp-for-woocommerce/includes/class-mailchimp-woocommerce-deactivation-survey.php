@@ -182,6 +182,9 @@ if ( ! class_exists( 'Mailchimp_Woocommerce_Deactivation_Survey', false ) ) {
 						{
 							url: "<?php echo $this->endpoint; ?>",
 							type: "POST",
+							beforeSend: function (xhr) {
+								xhr.setRequestHeader('X-WP-Nonce', '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>');
+							},
 							data: {
 								id: '<?php echo mailchimp_get_store_id()?>',
 								url: '<?php echo esc_url( home_url() ); ?>',

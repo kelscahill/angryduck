@@ -1,9 +1,4 @@
-import {
-	createElement,
-	useEffect,
-	useMemo,
-	useState,
-} from '@wordpress/element';
+import { createElement, useEffect, useState } from '@wordpress/element';
 import { createRoot } from 'react-dom/client';
 import { Modal, Notice } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
@@ -19,7 +14,7 @@ import {
 	registerBulkLabelsStore,
 	registerOrdersShippingContextEntity,
 } from 'data/bulk-labels';
-import type { BulkPurchaseOrder } from 'data/bulk-labels';
+import type { PurchasableBulkPurchaseOrder } from 'data/bulk-labels';
 import type { LabelPrintFulfillmentRef } from 'types';
 import { initSentry } from 'utils';
 
@@ -82,38 +77,6 @@ const formTargetsBulkLabelsAction = (
 	return select?.value === BULK_ACTION_VALUE;
 };
 
-/**
- * Optional URL switch to force the mock batch outcome. Lets a reviewer
- * exercise the success-only, failure-only, mixed, and transport-error
- * branches without touching code. Recognized values:
- *   - `?wcshipping_bulk_mock=success` every order succeeds.
- *   - `?wcshipping_bulk_mock=failure` every order fails.
- *   - `?wcshipping_bulk_mock=transport_error` the batch dispatch itself
- *     rejects, exercising the modal's catch path.
- *   - any other value (or missing) defaults to the mock's built-in rule
- *     (order id last digit 3 or 7 fails).
- */
-const getMockOverride = ():
-	| 'success'
-	| 'failure'
-	| 'transport_error'
-	| null => {
-	if ( typeof window === 'undefined' ) {
-		return null;
-	}
-	const value = new URLSearchParams( window.location.search ).get(
-		'wcshipping_bulk_mock'
-	);
-	if (
-		value === 'success' ||
-		value === 'failure' ||
-		value === 'transport_error'
-	) {
-		return value;
-	}
-	return null;
-};
-
 const isTestPrintLabelRef = ( ref: unknown ): ref is LabelPrintFulfillmentRef =>
 	typeof ref === 'object' &&
 	ref !== null &&
@@ -151,8 +114,12 @@ const BulkLabelsApp = () => {
 		null
 	);
 	const [ batchOrders, setBatchOrders ] = useState<
-		BulkPurchaseOrder[] | null
+		PurchasableBulkPurchaseOrder[] | null
 	>( null );
+	const [ batchOrigin, setBatchOrigin ] = useState< Record<
+		string,
+		unknown
+	> | null >( null );
 	const [ batchState, setBatchState ] = useState< BatchPurchaseState | null >(
 		null
 	);
@@ -160,14 +127,6 @@ const BulkLabelsApp = () => {
 	const [ testPrintLabelRefs, setTestPrintLabelRefs ] = useState<
 		LabelPrintFulfillmentRef[] | null
 	>( null );
-
-	const forceOutcome = useMemo( () => {
-		const override = getMockOverride();
-		if ( ! override ) {
-			return undefined;
-		}
-		return () => override;
-	}, [] );
 
 	// Dev-only test entry point so the merged-PDF print dialog can be
 	// exercised directly in the browser without running a full batch. Set
@@ -316,11 +275,21 @@ const BulkLabelsApp = () => {
 		const succeededIds = ( batchState?.rows ?? [] )
 			.filter( ( row ) => row.status === 'succeeded' )
 			.map( ( row ) => row.order_id );
+		const shouldPreserveInterruptedBatch =
+			batchState?.phase === 'progress' &&
+			batchState.rows.some( ( row ) => row.status === 'pending' );
 		uncheckOrderRows( succeededIds );
 		setBatchOrders( null );
+		setBatchOrigin( null );
+		if ( ! shouldPreserveInterruptedBatch ) {
+			setBatchState( null );
+		}
 	};
 
-	const openBatchFor = ( orders: BulkPurchaseOrder[] ) => {
+	const openBatchFor = (
+		orders: PurchasableBulkPurchaseOrder[],
+		origin: Record< string, unknown >
+	) => {
 		// Numeric comparator: default `.sort()` is lexicographic, so
 		// [2, 10, 100] would compare as ['10','100','2'] and two
 		// different selections could produce equal keys.
@@ -333,14 +302,17 @@ const BulkLabelsApp = () => {
 		const sameBatch =
 			incomingIds.length === previousIds.length &&
 			incomingIds.every( ( id, idx ) => id === previousIds[ idx ] );
+		const canResumeInterruptedBatch = batchState?.phase === 'progress';
 
 		// Reset persisted state when the merchant kicks off a fresh
-		// selection so we don't replay stale labels.
-		if ( ! sameBatch ) {
+		// selection, or when the previous run already reached results, so
+		// we don't replay stale label IDs instead of buying new labels.
+		if ( ! sameBatch || ! canResumeInterruptedBatch ) {
 			setBatchState( null );
 		}
 
 		setBatchOrders( orders );
+		setBatchOrigin( origin );
 		setReviewOrderIds( null );
 	};
 
@@ -370,7 +342,7 @@ const BulkLabelsApp = () => {
 					onCreateLabels={ openBatchFor }
 				/>
 			) }
-			{ batchOrders !== null && (
+			{ batchOrders !== null && batchOrigin !== null && (
 				<BatchProgressModal
 					// Stable per-selection key so a fresh selection
 					// remounts the modal and the run-once dispatch
@@ -383,9 +355,9 @@ const BulkLabelsApp = () => {
 						.sort( ( a, b ) => a - b )
 						.join( ',' ) }
 					orders={ batchOrders }
+					origin={ batchOrigin }
 					initialState={ batchState }
 					onStateChange={ setBatchState }
-					forceOutcome={ forceOutcome }
 					onClose={ handleBatchClose }
 				/>
 			) }

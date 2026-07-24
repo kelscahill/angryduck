@@ -8,6 +8,7 @@ use ACFWF\Helpers\Plugin_Constants;
 use ACFWF\Interfaces\Initializable_Interface;
 use ACFWF\Interfaces\Model_Interface;
 use ACFWF\Models\Objects\Advanced_Coupon;
+use ACFWF\Models\Objects\BOGO\Calculation;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -472,6 +473,7 @@ class Cart_Conditions extends Base_Model implements Model_Interface, Initializab
      *
      * @since 1.0
      * @since 3.0.1 Make sure the cart conditions implementation will only run when WC_Cart instance is available.
+     * @since 4.7.4 Clear stale BOGO session data when a BOGO coupon fails its cart conditions.
      * @access public
      *
      * @param bool      $value Filter return value.
@@ -512,6 +514,10 @@ class Cart_Conditions extends Base_Model implements Model_Interface, Initializab
 
                 if ( $coupon->is_type( 'acfw_bogo' ) ) {
                     \ACFWF()->BOGO_Frontend->reset_bogo_deals_prices();
+
+                    // Clear stale BOGO session data so the "eligible to redeem deals" notice
+                    // does not persist on classic cart pages after cart conditions fail.
+                    Calculation::clear_session_data();
                 }
 
                 throw new \Exception( wp_kses_post( $this->_get_cart_condition_notice( $coupon ) ) );
@@ -525,6 +531,7 @@ class Cart_Conditions extends Base_Model implements Model_Interface, Initializab
      * Get cart condition notice.
      *
      * @since 1.0
+     * @since 4.7.4 Scope htmlentities2 encoding to block cart/checkout only; add acfw_encode_cart_condition_notice filter.
      * @access private
      *
      * @param Advanced_Coupon $coupon Advanced coupon object.
@@ -542,12 +549,18 @@ class Cart_Conditions extends Base_Model implements Model_Interface, Initializab
 
         $button = $btn_text && $btn_url ? sprintf( '<a class="button" href="%s">%s</a>', esc_url( $btn_url ), $btn_text ) : '';
 
-        // Because the response message in the WooCommerce block is stripped, it needs to be modified.
-        if ( $this->_helper_functions->is_current_request_using_wpjson_wc_api() || version_compare( WC()->version, '9.4.0', '>=' ) ) {
-            return htmlentities2( sprintf( '%s %s', $message, $button ) );
+        $notice = sprintf( '%s %s', $message, $button );
+
+        // Because the response message in the WooCommerce block is stripped, it needs to be encoded.
+        // Only encode for block cart/checkout (REST request or block page); classic cart/checkout renders raw HTML directly.
+        $use_html_entities = $this->_helper_functions->is_current_request_using_wpjson_wc_api()
+            || ( version_compare( WC()->version, '9.4.0', '>=' ) && $this->_helper_functions->is_current_page_using_cart_checkout_block() );
+
+        if ( apply_filters( 'acfw_encode_cart_condition_notice', $use_html_entities ) ) {
+            return htmlentities2( $notice );
         }
 
-        return sprintf( '%s %s', $message, $button );
+        return $notice;
     }
 
     /**

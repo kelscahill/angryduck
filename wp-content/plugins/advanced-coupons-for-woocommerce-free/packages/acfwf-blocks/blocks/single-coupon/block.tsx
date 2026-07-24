@@ -11,7 +11,7 @@ import {
   withSpokenMessages
 } from "@wordpress/components";
 // @ts-ignore
-import { BlockControls, InspectorControls } from "@wordpress/block-editor";
+import { BlockControls, InspectorControls, useBlockProps } from "@wordpress/block-editor";
 
 // Components
 import ContentSettingsControl from "../../components/ContentSettingsControl";
@@ -60,6 +60,8 @@ const SingleCouponBlock = (props: IProps) => {
     setAttributes({coupon_id: couponId});
   };
 
+  const blockProps = useBlockProps();
+
   return (
     <>
       <BlockControls>
@@ -86,63 +88,65 @@ const SingleCouponBlock = (props: IProps) => {
           />
         </PanelBody>
       </InspectorControls>
-      
-      {isEditing ? (
-        <Placeholder
-          label={singleCouponTexts.title}
-          className="acfw-block-single-coupon"
-        >
-          {singleCouponTexts.description}
-          <div className="acfw-single-block-fields">
-            {'' !== attributes.coupon_code && (
-              <div className="acfw-block-current-coupon-selected">
-                <span>{currentlySelectedCouponLabel}</span>
-                <span className="coupon-code" title={attributes.coupon_code}>
-                  {attributes.coupon_code}
-                </span>
-              </div>
-            )}
-            <div className="acfw-block-coupon__selection">
-              <CouponSearchControl
-                coupon_id={attributes.coupon_id}
-                setAttributes={setAttributes}
-              />
-            </div>
-          </div>
-          <div className="acfw-block-action-buttons">
-          <Button
-            isPrimary
-            onClick={() => setIsEditing(false)}
+
+      <div {...blockProps}>
+        {isEditing ? (
+          <Placeholder
+            label={singleCouponTexts.title}
+            className="acfw-block-single-coupon"
           >
-            {doneBtnText}
-          </Button>
-          </div>
-        </Placeholder>
-      ) : (
-        <>
-          {0 < attributes.coupon_id ? (
-            <ServerSideRender
-              block={name}
-              attributes={attributes}
-              EmptyResponsePlaceholder={() => (
-                <Placeholder
-                  label={singleCouponTexts.title}
-                  className="acfw-block-single-coupon"
-                >
-                  {singleCouponTexts.emptyDesc}
-                </Placeholder>
+            {singleCouponTexts.description}
+            <div className="acfw-single-block-fields">
+              {'' !== attributes.coupon_code && (
+                <div className="acfw-block-current-coupon-selected">
+                  <span>{currentlySelectedCouponLabel}</span>
+                  <span className="coupon-code" title={attributes.coupon_code}>
+                    {attributes.coupon_code}
+                  </span>
+                </div>
               )}
-            />
-          ) : (
-            <Placeholder
-              label={singleCouponTexts.title}
-              className="acfw-block-coupons-grid acfw-block-coupons-category"
+              <div className="acfw-block-coupon__selection">
+                <CouponSearchControl
+                  coupon_id={attributes.coupon_id}
+                  setAttributes={setAttributes}
+                />
+              </div>
+            </div>
+            <div className="acfw-block-action-buttons">
+            <Button
+              isPrimary
+              onClick={() => setIsEditing(false)}
             >
-              <p>{singleCouponTexts.selectDesc}</p>
-            </Placeholder> 
-          )}
-        </>
-      )}
+              {doneBtnText}
+            </Button>
+            </div>
+          </Placeholder>
+        ) : (
+          <>
+            {0 < attributes.coupon_id ? (
+              <ServerSideRender
+                block={name}
+                attributes={attributes}
+                EmptyResponsePlaceholder={() => (
+                  <Placeholder
+                    label={singleCouponTexts.title}
+                    className="acfw-block-single-coupon"
+                  >
+                    {singleCouponTexts.emptyDesc}
+                  </Placeholder>
+                )}
+              />
+            ) : (
+              <Placeholder
+                label={singleCouponTexts.title}
+                className="acfw-block-coupons-grid acfw-block-coupons-category"
+              >
+                <p>{singleCouponTexts.selectDesc}</p>
+              </Placeholder>
+            )}
+          </>
+        )}
+      </div>
     </>
   );
 }

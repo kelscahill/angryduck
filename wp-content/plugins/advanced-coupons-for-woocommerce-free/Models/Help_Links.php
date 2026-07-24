@@ -236,7 +236,7 @@ class Help_Links implements Model_Interface, Initializable_Interface {
         }
 
         // save permission option.
-        update_option( Plugin_Constants::ALLOW_FETCH_CONTENT_REMOTE, 'yes' );
+        update_option( Plugin_Constants::ALLOW_FETCH_CONTENT_REMOTE, 'yes', false );
 
         // return success response.
         wp_send_json( array( 'success' => true ) );

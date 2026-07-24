@@ -370,7 +370,7 @@ class Usage extends Base_Model implements Model_Interface, Initializable_Interfa
         if ( ! $main_usage_tracking_scheduled ) {
             // Schedule the main usage tracking event.
             wp_schedule_event( $tracking['initsend'], 'weekly', Plugin_Constants::USAGE_CRON_ACTION );
-            update_option( Plugin_Constants::USAGE_CRON_CONFIG, $tracking );
+            update_option( Plugin_Constants::USAGE_CRON_CONFIG, $tracking, false );
         } else {
             // Use the existing scheduled time.
             $tracking['initsend'] = $main_usage_tracking_scheduled;
@@ -412,7 +412,7 @@ class Usage extends Base_Model implements Model_Interface, Initializable_Interfa
 
         // Don't track anything from our domains.
         $home_url = trailingslashit( home_url() );
-        if ( strpos( $home_url, 'wholesalesuiteplugin.com' ) !== false || strpos( $home_url, 'advancedcouponsplugin.com' ) !== false ) {
+        if ( str_contains( $home_url, 'wholesalesuiteplugin.com' ) || str_contains( $home_url, 'advancedcouponsplugin.com' ) ) {
             return false;
         }
 
@@ -441,7 +441,7 @@ class Usage extends Base_Model implements Model_Interface, Initializable_Interfa
         );
 
         // If we have completed successfully, recheck in 1 week.
-        update_option( Plugin_Constants::USAGE_LAST_CHECKIN, time() );
+        update_option( Plugin_Constants::USAGE_LAST_CHECKIN, time(), false );
         return true;
     }
 
@@ -483,8 +483,8 @@ class Usage extends Base_Model implements Model_Interface, Initializable_Interfa
         $most_popular_templates = wp_list_pluck( $most_popular_templates, 'template' );
 
         // Update the wp_options table with the tracking data.
-        update_option( Plugin_Constants::TOTAL_CREATED_WITH_COUPON_TEMPLATES, $total_coupons_created_from_templates );
-        update_option( Plugin_Constants::MOST_POPULAR_TEMPLATES, $most_popular_templates );
+        update_option( Plugin_Constants::TOTAL_CREATED_WITH_COUPON_TEMPLATES, $total_coupons_created_from_templates, false );
+        update_option( Plugin_Constants::MOST_POPULAR_TEMPLATES, $most_popular_templates, false );
 
         return true;
     }
@@ -610,6 +610,7 @@ class Usage extends Base_Model implements Model_Interface, Initializable_Interfa
      */
     public function update_allow_usage_setting_on_notice_dismiss( $notice_key, $response ) {
         if ( 'allow_usage' === $notice_key && 'allow_usage' === $response ) {
+            // USAGE_ALLOW is read on every request via Usage::run() — keep it autoloaded.
             update_option( Plugin_Constants::USAGE_ALLOW, 'yes' );
         }
     }
@@ -629,7 +630,7 @@ class Usage extends Base_Model implements Model_Interface, Initializable_Interfa
      */
     public function activate() {
         if ( get_option( Plugin_Constants::SHOW_ALLOW_USAGE_NOTICE ) !== 'dismissed' ) {
-            update_option( Plugin_Constants::SHOW_ALLOW_USAGE_NOTICE, 'yes' );
+            update_option( Plugin_Constants::SHOW_ALLOW_USAGE_NOTICE, 'yes', false );
         }
     }
 

@@ -12,6 +12,7 @@ const {
 	isCountrySupported,
 	storeCountryName,
 	storeCurrency,
+	onboardingState,
 } = getConfig();
 
 registerWPCOMConnectionStore();
@@ -24,5 +25,6 @@ root.render(
 		isCurrencySupported={ isCurrencySupported }
 		storeCountryName={ storeCountryName }
 		storeCurrency={ storeCurrency }
+		onboardingState={ onboardingState }
 	/>
 );

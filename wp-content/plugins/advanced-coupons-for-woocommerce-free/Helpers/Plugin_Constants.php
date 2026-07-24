@@ -44,7 +44,7 @@ class Plugin_Constants {
     // Plugin configuration constants.
     const TOKEN               = 'acfwf';
     const INSTALLED_VERSION   = 'acfwf_installed_version';
-    const VERSION             = '4.7.2';
+    const VERSION             = '4.7.4';
     const TEXT_DOMAIN         = 'advanced-coupons-for-woocommerce-free';
     const THEME_TEMPLATE_PATH = 'advanced-coupons-for-woocommerce-free';
     const META_PREFIX         = '_acfw_';
@@ -71,6 +71,7 @@ class Plugin_Constants {
     const SHOW_ALLOW_USAGE_NOTICE     = 'acfwf_show_allow_usage_notice';
     const SAVETO_NOTICE_SHOW_AFTER    = 'acfwf_saveto_notice_show_after';
     const SAVETO_NOTICE_DISMISSED     = 'acfwf_saveto_notice_dismissed';
+    const STOREAGENT_NOTICE_DISMISSED = 'acfwf_storeagent_notice_dismissed';
 
     // WC Admin.
     const REGISTER_WC_ADMIN_NOTE = 'acfwf_register_wc_admin_note';

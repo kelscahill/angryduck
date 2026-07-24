@@ -577,17 +577,17 @@ class Admin_App implements Model_Interface, Initializable_Interface, Deactivatab
                         ),
                     ),
                     'store_credits_page'      => array(
-                        'title'          => __(
+                        'title'              => __(
                             'Store Credits Dashboard',
                             'advanced-coupons-for-woocommerce-free'
                         ),
-                        'currency'       => array(
+                        'currency'           => array(
                             'decimal_separator'  => wc_get_price_decimal_separator(),
                             'thousand_separator' => wc_get_price_thousand_separator(),
                             'decimals'           => wc_get_price_decimals(),
                             'symbol'             => html_entity_decode( get_woocommerce_currency_symbol() ),
                         ),
-                        'tabs'           => array(
+                        'tabs'               => array(
                             array(
                                 'label' => __( 'Dashboard', 'advanced-coupons-for-woocommerce-free' ),
                                 'key'   => 'dashboard',
@@ -600,8 +600,18 @@ class Admin_App implements Model_Interface, Initializable_Interface, Deactivatab
                                 'label' => __( 'Automations', 'advanced-coupons-for-woocommerce-free' ),
                                 'key'   => 'automations',
                             ),
+                            array(
+                                'label' => __( 'Bulk Adjust', 'advanced-coupons-for-woocommerce-free' ),
+                                'key'   => 'bulk-adjust',
+                            ),
                         ),
-                        'period_options' => array(
+                        'bulk_adjust_upsell' => array(
+                            'title'   => __( 'Bulk Adjust Store Credits', 'advanced-coupons-for-woocommerce-free' ),
+                            'desc'    => __( 'Adjust store credit balances in bulk for groups of customers based on filters such as user roles, balance ranges, registration date, and last order date. This feature is available in the Premium version.', 'advanced-coupons-for-woocommerce-free' ),
+                            'cta'     => __( 'Upgrade to Premium', 'advanced-coupons-for-woocommerce-free' ),
+                            'cta_url' => apply_filters( 'acfwp_upsell_link', $this->_helper_functions->get_utm_url( 'pricing/', 'acfwf', 'upsell', 'bulkadjustupsell' ) ),
+                        ),
+                        'period_options'     => array(
                             array(
                                 'label' => __( 'Week to Date', 'advanced-coupons-for-woocommerce-free' ),
                                 'value' => 'week_to_date',
@@ -639,7 +649,7 @@ class Admin_App implements Model_Interface, Initializable_Interface, Deactivatab
                                 'value' => 'custom',
                             ),
                         ),
-                        'adjust_modal'   => array(
+                        'adjust_modal'       => array(
                             'title'                   => __(
                                 'Adjust Store Credit',
                                 'advanced-coupons-for-woocommerce-free'
@@ -685,7 +695,7 @@ class Admin_App implements Model_Interface, Initializable_Interface, Deactivatab
                                 'advanced-coupons-for-woocommerce-free'
                             ),
                         ),
-                        'labels'         => array(
+                        'labels'             => array(
                             'status'         => __(
                                 'Store Credits Status',
                                 'advanced-coupons-for-woocommerce-free'

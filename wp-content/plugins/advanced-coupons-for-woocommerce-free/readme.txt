@@ -1,9 +1,9 @@
 === Advanced Coupons for WooCommerce Coupons & Store Credit ===
 Contributors: jkohlbach, RymeraWebCo, Rymera01, smub
 Tags: woocommerce coupons, bogo coupons, store credit, bogo, smart coupons
-Requires at least: 5.2
+Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 4.7.2
+Stable tag: 4.7.4
 Requires PHP: 5.6
 License: GNU General Public License v2.0 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -354,7 +354,7 @@ Purchasing an Advanced Coupons Premium license gives you access to the full feat
 You can also explore our other compatible extensions as well:
 
 * <a href="https://advancedcouponsplugin.com/pricing/?utm_source=wprepo&utm_medium=link&utm_campaign=acfwf" rel="friend">Advanced Coupons Premium</a>
-* <a href="https://advancedcouponsplugin.com/pricing/loyalty/?utm_source=wprepo&utm_medium=link&utm_campaign=acfwf" rel="friend">Loyalty Program for WooCommerce</a>
+* <a href="https://advancedcouponsplugin.com/pricing/loyalty/?utm_source=wprepo&utm_medium=link&utm_campaign=acfwf" rel="friend">Advanced Loyalty Program</a>
 * <a href="https://advancedcouponsplugin.com/pricing/gift-cards/?utm_source=wprepo&utm_medium=link&utm_campaign=acfwf" rel="friend">Advanced Gift Cards</a>
 
 = Where can I find more help and business advice? =
@@ -393,6 +393,19 @@ Thanks,
 Josh Kohlbach (CEO of Rymera Web Co)
 
 == Changelog ==
+
+= 4.7.3 =
+* Bug Fix: Bug: BOGO coupon discount not shown in Block Cart until page refresh when coupon auto-adds free item (Same Product & Specific Products with auto-add)
+* Bug Fix: Bug: Gutenberg blocks registered with deprecated Block API version (v1), causing warnings in WP 6.9 and editor breakage in WP 7.0
+* Bug Fix: Bug: Store credit (after-tax mode) leaves unpaid gap when TaxJar recalculates taxes at order level
+* Bug Fix: Coupon Template: The "Coupon Templates" submenu is not clickable from the coupon template detail page
+* Bug Fix: Dashboard "Contact Support" link does not work correctly when clicked
+* Bug Fix: Integration Bug: Store Credits toggle disappears on FunnelKit checkout when Elementor Pro WooCommerce Notices widget is active
+* Bug Fix: Order cancellation over-refunds store credits after apply/remove cycles on order-pay page
+* Improvement: Audit and fix update_option() autoload flags
+* Improvement: Rename: Cross-Plugin LPFW References in ACFWF (PHP & Cypress)
+* Improvement: Replace strpos() with str_contains() across the codebase
+* Improvement: Support WooCommerce Cache Product Objects (product instance caching)
 
 = 4.7.2 =
 * Bug Fix: Upgrade to premium link not working

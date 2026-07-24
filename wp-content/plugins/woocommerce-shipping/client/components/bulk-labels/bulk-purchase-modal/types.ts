@@ -1,10 +1,10 @@
-import type { BulkPurchaseOrder } from 'data/bulk-labels';
+import type { PurchasableBulkPurchaseOrder } from 'data/bulk-labels';
 
 /**
  * Props for the BulkPurchaseModal component.
  *
  * Record-level types (`OrderShippingContextRecord`, `OrderSelectedPackage`,
- * `BulkPurchaseOrder`) live in the data package. See
+ * `PurchasableBulkPurchaseOrder`) live in the data package. See
  * `client/data/bulk-labels/`.
  */
 export interface BulkPurchaseModalProps {
@@ -17,5 +17,8 @@ export interface BulkPurchaseModalProps {
 	 * rate-review modal a no-op for callers that have not yet wired the
 	 * progress flow.
 	 */
-	onCreateLabels?: ( orders: BulkPurchaseOrder[] ) => void;
+	onCreateLabels?: (
+		orders: PurchasableBulkPurchaseOrder[],
+		origin: Record< string, unknown >
+	) => void;
 }

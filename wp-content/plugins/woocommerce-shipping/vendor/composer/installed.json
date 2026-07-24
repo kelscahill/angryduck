@@ -779,7 +779,7 @@
             },
             "time": "2024-11-05T11:26:27+00:00",
             "type": "library",
-            "installation-source": "dist",
+            "installation-source": "source",
             "autoload": {
                 "psr-4": {
                     "WooCommerce\\BoxPacker\\": "./src"

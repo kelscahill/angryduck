@@ -16,7 +16,11 @@ import { createReduxStore } from '@wordpress/data';
 import { apiFetch, controls as wpControls } from '@wordpress/data-controls';
 import { addQueryArgs } from '@wordpress/url';
 import { BULK_LABELS_STORE_NAME } from 'data/constants';
-import { getAutoAssignPackagesPath, getPackagesPath } from 'data/routes';
+import {
+	getAutoAssignPackagesPath,
+	getBatchLabelPurchasePath,
+	getPackagesPath,
+} from 'data/routes';
 
 // Mirror the single-label rate/purchase flow: without this the
 // /wcshipping/v1/packages response filters out the FedEx & UPSDAP
@@ -28,7 +32,12 @@ import {
 	buildAssignablePackages,
 	type RawPackagesResponse,
 } from './packages-transform';
-import type { AssignablePackage, AutoAssignedPackagesMap } from './types';
+import type {
+	AssignablePackage,
+	AutoAssignedPackagesMap,
+	BatchPurchaseResponse,
+	BatchPurchaseShipment,
+} from './types';
 
 interface BulkLabelsState {
 	assignablePackages?: AssignablePackage[];
@@ -53,6 +62,23 @@ const actions = {
 	},
 	setAutoAssignedPackages( key: string, results: AutoAssignedPackagesMap ) {
 		return { type: SET_AUTO_ASSIGNED_PACKAGES, key, results } as const;
+	},
+	*purchaseBatchLabels(
+		origin: Record< string, unknown >,
+		shipments: BatchPurchaseShipment[],
+		signal?: AbortSignal
+	): Generator<
+		ReturnType< typeof apiFetch >,
+		BatchPurchaseResponse,
+		BatchPurchaseResponse
+	> {
+		const response: BatchPurchaseResponse = yield apiFetch( {
+			path: getBatchLabelPurchasePath(),
+			method: 'POST',
+			data: { origin, shipments },
+			signal,
+		} );
+		return response ?? {};
 	},
 };
 
@@ -137,6 +163,14 @@ export interface BulkLabelsSelect {
 	) => AutoAssignedPackagesMap | undefined;
 	hasFinishedResolution: ( selector: string, args: unknown[] ) => boolean;
 	getResolutionError: ( selector: string, args: unknown[] ) => unknown;
+}
+
+export interface BulkLabelsDispatch {
+	purchaseBatchLabels: (
+		origin: Record< string, unknown >,
+		shipments: BatchPurchaseShipment[],
+		signal?: AbortSignal
+	) => Promise< BatchPurchaseResponse >;
 }
 
 /**

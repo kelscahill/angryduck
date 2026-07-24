@@ -52,7 +52,7 @@ class Checkout_Integration extends Base_Model implements IntegrationInterface {
         $vite_app = new Vite_App(
             'acfwf-wc-checkout-block-integration', // Don't forget to register this handle in the get_script_handles() or get_editor_script_handles() method.
             'packages/acfwf-checkout-block/index.tsx',
-            array()
+            array( 'wc-blocks-checkout', 'wc-blocks-data-store', 'wc-settings' )
         );
         $vite_app->register();
     }

@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use WPForms\Admin\Builder\PreviewDropdownEducationItems;
 use WPForms\Integrations\AI\Helpers as AIHelpers;
 
 /**
@@ -262,7 +263,7 @@ class WPForms_Builder {
 
 		// Allow based styles added in WP 7.0.
 		// Otherwise, there is an issue with the Upload Media button.
-		if ( version_compare( $GLOBALS['wp_version'], '7.0-alpha', '>=' ) ) {
+		if ( wpforms_is_wp_version_at_least( '7.0-alpha' ) ) {
 			$allowed_styles[] = 'wp-base-styles';
 		}
 
@@ -479,6 +480,8 @@ class WPForms_Builder {
 		// Force hide an admin side menu.
 		echo '<style>#adminmenumain { display: none !important }</style>';
 
+		$this->suppress_view_transition_abort_error();
+
 		/**
 		 * Form Builder admin head action.
 		 *
@@ -487,6 +490,25 @@ class WPForms_Builder {
 		 * @since 1.4.6
 		 */
 		do_action( 'wpforms_builder_admin_head', $this->view );
+	}
+
+	/**
+	 * Prevent the `AbortError: Transition was skipped` console error on WP 7.0+.
+	 *
+	 * @since 1.10.2
+	 */
+	private function suppress_view_transition_abort_error(): void {
+
+		// View Transitions in the admin are a WP 7.0+ feature, so there's nothing to do before that.
+		if ( ! wpforms_is_wp_version_at_least( '7.0-alpha' ) ) {
+			return;
+		}
+
+		// Opt the Builder into the transition (overrides the opt-out in builder-basic.css).
+		echo '<style>@view-transition { navigation: auto; }</style>';
+
+		// Skip the transition on both ends and resolve its promises so nothing stays unhandled.
+		echo '<script>(function(){var skip=function(event){var transition=event.viewTransition;if(!transition){return;}transition.skipTransition();transition.ready.catch(function(){});transition.finished.catch(function(){});};window.addEventListener("pagereveal",skip);window.addEventListener("pageswap",skip);})();</script>';
 	}
 
 	/**
@@ -513,7 +535,7 @@ class WPForms_Builder {
 
 		// Make sure that base styles (added in WP 7.0) are enqueued.
 		// Otherwise, there is an issue with the Upload Media button.
-		if ( version_compare( $GLOBALS['wp_version'], '7.0-alpha', '>=' ) ) {
+		if ( wpforms_is_wp_version_at_least( '7.0-alpha' ) ) {
 			wp_enqueue_style( 'wp-base-styles' );
 		}
 
@@ -653,7 +675,7 @@ class WPForms_Builder {
 			'dom-purify',
 			WPFORMS_PLUGIN_URL . 'assets/lib/purify.min.js',
 			[],
-			'3.3.2',
+			'3.4.11',
 			false
 		);
 
@@ -664,7 +686,7 @@ class WPForms_Builder {
 		wp_enqueue_script(
 			'wpforms-utils',
 			WPFORMS_PLUGIN_URL . "assets/js/admin/share/admin-utils{$min}.js",
-			[ 'jquery', 'dom-purify' ],
+			[ 'jquery', 'dom-purify', 'wp-hooks' ],
 			WPFORMS_VERSION,
 			false
 		);
@@ -961,6 +983,7 @@ class WPForms_Builder {
 			'upload_image_remove'                     => esc_html__( 'Remove Image', 'wpforms-lite' ),
 			'upload_image_extensions'                 => $image_extensions,
 			'upload_image_extensions_error'           => esc_html__( 'You tried uploading a file type that is not allowed. Please try again.', 'wpforms-lite' ),
+			'add_media'                               => esc_html__( 'Add Media', 'wpforms-lite' ),
 			'provider_add_new_acc_btn'                => esc_html__( 'Add', 'wpforms-lite' ),
 			'pro'                                     => wpforms()->is_pro(),
 			'is_gutenberg'                            => ! is_plugin_active( 'classic-editor/classic-editor.php' ),
@@ -1201,6 +1224,7 @@ class WPForms_Builder {
 			'MultiSelect'                       => "multi-select/multi-select$min.js",
 			'MultiSelectKeyboardShortcuts'      => "multi-select/keyboard-shortcuts$min.js",
 			'CopyPaste'                         => "copy-paste$min.js",
+			'TemplatesInfiniteScroll'           => "templates-infinite-scroll$min.js",
 			'Deprecated'                        => "deprecated$min.js",
 		];
 
@@ -1215,7 +1239,7 @@ class WPForms_Builder {
 		 *
 		 * @param array $modules List of JS modules.
 		 */
-		return apply_filters( 'wpforms_builder_js_modules', $modules );
+		return (array) apply_filters( 'wpforms_builder_js_modules', $modules );
 	}
 
 	/**
@@ -1325,10 +1349,6 @@ class WPForms_Builder {
 		$can_embed       = array_filter( $allowed_caps, 'current_user_can' );
 		$preview_classes = [ 'wpforms-btn', 'wpforms-btn-toolbar', 'wpforms-btn-light-grey' ];
 		$builder_classes = [ 'wpforms-admin-page' ];
-
-		if ( ! $can_embed ) {
-			$preview_classes[] = 'wpforms-alone';
-		}
 
 		$revision_id = null;
 
@@ -1463,9 +1483,155 @@ class WPForms_Builder {
 			$entry_obj             = wpforms()->obj( 'entry' );
 			$args['has_entries']   = $entry_obj && $entry_obj->get_entries( [ 'form_id' => $this->form->ID ], true );
 			$args['can_duplicate'] = $this->can_duplicate();
+
+			// Form Analytics is a Pro/Elite feature. Basic and Plus see the upgrade
+			// upsell in the Pro context-menu template, mirroring Lite.
+			$args['has_analytics_access'] = in_array( wpforms_get_license_type(), [ 'pro', 'elite', 'agency', 'ultimate' ], true );
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Print the Form Builder preview dropdown menu markup.
+	 *
+	 * @since 1.10.1
+	 *
+	 * @param string $preview_url Standard form preview URL.
+	 */
+	private function print_preview_dropdown_menu( string $preview_url ): void {
+
+		$items   = ( new PreviewDropdownEducationItems( $this->form ) )->get_items();
+		$is_lite = ! wpforms()->is_pro();
+
+		?>
+		<ul
+				id="wpforms-preview-dropdown-menu"
+				class="wpforms-context-menu-list wpforms-preview-dropdown-menu"
+				role="menu"
+				aria-labelledby="wpforms-preview-dropdown-btn"
+				hidden>
+			<li class="wpforms-preview-dropdown-item" role="none">
+				<a
+						href="<?php echo esc_url( $preview_url ); ?>"
+						class="wpforms-context-menu-list-item wpforms-preview-dropdown-link"
+						role="menuitem"
+						target="_blank"
+						rel="noopener noreferrer">
+					<i class="fa fa-external-link wpforms-context-menu-list-item-icon wpforms-preview-dropdown-icon" aria-hidden="true"></i>
+					<span class="wpforms-preview-dropdown-label">
+						<?php esc_html_e( 'Standard Form Preview', 'wpforms-lite' ); ?>
+					</span>
+				</a>
+			</li>
+
+			<?php if ( ! empty( $items ) ) : ?>
+				<li class="wpforms-context-menu-list-divider wpforms-preview-dropdown-divider" role="separator"></li>
+			<?php endif; ?>
+
+			<?php foreach ( $items as $item ) : ?>
+				<li class="wpforms-preview-dropdown-item wpforms-preview-dropdown-item-upsell" role="none">
+					<?php $this->print_preview_dropdown_item( $item, $is_lite ); ?>
+				</li>
+			<?php endforeach; ?>
+		</ul>
+		<?php
+	}
+
+	/**
+	 * Print a single preview dropdown education item.
+	 *
+	 * Chooses the appropriate button class and data attributes based on the
+	 * user's license and — for Pro users — the installation status of the
+	 * corresponding addon.
+	 *
+	 * @since 1.10.1
+	 *
+	 * @param array $item    Education item (see PreviewDropdownEducationItems::get_items()).
+	 * @param bool  $is_lite Whether the current user is on Lite.
+	 */
+	private function print_preview_dropdown_item( array $item, bool $is_lite ): void {
+
+		[ $button_class, $data_attrs ] = $this->get_preview_dropdown_item_attrs( $item, $is_lite );
+
+		?>
+		<button
+			type="button"
+			class="wpforms-context-menu-list-item wpforms-preview-dropdown-link <?php echo esc_attr( $button_class ); ?>"
+			role="menuitem"
+			<?php foreach ( $data_attrs as $attr_name => $attr_value ) : ?>
+				<?php echo esc_attr( $attr_name ); ?>="<?php echo esc_attr( $attr_value ); ?>"
+			<?php endforeach; ?>>
+			<i class="fa <?php echo esc_attr( $item['icon'] ); ?> wpforms-context-menu-list-item-icon wpforms-preview-dropdown-icon" aria-hidden="true"></i>
+			<span class="wpforms-preview-dropdown-label">
+				<?php echo esc_html( $item['label'] ); ?>
+			</span>
+			<?php if ( $is_lite ) : ?>
+				<span class="wpforms-preview-dropdown-badge">
+					<?php esc_html_e( 'Pro', 'wpforms-lite' ); ?>
+				</span>
+			<?php endif; ?>
+		</button>
+		<?php
+	}
+
+	/**
+	 * Resolve the button class and data attributes for a preview dropdown item.
+	 *
+	 * Split out of `print_preview_dropdown_item()` so the template method stays
+	 * focused on markup and the branching logic is kept under the cyclomatic
+	 * complexity threshold.
+	 *
+	 * @since 1.10.1
+	 *
+	 * @param array $item    Education item (see PreviewDropdownEducationItems::get_items()).
+	 * @param bool  $is_lite Whether the current user is on Lite.
+	 *
+	 * @return array Tuple of `[ $button_class, $data_attrs ]`.
+	 */
+	private function get_preview_dropdown_item_attrs( array $item, bool $is_lite ): array {
+
+		// Defaults assume a Lite user: open the standard education upgrade modal.
+		$data_attrs = [
+			'data-action'      => 'upgrade',
+			'data-license'     => 'pro',
+			'data-name'        => $item['label'],
+			'data-utm-content' => $item['utm_content'],
+		];
+
+		// The demo link and custom UTM medium only apply to the Lite upgrade modal.
+		if ( $is_lite ) {
+			$data_attrs['data-demo-url']   = PreviewDropdownEducationItems::get_demo_url( $item );
+			$data_attrs['data-utm-medium'] = $item['utm_medium'] ?? '';
+
+			return [ 'education-modal', $data_attrs ];
+		}
+
+		// Pro users: decide between addon-required modal or existing action button.
+		$addon_slug = $item['addon_slug'] ?? '';
+
+		if ( PreviewDropdownEducationItems::is_addon_active( $addon_slug ) ) {
+			// Addon is installed and active — navigate to settings section or open preview URL.
+			$data_attrs = [
+				'data-section'   => $item['section'] ?? '',
+				'data-toggle-id' => $item['toggle_id'] ?? '',
+			];
+
+			if ( ! empty( $item['preview_url'] ) ) {
+				$data_attrs['data-preview-url'] = $item['preview_url'];
+			}
+
+			if ( ! empty( $item['disabled_notice'] ) ) {
+				$data_attrs['data-disabled-notice'] = $item['disabled_notice'];
+			}
+
+			return [ 'wpforms-preview-dropdown-addon-active', $data_attrs ];
+		}
+
+		// Addon is missing or inactive — open the new Addons Required modal.
+		$data_attrs['data-addon-slug'] = $addon_slug;
+
+		return [ 'wpforms-addons-required-trigger', $data_attrs ];
 	}
 
 	/**
@@ -1499,20 +1665,20 @@ class WPForms_Builder {
 	 */
 	private function print_output( array $args ): void {
 
+		// Render fullscreen notices outside of #wpforms-builder so they are not
+		// constrained by its stacking context and can layer above admin_footer
+		// overlays such as the Form Embed Wizard popup.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo wpforms_render( 'builder/fullscreen/ie-notice' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['force_desktop_view'] ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo wpforms_render( 'builder/fullscreen/mobile-notice' );
+		}
+
 		?>
 		<div id="wpforms-builder" class="<?php echo wpforms_sanitize_classes( $args['builder_classes'], true ); ?>">
-			<?php
-
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			echo wpforms_render( 'builder/fullscreen/ie-notice' );
-
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			if ( empty( $_GET['force_desktop_view'] ) ) {
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				echo wpforms_render( 'builder/fullscreen/mobile-notice' );
-			}
-
-			?>
 			<div id="wpforms-builder-overlay">
 				<div class="wpforms-builder-overlay-content">
 					<i class="spinner"></i>
@@ -1575,16 +1741,31 @@ class WPForms_Builder {
 							</div>
 
 							<?php if ( ! $args['revision'] ) : ?>
-								<a
-										href="<?php echo esc_url( $args['preview_url'] ); ?>"
-										id="wpforms-preview-btn"
-										class="<?php echo wpforms_sanitize_classes( $args['preview_classes'], true ); ?>"
-										title="<?php esc_attr_e( 'Preview Form Ctrl+P', 'wpforms-lite' ); ?>"
-										target="_blank"
-										rel="noopener noreferrer">
-									<i class="fa fa-eye"></i>
-									<span class="text"><?php esc_html_e( 'Preview', 'wpforms-lite' ); ?></span>
-								</a>
+								<div class="wpforms-preview-btn-group">
+									<a
+											href="<?php echo esc_url( $args['preview_url'] ); ?>"
+											id="wpforms-preview-btn"
+											class="<?php echo wpforms_sanitize_classes( $args['preview_classes'], true ); ?>"
+											title="<?php esc_attr_e( 'Preview Form Ctrl+P', 'wpforms-lite' ); ?>"
+											target="_blank"
+											rel="noopener noreferrer">
+										<i class="fa fa-eye"></i>
+										<span class="text"><?php esc_html_e( 'Preview', 'wpforms-lite' ); ?></span>
+									</a>
+									<button
+											type="button"
+											id="wpforms-preview-dropdown-btn"
+											class="wpforms-btn wpforms-btn-toolbar wpforms-btn-light-grey"
+											title="<?php esc_attr_e( 'More Preview Options', 'wpforms-lite' ); ?>"
+											aria-haspopup="true"
+											aria-controls="wpforms-preview-dropdown-menu"
+											aria-expanded="false">
+										<i class="fa fa-caret-down"></i>
+										<span class="screen-reader-text"><?php esc_html_e( 'More Preview Options', 'wpforms-lite' ); ?></span>
+									</button>
+
+									<?php $this->print_preview_dropdown_menu( $args['preview_url'] ); ?>
+								</div>
 							<?php endif; ?>
 
 							<?php if ( $args['can_embed'] && ! $args['revision'] ) : ?>

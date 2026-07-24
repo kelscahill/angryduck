@@ -1,11 +1,14 @@
 import { __ } from '@wordpress/i18n';
 import { ExternalLink } from '@wordpress/components';
+import type { ComponentType, ReactNode } from 'react';
 import { Label } from 'types';
 import { trackingUrls } from './constants';
 import { Conditional } from '../../HOC';
 
 interface TrackShipmentProps {
 	label?: Label;
+	className?: string;
+	children?: ReactNode;
 }
 
 export const TrackShipment = Conditional(
@@ -27,10 +30,19 @@ export const TrackShipment = Conditional(
 		};
 	},
 	// @ts-expect-error // Conditional is written in js
-	( { trackingUrl }: { isBusy: boolean; trackingUrl: string } ) => (
-		<ExternalLink href={ trackingUrl }>
-			{ __( 'Track shipment', 'woocommerce-shipping' ) }
+	( {
+		trackingUrl,
+		className,
+		children,
+	}: {
+		isBusy: boolean;
+		trackingUrl: string;
+		className?: string;
+		children?: ReactNode;
+	} ) => (
+		<ExternalLink href={ trackingUrl } className={ className }>
+			{ children ?? __( 'Track shipment', 'woocommerce-shipping' ) }
 		</ExternalLink>
 	),
 	() => null
-);
+) as ComponentType< TrackShipmentProps >;

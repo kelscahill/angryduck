@@ -181,12 +181,16 @@ class AddressNormalizationService {
 	/**
 	 * Requests server to normalize address.
 	 *
-	 * @param array $address Address to normalize.
+	 * @param array  $address Address to normalize.
+	 * @param string $type    Address role on the wire — `'origin'` or
+	 *                        `'destination'` (default). Forwarded to the
+	 *                        connect server so origin saves don't get
+	 *                        labeled as destinations. See WOOSHIP-2230.
 	 *
 	 * @return array|WP_Error REST response body.
 	 */
-	public function get_normalization_response( $address ) {
-		$response = $this->normalize_address( $address );
+	public function get_normalization_response( $address, $type = 'destination' ) {
+		$response = $this->normalize_address( $address, $type );
 		if ( is_wp_error( $response ) ) {
 			$error = new WP_Error(
 				$response->get_error_code(),
@@ -302,14 +306,22 @@ class AddressNormalizationService {
 	/**
 	 * Returns normalization response for address from server.
 	 *
-	 * @param array $address Address to normalize.
+	 * @param array  $address Address to normalize.
+	 * @param string $type    `'origin'` or `'destination'` — chooses which
+	 *                        key wraps the request body. The connect
+	 *                        server's `normalizeRequest` validator accepts
+	 *                        either (per WOOSHIP-2230 / the matching
+	 *                        APIWOO server PR); historically it only
+	 *                        accepted `destination`, which is why that
+	 *                        stays the default.
 	 *
 	 * @return object|WP_Error REST reponse object.
 	 */
-	private function normalize_address( $address ) {
+	private function normalize_address( $address, $type = 'destination' ) {
 		$request_body = $this->format_address_for_connect_server( $address );
+		$wrapper_key  = 'origin' === $type ? 'origin' : 'destination';
 
-		$response = $this->api_client->send_address_normalization_request( array( 'destination' => $request_body ) );
+		$response = $this->api_client->send_address_normalization_request( array( $wrapper_key => $request_body ) );
 
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -364,62 +376,52 @@ class AddressNormalizationService {
 	private function format_address_for_connect_server( $address ) {
 		$request_body = $address;
 
+		// Map `address_1` -> `address` if the latter isn't already populated.
+		// `isset()` on `address_1` is fine here: a `null` `address_1` carries
+		// no value to copy.
 		if ( isset( $request_body['address_1'] ) && empty( $request_body['address'] ) ) {
 			$request_body['address'] = wc_clean( $request_body['address_1'] );
-		}
-
-		if ( isset( $request_body['address_1'] ) ) {
-			unset( $request_body['address_1'] );
 		}
 
 		if ( ! isset( $request_body['address_2'] ) ) {
 			$request_body['address_2'] = '';
 		}
 
-		if ( isset( $request_body['first_name'] ) && isset( $request_body['last_name'] ) && empty( $request_body['name'] ) ) {
-			$request_body['name'] = wc_clean( $request_body['first_name'] . ' ' . $request_body['last_name'] );
-			unset( $request_body['first_name'], $request_body['last_name'] );
+		// Synthesize `name` from `first_name` + `last_name` when neither is
+		// null/empty (combining null produces a leading or trailing space).
+		if (
+			! empty( $request_body['first_name'] ) &&
+			! empty( $request_body['last_name'] ) &&
+			empty( $request_body['name'] )
+		) {
+			$request_body['name'] = wc_clean(
+				$request_body['first_name'] . ' ' . $request_body['last_name']
+			);
 		}
 
 		if ( ! isset( $request_body['name'] ) ) {
 			$request_body['name'] = '';
 		}
 
-		if ( isset( $request_body['first_name'] ) ) {
-			unset( $request_body['first_name'] );
-		}
-
-		if ( isset( $request_body['last_name'] ) ) {
-			unset( $request_body['last_name'] );
-		}
-
-		if ( isset( $request_body['phone'] ) ) {
-			unset( $request_body['phone'] );
-		}
-
-		if ( isset( $request_body['email'] ) ) {
-			unset( $request_body['email'] );
-		}
-
-		if ( isset( $request_body['id'] ) ) {
-			unset( $request_body['id'] );
-		}
-
-		if ( isset( $request_body['default_address'] ) ) {
-			unset( $request_body['default_address'] );
-		}
-
-		if ( isset( $request_body['is_verified'] ) ) {
-			unset( $request_body['is_verified'] );
-		}
-
-		if ( isset( $request_body['is_approved'] ) ) {
-			unset( $request_body['is_approved'] );
-		}
-
-		if ( isset( $request_body['default_return_address'] ) ) {
-			unset( $request_body['default_return_address'] );
-		}
+		// Strip every client-side field the server doesn't accept. We use a
+		// single `unset()` rather than per-key `if ( isset() ) { unset(); }`
+		// guards because PHP's `isset()` returns `false` for keys explicitly
+		// set to `null`, which previously let null-valued fields slip past
+		// the strip and get rejected by the Connect Server's Joi validator
+		// (e.g. `"destination.last_name" is not allowed`). `unset()` is a
+		// no-op on missing keys, so the unconditional call is safe.
+		unset(
+			$request_body['address_1'],
+			$request_body['first_name'],
+			$request_body['last_name'],
+			$request_body['phone'],
+			$request_body['email'],
+			$request_body['id'],
+			$request_body['default_address'],
+			$request_body['is_verified'],
+			$request_body['is_approved'],
+			$request_body['default_return_address']
+		);
 
 		return $request_body;
 	}

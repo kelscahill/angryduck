@@ -186,6 +186,7 @@ class URL_Coupons implements Model_Interface {
      * @since 1.0
      * @since 4.2   append coupon URL attributes to the redirect URL
      * @since 4.5.1 Add redirect to origin URL feature.
+     * @since 4.7.3 Exclude cart-related query args (add-to-cart, quantity, variation_id, add-to-cart-nonce) and, when add-to-cart is present, attribute_* selections from the forwarded redirect URL so WooCommerce does not re-add the product; add the acfw_after_apply_coupon_redirect_url_excluded_query_args filter to customize the excluded args.
      * @access private
      *
      * @param Advanced_Coupon $coupon      Advanced coupon object.
@@ -220,19 +221,44 @@ class URL_Coupons implements Model_Interface {
         if (
             'yes' === $coupon->get_advanced_prop( 'redirect_to_origin_url' ) &&
             isset( $_SERVER['HTTP_REFERER'] ) &&
-            strpos( $referrer, home_url() ) !== false
+            str_contains( $referrer, home_url() )
         ) {
             $redirect_url = $referrer;
         }
 
         // append attributes that was added in the coupon to the redirect URL.
+        // exclude cart-related params (e.g. add-to-cart) so WooCommerce does not re-process
+        // them on the redirect page, which would add the product to the cart a second time.
         if ( ! empty( $_GET ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-            $connector     = strpos( $redirect_url, '?' ) === false ? '?' : '&';
-            $redirect_url .= $connector . http_build_query( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $excluded_args = apply_filters(
+                'acfw_after_apply_coupon_redirect_url_excluded_query_args',
+                array( 'add-to-cart', 'quantity', 'variation_id', 'add-to-cart-nonce' )
+            );
+
+            // drop the exact excluded args plus any variable-product attribute selections (e.g. attribute_pa_color)
+            // that ride along with add-to-cart. The attribute_* prefix strip is gated on add-to-cart being
+            // present, so attribute_* params forwarded outside a cart-add context are preserved.
+            $has_add_to_cart = isset( $_GET['add-to-cart'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+            $safe_get        = array_filter(
+                $_GET, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                function ( $key ) use ( $excluded_args, $has_add_to_cart ) {
+                    if ( in_array( $key, $excluded_args, true ) ) {
+                        return false;
+                    }
+
+                    return ! ( $has_add_to_cart && str_starts_with( $key, 'attribute_' ) );
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+
+            if ( ! empty( $safe_get ) ) {
+                $connector     = ! str_contains( $redirect_url, '?' ) ? '?' : '&';
+                $redirect_url .= $connector . http_build_query( $safe_get );
+            }
         }
 
         // Clear notices when redirecting to an external URL.
-        if ( strpos( $redirect_url, home_url() ) === false ) {
+        if ( ! str_contains( $redirect_url, home_url() ) ) {
             wc_clear_notices();
         }
 
@@ -260,7 +286,7 @@ class URL_Coupons implements Model_Interface {
         }
 
         // Display error notice if redirecting to an internal page.
-        if ( strpos( $redirect_url, home_url() ) !== false ) {
+        if ( str_contains( $redirect_url, home_url() ) ) {
             $adv_error_message = $coupon->get_advanced_error_message();
             wc_add_notice( $adv_error_message ? $adv_error_message : $error_message, 'error' );
         }

@@ -68,6 +68,20 @@ class Frontend extends Base_Model implements Model_Interface {
      */
     const BOGO_LOCKED_PRICE_META_KEY = '_acfw_bogo_locked_price';
 
+    /**
+     * Guard flag set while unqualified deal items are being removed from the cart.
+     *
+     * Removal happens inside woocommerce_before_calculate_totals. Removing/reducing a
+     * cart item can fire third-party handlers (e.g. on woocommerce_before_cart_item_quantity_zero)
+     * that call WC()->cart->calculate_totals() again. This flag lets implement_bogo_deals()
+     * bail on such re-entry so the BOGO calculation is not re-run against a half-modified cart.
+     *
+     * @since 4.7.4
+     * @access private
+     * @var bool
+     */
+    private $_removing_unqualified_items = false;
+
     /*
     |--------------------------------------------------------------------------
     | Class Methods
@@ -132,8 +146,38 @@ class Frontend extends Base_Model implements Model_Interface {
      * @access public
      */
     public function implement_bogo_deals() {
-        // Skip when there are no coupon's applied yet.
+        // Bail on re-entry triggered while removing unqualified deal items (issue #909),
+        // so the calculation is not re-run against a cart that is mid-modification.
+        if ( $this->_removing_unqualified_items ) {
+            return;
+        }
+
+        if ( ! \WC()->cart instanceof \WC_Cart ) {
+            return;
+        }
+
+        // Capture the previous calculation's matched deal entries up front, before anything
+        // clears the session. Needed to detect deal items that must be removed even when the
+        // last BOGO coupon has just been removed and the normal calculation below is skipped
+        // (issue #909).
+        $previous_session = \WC()->session ? \WC()->session->get( 'acfw_bogo_entries' ) : null;
+        $previous_matched = is_array( $previous_session ) && isset( $previous_session['matched'] ) ? $previous_session['matched'] : array();
+
+        // Skip when there are no coupons applied yet. Still sweep for previously deal-granted
+        // items to remove first (e.g. the only BOGO coupon was just removed), otherwise the
+        // item would silently revert to full price instead of being removed (issue #909).
         if ( empty( \WC()->cart->get_applied_coupons() ) ) {
+            if ( ! empty( $previous_matched ) ) {
+                if ( ! $this->_calculation instanceof Calculation ) {
+                    $this->_calculation = Calculation::get_instance();
+                }
+
+                $this->_maybe_remove_unqualified_deal_items( $previous_matched );
+
+                // No coupons remain, so drop the stale session state that seeded the sweep.
+                Calculation::clear_session_data();
+            }
+
             return;
         }
 
@@ -152,12 +196,23 @@ class Frontend extends Base_Model implements Model_Interface {
             // clear previous session data.
             Calculation::clear_session_data();
 
+            // Refresh BOGO deals from the current cart. The Calculation singleton may have been
+            // instantiated during coupon validation (restrict_cart_to_only_one_bogo_deal) before any
+            // BOGO coupons were applied, leaving its deal list stale/empty. Re-reading the cart here
+            // ensures every applied BOGO deal is processed (e.g. two simultaneous auto-apply BOGOs).
+            $this->_calculation->refresh_bogo_deals();
+
             foreach ( $this->_calculation->get_all_bogo_deals() as $bogo_deal ) {
                 $this->_implement_bogo_deal( $bogo_deal );
             }
 
             // add eligible notices for deals with missing items.
             $this->_add_notice_for_eligible_deals();
+
+            // Remove deal items from the cart when their coupon is opted into removal
+            // and the deal no longer qualifies for them (issue #909). Runs before the
+            // session is persisted so the saved state reflects the modified cart.
+            $this->_maybe_remove_unqualified_deal_items( $previous_matched );
 
             // save calculation and notices data to session.
             $this->_calculation->set_session_data();
@@ -239,6 +294,17 @@ class Frontend extends Base_Model implements Model_Interface {
             // hook to run after verifying items (auto-add).
             do_action( 'acfw_bogo_after_verify_trigger_deals', $bogo_deal );
 
+            // For same-products: re-verify deals after the auto-add hook.
+            // auto_add_same_products_to_cart runs after verify_deals() and may add items to the cart
+            // (e.g. raising a variation from qty=1 to qty=2). Without a second pass, that variation
+            // would have had zero spare quantity during the first verify_deals() and never receives a
+            // deal entry — causing the discount to be missing until a page refresh.
+            if ( 'same-products' === $bogo_deal->deal_type ) {
+                $bogo_deal->reset_counters( 'deal' );
+                $this->_calculation->clear_temp_entries( 'deal' );
+                $this->_calculation->verify_deals();
+            }
+
             // verify BOGO trigger conditions.
             // For same-products, we check if at least one trigger-deal pair is verified.
             // For other types, we check if all triggers are verified.
@@ -270,11 +336,14 @@ class Frontend extends Base_Model implements Model_Interface {
             // Increment run counter for the BOGO Deal.
             $bogo_deal->increment_run_counter();
 
-            // For same-products with repeat, check if any product still has spare quantity.
-            // This prevents infinite loops when some products are exhausted but others have allowed_deals > 0.
+            // For same-products with repeat, continuation depends solely on whether any product
+            // still has spare quantity — NOT on is_deal_fulfilled(). With multiple variations,
+            // one product may exhaust its items before others, causing is_deal_fulfilled() to
+            // return false (Red's deal unmet) even though other products (Blue) still have
+            // cycles to process. Using has_spare alone lets those remaining products complete.
             if ( 'same-products' === $bogo_deal->deal_type && $bogo_deal->is_repeat ) {
                 $has_spare       = $this->_same_products_has_spare_quantity( $bogo_deal );
-                $deals_fulfilled = $deals_fulfilled && $has_spare;
+                $deals_fulfilled = $has_spare;
             }
         } while (
             $bogo_deal->is_repeat && $deals_fulfilled
@@ -444,6 +513,186 @@ class Frontend extends Base_Model implements Model_Interface {
             $reset_price = apply_filters( 'acfw_bogo_reset_deal_item_price', $price, $cart_item );
             $cart_item['data']->update_meta_data( self::BOGO_LOCKED_PRICE_META_KEY, (float) $reset_price );
             $cart_item['data']->set_price( $reset_price );
+        }
+    }
+
+    /**
+     * Remove deal items from the cart when the deal no longer qualifies for them.
+     *
+     * Opt-in per BOGO coupon (issue #909). When a coupon is configured to "Remove the
+     * free item from the cart" and a cart line that previously received a deal-granted
+     * quantity from that coupon no longer receives it (trigger removed, cart condition
+     * failed, coupon removed, or deal quantity exceeded), the lost deal-granted quantity
+     * is removed from the cart instead of reverting to the original price. Quantities the
+     * customer added independently of the deal are preserved: only the whole line is
+     * removed when the entire line was deal-granted.
+     *
+     * Detection compares the previous calculation's matched deal entries against what each
+     * coupon still grants now, treating a coupon that is no longer applied or no longer valid
+     * as granting nothing. Cart mutations use the non-refreshing WooCommerce cart methods and
+     * a re-entrancy guard so they are safe to run inside woocommerce_before_calculate_totals.
+     *
+     * @since 4.7.4
+     * @access private
+     *
+     * @param array $previous_matched Matched entries from the previous calculation (pre-clear).
+     */
+    private function _maybe_remove_unqualified_deal_items( $previous_matched ) {
+        if ( $this->_removing_unqualified_items || ! is_array( $previous_matched ) || empty( $previous_matched ) || ! \WC()->cart instanceof \WC_Cart ) {
+            return;
+        }
+
+        // Build previous deal-granted quantities keyed by coupon code and cart item key.
+        $previous_deals = array();
+        foreach ( $previous_matched as $entry ) {
+            if ( ! is_array( $entry ) || 'deal' !== ( $entry['type'] ?? '' ) || empty( $entry['coupon'] ) || empty( $entry['key'] ) ) {
+                continue;
+            }
+
+            $previous_deals[ $entry['coupon'] ][ $entry['key'] ] = ( $previous_deals[ $entry['coupon'] ][ $entry['key'] ] ?? 0 ) + (int) $entry['quantity'];
+        }
+
+        if ( empty( $previous_deals ) ) {
+            return;
+        }
+
+        // A coupon only keeps granting its deal items while it is still applied to the cart
+        // AND still valid. A coupon that was removed, or whose cart conditions now fail (so it
+        // is applied but invalid), no longer grants anything — its previously granted
+        // quantities all count as lost. Resolving "still active" this way (rather than diffing
+        // matched entries alone) is what lets removal fire on the coupon-removed and
+        // cart-condition-fail paths, not just when the trigger is removed (issue #909).
+        $applied_coupons = array_map( 'strtolower', \WC()->cart->get_applied_coupons() );
+        $active_cache    = array();
+        $is_active       = function ( $code ) use ( &$active_cache, $applied_coupons ) {
+            $lc = strtolower( (string) $code );
+
+            if ( ! array_key_exists( $lc, $active_cache ) ) {
+                // is_valid() runs WooCommerce's coupon validity filters (cart conditions etc.),
+                // so a coupon that is applied but whose conditions now fail resolves to false.
+                $active_cache[ $lc ] = in_array( $lc, $applied_coupons, true ) && ( new Advanced_Coupon( $code ) )->is_valid();
+            }
+
+            return $active_cache[ $lc ];
+        };
+
+        // Build current deal-granted quantities keyed by coupon code and cart item key,
+        // plus the per-cart-item total still granted across ALL still-active coupons (used to
+        // cap removal so a unit another still-active coupon covers is never deleted). Only
+        // count coupons that are still applied and valid; grants from removed/invalid coupons
+        // must not protect their lines from removal.
+        $current_deals       = array();
+        $current_deals_total = array();
+        if ( $this->_calculation instanceof Calculation ) {
+            foreach ( $this->_calculation->get_all_entries( 'matched' ) as $entry ) {
+                if ( ! is_array( $entry ) || 'deal' !== ( $entry['type'] ?? '' ) || empty( $entry['coupon'] ) || empty( $entry['key'] ) ) {
+                    continue;
+                }
+
+                if ( ! $is_active( $entry['coupon'] ) ) {
+                    continue;
+                }
+
+                $current_deals[ $entry['coupon'] ][ $entry['key'] ] = ( $current_deals[ $entry['coupon'] ][ $entry['key'] ] ?? 0 ) + (int) $entry['quantity'];
+                $current_deals_total[ $entry['key'] ]               = ( $current_deals_total[ $entry['key'] ] ?? 0 ) + (int) $entry['quantity'];
+            }
+        }
+
+        // Guard against re-entry while mutating the cart. Wrapped in try/finally so an
+        // exception from wc_add_notice(), the notice filter, or the removal action (all of
+        // which may run untrusted third-party callbacks) can never leave the flag stuck true —
+        // which would short-circuit implement_bogo_deals() for the rest of the request and
+        // drop BOGO prices from the totals.
+        $this->_removing_unqualified_items = true;
+
+        try {
+            foreach ( $previous_deals as $coupon_code => $keys ) {
+                $coupon = new Advanced_Coupon( $coupon_code );
+
+                // Only act on coupons opted into removal.
+                if ( 'remove' !== $coupon->get_bogo_remove_unqualified_deal() ) {
+                    continue;
+                }
+
+                foreach ( $keys as $key => $previous_qty ) {
+                    // A coupon that is no longer active grants nothing now, so its whole
+                    // previous quantity is lost regardless of any stale matched entry.
+                    $current_qty = $is_active( $coupon_code ) ? ( $current_deals[ $coupon_code ][ $key ] ?? 0 ) : 0;
+                    $lost_qty    = $previous_qty - $current_qty;
+
+                    // Deal still grants at least the previous quantity: nothing to remove.
+                    if ( $lost_qty <= 0 ) {
+                        continue;
+                    }
+
+                    $cart_item = \WC()->cart->get_cart_item( $key );
+
+                    // Item is already gone from the cart.
+                    if ( empty( $cart_item ) ) {
+                        continue;
+                    }
+
+                    $line_qty     = (int) $cart_item['quantity'];
+                    $product_name = $cart_item['data'] instanceof \WC_Product ? $cart_item['data']->get_name() : '';
+
+                    // Cap the removal so it never eats into quantity that is still deal-granted
+                    // by ANY still-active coupon on this line, nor the quantity the customer
+                    // added independently. The most we can remove is the line quantity minus
+                    // what is still deal-granted across all coupons; this also prevents deleting
+                    // a line the deal still legitimately covers when the customer previously
+                    // shrank it below the old deal quantity (issue #909).
+                    $still_granted_total = $current_deals_total[ $key ] ?? 0;
+                    $remove_qty          = min( $lost_qty, max( 0, $line_qty - $still_granted_total ) );
+
+                    if ( $remove_qty <= 0 ) {
+                        continue;
+                    }
+
+                    // Use set_quantity() with $refresh_totals = false so the cart is not
+                    // recalculated mid-hook (remove_cart_item() would call calculate_totals()
+                    // and re-enter this calculation). A resulting quantity of 0 removes the line.
+                    \WC()->cart->set_quantity( $key, $line_qty - $remove_qty, false );
+
+                    // Escape the product name and strings: wc_add_notice() does not escape, and
+                    // custom themes or the filter below could output the notice unescaped. The
+                    // wording distinguishes a full line removal from a partial quantity
+                    // reduction, since a "was removed" notice for a product still sitting in the
+                    // cart would be misleading.
+                    $full_removal = $remove_qty >= $line_qty;
+
+                    if ( $product_name ) {
+                        $message = $full_removal
+                            // Translators: %s is the product name.
+                            ? sprintf( esc_html__( '"%s" was removed from your cart because the deal no longer applies.', 'advanced-coupons-for-woocommerce-free' ), esc_html( $product_name ) )
+                            // Translators: 1: quantity removed, 2: product name.
+                            : sprintf( esc_html__( '%1$d × "%2$s" was removed from your cart because the deal no longer applies.', 'advanced-coupons-for-woocommerce-free' ), $remove_qty, esc_html( $product_name ) );
+                    } else {
+                        $message = $full_removal
+                            ? esc_html__( 'A deal item was removed from your cart because the deal no longer applies.', 'advanced-coupons-for-woocommerce-free' )
+                            // Translators: %d is the quantity removed.
+                            : sprintf( esc_html__( '%d deal item(s) were removed from your cart because the deal no longer applies.', 'advanced-coupons-for-woocommerce-free' ), $remove_qty );
+                    }
+
+                    if ( function_exists( 'wc_add_notice' ) ) {
+                        wc_add_notice(
+                            apply_filters( 'acfw_bogo_removed_unqualified_deal_notice', $message, $cart_item, $coupon ),
+                            'notice',
+                            array(
+                                'acfw-bogo' => true,
+                                'coupon'    => $coupon_code,
+                            )
+                        );
+                    }
+
+                    do_action( 'acfw_bogo_removed_unqualified_deal_item', $key, $cart_item, $coupon );
+                }
+            }
+        } finally {
+            // Note: the coupon itself is intentionally left applied. When a BOGO deal stops
+            // qualifying its coupon usually becomes invalid and WooCommerce handles removal or
+            // shows an error; forcing coupon removal here would fight that flow. This mirrors
+            // the default 'keep' behaviour, which also leaves the coupon applied.
+            $this->_removing_unqualified_items = false;
         }
     }
 

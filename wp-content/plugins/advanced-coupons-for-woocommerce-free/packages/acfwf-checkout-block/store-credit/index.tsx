@@ -19,9 +19,12 @@ export function initStoreCreditForm() {
 
   // Get the settings from the integration interface.
   const { store_credits } = getSetting(config.integration);
-  const { apply_type, display_store_credits_redeem_form, store_credits_module, is_allow_store_credits } = store_credits;
+  const { apply_type, display_store_credits_redeem_form, store_credits_module } = store_credits;
 
-  if (store_credits_module && 'yes' === display_store_credits_redeem_form && is_allow_store_credits) {
+  // `is_allow_store_credits` is intentionally NOT part of this static page-load gate. It can change on
+  // AJAX cart updates (e.g. when a coupon is applied/removed), so the components read it live from the
+  // Store API cart extension and render null when it is false. See store-credit-form / discount-row.
+  if (store_credits_module && 'yes' === display_store_credits_redeem_form) {
     // Register slot and fill for the store credit form.
     registerPlugin('acfw-store-credit-discount-form', {
       render: () => {

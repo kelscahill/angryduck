@@ -7,7 +7,7 @@
     <div class="wfacp-coupon-section wfacp_custom_row_wrap clearfix">
         <div class="wfacp-coupon-page">
             <div class="woocommerce-form-coupon-toggle">
-                <?php wc_print_notice( sprintf( '<a class="wfacp_showcoupon">%s</a>', $labels['toggle_text'] ), 'notice' ); ?>
+                <a class="wfacp_showcoupon"><?php echo wp_kses_post( $labels['toggle_text'] ); ?></a>
             </div>
             <div class="wfacp-row wfacp_coupon_field_box" style="display:none">
                 <p class="form-row wfacp-form-control-wrapper acfw-store-credit-user-balance">

@@ -346,7 +346,7 @@ class API_Coupon_Templates extends Base_Model implements Model_Interface {
             );
         }
 
-        update_option( $this->_constants->RECENT_COUPON_TEMPLATES, $filtered_templates );
+        update_option( $this->_constants->RECENT_COUPON_TEMPLATES, $filtered_templates, false );
 
         return rest_ensure_response(
             array(
@@ -766,7 +766,8 @@ class API_Coupon_Templates extends Base_Model implements Model_Interface {
 
         update_option(
             $this->_constants->RECENT_COUPON_TEMPLATES,
-            $this->_helper_functions->array_unique_multidimensional( $recent_templates )
+            $this->_helper_functions->array_unique_multidimensional( $recent_templates ),
+            false
         );
     }
 

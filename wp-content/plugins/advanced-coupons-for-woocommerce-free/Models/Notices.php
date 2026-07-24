@@ -583,7 +583,7 @@ class Notices implements Model_Interface, Initializable_Interface, Activatable_I
             return;
         }
 
-        update_option( $notice['option'], 'yes' );
+        update_option( $notice['option'], 'yes', false );
     }
 
     /**
@@ -708,7 +708,7 @@ class Notices implements Model_Interface, Initializable_Interface, Activatable_I
             return;
         }
 
-        update_option( $option, $value );
+        update_option( $option, $value, false );
 
         do_action( 'acfw_notice_updated', $notice_key, $value, $option );
     }
@@ -765,7 +765,7 @@ class Notices implements Model_Interface, Initializable_Interface, Activatable_I
      */
     public function activate() {
         if ( get_option( Plugin_Constants::SHOW_GETTING_STARTED_NOTICE ) !== 'dismissed' ) {
-            update_option( Plugin_Constants::SHOW_GETTING_STARTED_NOTICE, 'yes' );
+            update_option( Plugin_Constants::SHOW_GETTING_STARTED_NOTICE, 'yes', false );
         }
 
         $this->_schedule_notice_crons();

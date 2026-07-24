@@ -1,14 +1,21 @@
 import { ExternalLink } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useCallback } from '@wordpress/element';
+import type { ReactNode } from 'react';
 import { Label } from 'types';
 import { pickupUrls } from './constants';
 
 interface SchedulePickupProps {
 	selectedLabel?: Label;
+	className?: string;
+	children?: ReactNode;
 }
 
-export const SchedulePickup = ( { selectedLabel }: SchedulePickupProps ) => {
+export const SchedulePickup = ( {
+	selectedLabel,
+	className,
+	children,
+}: SchedulePickupProps ) => {
 	const canScheduleRefund = useCallback(
 		( label: Label | undefined ): label is Label =>
 			Boolean( label?.carrierId && pickupUrls[ label?.carrierId ] ),
@@ -28,8 +35,11 @@ export const SchedulePickup = ( { selectedLabel }: SchedulePickupProps ) => {
 	}
 
 	return (
-		<ExternalLink href={ pickupUrls[ selectedLabel.carrierId! ] }>
-			{ __( 'Schedule pickup', 'woocommerce-shipping' ) }
+		<ExternalLink
+			href={ pickupUrls[ selectedLabel.carrierId! ] }
+			className={ className }
+		>
+			{ children ?? __( 'Schedule pickup', 'woocommerce-shipping' ) }
 		</ExternalLink>
 	);
 };

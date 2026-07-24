@@ -232,7 +232,7 @@ class PushEngage extends Base_Model implements Model_Interface {
 
         // Set pushengage_installed_by if the result is true.
         if ( ! is_wp_error( $result ) ) {
-            update_option( 'pushengage_installed_by', 'acfw' );
+            update_option( 'pushengage_installed_by', 'acfw', false );
         }
     }
 

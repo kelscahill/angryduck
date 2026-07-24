@@ -139,10 +139,26 @@ class Calculation {
      * @access public
      */
     public function __construct() {
-        $bogo_deals = $this->get_bogo_deals_from_cart();
+        $this->refresh_bogo_deals();
+    }
+
+    /**
+     * Refresh the list of BOGO Deals and BOGO Coupon codes from the current cart state.
+     *
+     * The Calculation singleton may be instantiated during coupon validation (via
+     * Frontend::restrict_cart_to_only_one_bogo_deal) before any BOGO coupons are applied
+     * to the cart, leaving $_all_bogo_deals empty for the rest of the request. Re-reading
+     * the current cart here lets the implementation loop process every applied BOGO deal.
+     *
+     * @since 4.7.4
+     * @access public
+     */
+    public function refresh_bogo_deals() {
+        $this->_all_bogo_deals    = array();
+        $this->_bogo_coupon_codes = array();
 
         // assign BOGO Deals to class properties.
-        foreach ( $bogo_deals as $coupon_code => $bogo_deal ) {
+        foreach ( $this->get_bogo_deals_from_cart() as $coupon_code => $bogo_deal ) {
             $this->_bogo_coupon_codes[] = (string) $coupon_code; // force type to string to support numerical coupon codes.
             $this->_all_bogo_deals[]    = $bogo_deal;
         }

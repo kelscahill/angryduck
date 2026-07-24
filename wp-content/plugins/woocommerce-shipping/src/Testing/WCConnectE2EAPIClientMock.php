@@ -370,6 +370,42 @@ class WCConnectE2EAPIClientMock extends WC_Connect_API_Client {
 	}
 
 	/**
+	 * Return a successful grouped batch label purchase payload.
+	 *
+	 * @param array $body Request payload.
+	 *
+	 * @return object
+	 */
+	private function get_mock_label_batch_purchase( $body ) {
+		$results = array();
+
+		if ( empty( $body['shipments'] ) || ! is_array( $body['shipments'] ) ) {
+			return $this->as_object( $results );
+		}
+
+		foreach ( $body['shipments'] as $shipment ) {
+			if ( ! is_array( $shipment ) || empty( $shipment['order_id'] ) ) {
+				continue;
+			}
+
+			$results[ 'order_' . (int) $shipment['order_id'] ] = $this->get_mock_label_purchase( $shipment );
+		}
+
+		return $this->as_object( $results );
+	}
+
+	/**
+	 * Send a grouped batch label-purchase request to the e2e Connect Server mock.
+	 *
+	 * @param array $body Multi-shipment payload.
+	 *
+	 * @return object
+	 */
+	public function send_grouped_label_batch_request( array $body ) {
+		return $this->request( 'POST', '/shipping/labels/batch', $body );
+	}
+
+	/**
 	 * Return a trivial address-normalization response.
 	 *
 	 * @param array $body Request payload.
@@ -468,6 +504,10 @@ class WCConnectE2EAPIClientMock extends WC_Connect_API_Client {
 
 		if ( '/shipping/label' === $normalized_path ) {
 			return $this->get_mock_label_purchase( is_array( $body ) ? $body : array() );
+		}
+
+		if ( '/shipping/labels/batch' === $normalized_path ) {
+			return $this->get_mock_label_batch_purchase( is_array( $body ) ? $body : array() );
 		}
 
 		if ( 1 === preg_match( '#^/shipping/label/\d+$#', $normalized_path ) ) {

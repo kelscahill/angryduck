@@ -3,11 +3,11 @@ import { __ } from '@wordpress/i18n';
 import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { closeSmall } from '@wordpress/icons';
 import * as Sentry from '@sentry/react';
-import type { BulkPurchaseOrder } from 'data/bulk-labels';
+import type { PurchasableBulkPurchaseOrder } from 'data/bulk-labels';
 import { recordEvent } from 'utils';
 import { ProgressView } from './progress-view';
 import { ResultsView } from './results-view';
-import { runMockBatchPurchase } from './mock-batch-purchase';
+import { runBatchPurchase } from 'data/bulk-labels';
 import {
 	BATCH_INTERRUPTED_ERROR_CODE,
 	BATCH_TRANSPORT_ERROR_CODE,
@@ -29,7 +29,11 @@ export interface BatchProgressModalProps {
 	 * The eligible orders to purchase labels for. The rate-review modal
 	 * filters out `needs_fix` rows before invoking the batch flow.
 	 */
-	orders: BulkPurchaseOrder[];
+	orders: PurchasableBulkPurchaseOrder[];
+	/**
+	 * Shared ship-from address selected in the rate-review step.
+	 */
+	origin: Record< string, unknown >;
 	/**
 	 * Initial state used when re-opening the modal after a close (e.g. to
 	 * resume a partial-success view without re-running the batch). Pass
@@ -42,19 +46,12 @@ export interface BatchProgressModalProps {
 	 * snapshot at every transition.
 	 */
 	onStateChange?: ( state: BatchPurchaseState ) => void;
-	/**
-	 * Optional override that forces a specific outcome per order id. Used
-	 * by the entrypoint's `?wcshipping_bulk_mock=` switch so test
-	 * scenarios can exercise all-success, all-failure, mixed, and
-	 * transport-error paths.
-	 */
-	forceOutcome?: (
-		orderId: number
-	) => 'success' | 'failure' | 'transport_error' | null;
 	onClose: () => void;
 }
 
-const buildInitialRows = ( orders: BulkPurchaseOrder[] ): OrderRow[] =>
+const buildInitialRows = (
+	orders: PurchasableBulkPurchaseOrder[]
+): OrderRow[] =>
 	orders.map( ( order ) => ( {
 		order_id: order.order_id,
 		order_number: order.order_number,
@@ -134,9 +131,9 @@ export const buildInitialStateFromSaved = (
 
 export const BatchProgressModal = ( {
 	orders,
+	origin,
 	initialState,
 	onStateChange,
-	forceOutcome,
 	onClose,
 }: BatchProgressModalProps ) => {
 	const [ state, setState ] = useState< BatchPurchaseState >( () => {
@@ -168,9 +165,9 @@ export const BatchProgressModal = ( {
 
 	// The dispatch effect must only run once for a given modal mount.
 	// The parent (`BulkLabelsApp`) keys the modal on the sorted order
-	// list so `orders` and `forceOutcome` are stable for the lifetime
-	// of a single mount; re-running would replay the dispatch and
-	// double-fire labels. We use a `hasRunRef` guard instead of an
+	// list so `orders` is stable for the lifetime of a single mount;
+	// re-running would replay the dispatch and double-fire labels. We
+	// use a `hasRunRef` guard instead of an
 	// `eslint-disable-next-line react-hooks/exhaustive-deps` directive
 	// so the disable doesn't leak into the codebase.
 	const hasRunRef = useRef( false );
@@ -205,9 +202,9 @@ export const BatchProgressModal = ( {
 			orders.map( ( order ) => [ order.order_id, order ] )
 		);
 
-		const handle = runMockBatchPurchase( {
+		const handle = runBatchPurchase( {
 			orders,
-			forceOutcome,
+			origin,
 			signal: controller.signal,
 			onOrderSettled: ( orderId, entry ) => {
 				const sourceOrder = ordersById.get( orderId );
@@ -235,14 +232,12 @@ export const BatchProgressModal = ( {
 			},
 		} );
 
-		// Transport-level error path. Await the mock's promise so a
-		// rejection from either the mock (forced transport error) OR
-		// the future `apiFetch` integration lands in the catch handler
-		// below. When the mock resolves with `kind: 'settled'`, we
-		// transition any still-pending rows (e.g. cancelled before the
-		// last timer fired) to `BATCH_INTERRUPTED_ERROR_CODE` so the
-		// merchant always sees a "Fix and retry" link for them and the
-		// failure event fires.
+		// Transport-level error path. Await the dispatcher promise so
+		// request failures land in the catch handler below. When the
+		// dispatcher resolves with `kind: 'settled'`, transition any
+		// still-pending rows (e.g. cancelled before the response landed)
+		// to `BATCH_INTERRUPTED_ERROR_CODE` so the merchant always sees
+		// a "Fix and retry" link for them and the failure event fires.
 		( async () => {
 			try {
 				const outcome = await handle.promise;
@@ -313,7 +308,7 @@ export const BatchProgressModal = ( {
 			controller.abort();
 			handle.cancel();
 		};
-	}, [ state.phase, orders, forceOutcome ] );
+	}, [ state.phase, orders, origin ] );
 
 	const isProgress = state.phase === 'progress';
 	// Capture this at mount. `onStateChange` updates the parent's saved

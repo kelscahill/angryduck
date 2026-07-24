@@ -151,30 +151,33 @@ export const SavedTemplates = withBoundary(
 					[ getOptionById, setSelectedPackage ]
 				);
 
-				const getRates = useCallback( () => {
-					/**
-					 * getPackageForRequest fills isLetter for custom packages
-					 */
-					const selectedPackageForTracks = getPackageForRequest();
-					const tracksProperties = {
-						package_id: selectedPackageForTracks?.id,
-						is_letter:
-							selectedPackageForTracks?.type ===
-							CUSTOM_PACKAGE_TYPES.ENVELOPE,
-						width: selectedPackageForTracks?.width,
-						height: selectedPackageForTracks?.height,
-						length: selectedPackageForTracks?.length,
-						template_name: selectedPackageForTracks?.name,
-						is_saved_template: true,
-					};
-					recordEvent(
-						'label_purchase_get_rates_clicked',
-						tracksProperties
-					);
-					if ( selectedPackage ) {
-						fetchRates( selectedPackage );
-					}
-				}, [ selectedPackage, fetchRates, getPackageForRequest ] );
+				const getRates = useCallback(
+					( userInitiated = true ) => {
+						/**
+						 * getPackageForRequest fills isLetter for custom packages
+						 */
+						const selectedPackageForTracks = getPackageForRequest();
+						const tracksProperties = {
+							package_id: selectedPackageForTracks?.id,
+							is_letter:
+								selectedPackageForTracks?.type ===
+								CUSTOM_PACKAGE_TYPES.ENVELOPE,
+							width: selectedPackageForTracks?.width,
+							height: selectedPackageForTracks?.height,
+							length: selectedPackageForTracks?.length,
+							template_name: selectedPackageForTracks?.name,
+							is_saved_template: true,
+						};
+						recordEvent(
+							'label_purchase_get_rates_clicked',
+							tracksProperties
+						);
+						if ( selectedPackage ) {
+							fetchRates( selectedPackage, { userInitiated } );
+						}
+					},
+					[ selectedPackage, fetchRates, getPackageForRequest ]
+				);
 
 				/**
 				 * Automatically get rates on load when a package when all the
@@ -186,7 +189,8 @@ export const SavedTemplates = withBoundary(
 						! availableRates &&
 						! errors.endpoint // It should bail if there are errors reported by the endpoint
 					) {
-						getRates();
+						// System-driven refetch: don't clear purchase/status errors.
+						getRates( false );
 					}
 					// We only want to run this if no rates available
 					// eslint-disable-next-line react-hooks/exhaustive-deps

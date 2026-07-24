@@ -11,6 +11,7 @@ import {
 	Flex,
 	FlexBlock,
 	Icon,
+	Notice,
 	SelectControl,
 	TextControl,
 } from '@wordpress/components';
@@ -62,6 +63,10 @@ export const CustomsForm = (): JSX.Element => {
 
 	const showOtherRestrictionType = restrictionType === 'other';
 	const showOtherContentsType = contentsType === 'other';
+	// Document mailings don't carry an itemized customs declaration — the label
+	// omits the customs items entirely (see WOOSHIP-2283) — so hide the product
+	// details fields and make it clear no item description is submitted.
+	const isDocuments = contentsType === 'documents';
 	const disable = hasPurchasedLabel( false );
 
 	const getProps = < T extends CustomsState[ keyof CustomsState ] >(
@@ -250,156 +255,180 @@ export const CustomsForm = (): JSX.Element => {
 					__nextHasNoMarginBottom={ true }
 				/>
 			</Flex>
-			<Flex>
-				<Heading level={ 4 }>
-					{ __( 'Product details', 'woocommerce-shipping' ) }
-				</Heading>
-			</Flex>
-			<Spacer margin={ 10 } />
-			<Flex direction="column">
-				{ items.map( ( { id }, index ) => (
-					<Flex gap={ 6 } direction="column" key={ id }>
-						<FlexBlock>
-							<Flex align="normal" className="customs-items">
-								<TextControl
-									label={
-										<>
-											{ __(
-												'Description',
-												'woocommerce-shipping'
-											) }{ ' ' }
-											<ControlledPopover icon="info-outline">
-												{ createInterpolateElement(
-													__(
-														`When shipping to countries that follow European Union (EU) customs rules, you must provide a clear, specific description on every item. For example, if you are sending clothing, you must indicate what type of clothing (e.g. men\'s shirts, girl\'s vest, boy\'s jacket) for the description to be acceptable. Otherwise, shipments may be delayed or interrupted at customs. <a>Learn more about customs rules <i></i></a>`,
+			{ isDocuments ? (
+				<Flex>
+					<Notice status="info" isDismissible={ false }>
+						{ __(
+							'Document mailings don’t include a customs item declaration, so no product details are submitted for this label.',
+							'woocommerce-shipping'
+						) }
+					</Notice>
+				</Flex>
+			) : (
+				<>
+					<Flex>
+						<Heading level={ 4 }>
+							{ __( 'Product details', 'woocommerce-shipping' ) }
+						</Heading>
+					</Flex>
+					<Spacer margin={ 10 } />
+					<Flex direction="column">
+						{ items.map( ( { id }, index ) => (
+							<Flex gap={ 6 } direction="column" key={ id }>
+								<FlexBlock>
+									<Flex
+										align="normal"
+										className="customs-items"
+									>
+										<TextControl
+											label={
+												<>
+													{ __(
+														'Description',
 														'woocommerce-shipping'
-													),
-													{
-														a: (
-															<ExternalLink href="https://www.usps.com/international/new-eu-customs-rules.htm">
-																{ ' ' }
-															</ExternalLink>
-														),
-														i: (
-															<Icon
-																icon="external"
-																size={ 16 }
-															/>
-														),
-													}
-												) }
-											</ControlledPopover>
-										</>
-									}
-									hideLabelFromVision={ index !== 0 }
-									{ ...getProps<
-										CustomsItem[ 'description' ]
-									>( 'description', Number( id ) ) }
-									disabled={ disable }
-									required={ true }
-									// Opting into the new styles for margin bottom
-									__nextHasNoMarginBottom={ true }
-									// Opting into the new styles for height
-									__next40pxDefaultSize={ true }
-								/>
-								<TextControl
-									label={ createInterpolateElement(
-										__(
-											'HS tariff number (<a>more…</a>)',
-											'woocommerce-shipping'
-										),
-										{
-											a: (
-												<ExternalLink href="https://woocommerce.com/document/woocommerce-shipping-and-tax/woocommerce-shipping/#section-30">
-													{ ' ' }
-												</ExternalLink>
-											),
-										}
-									) }
-									hideLabelFromVision={ index !== 0 }
-									{ ...getProps< string >(
-										'hsTariffNumber',
-										Number( id )
-									) }
-									placeholder={
-										isHSTariffNumberRequired()
-											? ''
-											: __(
-													'Optional',
+													) }{ ' ' }
+													<ControlledPopover icon="info-outline">
+														{ createInterpolateElement(
+															__(
+																`When shipping to countries that follow European Union (EU) customs rules, you must provide a clear, specific description on every item. For example, if you are sending clothing, you must indicate what type of clothing (e.g. men\'s shirts, girl\'s vest, boy\'s jacket) for the description to be acceptable. Otherwise, shipments may be delayed or interrupted at customs. <a>Learn more about customs rules <i></i></a>`,
+																'woocommerce-shipping'
+															),
+															{
+																a: (
+																	<ExternalLink href="https://www.usps.com/international/new-eu-customs-rules.htm">
+																		{ ' ' }
+																	</ExternalLink>
+																),
+																i: (
+																	<Icon
+																		icon="external"
+																		size={
+																			16
+																		}
+																	/>
+																),
+															}
+														) }
+													</ControlledPopover>
+												</>
+											}
+											hideLabelFromVision={ index !== 0 }
+											{ ...getProps<
+												CustomsItem[ 'description' ]
+											>( 'description', Number( id ) ) }
+											disabled={ disable }
+											required={ true }
+											// Opting into the new styles for margin bottom
+											__nextHasNoMarginBottom={ true }
+											// Opting into the new styles for height
+											__next40pxDefaultSize={ true }
+										/>
+										<TextControl
+											label={ createInterpolateElement(
+												__(
+													'HS tariff number (<a>more…</a>)',
 													'woocommerce-shipping'
-											  )
-									}
-									required={ isHSTariffNumberRequired() }
-									disabled={ disable }
-									// Opting into the new styles for height
-									__next40pxDefaultSize={ true }
-									// Opting into the new styles for margin bottom
-									__nextHasNoMarginBottom={ true }
-								/>
-								<InputControl
-									label={ __(
-										'Value per unit',
-										'woocommerce-shipping'
-									) }
-									hideLabelFromVision={ index !== 0 }
-									type="number"
-									min={ 0 }
-									step={ 0.01 }
-									{ ...symbolProp }
-									{ ...getProps( 'price', Number( id ) ) }
-									disabled={ disable }
-									// Opting into the new styles for height
-									__next40pxDefaultSize={ true }
-								/>
-								<InputControl
-									label={ __(
-										'Weight per unit',
-										'woocommerce-shipping'
-									) }
-									hideLabelFromVision={ index !== 0 }
-									type="number"
-									min={ 0 }
-									step={ 0.01 }
-									suffix={ weightUnit }
-									{ ...getProps( 'weight', Number( id ) ) }
-									disabled={ disable }
-									required={ true }
-									// Opting into the new styles for height
-									__next40pxDefaultSize={ true }
-								/>
-								<SelectControl
-									label={
-										<>
-											{ __(
-												'Origin country',
+												),
+												{
+													a: (
+														<ExternalLink href="https://woocommerce.com/document/woocommerce-shipping-and-tax/woocommerce-shipping/#section-30">
+															{ ' ' }
+														</ExternalLink>
+													),
+												}
+											) }
+											hideLabelFromVision={ index !== 0 }
+											{ ...getProps< string >(
+												'hsTariffNumber',
+												Number( id )
+											) }
+											placeholder={
+												isHSTariffNumberRequired()
+													? ''
+													: __(
+															'Optional',
+															'woocommerce-shipping'
+													  )
+											}
+											required={ isHSTariffNumberRequired() }
+											disabled={ disable }
+											// Opting into the new styles for height
+											__next40pxDefaultSize={ true }
+											// Opting into the new styles for margin bottom
+											__nextHasNoMarginBottom={ true }
+										/>
+										<InputControl
+											label={ __(
+												'Value per unit',
 												'woocommerce-shipping'
 											) }
-											<ControlledPopover icon="info-outline">
-												{ __(
-													'Country where the product was manufactured or assembled.',
-													'woocommerce-shipping'
-												) }
-											</ControlledPopover>{ ' ' }
-										</>
-									}
-									hideLabelFromVision={ index !== 0 }
-									options={ countryNames }
-									{ ...getProps(
-										'originCountry',
-										Number( id )
-									) }
-									disabled={ disable }
-									required={ true }
-									// Opting into the new styles for margin bottom
-									__nextHasNoMarginBottom={ true }
-									// Opting into the new styles for height
-									__next40pxDefaultSize={ true }
-								/>
+											hideLabelFromVision={ index !== 0 }
+											type="number"
+											min={ 0 }
+											step={ 0.01 }
+											{ ...symbolProp }
+											{ ...getProps(
+												'price',
+												Number( id )
+											) }
+											disabled={ disable }
+											// Opting into the new styles for height
+											__next40pxDefaultSize={ true }
+										/>
+										<InputControl
+											label={ __(
+												'Weight per unit',
+												'woocommerce-shipping'
+											) }
+											hideLabelFromVision={ index !== 0 }
+											type="number"
+											min={ 0 }
+											step={ 0.01 }
+											suffix={ weightUnit }
+											{ ...getProps(
+												'weight',
+												Number( id )
+											) }
+											disabled={ disable }
+											required={ true }
+											// Opting into the new styles for height
+											__next40pxDefaultSize={ true }
+										/>
+										<SelectControl
+											label={
+												<>
+													{ __(
+														'Origin country',
+														'woocommerce-shipping'
+													) }
+													<ControlledPopover icon="info-outline">
+														{ __(
+															'Country where the product was manufactured or assembled.',
+															'woocommerce-shipping'
+														) }
+													</ControlledPopover>{ ' ' }
+												</>
+											}
+											hideLabelFromVision={ index !== 0 }
+											options={ countryNames }
+											{ ...getProps(
+												'originCountry',
+												Number( id )
+											) }
+											disabled={ disable }
+											required={ true }
+											// Opting into the new styles for margin bottom
+											__nextHasNoMarginBottom={ true }
+											// Opting into the new styles for height
+											__next40pxDefaultSize={ true }
+										/>
+									</Flex>
+								</FlexBlock>
 							</Flex>
-						</FlexBlock>
+						) ) }
 					</Flex>
-				) ) }
-			</Flex>
+				</>
+			) }
 		</>
 	);
 };

@@ -77,7 +77,7 @@ class CheckoutNotifier {
 			}
 
 			foreach ( $notices[ $type ] as $notice ) {
-				if ( $notice['group'] === $group ) {
+				if ( ( $notice['group'] ?? '' ) === $group ) {
 					continue;
 				}
 
@@ -281,7 +281,7 @@ class CheckoutNotifier {
 
 		foreach ( $notices as $type => $messages ) {
 			foreach ( $messages as $notice ) {
-				$formatted_message = $this->maybe_get_formatted_message( $notice['message'], $notice['data'] );
+				$formatted_message = $this->maybe_get_formatted_message( $notice['message'], $notice['data'], $notice['group'] ?? '' );
 
 				if ( wc_has_notice( $formatted_message, $type ) ) {
 					continue;
@@ -302,18 +302,93 @@ class CheckoutNotifier {
 	}
 
 	/**
+	 * Get rendered notice HTML.
+	 *
+	 * @param string $group Optional. Group of notices to render.
+	 *
+	 * @return string
+	 */
+	public function get_notices_html( string $group = '' ): string {
+		$notices = self::get_notices();
+
+		if ( empty( $notices ) ) {
+			return '';
+		}
+
+		$html = '';
+
+		foreach ( $notices as $type => $messages ) {
+			foreach ( $messages as $notice ) {
+				if ( ! empty( $group ) && ( $notice['group'] ?? '' ) !== $group ) {
+					continue;
+				}
+
+				$formatted_message = $this->maybe_get_formatted_message( $notice['message'], $notice['data'], $notice['group'] ?? '' );
+				$html             .= sprintf(
+					'<div class="%1$s" role="alert">%2$s</div>',
+					esc_attr( $this->get_notice_class( $type ) ),
+					$this->sanitize_notice_html( $formatted_message )
+				);
+			}
+		}
+
+		return $html;
+	}
+
+	/**
+	 * Sanitize notice HTML.
+	 *
+	 * @param string $message Notice HTML.
+	 *
+	 * @return string
+	 */
+	private function sanitize_notice_html( string $message ): string {
+		if ( function_exists( 'wc_kses_notice' ) ) {
+			return wc_kses_notice( $message );
+		}
+
+		return wp_kses_post( $message );
+	}
+
+	/**
+	 * Get the WooCommerce notice class for a notice type.
+	 *
+	 * @param string $type Notice type.
+	 *
+	 * @return string
+	 */
+	private function get_notice_class( string $type ): string {
+		$type = $this->sanitize_type( $type );
+
+		if ( 'error' === $type ) {
+			return 'woocommerce-error';
+		}
+
+		if ( 'success' === $type ) {
+			return 'woocommerce-message';
+		}
+
+		return 'woocommerce-info';
+	}
+
+	/**
 	 * Maybe get formatted message.
 	 *
 	 * @param string $message Message to display.
 	 * @param string $data    Additional data to pass.
+	 * @param string $group   Optional. Group to categorize notices.
 	 *
 	 * @return string
 	 */
-	public function maybe_get_formatted_message( string $message, string $data = '' ): string {
+	public function maybe_get_formatted_message( string $message, string $data = '', string $group = '' ): string {
 		if ( ! empty( $data ) ) {
 			$formatted_message = '<details><summary style="line-height:1.8;">' . $message . '</summary><div style="overflow: auto; max-height:50vh;"><pre style="font-size:0.8rem; line-height:1.4;">' . $data . '</pre></div></details>';
 		} else {
 			$formatted_message = $message;
+		}
+
+		if ( 'address-validation' === $group ) {
+			$formatted_message = '<div class="wcshipping-checkout-notice wcshipping-checkout-notice--address-validation">' . $formatted_message . '</div>';
 		}
 
 		return $formatted_message;

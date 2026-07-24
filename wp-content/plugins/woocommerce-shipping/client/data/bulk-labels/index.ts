@@ -10,6 +10,7 @@ export {
 	resolveSelectedRate,
 	buildServiceApplyOptions,
 } from './service-selection';
+export { runBatchPurchase } from './batch-purchase';
 export { getBulkLabelsMaxOrders } from './constants';
 export { SERVICE_CHEAPEST, SERVICE_FASTEST } from './types';
 export type {
@@ -18,7 +19,13 @@ export type {
 	AutoAssignedPackageResult,
 	AutoAssignedPackagesMap,
 	AutoAssignedPackageStatus,
+	BatchPurchaseEntry,
+	BatchPurchaseErrorEntry,
+	BatchPurchaseResponse,
+	BatchPurchaseShipment,
+	BatchPurchaseSuccessEntry,
 	BatchSummary,
+	BulkRequestPackage,
 	BulkPurchaseOrder,
 	ManualPackageSelections,
 	ManualServiceSelections,
@@ -28,4 +35,6 @@ export type {
 	OrderSelectedPackage,
 	OrderShippingContextRecord,
 	PackageDisplay,
+	PurchasableBulkPurchaseOrder,
+	SelectedBatchRate,
 } from './types';

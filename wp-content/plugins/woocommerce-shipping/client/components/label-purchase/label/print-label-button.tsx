@@ -132,10 +132,10 @@ export const PrintLabelButton = forwardRef( ( _props, ref ) => {
 			className="print-label-button"
 			popoverProps={ {
 				placement: 'bottom-end',
-				noArrow: false,
+				noArrow: true,
 				resize: true,
 				shift: true,
-				inline: true,
+				inline: false,
 			} }
 			renderToggle={ ( { isOpen, onToggle } ) => (
 				<div style={ { display: 'flex' } }>
@@ -146,6 +146,7 @@ export const PrintLabelButton = forwardRef( ( _props, ref ) => {
 							isPurchasing || isUpdatingStatus || isPrinting
 						}
 						variant="primary"
+						className="print-label-button__primary"
 						style={ {
 							borderTopRightRadius: 0,
 							borderBottomRightRadius: 0,
@@ -162,7 +163,11 @@ export const PrintLabelButton = forwardRef( ( _props, ref ) => {
 						icon={ chevronDown }
 						variant="primary"
 						aria-expanded={ isOpen }
-						aria-label="Select label size"
+						aria-label={ __(
+							'Select label size',
+							'woocommerce-shipping'
+						) }
+						className="print-label-button__toggle"
 						style={ {
 							borderTopLeftRadius: 0,
 							borderBottomLeftRadius: 0,
@@ -172,7 +177,9 @@ export const PrintLabelButton = forwardRef( ( _props, ref ) => {
 				</div>
 			) }
 			renderContent={ ( { onClose } ) => (
-				<MenuGroup label="Select Label Size">
+				<MenuGroup
+					label={ __( 'Select label size', 'woocommerce-shipping' ) }
+				>
 					{ paperSizes.map( ( size ) => (
 						<MenuItem
 							key={ size.key }

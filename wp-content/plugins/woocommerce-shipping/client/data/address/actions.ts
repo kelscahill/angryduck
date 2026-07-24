@@ -132,7 +132,14 @@ export function* normalizeAddress(
 		} = yield apiFetch( {
 			path: getAddressNormalizationPath(),
 			method: 'POST',
-			data: { address: snakeCaseKeys( address ) },
+			data: {
+				address: snakeCaseKeys( address ),
+				// Forward the type so the server-bound request body wraps
+				// the address as `origin` (vs. the historical `destination`
+				// fallback) when the caller is normalizing a store origin.
+				// See WOOSHIP-2230.
+				addressType,
+			},
 		} );
 
 		if ( success ) {

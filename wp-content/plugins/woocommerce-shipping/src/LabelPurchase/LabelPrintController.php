@@ -5,9 +5,9 @@ use Automattic\WCShipping\Connect\WC_Connect_API_Client;
 use Automattic\WCShipping\Connect\WC_Connect_Logger;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
 use Automattic\WCShipping\FeatureFlags\FeatureFlags;
+use Automattic\WCShipping\Fulfillments\FulfillmentsService;
 use Automattic\WCShipping\Fulfillments\ShippingFulfillment;
 use Automattic\WCShipping\Fulfillments\ShippingFulfillmentsDataStore;
-use Automattic\WCShipping\LabelPurchase\LabelPrintService;
 use Automattic\WCShipping\Utils;
 use Automattic\WCShipping\WCShippingRESTController;
 use WP_Error;
@@ -43,18 +43,27 @@ class LabelPrintController extends WCShippingRESTController {
 	 */
 	protected $shipping_fulfillments_data_store;
 
+	/**
+	 * Fulfillment service used to resolve fulfillment entities.
+	 *
+	 * @var FulfillmentsService
+	 */
+	protected $fulfillments_service;
+
 	public function __construct(
 		WC_Connect_Service_Settings_Store $settings_store,
 		WC_Connect_API_Client $api_client,
 		WC_Connect_Logger $logger,
 		LabelPrintService $label_print_service,
-		ShippingFulfillmentsDataStore $shipping_fulfillments_data_store
+		ShippingFulfillmentsDataStore $shipping_fulfillments_data_store,
+		?FulfillmentsService $fulfillments_service = null
 	) {
 		$this->settings_store                   = $settings_store;
 		$this->api_client                       = $api_client;
 		$this->logger                           = $logger;
 		$this->label_print_service              = $label_print_service;
 		$this->shipping_fulfillments_data_store = $shipping_fulfillments_data_store;
+		$this->fulfillments_service             = $fulfillments_service ?? new FulfillmentsService( $shipping_fulfillments_data_store );
 	}
 
 	/**
@@ -242,6 +251,10 @@ class LabelPrintController extends WCShippingRESTController {
 		$labels = array();
 		foreach ( $label_ids as $index => $label_id ) {
 			$fulfillment = $this->shipping_fulfillments_data_store->get_by_label_id( (string) $label_id );
+			if ( ! $fulfillment instanceof ShippingFulfillment || (int) $fulfillment->get_id() !== (int) $fulfillment_ids[ $index ] ) {
+				$fulfillment = $this->fulfillments_service->get_fulfillment_by_id( (int) $fulfillment_ids[ $index ] );
+			}
+
 			if (
 				! $fulfillment instanceof ShippingFulfillment ||
 				(int) $fulfillment->get_id() !== (int) $fulfillment_ids[ $index ] ||

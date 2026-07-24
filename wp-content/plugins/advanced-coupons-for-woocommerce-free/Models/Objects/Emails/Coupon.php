@@ -145,13 +145,23 @@ class Coupon extends \WC_Email {
     /**
      * Trigger sending of this email.
      *
+     * Parameters are optional so the method is compatible with WooCommerce core,
+     * which calls trigger() with no arguments when initialising registered email
+     * objects (e.g. on the Emails settings page). On PHP 8.x required parameters
+     * would throw a fatal ArgumentCountError in that scenario. The guard below
+     * also prevents the email from being sent with the built-in dummy data.
+     *
      * @since 4.5.3
      * @access public
      *
-     * @param Advanced_Coupon $coupon Coupon object.
-     * @param WC_Customer     $customer Customer object.
+     * @param Advanced_Coupon $coupon   Coupon object.
+     * @param \WC_Customer    $customer Customer object.
      */
-    public function trigger( $coupon, $customer ) {
+    public function trigger( $coupon = null, $customer = null ) {
+        if ( ! $coupon instanceof Advanced_Coupon || ! $customer instanceof \WC_Customer ) {
+            return;
+        }
+
         do_action( 'acfw_before_send_coupon_email', $coupon, $customer );
 
         $this->setup_locale();

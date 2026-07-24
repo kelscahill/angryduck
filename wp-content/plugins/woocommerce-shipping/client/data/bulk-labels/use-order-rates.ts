@@ -49,11 +49,13 @@ const EMPTY_ERRORS: OrderRateErrors = {};
  * pre-shape addresses or the server blanks the country and the Connect
  * server rejects the request ("origin.country must be one of […]").
  */
-const toRateAddress = (
+export const toRateAddress = (
 	addr: Record< string, unknown > | null | undefined
 ): Record< string, unknown > => {
 	const source = ( addr ?? {} ) as Record< string, unknown >;
 	const { country, state, ...rest } = source;
+	delete rest.id;
+	delete rest.is_verified;
 	return {
 		...rest,
 		country_code: country ?? '',
@@ -65,6 +67,7 @@ interface RawRate {
 	rate_id?: string;
 	service_id?: string;
 	carrier_id?: string;
+	shipment_id?: string;
 	title?: string;
 	rate?: number;
 	retail_rate?: number;
@@ -105,6 +108,7 @@ const normalizeRates = ( rawRates: RawRate[] ): OrderRate[] =>
 				rateId: r.rate_id,
 				serviceId: r.service_id ?? '',
 				carrierId: ( r.carrier_id ?? '' ) as OrderRate[ 'carrierId' ],
+				shipmentId: r.shipment_id ?? '',
 				title:
 					title && title.length > 0
 						? title

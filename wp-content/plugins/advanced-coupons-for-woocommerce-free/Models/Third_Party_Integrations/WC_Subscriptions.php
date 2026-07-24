@@ -220,7 +220,7 @@ class WC_Subscriptions extends Base_Model implements Model_Interface {
     public function should_clear_store_credit_session( $should_clear ) {
         // Safely check the request path.
         $request_path = $this->_helper_functions->get_request_path_using_wpjson_wc_api();
-        if ( is_string( $request_path ) && strpos( $request_path, 'remove-coupon' ) !== false ) {
+        if ( is_string( $request_path ) && str_contains( $request_path, 'remove-coupon' ) ) {
             return $should_clear;
         }
 

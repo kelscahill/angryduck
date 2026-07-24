@@ -169,6 +169,7 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 				'phpVars',
 				array(
 					'removeReviewBannerRestUrl' => MailChimp_WooCommerce_Rest_Api::url( 'review-banner' ),
+					'restNonce'                 => wp_create_nonce( 'wp_rest' ),
 					'l10n'                      => array(
 						'are_you_sure'                 => __( 'Are you sure?', 'mailchimp-for-woocommerce' ),
 						'log_delete_subtitle'          => __( 'You will not be able to revert.', 'mailchimp-for-woocommerce' ),
@@ -1990,7 +1991,19 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 		<script type="text/javascript" >
 			jQuery(document).ready(function($) {
 				var endpoint = '<?php echo MailChimp_WooCommerce_Rest_Api::url( 'sync/stats' ); ?>';
+				var restNonce = '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>';
 				var on_sync_tab = '<?php echo ( mailchimp_check_if_on_sync_tab() ? 'yes' : 'no' ); ?>';
+
+				// Keep restNonce fresh via WP Heartbeat (avoids 403s on long-lived
+				// admin sessions where the original nonce ages out).
+				$(document).on('heartbeat-tick', function (event, data) {
+					if (data && data.mailchimp_rest_nonce) {
+						restNonce = data.mailchimp_rest_nonce;
+						if (typeof phpVars !== 'undefined') {
+							phpVars.restNonce = data.mailchimp_rest_nonce;
+						}
+					}
+				});
 				var sync_status = '<?php echo ( ( mailchimp_has_started_syncing() && ! mailchimp_is_done_syncing() ) ? 'historical' : 'current' ); ?>';
 				var promo_rulesProgress = 0;
 				var orderProgress = 0;
@@ -2097,7 +2110,18 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 							jQuery('.mc-wc-sync-status-icon-wrapper img').removeClass('mc-wc-d-none');
 						}
 
-						jQuery.get(endpoint, function(response) {
+						jQuery.ajax({
+							url: endpoint,
+							method: 'GET',
+							beforeSend: function (xhr) { xhr.setRequestHeader('X-WP-Nonce', restNonce); }
+						}).fail(function (xhr) {
+							// If the nonce expired before heartbeat could refresh it
+							// (or auth was lost entirely), reload so PHP can emit a
+							// fresh one with the next page render.
+							if (xhr && xhr.status === 403) {
+								document.location.reload(true);
+							}
+						}).done(function (response) {
                             //console.log('sync stats', response);
 							if (response.success) {
 								// if the response is now finished - but the original sync status was "historical"
@@ -2135,6 +2159,19 @@ class MailChimp_WooCommerce_Admin extends MailChimp_WooCommerce_Options {
 			});
 		</script>
 		<?php
+	}
+
+	/**
+	 * Piggyback on the WP Heartbeat to push a fresh wp_rest nonce to the
+	 * browser. Keeps long-lived admin pages (e.g. an open sync screen) from
+	 * 403-ing once the original nonce ages past nonce_life.
+	 *
+	 * @param array $response
+	 * @return array
+	 */
+	public function refresh_rest_nonce_on_heartbeat( $response ) {
+		$response['mailchimp_rest_nonce'] = wp_create_nonce( 'wp_rest' );
+		return $response;
 	}
 
     protected function updateGDPRFields($list_id)

@@ -12,7 +12,12 @@
  *   value types the display helpers and hooks return.
  */
 
-import type { LocationResponse, Package, Rate } from 'types';
+import type {
+	LabelRequestPackages,
+	LocationResponse,
+	Package,
+	Rate,
+} from 'types';
 
 /**
  * The package selected for the order, sourced from the shipping
@@ -72,9 +77,7 @@ export interface PackageDisplay {
 
 /**
  * A shipping-context record decorated with the table-display fields
- * that the modal renders. Service, cost, status, and note are
- * placeholders for the shell. WOOSHIP-2133 replaces them with real
- * rate-quote and eligibility data.
+ * that the modal renders.
  */
 export interface BulkPurchaseOrder extends OrderShippingContextRecord {
 	package_display: PackageDisplay;
@@ -92,6 +95,71 @@ export interface BulkPurchaseOrder extends OrderShippingContextRecord {
 	};
 	auto_assigned?: AutoAssignedPackageResult;
 }
+
+/**
+ * Package payload sent to the batch purchase endpoint. It is built from
+ * the same effective package that was used for the batch rate quote.
+ */
+export type BulkRequestPackage = Pick<
+	LabelRequestPackages,
+	'id' | 'box_id' | 'length' | 'width' | 'height' | 'weight' | 'is_letter'
+> &
+	Partial< Pick< LabelRequestPackages, 'products' > >;
+
+/**
+ * The rate selected for a given order when the batch purchase is
+ * started. Kept separate from `OrderRate` because the purchase endpoint
+ * consumes snake-cased IDs in the package payload.
+ */
+export type SelectedBatchRate = Pick<
+	LabelRequestPackages,
+	'rate_id' | 'service_id' | 'carrier_id' | 'service_name' | 'shipment_id'
+> & {
+	rate: number;
+	retail_rate: number;
+};
+
+/**
+ * A display order after the merchant clicks Purchase. These fields are
+ * required by the batch purchase request, so only rows with all three
+ * are handed to the progress modal.
+ */
+export interface PurchasableBulkPurchaseOrder extends BulkPurchaseOrder {
+	selected_rate: SelectedBatchRate;
+	request_package: BulkRequestPackage;
+	purchase_destination: Record< string, unknown >;
+}
+
+export type BatchPurchaseShipment = Record< string, unknown >;
+
+export interface BatchPurchaseSuccessEntry {
+	labels: {
+		label_id: number;
+		fulfillment_id?: number;
+		rate?: number;
+		[ key: string ]: unknown;
+	}[];
+	success: true;
+}
+
+export interface BatchPurchaseErrorEntry {
+	error: {
+		code: string;
+		message: string;
+	};
+}
+
+export type BatchPurchaseEntry =
+	| BatchPurchaseSuccessEntry
+	| BatchPurchaseErrorEntry;
+
+/**
+ * Top-level response from `POST /wcshipping/v1/label/purchase/batch`.
+ * Keys are `order_<id>` (or `invalid_order_<index>` for malformed
+ * rows). The string prefix keeps the JSON object-shaped regardless of
+ * the numeric `order_id` so JS consumers don't need numeric coercion.
+ */
+export type BatchPurchaseResponse = Record< string, BatchPurchaseEntry >;
 
 /**
  * Per-order result returned by POST /wcshipping/v1/label/auto-assign-packages.
@@ -169,6 +237,7 @@ export type OrderRate = Pick<
 	| 'rateId'
 	| 'serviceId'
 	| 'carrierId'
+	| 'shipmentId'
 	| 'title'
 	| 'rate'
 	| 'retailRate'

@@ -422,6 +422,8 @@ class Vite_App {
         $this->enqueue_hmr_vite_client();
 
         $this->enqueue_main_script();
+
+        $this->register_chunk_scripts();
     }
 
     /**
@@ -471,12 +473,12 @@ class Vite_App {
          * We use the filemtime of the file as the version number in production mode
          * and the current time in development mode.
          */
+        $dist_file_path = ACFWF()->Plugin_Constants->PLUGIN_DIR_PATH .
+            "dist/{$this->manifest[ $this->entry_file_path ]['file']}";
+
         $script_version = $this->is_hmr
             ? time()
-            : filemtime(
-                ACFWF()->Plugin_Constants->PLUGIN_DIR_PATH .
-                "dist/{$this->manifest[ $this->entry_file_path ]['file']}"
-            );
+            : ( file_exists( $dist_file_path ) ? filemtime( $dist_file_path ) : \ACFWF\Helpers\Plugin_Constants::VERSION );
 
         /**************************************************************************
          * Full url to main app script file
@@ -558,17 +560,73 @@ class Vite_App {
 
             if ( ! empty( $styles ) ) {
                 foreach ( $styles as $style ) {
+                    $dist_style_path = ACFWF()->Plugin_Constants->PLUGIN_DIR_PATH . "dist/$style";
                     wp_enqueue_style(
                         $this->script_handle,
                         plugins_url( "dist/$style", ACFWF()->Plugin_Constants->MAIN_PLUGIN_FILE_PATH ),
                         $this->style_dependencies,
-                        filemtime( ACFWF()->Plugin_Constants->PLUGIN_DIR_PATH . "dist/$style" )
+                        file_exists( $dist_style_path ) ? filemtime( $dist_style_path ) : \ACFWF\Helpers\Plugin_Constants::VERSION
                     );
                 }
             }
         } elseif ( ! empty( $this->style_dependencies ) ) {
             foreach ( $this->style_dependencies as $style_dependency ) {
                 wp_enqueue_style( $style_dependency );
+            }
+        }
+    }
+
+    /**
+     * Register the entry's imported chunk files as WordPress scripts.
+     *
+     * Vite code-splits shared modules into separate chunk files that the entry
+     * loads via native ES module imports. WordPress is unaware of these chunks,
+     * so when a chunk accesses a `wc.*` global, WooCommerce's runtime dependency
+     * detection (active under WP_DEBUG on Cart/Checkout block pages) reports it
+     * as an unregistered script. Registering each chunk here — with the same
+     * dependencies as the entry — makes it appear in `wp_scripts()->registered`
+     * with the correct `wc-*` deps, which is the source WooCommerce builds its
+     * dependency registry from. Chunks are only registered (never enqueued): the
+     * browser still loads them through the entry's import graph, we only need
+     * WordPress to know each chunk's URL and declared dependencies.
+     *
+     * @since 4.7.4
+     * @return void
+     */
+    protected function register_chunk_scripts() {
+
+        if ( $this->is_hmr || empty( $this->manifest[ $this->entry_file_path ]['imports'] ) ) {
+            return;
+        }
+
+        $processed = array();
+        $queue     = $this->manifest[ $this->entry_file_path ]['imports'];
+
+        while ( ! empty( $queue ) ) {
+            $chunk_key = array_shift( $queue );
+
+            if ( isset( $processed[ $chunk_key ] ) || empty( $this->manifest[ $chunk_key ]['file'] ) ) {
+                continue;
+            }
+            $processed[ $chunk_key ] = true;
+
+            $chunk_file   = $this->manifest[ $chunk_key ]['file'];
+            $chunk_path   = ACFWF()->Plugin_Constants->PLUGIN_DIR_PATH . "dist/$chunk_file";
+            $chunk_handle = $this->script_handle . '-chunk-' . sanitize_title_with_dashes( basename( $chunk_file ) );
+
+            wp_register_script(
+                $chunk_handle,
+                $this->base_url . $chunk_file,
+                $this->dependencies,
+                file_exists( $chunk_path ) ? filemtime( $chunk_path ) : \ACFWF\Helpers\Plugin_Constants::VERSION,
+                true
+            );
+
+            // Queue nested chunk imports so transitively-loaded chunks are registered too.
+            if ( ! empty( $this->manifest[ $chunk_key ]['imports'] ) ) {
+                foreach ( $this->manifest[ $chunk_key ]['imports'] as $nested_chunk ) {
+                    $queue[] = $nested_chunk;
+                }
             }
         }
     }
@@ -670,7 +728,7 @@ class Vite_App {
              * attributes in production mode.
              */
             foreach ( $this->manifest[ $this->entry_file_path ]['css'] as $style ) {
-                if ( false !== strpos( $href, $style ) ) {
+                if ( str_contains( $href, $style ) ) {
                     $integrity = '';
                     if ( apply_filters( 'acfw_enable_subresource_integrity_check', false ) ) {
                         $integrity = sprintf(

@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Automattic\WCShipping\Connect\WC_Connect_Jetpack;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
 use Automattic\WCShipping\Connect\WC_Connect_Settings_Pages;
 use Automattic\WCShipping\DOM\Manipulation as DOM_Manipulation;
@@ -89,6 +90,7 @@ class SettingsPage {
 				'storeCountryName'    => $full_country_name,
 				'isCurrencySupported' => $this->view_service->is_supported_currency( $currency ),
 				'storeCurrency'       => $currency,
+				'onboardingState'     => WC_Connect_Jetpack::is_connected() ? 'needs_tos_only' : 'needs_connection',
 			)
 		);
 	}

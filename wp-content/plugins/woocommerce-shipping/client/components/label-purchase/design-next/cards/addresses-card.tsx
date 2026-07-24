@@ -33,6 +33,7 @@ import { Destination, Order, OriginAddress } from 'types';
 import { ShipFromSelectV2 } from '../internal/ship-from-select-v2';
 import { withBoundaryNext } from 'components/HOC/error-boundary/with-boundary-next';
 import { StoreAddressSyncNotice } from 'components/store-address-sync-notice';
+import { useDestinationAddressModal } from '../../hooks/use-destination-address-modal';
 
 const firstFilled = ( arr: ( string | undefined )[] ) => {
 	for ( const item of arr ) {
@@ -173,6 +174,11 @@ const AddressesCardComponent = ( {
 	const shouldShowStoreAddressSyncNotice =
 		originAddress?.id === 'store_details';
 
+	useDestinationAddressModal(
+		isDestinationModalOpen,
+		setIsDestinationModalOpen
+	);
+
 	/**
 	 * 1) We need to run the auto verification process only once but the useEffect runs on every render. So we use a ref
 	 * to keep track of it, but if `normalisedDestinationAddress` is not defined yet, we want to allow it to run again
@@ -252,7 +258,7 @@ const AddressesCardComponent = ( {
 
 	const onCompleteCallback = () => {
 		setIsDestinationModalOpen( false );
-		updateRates();
+		void updateRates( { preserveSelection: true } );
 	};
 
 	const onOriginCompleteCallback = () => {
@@ -612,6 +618,7 @@ const AddressesCardComponent = ( {
 			) }
 			{ isDestinationModalOpen && (
 				<Modal
+					className="edit-address-modal"
 					onRequestClose={ () => setIsDestinationModalOpen( false ) }
 					focusOnMount
 					shouldCloseOnClickOutside={ false }

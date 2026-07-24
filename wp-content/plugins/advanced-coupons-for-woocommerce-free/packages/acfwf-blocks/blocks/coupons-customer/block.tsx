@@ -15,7 +15,7 @@ import {
   withSpokenMessages
 } from "@wordpress/components";
 // @ts-ignore
-import { BlockControls, InspectorControls } from "@wordpress/block-editor";
+import { BlockControls, InspectorControls, useBlockProps } from "@wordpress/block-editor";
 
 // Components
 import ContentSettingsControl from "../../components/ContentSettingsControl";
@@ -79,6 +79,8 @@ const CouponsByCustomerBlock = (props: IProps) => {
     setIsEditing(false);
   };
 
+  const blockProps = useBlockProps();
+
   return (
     <>
       <BlockControls>
@@ -106,97 +108,99 @@ const CouponsByCustomerBlock = (props: IProps) => {
         </PanelBody>
       </InspectorControls>
 
-      {isEditing ? (
-        <Placeholder
-          label={couponsCustomerTexts.title}
-          className={`acfw-block-coupons-grid acfw-block-coupons-customer ${!isPremium ? 'acfw-disabled-upsell': ''}`}
-        >
-          <div className="description fullwidth-field">{couponsCustomerTexts.description}</div>
-          <div className="display-type__selection one-half-col">
-            <SelectControl
-              label={displayTypeFieldTexts.label}
-              value={attributes.display_type}
-              options={displayTypeOptions}
-              onChange={(value) => setAttributes({display_type: value})}
-            />
-          </div>
+      <div {...blockProps}>
+        {isEditing ? (
+          <Placeholder
+            label={couponsCustomerTexts.title}
+            className={`acfw-block-coupons-grid acfw-block-coupons-customer ${!isPremium ? 'acfw-disabled-upsell': ''}`}
+          >
+            <div className="description fullwidth-field">{couponsCustomerTexts.description}</div>
+            <div className="display-type__selection one-half-col">
+              <SelectControl
+                label={displayTypeFieldTexts.label}
+                value={attributes.display_type}
+                options={displayTypeOptions}
+                onChange={(value) => setAttributes({display_type: value})}
+              />
+            </div>
 
-          <div className="order-by__selection one-half-col">
-            <SelectControl
-              label={orderTypeFieldTexts.label}
-              value={attributes.order_by}
-              options={orderByOptions}
-              onChange={(value) => setAttributes({order_by: value})}
-            />
-          </div>
-          <div className="items-count__range one-third-col">
-            <RangeControl
-              label={numberofItemsFieldLabel}
-              value={attributes.count}
-              onChange={(value) => {
-                const newValue = clamp(value, layoutDefaults.minCount, layoutDefaults.maxCount);
-                setAttributes({
-                  count: newValue
-                });
-              }}
-              min={layoutDefaults.minCount}
-              max={layoutDefaults.maxCount}
-            />
-          </div>
-          <div className="column-count__range one-third-col">
-            <RangeControl
-              label={numberofColumnsFieldLabel}
-              value={attributes.columns}
-              onChange={(value) => {
-                const newValue = clamp(value, layoutDefaults.minColumns, layoutDefaults.maxColumns);
-                setAttributes({
-                  columns: newValue
-                });
-              }}
-              min={layoutDefaults.minColumns}
-              max={layoutDefaults.maxColumns}
-            />
-          </div>
-          
-          <div className="block-actions fullwidth-field">
-            <Button
-              isPrimary
-              onClick={handleDone}
-            >
-              {doneBtnText}
-            </Button>
-          </div>
-          
-          {!isPremium && (
-            <div className="acfw-upsell-message" 
-              dangerouslySetInnerHTML={
-                { __html: sanitizeHtml(premiumUpsellMessage)}
-              } 
-            />
-          )}
-        </Placeholder>
-      ) : (
-        <ServerSideRender 
-          block={name}
-          attributes={attributes}
-          EmptyResponsePlaceholder={() => (
-            <Placeholder
-              label={couponsCustomerTexts.title}
-              className="acfw-block-coupons-grid acfw-block-coupons-customer"
-            >
-              {couponsCustomerTexts.emptyDesc}
+            <div className="order-by__selection one-half-col">
+              <SelectControl
+                label={orderTypeFieldTexts.label}
+                value={attributes.order_by}
+                options={orderByOptions}
+                onChange={(value) => setAttributes({order_by: value})}
+              />
+            </div>
+            <div className="items-count__range one-third-col">
+              <RangeControl
+                label={numberofItemsFieldLabel}
+                value={attributes.count}
+                onChange={(value) => {
+                  const newValue = clamp(value, layoutDefaults.minCount, layoutDefaults.maxCount);
+                  setAttributes({
+                    count: newValue
+                  });
+                }}
+                min={layoutDefaults.minCount}
+                max={layoutDefaults.maxCount}
+              />
+            </div>
+            <div className="column-count__range one-third-col">
+              <RangeControl
+                label={numberofColumnsFieldLabel}
+                value={attributes.columns}
+                onChange={(value) => {
+                  const newValue = clamp(value, layoutDefaults.minColumns, layoutDefaults.maxColumns);
+                  setAttributes({
+                    columns: newValue
+                  });
+                }}
+                min={layoutDefaults.minColumns}
+                max={layoutDefaults.maxColumns}
+              />
+            </div>
 
-              {!isPremium && (
-                <div className="acfw-upsell-message" 
-                  dangerouslySetInnerHTML={
-                    { __html: premiumUpsellMessage}
-                  } 
-                />
-              )}
-            </Placeholder>
-          )}
-        />
-      )}
+            <div className="block-actions fullwidth-field">
+              <Button
+                isPrimary
+                onClick={handleDone}
+              >
+                {doneBtnText}
+              </Button>
+            </div>
+
+            {!isPremium && (
+              <div className="acfw-upsell-message"
+                dangerouslySetInnerHTML={
+                  { __html: sanitizeHtml(premiumUpsellMessage)}
+                }
+              />
+            )}
+          </Placeholder>
+        ) : (
+          <ServerSideRender
+            block={name}
+            attributes={attributes}
+            EmptyResponsePlaceholder={() => (
+              <Placeholder
+                label={couponsCustomerTexts.title}
+                className="acfw-block-coupons-grid acfw-block-coupons-customer"
+              >
+                {couponsCustomerTexts.emptyDesc}
+
+                {!isPremium && (
+                  <div className="acfw-upsell-message"
+                    dangerouslySetInnerHTML={
+                      { __html: premiumUpsellMessage}
+                    }
+                  />
+                )}
+              </Placeholder>
+            )}
+          />
+        )}
+      </div>
     </>
   );
 };

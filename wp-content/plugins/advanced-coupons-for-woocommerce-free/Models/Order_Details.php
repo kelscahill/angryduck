@@ -309,7 +309,7 @@ class Order_Details implements Model_Interface {
      * @return bool True if empty, false otherwise.
      */
     private function _is_advanced_coupon_meta_data_empty( $key, $value ) {
-        if ( strpos( $key, '_acfw_' ) !== false ) {
+        if ( str_contains( $key, '_acfw_' ) ) {
             $value = maybe_unserialize( $value );
 
             if ( is_array( $value ) ) {

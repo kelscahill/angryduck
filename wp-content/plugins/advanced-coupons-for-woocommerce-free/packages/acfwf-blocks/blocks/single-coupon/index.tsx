@@ -24,6 +24,7 @@ export default {
   name: 'acfw/single-coupon',
 
   settings: {
+    apiVersion: 3,
     title: singleCouponTexts.title,
     icon: "tickets-alt",
     category: "advancedcoupons",

@@ -272,6 +272,7 @@ class General extends Base_Model implements Model_Interface {
      * Automatically remove coupon for failed/cancelled orders.
      *
      * @since 4.5.6
+     * @since 4.7.3 Skip subscription parent/renewal orders so recurring coupons survive failed-retry flows.
      * @access public
      *
      * @param int       $order_id    Order ID.
@@ -286,6 +287,15 @@ class General extends Base_Model implements Model_Interface {
             empty( $order->get_coupons() ) // Skip when the order has no coupons applied.
         ) {
             return;
+        }
+
+        // Skip subscription parent/renewal orders — recurring coupons must remain on the order
+        // even after failed-retry flows, otherwise the WC total disagrees with the payment capture.
+        if ( function_exists( 'wcs_get_subscriptions_for_order' ) ) {
+            $subscriptions = wcs_get_subscriptions_for_order( $order, array( 'order_type' => array( 'parent', 'renewal' ) ) );
+            if ( ! empty( $subscriptions ) ) {
+                return;
+            }
         }
 
         foreach ( $order->get_coupons() as $coupon_item ) {

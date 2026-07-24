@@ -37,6 +37,7 @@ import { ShipmentCosts } from './shipment-costs';
 import { ShippingDate } from './shipping-date';
 import { PackageDetails } from './package-details';
 import { ShippingSummary } from '../design-next/internal/shipping-summary';
+import { useDestinationAddressModal } from '../hooks/use-destination-address-modal';
 
 export const ShipmentDetails = withBoundary(
 	( { order, destinationAddress } ) => {
@@ -94,6 +95,8 @@ export const ShipmentDetails = withBoundary(
 		 *
 		 */
 		const hasAutoVerificationRunOnce = useRef( false );
+
+		useDestinationAddressModal( isAddressModalOpen, setIsAddressModalOpen );
 
 		useEffect(
 			() => {
@@ -171,7 +174,7 @@ export const ShipmentDetails = withBoundary(
 
 		const onCompleteCallback = () => {
 			setIsAddressModalOpen( false );
-			updateRates();
+			void updateRates( { preserveSelection: true } );
 		};
 
 		const currentLabel = getCurrentShipmentLabel();

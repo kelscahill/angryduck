@@ -1,5 +1,6 @@
 import combination_products_template from './templates/combination_products';
 import product_categories_template from './templates/product_categories';
+import product_brands_template from './templates/product_brands';
 import specific_products_template from './templates/specific_products';
 import any_products_template from './templates/any_products';
 import same_products_template from './templates/same_products';
@@ -58,6 +59,11 @@ export function toggle_block_data_type(e: JQuery.Event) {
 
     case 'product-categories':
       markup = product_categories_template(block_data ?? [], isDeal);
+      isPremium = true;
+      break;
+
+    case 'product-brands':
+      markup = product_brands_template(block_data ?? [], isDeal);
       isPremium = true;
       break;
 

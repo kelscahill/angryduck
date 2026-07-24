@@ -165,29 +165,27 @@ export const validateITN =
 		countryName: string;
 	} ) =>
 	( {
-		values: { itn, items, ...rest },
+		values: { itn, items, contentsType, ...rest },
 		errors,
 	}: CustomsValidationInput ): CustomsValidationInput => {
 		const localErrors = createLocalErrors( items );
-		const orderItems = getCurrentOrderItems();
-		const totalPrice = calculateTotalPrice( orderItems );
 
-		if ( ! itn && totalPrice > 2500 ) {
-			localErrors.itn = __(
-				'For shipments exceeding $2,500, obtaining a 14-digit AES ITN is required for U.S. export reporting.',
-				'woocommerce-shipping'
-			);
+		// Document mailings carry no itemized customs declaration, so the
+		// value/tariff-based ITN requirements don't apply. A manually
+		// entered ITN is still format-checked below.
+		const isDocuments = contentsType === 'documents';
+
+		if ( ! isDocuments ) {
+			const orderItems = getCurrentOrderItems();
+			const totalPrice = calculateTotalPrice( orderItems );
+
+			if ( ! itn && totalPrice > 2500 ) {
+				localErrors.itn = __(
+					'For shipments exceeding $2,500, obtaining a 14-digit AES ITN is required for U.S. export reporting.',
+					'woocommerce-shipping'
+				);
+			}
 		}
-
-		const valuesByProductId = calculateValuesByProductId( items );
-		const valuesByTariffNumber = calculateValuesByTariffNumber(
-			items,
-			valuesByProductId
-		);
-		const classesAbove2500usd = findClassesAbove2500usd(
-			items,
-			valuesByTariffNumber
-		);
 
 		if ( itn && itn.length > 0 ) {
 			if ( ! itnMatchingRegex.test( itn.trim() ) ) {
@@ -196,7 +194,17 @@ export const validateITN =
 					'woocommerce-shipping'
 				);
 			}
-		} else if ( country !== 'CA' ) {
+		} else if ( ! isDocuments && country !== 'CA' ) {
+			const valuesByProductId = calculateValuesByProductId( items );
+			const valuesByTariffNumber = calculateValuesByTariffNumber(
+				items,
+				valuesByProductId
+			);
+			const classesAbove2500usd = findClassesAbove2500usd(
+				items,
+				valuesByTariffNumber
+			);
+
 			if ( ! isEmpty( classesAbove2500usd ) ) {
 				localErrors.itn = sprintf(
 					// translators: %s is the tariff number
@@ -226,6 +234,7 @@ export const validateITN =
 			values: {
 				...rest,
 				items,
+				contentsType,
 				// Normalize the ITN before sending to the API
 				itn: itn ? normalizeITN( itn ) : itn,
 			},
@@ -238,10 +247,24 @@ export const validateItems =
 		originCountry,
 	}: Pick< Destination, 'country' > & { originCountry?: string } ) =>
 	( {
-		values: { items, ...rest },
+		values: { items, contentsType, ...rest },
 		errors,
 	}: CustomsValidationInput ): CustomsValidationInput => {
 		const localErrors = createLocalErrors( items );
+
+		// Document mailings carry no itemized customs declaration — the label
+		// omits the customs items entirely — so the per-item description/value/
+		// weight fields are hidden and must not block purchase.
+		if ( contentsType === 'documents' ) {
+			return {
+				errors: {
+					...errors,
+					...localErrors,
+				},
+				values: { items, contentsType, ...rest },
+			};
+		}
+
 		items.forEach(
 			( { description, weight, hsTariffNumber, price }, index ) => {
 				if ( ! description ) {
@@ -313,6 +336,6 @@ export const validateItems =
 				...errors,
 				...localErrors,
 			},
-			values: { items, ...rest },
+			values: { items, contentsType, ...rest },
 		};
 	};

@@ -112,7 +112,7 @@ class Admin extends Base_Model implements Model_Interface, Activatable_Interface
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta( $sql );
 
-        update_option( Plugin_Constants::STORE_CREDITS_DB_CREATED, 'yes' );
+        update_option( Plugin_Constants::STORE_CREDITS_DB_CREATED, 'yes', false );
     }
 
     /**
@@ -220,7 +220,9 @@ class Admin extends Base_Model implements Model_Interface, Activatable_Interface
             return;
         }
 
-        $non_sc_amount = wc_remove_number_precision( wc_add_number_precision( $sc_data['cart_total'] ) - wc_add_number_precision( $sc_data['amount'] ) ); // amount after deducting store credits from the order total.
+        // Use the order total (source of truth) rather than the session's cart_total snapshot, which can
+        // be stale when a dynamic tax plugin (e.g. TaxJar) recalculates taxes after SC was applied.
+        $non_sc_amount = (float) $order->get_total();
         $is_order_paid = in_array( $order->get_status(), array( 'processing', 'completed', 'refunded' ), true ) && ! empty( $order->get_date_paid() );
 
         if ( $is_order_paid ) {

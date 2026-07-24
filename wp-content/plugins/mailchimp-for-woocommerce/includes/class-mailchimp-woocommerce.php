@@ -256,6 +256,7 @@ class MailChimp_WooCommerce
         $this->loader->add_action('init', $plugin_admin, 'update_plugin_check', 13);
         $this->loader->add_action('admin_init', $plugin_admin, 'setup_survey_form');
         $this->loader->add_action('admin_footer', $plugin_admin, 'inject_sync_ajax_call');
+        $this->loader->add_filter('heartbeat_send', $plugin_admin, 'refresh_rest_nonce_on_heartbeat');
 
         // update MC store information when woocommerce general settings are saved
         $this->loader->add_action('woocommerce_settings_save_general', $plugin_admin, 'mailchimp_update_woo_settings');

@@ -5,7 +5,7 @@ Tags: woocommerce, pdf, ubl, invoices, packing slips
 Requires at least: 4.4
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 5.12.2
+Stable tag: 5.15.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -109,6 +109,46 @@ There's a setting on the Advanced tab of the settings page that allows you to to
 6. Set shop name, address, header logo, etc.
 
 == Changelog ==
+
+= 5.15.2 (2026-07-13) =
+- Fix: UBL Supplier `PartyLegalEntity` to omit empty values
+- Fix: Deprecated emoji styles callback in setup wizard
+- Fix: Add CII supplier registration number support
+- Fix: Relax the type hint to prevent a fatal error in `Main::apply_template_color_styles()`
+- Translations: Updated translation template (POT)
+
+= 5.15.1 (2026-07-08) =
+- Fix: Empty UBL `IssueDate` when document date meta is missing
+- Fix: EDI total reconciliation with emitted line amounts
+- Fix: Make cancelled/failed order email labels distinct between admin and customer
+- Translations: Updated translation template (POT)
+- Tested: Compatibility confirmed with WooCommerce 10.9
+
+= 5.15.0 (2026-06-29) =
+- New: Add global template color setting
+- New: Add BIC support to UBL payment means
+- New: Improve Peppol endpoint derivation from VAT numbers
+- Fix: Normalize UBL/Peppol Credit Note signs
+- Fix: Validate order access before generating shortcode links
+- Fix: Automatic “Mark as printed” options
+- Translations: Updated translation template (POT)
+- Tested: Compatibility confirmed with WooCommerce 10.9
+
+= 5.14.0 (2026-06-08) =
+- New: Add partial invoice number search setting
+- Fix: Empty order item prices when WooCommerce subtotal is filtered
+- Fix: Prevent fatal when REST invoice number lookup returns bulk document
+- Fix: Document number display setting not respected in preview
+- Fix: Bulk Document: “Mark as printed” not applied to all orders in bulk export
+- Translations: Updated translation template (POT)
+
+= 5.13.0 (2026-06-01) =
+- New: Add email attachment success/failure logging to order notes
+- New: Add WC EU VAT Number plugin support
+- Fix: XML action button color in order meta box
+- Fix: Include account number in EDI payment means data
+- Translations: Updated translation template (POT)
+- Tested: Compatibility confirmed with WooCommerce 10.8
 
 = 5.12.2 (2026-05-25) =
 - Fix: UBL payable amount for unpaid renewal orders

@@ -76,14 +76,14 @@ export const ScanFormHistoryList = () => {
 
 				<Text>
 					{ __(
-						'View and download previously created USPS® SCAN Forms.',
+						'Create SCAN Forms from the orders page, then return here to view and download them.',
 						'woocommerce-shipping'
 					) }
 				</Text>
 			</Flex>
 
 			<TableCard
-				className="wcshipping-settings__card"
+				className="wcshipping-settings__card scan-form-history__card"
 				title={ __( 'SCAN Forms', 'woocommerce-shipping' ) }
 				rows={ tableData.rows }
 				headers={ tableHeaders }
@@ -94,11 +94,7 @@ export const ScanFormHistoryList = () => {
 				onQueryChange={ onQueryChange }
 				showMenu={ false }
 				emptyMessage={
-					error ??
-					__(
-						'No SCAN Forms found. Create your first SCAN Form from the orders page.',
-						'woocommerce-shipping'
-					)
+					error ?? __( 'No SCAN Forms yet.', 'woocommerce-shipping' )
 				}
 			/>
 

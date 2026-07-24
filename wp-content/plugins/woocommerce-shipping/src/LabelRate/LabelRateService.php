@@ -435,6 +435,26 @@ class LabelRateService {
 		unset( $payload['destination']['country_code'] );
 		unset( $payload['destination']['state_code'] );
 
+		/**
+		 * Saved-address metadata is useful in the client, but Connect Server's
+		 * rate address schema rejects these fields. Strip them defensively here
+		 * so all rate callers share the same wire-safe payload shape.
+		 */
+		foreach ( array( 'origin', 'destination' ) as $address_key ) {
+			if ( ! isset( $payload[ $address_key ] ) || ! is_array( $payload[ $address_key ] ) ) {
+				continue;
+			}
+
+			unset(
+				$payload[ $address_key ]['first_name'],
+				$payload[ $address_key ]['last_name'],
+				$payload[ $address_key ]['default_address'],
+				$payload[ $address_key ]['is_verified'],
+				$payload[ $address_key ]['is_approved'],
+				$payload[ $address_key ]['default_return_address']
+			);
+		}
+
 		return $payload;
 	}
 

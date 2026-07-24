@@ -24,6 +24,7 @@ export default {
   name: 'acfw/coupons-category',
 
   settings: {
+    apiVersion: 3,
     title: couponsCategoryTexts.title,
     icon: "tickets-alt",
     category: "advancedcoupons",

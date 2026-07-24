@@ -490,6 +490,25 @@ class Advanced_Coupon extends \WC_Coupon {
     }
 
     /**
+     * Get the BOGO "when deal no longer applies" behaviour setting.
+     *
+     * Returns 'remove' when the coupon is configured to remove the free/deal item
+     * from the cart once the deal stops qualifying, or 'keep' (the default) to
+     * revert the item to its original price while leaving it in the cart.
+     *
+     * @since 4.7.4
+     * @access public
+     *
+     * @return string Either 'keep' or 'remove'.
+     */
+    public function get_bogo_remove_unqualified_deal() {
+        $bogo_deals = $this->get_advanced_prop( 'bogo_deals', array() );
+        $value      = is_array( $bogo_deals ) && isset( $bogo_deals['remove_unqualified_deal'] ) ? $bogo_deals['remove_unqualified_deal'] : 'keep';
+
+        return in_array( $value, array( 'keep', 'remove' ), true ) ? $value : 'keep';
+    }
+
+    /**
      * Get string meta value.
      * Add support for 3rd part translation plugins.
      *

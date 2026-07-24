@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Button, Tooltip } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { info } from '@wordpress/icons';
@@ -48,6 +49,8 @@ interface ReturnLabelButtonProps {
 	};
 	selections: Record< string, ShipmentItem[] >;
 	setSelection: ( selections: Record< string, ShipmentItem[] > ) => void;
+	className?: string;
+	children?: ReactNode;
 }
 
 export const ReturnLabelButton = ( {
@@ -61,6 +64,8 @@ export const ReturnLabelButton = ( {
 	packages,
 	selections,
 	setSelection,
+	className,
+	children,
 }: ReturnLabelButtonProps ) => {
 	const { labels } = useLabelPurchaseContext();
 
@@ -323,8 +328,10 @@ export const ReturnLabelButton = ( {
 						icon={ info }
 						iconPosition="right"
 						key="return-label"
+						className={ className }
 					>
-						{ __( 'Return label', 'woocommerce-shipping' ) }
+						{ children ??
+							__( 'Return label', 'woocommerce-shipping' ) }
 					</Button>
 				</span>
 			</Tooltip>
@@ -336,8 +343,9 @@ export const ReturnLabelButton = ( {
 			variant="tertiary"
 			onClick={ createReturnLabel }
 			key="return-label"
+			className={ className }
 		>
-			{ __( 'Return label', 'woocommerce-shipping' ) }
+			{ children ?? __( 'Return label', 'woocommerce-shipping' ) }
 		</Button>
 	);
 };

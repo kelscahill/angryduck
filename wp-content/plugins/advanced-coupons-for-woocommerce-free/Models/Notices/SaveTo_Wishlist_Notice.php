@@ -79,7 +79,7 @@ class SaveTo_Wishlist_Notice extends Base_Model implements Model_Interface {
             $days_since_install = $this->_helper_functions->get_days_since_install();
             if ( $days_since_install > 20 ) {
                 // Existing install -- show immediately.
-                update_option( Plugin_Constants::SAVETO_NOTICE_SHOW_AFTER, time() );
+                update_option( Plugin_Constants::SAVETO_NOTICE_SHOW_AFTER, time(), false );
                 $show_after = time();
             } else {
                 // New install -- delay 20 days from install date.
@@ -90,7 +90,7 @@ class SaveTo_Wishlist_Notice extends Base_Model implements Model_Interface {
                 } else {
                     $show_after_time = time() + ( 20 * DAY_IN_SECONDS );
                 }
-                update_option( Plugin_Constants::SAVETO_NOTICE_SHOW_AFTER, $show_after_time );
+                update_option( Plugin_Constants::SAVETO_NOTICE_SHOW_AFTER, $show_after_time, false );
                 return;
             }
         }
@@ -129,7 +129,7 @@ class SaveTo_Wishlist_Notice extends Base_Model implements Model_Interface {
         }
 
         // WooCommerce subpages (orders, settings, status, etc.).
-        if ( false !== strpos( $screen->id, 'woocommerce' ) ) {
+        if ( str_contains( $screen->id, 'woocommerce' ) ) {
             return true;
         }
 
@@ -139,7 +139,7 @@ class SaveTo_Wishlist_Notice extends Base_Model implements Model_Interface {
         }
 
         // ACFW own pages (dashboard, settings, etc.).
-        if ( false !== strpos( $screen->id, 'acfw-' ) ) {
+        if ( str_contains( $screen->id, 'acfw-' ) ) {
             return true;
         }
 
@@ -181,7 +181,7 @@ class SaveTo_Wishlist_Notice extends Base_Model implements Model_Interface {
             wp_send_json_error( __( 'Insufficient permissions.', 'advanced-coupons-for-woocommerce-free' ) );
         }
 
-        update_option( Plugin_Constants::SAVETO_NOTICE_DISMISSED, 'yes' );
+        update_option( Plugin_Constants::SAVETO_NOTICE_DISMISSED, 'yes', false );
         wp_send_json_success();
     }
 

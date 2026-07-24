@@ -73,7 +73,8 @@ class Elementor extends Base_Model implements Model_Interface {
         }
 
         // Parse and search for woocommerce-checkout-page widget in the Elementor data.
-        $data = json_decode( $elementor_data, true );
+        // Some hosts (e.g. Cloudways with object cache) return _elementor_data already decoded as an array.
+        $data = is_array( $elementor_data ) ? $elementor_data : json_decode( $elementor_data, true );
         if ( ! is_array( $data ) ) {
             return false;
         }

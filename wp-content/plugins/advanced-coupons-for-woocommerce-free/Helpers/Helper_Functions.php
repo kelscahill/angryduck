@@ -266,6 +266,40 @@ class Helper_Functions {
     }
 
     /**
+     * Get the active product brand taxonomy slug.
+     *
+     * Detects the registered brand taxonomy used by the store, checking the common
+     * brand plugin slugs in priority order. Returns an empty string when none is found.
+     *
+     * @since 4.7.4
+     * @access public
+     *
+     * @return string Registered brand taxonomy slug, or empty string if none is detected.
+     */
+    public function get_product_brand_taxonomy() {
+        $candidates = apply_filters(
+            'acfw_product_brand_taxonomy_candidates',
+            array(
+                'product_brand',        // WooCommerce core brands & WooCommerce Brands extension.
+                'pwb-brand',            // Perfect Brands for WooCommerce.
+                'yith_product_brand',   // YITH WooCommerce Brands Add-on.
+                'product_brands',       // Brands for WooCommerce.
+                'berocket_brand',       // BeRocket Brands.
+            )
+        );
+
+        $taxonomy = '';
+        foreach ( $candidates as $candidate ) {
+            if ( taxonomy_exists( $candidate ) ) {
+                $taxonomy = $candidate;
+                break;
+            }
+        }
+
+        return apply_filters( 'acfw_product_brand_taxonomy', $taxonomy );
+    }
+
+    /**
      * This function is an alias for WP get_option(), but will return the default value if option value is empty or invalid.
      *
      * @since 1.0
@@ -779,7 +813,7 @@ class Helper_Functions {
                     $o['options'] = $temp;
                 }
 
-                if ( isset( $o['class'] ) && strpos( $o['class'], 'wc_input_price' ) !== false ) {
+                if ( isset( $o['class'] ) && str_contains( $o['class'], 'wc_input_price' ) ) {
                     $o['type'] = 'price';
                 }
 
@@ -1258,7 +1292,8 @@ class Helper_Functions {
      */
     public function get_contact_support_link() {
         if ( $this->has_paid_plugin_active() ) {
-            return $this->get_utm_url( 'support/', 'acfwf', 'dashboard', 'contactsupportlink' );
+            // Use 'contact-us/' path as 'support/' redirects to the Knowledge Base page.
+            return $this->get_utm_url( 'contact-us/', 'acfwf', 'dashboard', 'contactsupportlink' );
         }
 
         return 'https://wordpress.org/support/plugin/advanced-coupons-for-woocommerce-free/';
@@ -1412,7 +1447,7 @@ class Helper_Functions {
             $post_type = sanitize_text_field( wp_unslash( $_GET['post_type'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         }
 
-        return strpos( $screen->id, 'coupons_page_acfw' ) !== false || 'shop_coupon' === $post_type;
+        return str_contains( $screen->id, 'coupons_page_acfw' ) || 'shop_coupon' === $post_type;
     }
 
     /**

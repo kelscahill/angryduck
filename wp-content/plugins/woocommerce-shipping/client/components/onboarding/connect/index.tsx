@@ -26,6 +26,7 @@ interface ContainerProps {
 	currency: string;
 	isCountrySupported: boolean;
 	isCurrencySupported: boolean;
+	isTosOnly?: boolean;
 }
 
 const Connect: React.FC< ContainerProps > = ( {
@@ -34,6 +35,7 @@ const Connect: React.FC< ContainerProps > = ( {
 	currency,
 	isCountrySupported,
 	isCurrencySupported,
+	isTosOnly = false,
 } ) => {
 	const [ isConnecting, setIsConnecting ] = useState( false );
 	const canConnect = ! ( isCountrySupported && isCurrencySupported );
@@ -50,8 +52,9 @@ const Connect: React.FC< ContainerProps > = ( {
 			can_connect: canConnect,
 			is_country_supported: isCountrySupported,
 			is_currency_supported: isCurrencySupported,
+			is_tos_only: isTosOnly,
 		} );
-	}, [ canConnect, isCountrySupported, isCurrencySupported ] );
+	}, [ canConnect, isCountrySupported, isCurrencySupported, isTosOnly ] );
 
 	useEffect( () => {
 		if ( error ) {
@@ -64,20 +67,32 @@ const Connect: React.FC< ContainerProps > = ( {
 	const handleOnClick = useCallback( async () => {
 		setIsConnecting( true );
 
-		recordEvent( 'onboarding_connect_component_connect_button_clicked' );
+		recordEvent( 'onboarding_connect_component_connect_button_clicked', {
+			is_tos_only: isTosOnly,
+		} );
 
 		await dispatch( WPCOMConnectionStore ).createConnection( {
 			payload: {
 				returnUrl: authReturnUrl,
-				source: 'onboarding-connect-button',
+				source: isTosOnly
+					? 'onboarding-tos-only-button'
+					: 'onboarding-connect-button',
 			},
 		} );
 
 		setIsConnecting( false );
-	}, [ authReturnUrl ] );
+	}, [ authReturnUrl, isTosOnly ] );
+
+	const buttonLabel = isTosOnly
+		? __( 'Enable WooCommerce Shipping', 'woocommerce-shipping' )
+		: __( 'Connect your store', 'woocommerce-shipping' );
 
 	return (
-		<div className="wcshipping-onboarding-connect">
+		<div
+			className={ `wcshipping-onboarding-connect${
+				isTosOnly ? ' wcshipping-onboarding-connect--tos-only' : ''
+			}` }
+		>
 			{ ( ! isCountrySupported || ! isCurrencySupported ) && (
 				<StoreSettingsRequirements
 					isCountrySupported={ isCountrySupported }
@@ -90,12 +105,12 @@ const Connect: React.FC< ContainerProps > = ( {
 			<Button
 				className="wcshipping-onboarding-connect__button"
 				variant="primary"
-				disabled={ canConnect || isConnecting }
+				disabled={ ( ! isTosOnly && canConnect ) || isConnecting }
 				onClick={ handleOnClick }
 				isBusy={ isConnecting || !! redirectUrl }
 			>
-				{ __( 'Connect your store', 'woocommerce-shipping' ) }
-				<Icon icon="external" />
+				{ buttonLabel }
+				{ ! isTosOnly && <Icon icon="external" /> }
 			</Button>
 
 			{ error && (
@@ -112,25 +127,45 @@ const Connect: React.FC< ContainerProps > = ( {
 				className="wcshipping-onboarding-connect__footnote"
 				size="footnote"
 			>
-				{ createInterpolateElement(
-					__(
-						'By clicking Connect your store, you agree to the <tos>Terms of Service<icon /></tos> and have read our <privacy_policy>Privacy Policy<icon /></privacy_policy>.',
-						'woocommerce-shipping'
-					),
-					{
-						tos: (
-							<ExternalLink href="https://wordpress.com/tos/">
-								{ ' ' }
-							</ExternalLink>
-						),
-						privacy_policy: (
-							<ExternalLink href="https://automattic.com/privacy/">
-								{ ' ' }
-							</ExternalLink>
-						),
-						icon: <Icon icon="external" />,
-					}
-				) }
+				{ isTosOnly
+					? createInterpolateElement(
+							__(
+								'By clicking Enable WooCommerce Shipping, you agree to the <tos>Terms of Service<icon /></tos> and have read our <privacy_policy>Privacy Policy<icon /></privacy_policy>.',
+								'woocommerce-shipping'
+							),
+							{
+								tos: (
+									<ExternalLink href="https://wordpress.com/tos/">
+										{ ' ' }
+									</ExternalLink>
+								),
+								privacy_policy: (
+									<ExternalLink href="https://automattic.com/privacy/">
+										{ ' ' }
+									</ExternalLink>
+								),
+								icon: <Icon icon="external" />,
+							}
+					  )
+					: createInterpolateElement(
+							__(
+								'By clicking Connect your store, you agree to the <tos>Terms of Service<icon /></tos> and have read our <privacy_policy>Privacy Policy<icon /></privacy_policy>.',
+								'woocommerce-shipping'
+							),
+							{
+								tos: (
+									<ExternalLink href="https://wordpress.com/tos/">
+										{ ' ' }
+									</ExternalLink>
+								),
+								privacy_policy: (
+									<ExternalLink href="https://automattic.com/privacy/">
+										{ ' ' }
+									</ExternalLink>
+								),
+								icon: <Icon icon="external" />,
+							}
+					  ) }
 			</Text>
 		</div>
 	);

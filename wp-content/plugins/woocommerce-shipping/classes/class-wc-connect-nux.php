@@ -537,14 +537,14 @@ class WC_Connect_Nux {
 
 		$country = WC()->countries->get_base_country();
 		/* translators: %s: list of features, potentially comma separated */
-		$description_base = __( "Connect your store to activate <strong>WooCommerce Shipping</strong>. Once you connect your store to WordPress.com, you'll have access to %s.", 'woocommerce-shipping' );
+		$description_base = __( 'Your store is connected to WordPress.com. Accept our terms to activate <strong>WooCommerce Shipping</strong> and access %s.', 'woocommerce-shipping' );
 		$feature_list     = $this->get_feature_list_for_country( $country );
 
 		$this->show_nux_banner(
 			array(
 				'source'            => $source,
 				'description'       => sprintf( $description_base, $feature_list ),
-				'button_text'       => __( 'Connect', 'woocommerce-shipping' ),
+				'button_text'       => __( 'Enable WooCommerce Shipping', 'woocommerce-shipping' ),
 				'button_link'       => add_query_arg(
 					array(
 						'wcshipping-nux-tos' => 'accept',

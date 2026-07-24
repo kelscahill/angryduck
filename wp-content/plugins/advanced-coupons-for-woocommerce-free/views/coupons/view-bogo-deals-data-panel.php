@@ -79,6 +79,22 @@ do_action( 'acfw_before_display_edit_bogo_panel', $bogo_deals ); ?>
             </div>
         </div>
 
+        <div class="bogo-type-form bogo-settings-field bogo-remove-unqualified-deal-field">
+            <label><?php esc_html_e( 'When the deal no longer applies:', 'advanced-coupons-for-woocommerce-free' ); ?></label>
+            <div class="radio-group-wrap">
+                <label>
+                    <input type="radio" name="bogo_remove_unqualified_deal" value="keep" <?php checked( $remove_unqualified_deal, 'keep' ); ?>>
+                    <span><?php esc_html_e( 'Keep the item in the cart at its original price', 'advanced-coupons-for-woocommerce-free' ); ?></span>
+                    <span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Default. When the deal stops qualifying, the deal item stays in the cart and reverts to its original price.', 'advanced-coupons-for-woocommerce-free' ); ?>"></span>
+                </label>
+                <label>
+                    <input type="radio" name="bogo_remove_unqualified_deal" value="remove" <?php checked( $remove_unqualified_deal, 'remove' ); ?>>
+                    <span><?php esc_html_e( 'Remove the free item from the cart', 'advanced-coupons-for-woocommerce-free' ); ?></span>
+                    <span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'When the deal stops qualifying, the deal-granted quantity is removed from the cart instead of reverting to the original price. Quantities the customer added independently of the deal are kept.', 'advanced-coupons-for-woocommerce-free' ); ?>"></span>
+                </label>
+            </div>
+        </div>
+
         <div class="notice-option">
             <div class="bogo-settings-field">
                 <label><?php esc_html_e( 'Notice shown when BOGO deal is eligible, but "Get" products are not in the cart:', 'advanced-coupons-for-woocommerce-free' ); ?></label>

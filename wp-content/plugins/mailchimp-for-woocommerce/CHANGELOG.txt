@@ -1,4 +1,6 @@
 == Changelog ==
+= 6.1.1 =
+* Rest api updates
 = 6.1 =
 * Adds Order attributes in WooCommerce Orders UI
 * Adds data_mode request body parameter and header for initial sync requests

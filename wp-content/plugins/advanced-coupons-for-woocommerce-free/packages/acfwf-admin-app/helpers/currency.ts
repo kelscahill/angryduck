@@ -49,7 +49,7 @@ export function numberFormat(
     }
   }
 
-  return `${whole}${decimalSeparator}${decimal}`;
+  return decimal !== undefined ? `${whole}${decimalSeparator}${decimal}` : whole;
 }
 
 /**

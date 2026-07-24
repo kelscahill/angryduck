@@ -93,11 +93,12 @@ class Store_API_Extend_Endpoint {
         $store_credit_notice  = \ACFWF()->Store_Credits_Checkout->is_store_credit_discount_removed();
 
         return array(
-            'balance'      => $store_credit_balance,
-            'balance_text' => wc_price( $store_credit_balance ),
-            'amount'       => $store_credit_amount,
-            'amount_text'  => wc_price( $store_credit_amount ),
-            'notice'       => $store_credit_notice,
+            'balance'                => $store_credit_balance,
+            'balance_text'           => wc_price( $store_credit_balance ),
+            'amount'                 => $store_credit_amount,
+            'amount_text'            => wc_price( $store_credit_amount ),
+            'notice'                 => $store_credit_notice,
+            'is_allow_store_credits' => \ACFWF()->Store_Credits_Checkout->is_allow_store_credits(),
         );
     }
 

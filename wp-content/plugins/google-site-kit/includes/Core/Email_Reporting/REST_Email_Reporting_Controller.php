@@ -6,6 +6,8 @@
  * @copyright 2025 Google LLC
  * @license   https://www.apache.org/licenses/LICENSE-2.0 Apache License 2.0
  * @link      https://sitekit.withgoogle.com
+ *
+ * phpcs:disable PHPCS.Commenting.RequireDocTagDescription -- Pre-existing violations; tracked for follow-up cleanup.
  */
 
 namespace Google\Site_Kit\Core\Email_Reporting;
@@ -402,7 +404,7 @@ class REST_Email_Reporting_Controller {
 			$user->user_email,
 			$template_data['subject'],
 			$html_content,
-			array(),
+			$this->email_sender->build_headers(),
 			$text_content
 		);
 
@@ -597,7 +599,7 @@ class REST_Email_Reporting_Controller {
 			),
 			'body'                   => Content_Map::get_body( 'invitation-email' ),
 			'inviter_email'          => $inviter_email,
-			'learn_more_url'         => add_query_arg( 'doc', 'email-reporting', 'https://sitekit.withgoogle.com/support/' ),
+			'learn_more_url'         => 'https://sitekit.withgoogle.com/support/?doc=email-reporting',
 			'primary_call_to_action' => array(
 				'label' => __( 'Get your report', 'google-site-kit' ),
 				'url'   => $this->golinks->get_url( 'manage-subscription-email-reporting' ),

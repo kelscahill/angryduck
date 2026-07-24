@@ -81,7 +81,14 @@ export default function () {
   // Get data from Store API.
   const { acfwf_block } = store.getCartData().extensions;
   if (!acfwf_block || !acfwf_block.store_credits) return null; // Wait until the data is loaded, this is due to Store API is asynchronous.
-  const { balance, balance_text } = acfwf_block.store_credits;
+  const { balance, balance_text, is_allow_store_credits } = acfwf_block.store_credits;
+
+  // Hide the redemption form when store credits are not allowed for the current cart. Read live so it
+  // reacts to cart updates (e.g. the "hide store credits when a coupon is applied" setting taking effect
+  // after a coupon is applied via AJAX, without a page reload).
+  if (!is_allow_store_credits) {
+    return null;
+  }
 
   // Return null if customer has no balance and hide_store_credits_on_zero_balance is set to yes.
   if (!balance && 'yes' === hide_store_credits_on_zero_balance) {

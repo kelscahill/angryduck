@@ -1455,7 +1455,8 @@ class Loader {
 			$this->api_client,
 			$logger,
 			$label_print_service,
-			$this->shipping_fulfillments_data_store
+			$this->shipping_fulfillments_data_store,
+			$fulfillments_service
 		) )->register_routes();
 		$rest_label_preview_controller = new LabelPreviewRESTController( $label_print_service, $logger );
 		$rest_label_preview_controller->register_routes();

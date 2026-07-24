@@ -23,6 +23,29 @@ class FulfillmentsService {
 	}
 
 	/**
+	 * Get a fulfillment by ID.
+	 *
+	 * @param int $fulfillment_id Fulfillment entity ID.
+	 * @return ShippingFulfillment|null Fulfillment object if found, null otherwise.
+	 */
+	public function get_fulfillment_by_id( int $fulfillment_id ): ?ShippingFulfillment {
+		if ( $fulfillment_id <= 0 || ! method_exists( $this->data_store, 'read' ) ) {
+			return null;
+		}
+
+		$fulfillment = new ShippingFulfillment();
+		$fulfillment->set_id( $fulfillment_id );
+
+		try {
+			$this->data_store->read( $fulfillment );
+		} catch ( \Throwable $error ) {
+			return null;
+		}
+
+		return $fulfillment;
+	}
+
+	/**
 	 * Get the fulfillments for an order in shipments format.
 	 *
 	 * This method converts fulfillments back to shipments format for compatibility

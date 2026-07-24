@@ -433,7 +433,11 @@
 
 		// Remove Initial Sync Banner oon dismiss
 		$('#setting-error-mailchimp-woocommerce-initial-sync-end .notice-dismiss').click(function(e){
-			$.get(phpVars.removeReviewBannerRestUrl, [], function(response){
+			$.ajax({
+				url: phpVars.removeReviewBannerRestUrl,
+				method: 'GET',
+				beforeSend: function (xhr) { xhr.setRequestHeader('X-WP-Nonce', phpVars.restNonce); }
+			}).done(function (response) {
 				console.log(response);
 			});
 		});

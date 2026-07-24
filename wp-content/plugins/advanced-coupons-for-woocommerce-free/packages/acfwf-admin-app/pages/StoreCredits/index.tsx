@@ -2,7 +2,8 @@
 
 // Libraries
 import { useHistory, useLocation } from 'react-router-dom';
-import { Tabs } from 'antd';
+import { Button, Card, Tabs } from 'antd';
+import { LockFilled } from '@ant-design/icons';
 
 // Components
 import AdminHeader from '../../components/AdminHeader';
@@ -36,6 +37,25 @@ interface ITab {
 
 // #region [Component] =================================================================================================
 
+const BulkAdjustUpsell = () => {
+  const upsell = acfwAdminApp?.store_credits_page?.bulk_adjust_upsell;
+
+  if (!upsell) {
+    return null;
+  }
+
+  return (
+    <Card className="bulk-adjust-upsell">
+      <LockFilled />
+      <h2>{upsell.title}</h2>
+      <p>{upsell.desc}</p>
+      <Button type="primary" href={upsell.cta_url} target="_blank" rel="noopener noreferrer">
+        {upsell.cta}
+      </Button>
+    </Card>
+  );
+};
+
 const TabSwitch = (props: any) => {
   const { tabKey } = props;
 
@@ -50,6 +70,19 @@ const TabSwitch = (props: any) => {
       );
     case 'automations':
       return <StoreCreditAutomations />;
+    case 'bulk-adjust': {
+      // Reach the global through `window` so a missing `acfwpElements` (premium
+      // plugin inactive) doesn't throw a ReferenceError under strict-mode ESM.
+      const acfwp = (window as any).acfwpElements;
+      const isPremiumActive = parseInt(acfwp?.is_acfwp_active, 10);
+      const StoreCreditsBulkAdjust = acfwp?.StoreCreditsBulkAdjust;
+
+      if (isPremiumActive && StoreCreditsBulkAdjust) {
+        return <StoreCreditsBulkAdjust />;
+      }
+
+      return <BulkAdjustUpsell />;
+    }
   }
 
   return null;

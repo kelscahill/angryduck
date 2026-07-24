@@ -71,9 +71,12 @@ class CheckoutController {
 
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_assets' ) );
 		add_action( 'woocommerce_after_calculate_totals', array( $this, 'maybe_display_address_validation_notices' ) );
+		add_action( 'woocommerce_after_checkout_billing_form', array( $this, 'print_billing_address_validation_notice_container' ) );
+		add_action( 'woocommerce_after_checkout_shipping_form', array( $this, 'print_shipping_address_validation_notice_container' ) );
 		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'maybe_set_destination_normalized_order_meta' ) );
 		add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'maybe_set_destination_normalized_order_meta' ) );
 		add_filter( 'woocommerce_shipping_packages', array( $this, 'maybe_add_address_validation_notices' ) );
+		add_filter( 'woocommerce_update_order_review_fragments', array( $this, 'add_address_validation_notice_fragment' ) );
 	}
 
 	/**
@@ -90,6 +93,36 @@ class CheckoutController {
 			array(),
 			Utils::get_file_version( WCSHIPPING_PLUGIN_DIST_DIR . 'woocommerce-shipping-checkout-address-validation.css' )
 		);
+
+		if ( ! has_block( 'woocommerce/checkout' ) ) {
+			$address_validation_handle = 'woocommerce-shipping-checkout-address-validation-classic';
+			$script_asset_path         = WCSHIPPING_PLUGIN_DIST_DIR . $address_validation_handle . '.asset.php';
+			$script_asset              = file_exists( $script_asset_path )
+				? require $script_asset_path : array(); // nosemgrep: audit.php.lang.security.file.inclusion-arg --- This is a safe file inclusion.
+			$script_path               = WCSHIPPING_PLUGIN_DIST_DIR . $address_validation_handle . '.js';
+			// The classic script listens to WooCommerce checkout jQuery events.
+			$script_dependencies = array_values(
+				array_unique(
+					array_merge(
+						array( 'jquery' ),
+						Utils::filter_dev_dependencies( $script_asset['dependencies'] ?? array() )
+					)
+				)
+			);
+			$script_version      = $script_asset['version'] ?? Utils::get_file_version( $script_path );
+
+			wp_enqueue_script(
+				$address_validation_handle,
+				Utils::get_enqueue_base_url() . $address_validation_handle . '.js',
+				$script_dependencies,
+				$script_version,
+				array(
+					'in_footer' => true,
+				)
+			);
+
+			wp_set_script_translations( $address_validation_handle, 'woocommerce-shipping', WCSHIPPING_PLUGIN_DIR . '/languages' );
+		}
 
 		$handle = 'wcshipping-checkout';
 
@@ -123,8 +156,110 @@ class CheckoutController {
 			return;
 		}
 
+		if ( CheckoutService::is_update_order_review_request() ) {
+			return;
+		}
+
 		$this->notifier->print_notices();
 		$this->notifier->clear_notices();
+	}
+
+	/**
+	 * Print the classic checkout billing target for address validation notices.
+	 */
+	public function print_billing_address_validation_notice_container() {
+		$this->print_address_validation_notice_container_for_address_type( 'billing' );
+	}
+
+	/**
+	 * Print the classic checkout shipping target for address validation notices.
+	 */
+	public function print_shipping_address_validation_notice_container() {
+		$this->print_address_validation_notice_container_for_address_type( 'shipping' );
+	}
+
+	/**
+	 * Print a classic checkout target for address validation notices.
+	 */
+	public function print_address_validation_notice_container() {
+		$this->print_shipping_address_validation_notice_container();
+	}
+
+	/**
+	 * Print a classic checkout target for a given address type.
+	 *
+	 * @param string $address_type The checkout address section.
+	 */
+	private function print_address_validation_notice_container_for_address_type( string $address_type ) {
+		if ( ! CheckoutService::is_address_validation_enabled() || ! CheckoutService::is_checkout_page() ) {
+			return;
+		}
+
+		printf(
+			'<div class="wcshipping-checkout-address-validation-notices wcshipping-checkout-address-validation-notices--%s" aria-live="polite"></div>',
+			esc_attr( $address_type )
+		);
+	}
+
+	/**
+	 * Add address validation notices as a checkout fragment during update_order_review.
+	 *
+	 * WooCommerce core marks update_order_review as failed whenever the global
+	 * notice queue has any message. Returning WC Shipping's soft address
+	 * validation notices as a dedicated fragment keeps the classic checkout
+	 * response successful and avoids core's failure branch re-blurring fields.
+	 *
+	 * @param array $fragments Checkout fragments.
+	 *
+	 * @return array
+	 */
+	public function add_address_validation_notice_fragment( array $fragments ): array {
+		if (
+			! CheckoutService::is_address_validation_enabled()
+			|| ! CheckoutService::is_classic_checkout()
+			|| ! CheckoutService::is_update_order_review_request()
+		) {
+			return $fragments;
+		}
+
+		$address_type = $this->get_classic_notice_address_type();
+		$selector     = sprintf( '.wcshipping-checkout-address-validation-notices--%s', $address_type );
+
+		$fragments[ $selector ] = sprintf(
+			'<div class="wcshipping-checkout-address-validation-notices wcshipping-checkout-address-validation-notices--%1$s" aria-live="polite">%2$s</div>',
+			esc_attr( $address_type ),
+			$this->notifier->get_notices_html( 'address-validation' )
+		);
+
+		$this->notifier->clear_notices( 'address-validation' );
+
+		return $fragments;
+	}
+
+	/**
+	 * Get the active classic checkout address section for address validation notices.
+	 *
+	 * @return string
+	 */
+	private function get_classic_notice_address_type(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies checkout updates.
+		if ( ! isset( $_POST['post_data'] ) ) {
+			return 'billing';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce verifies checkout updates and the decoded post data is sanitized before parsing.
+		$sanitized_post_data = wc_clean( urldecode( wp_unslash( $_POST['post_data'] ) ) );
+		$post_data           = array();
+		parse_str( $sanitized_post_data, $post_data );
+
+		if (
+			isset( $post_data['ship_to_different_address'] )
+			&& true === wc_string_to_bool( $post_data['ship_to_different_address'] )
+		) {
+			return 'shipping';
+		}
+
+		return 'billing';
 	}
 
 	/**

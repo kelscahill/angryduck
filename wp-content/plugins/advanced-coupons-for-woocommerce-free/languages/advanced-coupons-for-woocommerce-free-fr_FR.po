@@ -91,7 +91,7 @@ msgid "[coupon-name]"
 msgstr "[nom-du-code-promo]"
 
 #. Translators: %1$s: Category slug, %2$s: Category name.
-#: Models/Cart_Conditions.php:78
+#: Models/Cart_Conditions.php:79
 #, php-format
 msgid "[Slug: %1$s] %2$s"
 msgstr "[Slug: %1$s] %2$s"
@@ -101,7 +101,7 @@ msgstr "[Slug: %1$s] %2$s"
 msgid "A valid license is required to update."
 msgstr "Une licence valide est requise pour la mise à jour."
 
-#: Models/Script_Loader.php:582
+#: Models/Script_Loader.php:585
 msgid "A → Z"
 msgstr "A → Z"
 
@@ -133,7 +133,7 @@ msgstr "Activer le plugin"
 msgid "Activate plugin"
 msgstr "Activer le plugin"
 
-#: advanced-coupons-for-woocommerce-free.php:244
+#: advanced-coupons-for-woocommerce-free.php:246
 msgid "Activate this plugin"
 msgstr "Activer ce plugin"
 
@@ -142,8 +142,8 @@ msgstr "Activer ce plugin"
 msgid "Active"
 msgstr "Activé"
 
-#: Models/Admin_App.php:749
-#: Models/Script_Loader.php:515
+#: Models/Admin_App.php:759
+#: Models/Script_Loader.php:518
 msgid "Activity"
 msgstr "Activité"
 
@@ -168,11 +168,11 @@ msgstr "Ajouter une catégorie"
 msgid "Add New"
 msgstr "Ajouter un nouveau"
 
-#: Models/Edit_Coupon.php:1043
+#: Models/Edit_Coupon.php:1045
 msgid "Add New Category"
 msgstr "Ajouter une catégorie"
 
-#: Models/Edit_Coupon.php:1048
+#: Models/Edit_Coupon.php:1050
 msgid "Add or remove categories"
 msgstr "Ajouter ou supprimer des catégories"
 
@@ -205,15 +205,15 @@ msgstr "Paramètres supplémentaires"
 msgid "Adds a store credit account to your customer’s profile that you can credit for them to use toward purchases. Store credits can be used during checkout towards payment."
 msgstr "Ajoute au profil de votre client un compte crédit boutique que vous pourrez créditer pour leurs futurs achats. Les crédits boutique peuvent être utilisés lors de la commande et du paiement."
 
-#: Models/Admin_App.php:737
+#: Models/Admin_App.php:747
 msgid "Adjust"
 msgstr "Ajuster"
 
-#: Models/Admin_App.php:643
+#: Models/Admin_App.php:653
 msgid "Adjust Store Credit"
 msgstr "Ajuster le crédit boutique"
 
-#: Models/Admin_App.php:647
+#: Models/Admin_App.php:657
 msgid "Adjust Store credit for this user. Remember store credits are worth the same as your base currency in the store."
 msgstr "Ajuster le crédit boutique pour cet utilisateur. Rappelez-vous que les crédits boutique ont la même valeur que la monnaie de base de votre boutique."
 
@@ -236,7 +236,7 @@ msgstr "Ajustement par admin (augmentation)"
 msgid "Admin: %s"
 msgstr "Administrateur: %s"
 
-#: Models/Cart_Conditions.php:763
+#: Models/Cart_Conditions.php:776
 #: Models/Objects/ACFW_Settings.php:99
 #: Models/Objects/ACFW_Settings.php:785
 #: Models/REST_API/API_Settings.php:518
@@ -248,6 +248,7 @@ msgstr "Advanced"
 msgid "Advanced cart conditions to let you control exactly when coupons should be allowed to apply."
 msgstr "Conditions de panier avancées pour vous permettre de contrôler exactement quand un code promo devrait être autorisé à être appliquer."
 
+#: Models/Abilities.php:68
 #: Models/Admin_App.php:195
 #: Models/Admin_App.php:253
 #: Models/Admin_App.php:429
@@ -264,15 +265,15 @@ msgstr "Advanced Coupons"
 msgid "Advanced Coupons (Premium Version)"
 msgstr "Advanced Coupons (Version Premium)"
 
-#: Models/Script_Loader.php:554
+#: Models/Script_Loader.php:557
 msgid "Advanced Coupons by Category"
 msgstr "Codes promo par catégorie"
 
-#: Models/Script_Loader.php:567
+#: Models/Script_Loader.php:570
 msgid "Advanced Coupons by Customer"
 msgstr "Codes promo par client"
 
-#: Models/Script_Loader.php:567
+#: Models/Script_Loader.php:570
 msgid "Advanced Coupons by Customer (Premium)"
 msgstr "Codes promo par client (Premium)"
 
@@ -331,11 +332,11 @@ msgstr "Advanced Gift Cards"
 msgid "Advanced Usage Limits"
 msgstr "Limites d’utilisation avancées"
 
-#: Models/Cart_Conditions.php:722
+#: Models/Cart_Conditions.php:735
 msgid "After any price modifications"
 msgstr "Après d'éventuelles modifications de prix"
 
-#: Models/Edit_Coupon.php:1039
+#: Models/Edit_Coupon.php:1041
 msgid "All Categories"
 msgstr "Toutes les catégories"
 
@@ -362,7 +363,7 @@ msgstr "Permettez à vos clients d’appliquer ce code promo en visitant une URL
 msgid "Allowed"
 msgstr "Autorisation"
 
-#: Models/Cart_Conditions.php:702
+#: Models/Cart_Conditions.php:715
 msgid "Allowed Customer User Role"
 msgstr "Le client a un rôle autorisé"
 
@@ -376,8 +377,8 @@ msgstr "Toujours utiliser le prix de base"
 
 #. Translators: %s: store currency symbol.
 #. Translators: %s: Currency symbol
-#: Models/Admin_App.php:707
-#: Models/Script_Loader.php:513
+#: Models/Admin_App.php:717
+#: Models/Script_Loader.php:516
 #, php-format
 msgid "Amount (%s)"
 msgstr "Montant (%s)"
@@ -413,8 +414,8 @@ msgstr "N’importe quel produit (Premium)"
 msgid "Any products trigger type based on each product's quantity can only work with <em>Same Products</em> apply type."
 msgstr "Le déclencheur n’importe quel produit en fonction de la quantité de chaque produit ne fonctionne qu’avec l’offre <em>Même produits</em>."
 
-#: Models/Admin_App.php:764
-#: Models/Script_Loader.php:327
+#: Models/Admin_App.php:774
+#: Models/Script_Loader.php:330
 msgid "ANYTHING EXCEPT"
 msgstr "TOUT SAUF"
 
@@ -428,7 +429,7 @@ msgstr "Appliquer"
 msgid "Apply this coupon to be applied if the following condition groups and conditions are true."
 msgstr "Applique ce code promo uniquement si les groupes de conditions et conditions suivantes sont vraies."
 
-#: views/coupons/view-bogo-deals-data-panel.php:124
+#: views/coupons/view-bogo-deals-data-panel.php:140
 msgid "Are you sure you want to do this?"
 msgstr "Êtes-vous sûr de vouloir faire ceci ?"
 
@@ -469,7 +470,7 @@ msgstr "Applique automatiquement un code promo dans le panier quand un client de
 msgid "Basic set of cart conditions only"
 msgstr "Seulement un ensemble de conditions de panier basiques"
 
-#: Models/Objects/Advanced_Coupon.php:963
+#: Models/Objects/Advanced_Coupon.php:982
 msgid "BOGO Deal"
 msgstr "Offre BOGO"
 
@@ -481,11 +482,11 @@ msgstr "Offre BOGO"
 msgid "BOGO Deals"
 msgstr "Offres BOGO"
 
-#: Models/BOGO/Admin.php:379
+#: Models/BOGO/Admin.php:384
 msgid "BOGO deals has been cleared successfully!"
 msgstr "L'offre BOGO a été effacée avec succès!"
 
-#: Models/BOGO/Admin.php:337
+#: Models/BOGO/Admin.php:342
 msgid "BOGO deals has been saved successfully!"
 msgstr "L'offre BOGO a été enregistrée avec succès!"
 
@@ -517,11 +518,11 @@ msgstr "Offres BOGO: Message de notification"
 msgid "Bulk generate 100's or 1000's of unique alternative coupon codes for a coupon to use in welcome sequences, abandoned cart sequences, and other scenarios."
 msgstr "Générer des 100aines ou des 1000iers de code promo uniques pour vos séquences d'accueil, les paniers abandonnés et autres scenarii."
 
-#: views/coupons/view-bogo-deals-data-panel.php:89
+#: views/coupons/view-bogo-deals-data-panel.php:105
 msgid "Button Text:"
 msgstr "Texte du bouton:"
 
-#: views/coupons/view-bogo-deals-data-panel.php:93
+#: views/coupons/view-bogo-deals-data-panel.php:109
 msgid "Button URL:"
 msgstr "URL du bouton:"
 
@@ -543,10 +544,10 @@ msgstr "Offre Achetez X, Obtenez Y (BOGO)"
 msgid "By allowing us to track usage data we can better help you because we know with which WordPress configurations, themes and plugins we should test. Complete documentation on usage tracking is available <a href=\"%s\" target=\"_blank\">here</a>."
 msgstr "En nous permettant de suivre vos données d’utilisation nous pourrons mieux vous aider car nous saurons avec quelles configurations WordPress, thèmes et extensions nous devons faire des tests. La documentation complète sur le suivi d’utilisation est disponibel <a href=\"%s\" target=\"_blank\">ici</a>."
 
-#: Models/Admin_App.php:849
+#: Models/Admin_App.php:859
 #: Models/Coupon_Templates.php:117
 #: Models/Script_Loader.php:291
-#: Models/Script_Loader.php:364
+#: Models/Script_Loader.php:367
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -558,7 +559,7 @@ msgstr "Annuler"
 msgid "Cart Conditions"
 msgstr "Conditions de panier"
 
-#: Models/Cart_Conditions.php:628
+#: Models/Cart_Conditions.php:641
 msgid "Cart conditions has been saved successfully!"
 msgstr "Les conditions de panier ont été enregistrées avec succès!"
 
@@ -574,36 +575,36 @@ msgstr "Conditions panier: URL du bouton de non admissibilité"
 msgid "Cart Conditions: Non-qualifying message"
 msgstr "Conditions panier: Message de non admissibilité"
 
-#: Models/Cart_Conditions.php:747
+#: Models/Cart_Conditions.php:760
 msgid "Cart Items"
 msgstr "Éléments du panier"
 
-#: Models/Cart_Conditions.php:714
-#: Models/Cart_Conditions.php:716
+#: Models/Cart_Conditions.php:727
+#: Models/Cart_Conditions.php:729
 msgid "Cart Quantity"
 msgstr "La quantité de produits dans le panier est"
 
-#: Models/Cart_Conditions.php:721
+#: Models/Cart_Conditions.php:734
 msgid "Cart Subtotal"
 msgstr "Le sous-total du panier est"
 
 #. Translators: %s: Currency symbol.
-#: Models/Cart_Conditions.php:724
+#: Models/Cart_Conditions.php:737
 #, php-format
 msgid "Cart Subtotal (%s)"
 msgstr "Sous-total du panier (%s)"
 
-#: Models/Cart_Conditions.php:688
+#: Models/Cart_Conditions.php:701
 #: Models/Coupon_Templates.php:112
-#: Models/Edit_Coupon.php:1221
+#: Models/Edit_Coupon.php:1223
 msgid "Categories"
 msgstr "Catégories"
 
-#: Models/Edit_Coupon.php:1054
+#: Models/Edit_Coupon.php:1056
 msgid "Categories list"
 msgstr "Liste des catégories"
 
-#: Models/Edit_Coupon.php:1055
+#: Models/Edit_Coupon.php:1057
 msgid "Categories list navigation"
 msgstr "Navigation de la liste des catégories"
 
@@ -619,7 +620,7 @@ msgstr "Contrôle la présence du ou des produits et leurs quantités afin de d�
 msgid "Check if a customer has ordered something before letting them apply a coupon."
 msgstr "Contrôle si le client a déjà passé une commande afin de permettre l'application du code promo."
 
-#: Models/Edit_Coupon.php:1049
+#: Models/Edit_Coupon.php:1051
 msgid "Choose from the most used"
 msgstr "Choisissez parmi les plus utilisés"
 
@@ -627,11 +628,11 @@ msgstr "Choisissez parmi les plus utilisés"
 msgid "Claimed Credits"
 msgstr "Crédits utilisés"
 
-#: Models/Script_Loader.php:559
+#: Models/Script_Loader.php:562
 msgid "Clear all coupon categories"
 msgstr "Supprimer toutes les catégories de codes promo"
 
-#: views/coupons/view-bogo-deals-data-panel.php:127
+#: views/coupons/view-bogo-deals-data-panel.php:143
 msgid "Clear BOGO Deals"
 msgstr "Effacer les offres BOGO"
 
@@ -657,11 +658,11 @@ msgstr "Cliquez ici pour lire la suite et passer Premium →"
 msgid "Click here to see pricing & features  →"
 msgstr "Cliquez ici pour voir les prix et fonctionnalités  &rarr;"
 
-#: Models/Edit_Coupon.php:1403
+#: Models/Edit_Coupon.php:1405
 msgid "Clone"
 msgstr "Cloner"
 
-#: Models/Edit_Coupon.php:1371
+#: Models/Edit_Coupon.php:1373
 msgid "Clone Coupon"
 msgstr "Cloner ce code promo"
 
@@ -688,7 +689,7 @@ msgstr "Configurer les paramètres de Loyalty Program"
 msgid "Contact Support"
 msgstr "Contacter l’assistance"
 
-#: Models/Script_Loader.php:598
+#: Models/Script_Loader.php:601
 msgid "Content display settings"
 msgstr "Paramètres d’affichage du contenu"
 
@@ -723,28 +724,28 @@ msgstr "Code promo appliqué avec succès"
 #: Models/Admin_App.php:274
 #: Models/Edit_Coupon.php:206
 #: Models/Edit_Coupon.php:207
-#: Models/Edit_Coupon.php:1038
-#: Models/Script_Loader.php:560
+#: Models/Edit_Coupon.php:1040
+#: Models/Script_Loader.php:563
 msgid "Coupon Categories"
 msgstr "Catégories des codes"
 
 #: data/coupon-fields/scheduler.php:46
-#: Models/Edit_Coupon.php:784
+#: Models/Edit_Coupon.php:786
 msgid "Coupon expire error message"
 msgstr "Message d'erreur d’expiration du code promo"
 
 #: data/coupon-fields/scheduler.php:39
-#: Models/Edit_Coupon.php:771
+#: Models/Edit_Coupon.php:773
 msgid "Coupon expiry date"
 msgstr "Date d’expiration du code promo"
 
 #: data/coupon-fields/scheduler.php:26
-#: Models/Edit_Coupon.php:746
+#: Models/Edit_Coupon.php:748
 msgid "Coupon start date"
 msgstr "Date de démarrage du code promo"
 
 #: data/coupon-fields/scheduler.php:33
-#: Models/Edit_Coupon.php:759
+#: Models/Edit_Coupon.php:761
 msgid "Coupon start error message"
 msgstr "Message d’erreur de démarrage du code promo"
 
@@ -760,11 +761,11 @@ msgstr "URL de codes promo"
 msgid "Coupons"
 msgstr "Codes promo"
 
-#: Models/Script_Loader.php:590
+#: Models/Script_Loader.php:593
 msgid "Coupons and virtual coupons"
 msgstr "Codes promo et codes promo virtuels"
 
-#: Models/Script_Loader.php:591
+#: Models/Script_Loader.php:594
 msgid "Coupons only"
 msgstr "Codes promo uniquement"
 
@@ -798,11 +799,11 @@ msgstr "Crée des conditions qui doivent être satisfaites par la panier avant q
 msgid "Credits expired"
 msgstr "Crédits expiré"
 
-#: Models/Admin_App.php:651
+#: Models/Admin_App.php:661
 msgid "Current balance: {balance}"
 msgstr "Solde actuel : {balance}"
 
-#: Models/Script_Loader.php:605
+#: Models/Script_Loader.php:608
 msgid "Currently selected coupon:"
 msgstr "Code promo actuellement sélectionné :"
 
@@ -815,7 +816,7 @@ msgstr "Une metadonnée particulière du panier est (Premium)"
 msgid "Custom disable message"
 msgstr "Message personnalisé de désactivation"
 
-#: Models/Admin_App.php:638
+#: Models/Admin_App.php:648
 msgid "Custom Range"
 msgstr "Période personnalisée"
 
@@ -841,7 +842,7 @@ msgid "Custom User Meta (Premium)"
 msgstr "Une metadonnée particulière de l'utilisateur est (Premium)"
 
 #: Models/Objects/ACFW_Settings.php:307
-#: views/coupons/view-bogo-deals-data-panel.php:86
+#: views/coupons/view-bogo-deals-data-panel.php:102
 msgid "Custom variables available: {acfw_bogo_remaining_deals_quantity} to display the count of product deals that can be added to the cart, and {acfw_bogo_coupon_code} for displaying the coupon code that offered the deal."
 msgstr "Variables personnalisées disponibles: {acfw_bogo_remaining_deals_quantity} pour afficher le nombre d'offres produit qui peuvent être ajoutés au panier, et {acfw_bogo_coupon_code} pour afficher le code promo qui porte cette offre."
 
@@ -857,20 +858,20 @@ msgstr "Le client obtient :"
 msgid "Customer Has Ordered Products Before (Premium)"
 msgstr "Le client a déjà commandé ces produits (Premium)"
 
-#: Models/Cart_Conditions.php:693
+#: Models/Cart_Conditions.php:706
 msgid "Customer Logged In Status"
 msgstr "Le statut de connexion du client est"
 
-#: Models/Admin_App.php:721
+#: Models/Admin_App.php:731
 msgid "Customer Name"
 msgstr "Nom client"
 
 #: Models/Admin_App.php:596
-#: Models/Cart_Conditions.php:759
+#: Models/Cart_Conditions.php:772
 msgid "Customers"
 msgstr "Clients"
 
-#: Models/Admin_App.php:713
+#: Models/Admin_App.php:723
 msgid "Customers List"
 msgstr "Liste de clients"
 
@@ -887,9 +888,9 @@ msgstr "Personnaliser le code promo via son l'URL. Laisser vide pour désactiver
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: Models/Admin_App.php:745
+#: Models/Admin_App.php:755
 #: Models/Coupon_Templates.php:143
-#: Models/Script_Loader.php:514
+#: Models/Script_Loader.php:517
 msgid "Date"
 msgstr "Date"
 
@@ -914,7 +915,7 @@ msgstr "Période en jours et heure"
 msgid "Deactivate"
 msgstr "Désactiver"
 
-#: Models/Admin_App.php:663
+#: Models/Admin_App.php:673
 msgid "Decrease Store Credit"
 msgstr "Diminuer le crédit boutique"
 
@@ -936,11 +937,11 @@ msgstr "Le saviez-vous ?"
 msgid "Disallowed"
 msgstr "Interdiction"
 
-#: Models/Cart_Conditions.php:708
+#: Models/Cart_Conditions.php:721
 msgid "Disallowed Customer User Role"
 msgstr "Le client n'a pas un rôle interdit"
 
-#: Models/Store_Credits/Checkout.php:682
+#: Models/Store_Credits/Checkout.php:855
 msgid "Discount (Store Credit)"
 msgstr "Réduction (crédit boutique)"
 
@@ -949,7 +950,7 @@ msgid "Discount (Store Credit):"
 msgstr "Réduction (Crédit Boutique):"
 
 #: data/coupon-fields/general.php:23
-#: Models/Script_Loader.php:323
+#: Models/Script_Loader.php:326
 msgid "Discount Type"
 msgstr "Type de réduction"
 
@@ -969,6 +970,7 @@ msgstr "Revenus des commandes avec réduction"
 #: Models/Admin_App.php:333
 #: views/notices/view-generic-notice.php:42
 #: views/notices/view-saveto-wishlist-notice.php:129
+#: views/notices/view-storeagent-notice.php:129
 msgid "Dismiss"
 msgstr "Masquer"
 
@@ -978,25 +980,25 @@ msgid "Dismiss this notice..."
 msgstr "Masquer cette notification…"
 
 #: Models/Editor_Blocks.php:118
-#: Models/Script_Loader.php:555
+#: Models/Script_Loader.php:558
 msgid "Display a grid of advanced coupons from your selected categories."
 msgstr "Affiche une grille des codes promo des catégories sélectionnées."
 
 #: Models/Editor_Blocks.php:140
-#: Models/Script_Loader.php:568
+#: Models/Script_Loader.php:571
 msgid "Display a grid of coupons and/or virtual coupons that is assigned to a customer."
 msgstr "Affiche une grille de codes promo et/ou codes promo virtuels assignés au client."
 
 #: Models/Editor_Blocks.php:129
-#: Models/Script_Loader.php:573
+#: Models/Script_Loader.php:576
 msgid "Display a single advanced coupon that you've selected."
 msgstr "Affiche uniquement le code promo que vous avez sélectionné."
 
-#: Models/Script_Loader.php:600
+#: Models/Script_Loader.php:603
 msgid "Display description"
 msgstr "Afficher la description"
 
-#: Models/Script_Loader.php:599
+#: Models/Script_Loader.php:602
 msgid "Display discount value"
 msgstr "Afficher la valeur de la réduction"
 
@@ -1004,15 +1006,15 @@ msgstr "Afficher la valeur de la réduction"
 msgid "Display notice when auto applied"
 msgstr "Afficher la notification lors de l'auto application"
 
-#: Models/Script_Loader.php:602
+#: Models/Script_Loader.php:605
 msgid "Display schedule"
 msgstr "Afficher la planification"
 
-#: Models/Script_Loader.php:588
+#: Models/Script_Loader.php:591
 msgid "Display type"
 msgstr "Type(s) à afficher"
 
-#: Models/Script_Loader.php:601
+#: Models/Script_Loader.php:604
 msgid "Display usage limit"
 msgstr "Afficher la limite d’usage"
 
@@ -1024,11 +1026,11 @@ msgstr "Ne pas autoriser"
 msgid "Documentation"
 msgstr "Documentation"
 
-#: Models/Script_Loader.php:614
+#: Models/Script_Loader.php:617
 msgid "Done"
 msgstr "Fait"
 
-#: Models/Script_Loader.php:584
+#: Models/Script_Loader.php:587
 msgid "Earliest to expire"
 msgstr "Date d’expiration croissante"
 
@@ -1036,7 +1038,7 @@ msgstr "Date d’expiration croissante"
 msgid "Edit"
 msgstr "Modifier"
 
-#: Models/Edit_Coupon.php:1044
+#: Models/Edit_Coupon.php:1046
 msgid "Edit Category"
 msgstr "Modifier la catégorie"
 
@@ -1044,7 +1046,7 @@ msgstr "Modifier la catégorie"
 msgid "Edit_Coupon::add_coupons_list_in_order_preview_popup method is now deprecated. Please use Order_Details::add_coupons_list_in_order_preview_popup method instead."
 msgstr "La méthode Edit_Coupon::add_coupons_list_in_order_preview_popup est maintenant obsolète. Veuillez utiliser à la méthode Order_Details::add_coupons_list_in_order_preview_popup à la place."
 
-#: Models/Admin_App.php:725
+#: Models/Admin_App.php:735
 #: Models/Send_Coupon.php:92
 #: Models/Send_Coupon.php:106
 msgid "Email"
@@ -1086,7 +1088,7 @@ msgid "Enter your first name here..."
 msgstr "Entrez votre prénom ici…"
 
 #: data/coupon-fields/one-click-apply.php:42
-#: Models/Edit_Coupon.php:669
+#: Models/Edit_Coupon.php:671
 #: Models/Objects/ACFW_Settings.php:336
 #: views/coupons/view-cart-conditions-data-panel.php:70
 msgid "Error"
@@ -1116,8 +1118,8 @@ msgstr "Chaque année (premium)"
 msgid "Everytime the condition is met, apply the coupon repeatedly."
 msgstr "Appliquer le code promo de façon répétée, autant de fois que la condition est satisfaite."
 
-#: Models/Admin_App.php:760
-#: Models/Script_Loader.php:326
+#: Models/Admin_App.php:770
+#: Models/Script_Loader.php:329
 msgid "EXACTLY"
 msgstr "EXACTEMENT"
 
@@ -1133,7 +1135,7 @@ msgstr "Expiré"
 msgid "Expired Credits"
 msgstr "Crédits expirés"
 
-#: Models/BOGO/Admin.php:384
+#: Models/BOGO/Admin.php:389
 msgid "Failed on clearing or there were no changes to save."
 msgstr "Echec de l'effacement ou il n'y avait aucun changement à enregistrer."
 
@@ -1151,7 +1153,7 @@ msgstr "échec de mise à jour"
 msgid "Features"
 msgstr "Fonctionnalités"
 
-#: Models/Script_Loader.php:334
+#: Models/Script_Loader.php:337
 msgid "Fixed discount"
 msgstr "Réduction fixe"
 
@@ -1253,12 +1255,12 @@ msgid "Global notice type"
 msgstr "Type générique de la notification"
 
 #. Translators: %s: Global notice type value
-#: views/coupons/view-bogo-deals-data-panel.php:104
+#: views/coupons/view-bogo-deals-data-panel.php:120
 #, php-format
 msgid "Global setting (%s)"
 msgstr "Paramètre global (%s)"
 
-#: Models/Script_Loader.php:362
+#: Models/Script_Loader.php:365
 msgid "Grant permission to fetch and show help content. Click the button below to proceed."
 msgstr "Donnez la permission de récupérer et afficher le contenu d’aide. Cliquez sur le bouton ci-dessous pour procéder."
 
@@ -1271,7 +1273,7 @@ msgid "Great for developers, test any extra user metadata on customer user recor
 msgstr "Pratique pour les développeurs, testez n’importe quelle valeur meta du client avant d’appliquer un code promo."
 
 #: Helpers/Helper_Functions.php:263
-#: Models/Cart_Conditions.php:696
+#: Models/Cart_Conditions.php:709
 msgid "Guest"
 msgstr "Invité"
 
@@ -1294,7 +1296,7 @@ msgstr "Bonjour et bienvenue dans Advanced Coupons, le plugin qui améliore vos 
 #: Models/Admin_App.php:159
 #: Models/Objects/ACFW_Settings.php:100
 #: Models/Objects/ACFW_Settings.php:842
-#: Models/Script_Loader.php:349
+#: Models/Script_Loader.php:352
 msgid "Help"
 msgstr "Aide"
 
@@ -1462,12 +1464,12 @@ msgstr "Le code promo à cette URL est inactif."
 msgid "Increase Customer Loyalty & Repeat Orders With A Loyalty Program"
 msgstr "Augmentez la fidélité de vos clients et le nombre de leurs commandes grâce à un Programme de Fidélité"
 
-#: Models/Admin_App.php:659
+#: Models/Admin_App.php:669
 msgid "Increase Store Credit"
 msgstr "Augmenter le crédit boutique"
 
 #: data/coupon-fields/one-click-apply.php:40
-#: Models/Edit_Coupon.php:667
+#: Models/Edit_Coupon.php:669
 #: Models/Objects/ACFW_Settings.php:334
 #: views/coupons/view-cart-conditions-data-panel.php:71
 msgid "Info"
@@ -1487,7 +1489,7 @@ msgstr "Installer maintenant"
 msgid "Install Plugin"
 msgstr "Installer le plugin"
 
-#: advanced-coupons-for-woocommerce-free.php:247
+#: advanced-coupons-for-woocommerce-free.php:249
 msgid "Install this plugin"
 msgstr "Installer ce plugin"
 
@@ -1499,12 +1501,12 @@ msgstr "Installer Wholesale Prices (PLUGIN GRATUIT)"
 msgid "Installed"
 msgstr "Installé"
 
-#: Models/Admin_App.php:1025
+#: Models/Admin_App.php:1035
 #: Models/BOGO/Admin.php:295
-#: Models/BOGO/Admin.php:357
-#: Models/Cart_Conditions.php:604
+#: Models/BOGO/Admin.php:362
+#: Models/Cart_Conditions.php:617
 #: Models/Emails.php:270
-#: Models/Store_Credits/Checkout.php:956
+#: Models/Store_Credits/Checkout.php:1211
 msgid "Invalid AJAX call"
 msgstr "Appel AJAX invalide"
 
@@ -1547,23 +1549,23 @@ msgstr "Rejoignez la communauté"
 msgid "Knowledge Base"
 msgstr "Base de connaissances"
 
-#: Models/Script_Loader.php:357
+#: Models/Script_Loader.php:360
 msgid "Knowledge Base Articles"
 msgstr "Articles de la base de connaissances"
 
-#: Models/Admin_App.php:626
+#: Models/Admin_App.php:636
 msgid "Last Month"
 msgstr "Mois dernier"
 
-#: Models/Admin_App.php:630
+#: Models/Admin_App.php:640
 msgid "Last Quarter"
 msgstr "Trimestre dernier"
 
-#: Models/Admin_App.php:622
+#: Models/Admin_App.php:632
 msgid "Last Week"
 msgstr "Semaine dernière"
 
-#: Models/Admin_App.php:634
+#: Models/Admin_App.php:644
 msgid "Last Year"
 msgstr "Année dernière"
 
@@ -1586,8 +1588,8 @@ msgstr "En savoir plus →"
 msgid "Learn More ⟶"
 msgstr "En savoir plus ⟶"
 
-#: Models/Admin_App.php:772
-#: Models/Script_Loader.php:329
+#: Models/Admin_App.php:782
+#: Models/Script_Loader.php:332
 msgid "LESS THAN"
 msgstr "MOINS DE"
 
@@ -1619,15 +1621,15 @@ msgstr "Licence détectée, mais la mise à jour des données n'était pas encor
 msgid "License detected. Update ready to proceed."
 msgstr "Licence détectée. Mise à jour prête à procéder."
 
-#: Models/Script_Loader.php:354
+#: Models/Script_Loader.php:357
 msgid "Loading help content…"
 msgstr "Chargement du contenu de l’aide…"
 
-#: Models/Script_Loader.php:355
+#: Models/Script_Loader.php:358
 msgid "Loading videos…"
 msgstr "Chargement des vidéos…"
 
-#: Models/Cart_Conditions.php:695
+#: Models/Cart_Conditions.php:708
 msgid "Logged In"
 msgstr "Connecté"
 
@@ -1638,18 +1640,18 @@ msgid "Loyalty Program"
 msgstr "Loyalty Program"
 
 #: Models/Upsell.php:1997
-msgid "Loyalty Program for WooCommerce is proven to increase customer loyalty and help you get more repeat orders. It’s a great way to incentivize your customers without having to give steep discounts."
-msgstr "Loyalty Program pour WooCommerce a prouvé pouvoir accroître la fidélité des clients et aider à gnérer ainsi plus de commandes. C’est une bonne manière de motiver vos clients sans forcément leur fournir de réduction."
+msgid "Advanced Loyalty Program is proven to increase customer loyalty and help you get more repeat orders. It’s a great way to incentivize your customers without having to give steep discounts."
+msgstr "Advanced Loyalty Program a prouvé pouvoir accroître la fidélité des clients et aider à gnérer ainsi plus de commandes. C’est une bonne manière de motiver vos clients sans forcément leur fournir de réduction."
 
 #: Models/Upsell.php:2022
-msgid "Loyalty Program for WooCommerce lets you configure an amazing points & rewards program in minutes. It comes mostly configured out of the box, but there’s loads of great customizations you can deploy."
-msgstr "Loyalty Program pour WooCommerce vous permet de configurer un programme incroyable de points et de récompenses en quelques minutes. Il est largement pré-configuré d’origine, mais il contient de nomrbeuses personnalisations que vous pouvez déployer."
+msgid "Advanced Loyalty Program lets you configure an amazing points & rewards program in minutes. It comes mostly configured out of the box, but there’s loads of great customizations you can deploy."
+msgstr "Advanced Loyalty Program vous permet de configurer un programme incroyable de points et de récompenses en quelques minutes. Il est largement pré-configuré d’origine, mais il contient de nomrbeuses personnalisations que vous pouvez déployer."
 
 #: Models/Upsell.php:2000
 msgid "Loyalty Program plugin icon"
 msgstr "Icône de l’extension Loyalty Program"
 
-#: Models/Admin_App.php:671
+#: Models/Admin_App.php:681
 msgid "Make Adjustment"
 msgstr "Procéder à l'ajustement"
 
@@ -1667,9 +1669,9 @@ msgid "Message that will be displayed when a coupon has been applied successfull
 msgstr "Message qui sera affiché lorsqu'un code promo a été appliquée avec succès. Laissez le champ vide pour utiliser la valeur par défaut du message."
 
 #: Models/BOGO/Admin.php:305
-#: Models/BOGO/Admin.php:367
-#: Models/Cart_Conditions.php:614
-#: Models/Store_Credits/Checkout.php:974
+#: Models/BOGO/Admin.php:372
+#: Models/Cart_Conditions.php:627
+#: Models/Store_Credits/Checkout.php:1229
 msgid "Missing required post data"
 msgstr "Manque des données post"
 
@@ -1683,7 +1685,7 @@ msgstr "Modules"
 msgid "Monday"
 msgstr "Lundi"
 
-#: Models/Admin_App.php:610
+#: Models/Admin_App.php:620
 msgid "Month to Date"
 msgstr "Mois courant"
 
@@ -1692,8 +1694,8 @@ msgstr "Mois courant"
 msgid "More Cart Conditions (Premium)"
 msgstr "Plus de conditions de panier (Premium)"
 
-#: Models/Admin_App.php:768
-#: Models/Script_Loader.php:328
+#: Models/Admin_App.php:778
+#: Models/Script_Loader.php:331
 msgid "MORE THAN"
 msgstr "PLUS DE"
 
@@ -1709,7 +1711,7 @@ msgstr "Ne jamais réinitialiser"
 msgid "New % Coupon"
 msgstr "Code promo en %"
 
-#: Models/Admin_App.php:655
+#: Models/Admin_App.php:665
 msgid "New balance: {balance}"
 msgstr "Nouveau solde : {balance}"
 
@@ -1717,7 +1719,7 @@ msgstr "Nouveau solde : {balance}"
 msgid "New BOGO Coupon"
 msgstr "Code promo BOGO"
 
-#: Models/Edit_Coupon.php:1042
+#: Models/Edit_Coupon.php:1044
 msgid "New Category Name"
 msgstr "Nouveau nom de catégorie"
 
@@ -1725,11 +1727,11 @@ msgstr "Nouveau nom de catégorie"
 msgid "New Fixed Coupon"
 msgstr "Code promo valeur fixe"
 
-#: Models/Script_Loader.php:580
+#: Models/Script_Loader.php:583
 msgid "Newest to oldest"
 msgstr "Plus récent au plus ancien"
 
-#: Models/Edit_Coupon.php:1053
+#: Models/Edit_Coupon.php:1055
 msgid "No categories"
 msgstr "Pas de catégories"
 
@@ -1741,11 +1743,11 @@ msgstr "Pas de catégories ajouté"
 msgid "No condition group"
 msgstr "Aucune condition de groupe"
 
-#: Models/Script_Loader.php:574
+#: Models/Script_Loader.php:577
 msgid "No coupon to display."
 msgstr "Aucun code promo à afficher."
 
-#: Models/Script_Loader.php:613
+#: Models/Script_Loader.php:616
 msgid "No coupons found."
 msgstr "Aucun code promo trouvé."
 
@@ -1753,15 +1755,15 @@ msgstr "Aucun code promo trouvé."
 msgid "No coupons used"
 msgstr "Pas de coupons utilisés"
 
-#: Models/Script_Loader.php:569
+#: Models/Script_Loader.php:572
 msgid "No coupons were found for the currently logged in customer."
 msgstr "Aucun code promo n’a été trouvé pour le client actuellement connecté."
 
-#: Models/Script_Loader.php:556
+#: Models/Script_Loader.php:559
 msgid "No coupons were found that matched your selection."
 msgstr "Aucun code promo qui satisfasse votre sélection n’a été trouvé."
 
-#: Models/Script_Loader.php:335
+#: Models/Script_Loader.php:338
 msgid "No discount"
 msgstr "Aucune réduction"
 
@@ -1769,7 +1771,7 @@ msgstr "Aucune réduction"
 msgid "No products added"
 msgstr "Aucun produit ajouté"
 
-#: Models/Script_Loader.php:360
+#: Models/Script_Loader.php:363
 msgid "No results"
 msgstr "Aucun résultat"
 
@@ -1826,7 +1828,7 @@ msgstr "Non, peut-être plus tard"
 msgid "Not available"
 msgstr "Non disponible"
 
-#: Models/Edit_Coupon.php:1052
+#: Models/Edit_Coupon.php:1054
 msgid "Not Found"
 msgstr "Non trouvé"
 
@@ -1834,7 +1836,7 @@ msgstr "Non trouvé"
 msgid "Not installed"
 msgstr "Non installé"
 
-#: views/coupons/view-bogo-deals-data-panel.php:97
+#: views/coupons/view-bogo-deals-data-panel.php:113
 msgid "Notice Type:"
 msgstr "Type de notification:"
 
@@ -1842,11 +1844,11 @@ msgstr "Type de notification:"
 msgid "Notices"
 msgstr "Notifications"
 
-#: Models/Script_Loader.php:596
+#: Models/Script_Loader.php:599
 msgid "Number of columns"
 msgstr "Nombre de colonnes"
 
-#: Models/Script_Loader.php:595
+#: Models/Script_Loader.php:598
 msgid "Number of items"
 msgstr "Nombre d’éléments"
 
@@ -1858,7 +1860,7 @@ msgstr "OK, vous le méritez"
 msgid "Old store credit data was detected on this order, please recalculate the totals if you wish to refund"
 msgstr "D'anciennes données de crédit boutique ont été détectées sur cette commande, vejuillez recalculer les totaux si vous souhaitez effectuer un remboursement."
 
-#: Models/Script_Loader.php:581
+#: Models/Script_Loader.php:584
 msgid "Oldest to newest"
 msgstr "Plus ancien au plus récent"
 
@@ -1940,7 +1942,7 @@ msgstr "Facultatif. Ceci redirigera l'utilisateur vers l'URL définie après la 
 msgid "OR"
 msgstr "OU"
 
-#: Models/Script_Loader.php:578
+#: Models/Script_Loader.php:581
 msgid "Order by"
 msgstr "Trier par"
 
@@ -1961,7 +1963,7 @@ msgstr "Total de le commande"
 msgid "Orders Discounted"
 msgstr "Commandes avec réduction"
 
-#: Models/Cart_Conditions.php:767
+#: Models/Cart_Conditions.php:780
 msgid "Others"
 msgstr "Autres"
 
@@ -1969,12 +1971,12 @@ msgstr "Autres"
 msgid "Our Blog"
 msgstr "Notre blog"
 
-#: Models/Script_Loader.php:332
+#: Models/Script_Loader.php:335
 msgid "Override price"
 msgstr "Redéfinir le prix"
 
 #. Translators: %1$s: Payment date, %2$s: Payment gateway
-#: Models/Store_Credits/Admin.php:229
+#: Models/Store_Credits/Admin.php:231
 #, php-format
 msgctxt "Paid on {date} via {payment gateway}"
 msgid "Paid on %1$s via %2$s"
@@ -1985,16 +1987,16 @@ msgstr "Payé le %1$s via %2$s"
 msgid "Paid via Store Credits"
 msgstr "Payé via Crédit Boutique"
 
-#: Models/Store_Credits/Checkout.php:733
-#: Models/Store_Credits/Checkout.php:771
+#: Models/Store_Credits/Checkout.php:906
+#: Models/Store_Credits/Checkout.php:944
 msgid "Paid with Store Credits"
 msgstr "Payé avec du Crédit Boutique"
 
-#: Models/Edit_Coupon.php:1040
+#: Models/Edit_Coupon.php:1042
 msgid "Parent Category"
 msgstr "Catégorie parente"
 
-#: Models/Edit_Coupon.php:1041
+#: Models/Edit_Coupon.php:1043
 msgid "Parent Category:"
 msgstr "Catégorie parente:"
 
@@ -2012,15 +2014,15 @@ msgstr "Restriction des modes de paiement"
 msgid "Payment Methods Restriction (Premium)"
 msgstr "Restriction des modes de paiement (Premium)"
 
-#: Models/Store_Credits/Checkout.php:780
+#: Models/Store_Credits/Checkout.php:953
 msgid "Pending Amount"
 msgstr "Montant en attente"
 
-#: Models/Store_Credits/Admin.php:238
+#: Models/Store_Credits/Admin.php:240
 msgid "Pending amount to be paid"
 msgstr "Montant en attente d'être payé"
 
-#: Models/Script_Loader.php:333
+#: Models/Script_Loader.php:336
 msgid "Percentage discount"
 msgstr "Pourcentage de remise"
 
@@ -2029,17 +2031,17 @@ msgstr "Pourcentage de remise"
 msgid "Plan"
 msgstr "Plan"
 
-#: Models/Admin_App.php:1106
+#: Models/Admin_App.php:1116
 msgid "Please check your email to get the download link."
 msgstr "Veuillez consulter votre courriel pour obtenir le lien de téléchargement."
 
 #. Translators: %1$s: Plugin link. %2$s: Plugin name.
-#: advanced-coupons-for-woocommerce-free.php:252
+#: advanced-coupons-for-woocommerce-free.php:254
 #, php-format
 msgid "Please ensure you have the <a href=\"%1$s\" target=\"_blank\">%2$s</a> plugin installed and activated.<br/>"
 msgstr "Veuillez vous assurer que l’extension <a href=\"%1$s\" target=\"_blank\">%2$s</a> est installée et activée.<br/>"
 
-#: Models/Script_Loader.php:474
+#: Models/Script_Loader.php:477
 msgid "Please enter a valid price"
 msgstr "Veuillez entrer un prix valide"
 
@@ -2067,12 +2069,12 @@ msgstr "Veuillez installer une licence afin de pouvoir mettre à jour ce plugin,
 msgid "Please update your copy of the Advanced Coupons premium plugin. The new features and changes added in the free version will not work properly with the old version of the premium plugin."
 msgstr "Veuillez mettre à jour votre copie de l’extension premium d’Advanced Coupons. Les nouvelles fonctionnalités et les changements apportés à la version gratuite ne fonctionneront pas correctement avec l’ancienne version de l’extension premium."
 
-#: advanced-coupons-for-woocommerce-free.php:245
+#: advanced-coupons-for-woocommerce-free.php:247
 #: Models/Upsell.php:1706
 msgid "Plugin detected"
 msgstr "Plugin détecté"
 
-#: Models/Edit_Coupon.php:1050
+#: Models/Edit_Coupon.php:1052
 msgid "Popular Categories"
 msgstr "Catégories populaires"
 
@@ -2101,17 +2103,17 @@ msgstr "Conditions de panier Premium"
 msgid "Premium Module"
 msgstr "Module Premium"
 
-#: Models/Script_Loader.php:322
+#: Models/Script_Loader.php:325
 msgid "Price/Discount"
 msgstr "Prix/Remise"
 
 #: Models/Coupon_Templates.php:132
-#: Models/Script_Loader.php:318
+#: Models/Script_Loader.php:320
 msgid "Product"
 msgstr "Produit"
 
-#: Models/Cart_Conditions.php:755
-#: Models/Script_Loader.php:320
+#: Models/Cart_Conditions.php:768
+#: Models/Script_Loader.php:322
 msgid "Product Categories"
 msgstr "Catégories de produit"
 
@@ -2125,15 +2127,15 @@ msgstr "Les catégories de produits (%s) – bon lorsque vous souhaitez déclenc
 msgid "Product Categories (Premium)"
 msgstr "Les catégories de produits (Premium)"
 
-#: Models/Cart_Conditions.php:685
+#: Models/Cart_Conditions.php:698
 msgid "Product Categories Exists In Cart"
 msgstr "Les catégories de produits existent dans le panier"
 
-#: Models/Script_Loader.php:321
+#: Models/Script_Loader.php:323
 msgid "Product Category"
 msgstr "Catégorie de produit"
 
-#: Models/Script_Loader.php:314
+#: Models/Script_Loader.php:316
 msgid "Product category in cart"
 msgstr "Catégorie de produit dans le panier"
 
@@ -2141,7 +2143,7 @@ msgstr "Catégorie de produit dans le panier"
 msgid "Product has already been added to the table"
 msgstr "Le produit a déjà été ajouté à la table"
 
-#: Models/Script_Loader.php:313
+#: Models/Script_Loader.php:315
 msgid "Product in cart"
 msgstr "Produit dans le panier"
 
@@ -2158,25 +2160,25 @@ msgid "Product selected have already been added."
 msgstr "Les produits sélectionnés ont déjà été ajoutés."
 
 #: data/coupon-fields/usage-restrictions.php:48
-#: Models/Cart_Conditions.php:751
-#: Models/Script_Loader.php:319
+#: Models/Cart_Conditions.php:764
+#: Models/Script_Loader.php:321
 msgid "Products"
 msgstr "Produits"
 
 #: Models/Upsell.php:2012
-msgid "Purchase & Install Loyalty Program for WooCommerce"
-msgstr "Acheter & installer Loyalty Program pour WooCommerce"
+msgid "Purchase & Install Advanced Loyalty Program"
+msgstr "Acheter & installer Advanced Loyalty Program"
 
 #: Models/Store_Credits/Registry.php:149
 msgid "Purchased gift cards"
 msgstr "Cartes cadeaux achetées"
 
 #: Models/Coupon_Templates.php:134
-#: Models/Script_Loader.php:316
+#: Models/Script_Loader.php:318
 msgid "Quantity"
 msgstr "Quantité"
 
-#: Models/Admin_App.php:614
+#: Models/Admin_App.php:624
 msgid "Quarter to Date"
 msgstr "Trimestre courant"
 
@@ -2192,7 +2194,7 @@ msgstr "Lire la documentation"
 msgid "Read The Getting Started Guide →"
 msgstr "Lire le guide de démarrage &rarr;"
 
-#: Models/Store_Credits/Admin.php:364
+#: Models/Store_Credits/Admin.php:366
 msgid "Recalculate"
 msgstr "Recalculer"
 
@@ -2231,12 +2233,12 @@ msgstr "URL de redirection si un code promo invalide est accédé"
 msgid "Refresh the page and try again."
 msgstr "Rafraîchissez la page et réessayez."
 
-#: Models/Store_Credits/Checkout.php:826
+#: Models/Store_Credits/Checkout.php:999
 msgid "Refund (Store Credits):"
 msgstr "Remboursement (Crédit Boutique):"
 
 #. Translators: %s: 0.00 amount in site currency.
-#: Models/Script_Loader.php:420
+#: Models/Script_Loader.php:423
 #, php-format
 msgid "Refund <span class=\"amount\">%s</span> to Store Credits"
 msgstr "Rembourser <span class=\"amount\">%s</span> en crédit boutique"
@@ -2245,16 +2247,16 @@ msgstr "Rembourser <span class=\"amount\">%s</span> en crédit boutique"
 msgid "Refunded order"
 msgstr "Rembourser la commande"
 
-#: Models/Store_Credits/Admin.php:306
+#: Models/Store_Credits/Admin.php:308
 msgid "Refunded to Store Credits"
 msgstr "Remboursé en Crédit Boutique"
 
-#: Models/Admin_App.php:753
-#: Models/Script_Loader.php:516
+#: Models/Admin_App.php:763
+#: Models/Script_Loader.php:519
 msgid "Related"
 msgstr "Lié"
 
-#: Models/Script_Loader.php:356
+#: Models/Script_Loader.php:359
 msgid "Relevant Links"
 msgstr "Liens pertinents"
 
@@ -2369,7 +2371,7 @@ msgstr ""
 msgid "Saturday"
 msgstr "Samedi"
 
-#: views/coupons/view-bogo-deals-data-panel.php:122
+#: views/coupons/view-bogo-deals-data-panel.php:138
 msgid "Save BOGO Deals"
 msgstr "Enregistrer les offres BOGO"
 
@@ -2395,8 +2397,8 @@ msgid "Schedule Start Error Message (global)"
 msgstr "Message d’erreur avant début programmé (global)"
 
 #: data/coupon-fields/scheduler.php:8
-#: Models/Edit_Coupon.php:716
-#: Models/Edit_Coupon.php:735
+#: Models/Edit_Coupon.php:718
+#: Models/Edit_Coupon.php:737
 #: Models/Objects/ACFW_Settings.php:84
 #: Models/Objects/ACFW_Settings.php:254
 #: Models/Objects/ACFW_Settings.php:467
@@ -2404,11 +2406,11 @@ msgstr "Message d’erreur avant début programmé (global)"
 msgid "Scheduler"
 msgstr "Planificateur"
 
-#: Models/Script_Loader.php:575
+#: Models/Script_Loader.php:578
 msgid "Search and select a coupon to display it."
 msgstr "Recherche et sélectionne un code promo à afficher."
 
-#: Models/Script_Loader.php:606
+#: Models/Script_Loader.php:609
 msgid "Search and select coupon"
 msgstr "Rechercher et sélectionner un code promo"
 
@@ -2417,11 +2419,11 @@ msgstr "Rechercher et sélectionner un code promo"
 msgid "Search and select customers that are eligible to only use this coupon."
 msgstr "Rechercher et choisir des clients qui seront seuls éligibles à ce code promo."
 
-#: Models/Admin_App.php:717
+#: Models/Admin_App.php:727
 msgid "Search by name or email"
 msgstr "Chercher par nom ou courriel"
 
-#: Models/Edit_Coupon.php:1051
+#: Models/Edit_Coupon.php:1053
 msgid "Search Categories"
 msgstr "Rechercher dans les catégories "
 
@@ -2434,11 +2436,11 @@ msgstr "Rechercher des code promo&hellip;"
 msgid "Search customers&hellip;"
 msgstr "Rechercher des clients&hellip;"
 
-#: Models/Script_Loader.php:562
+#: Models/Script_Loader.php:565
 msgid "Search for coupon categories"
 msgstr "Rechercher des catégories de codes promo"
 
-#: Models/Script_Loader.php:359
+#: Models/Script_Loader.php:362
 msgid "Search Knowledge Base"
 msgstr "Ouvrir la base de connaissances"
 
@@ -2456,25 +2458,25 @@ msgstr "Voir les fonctions et prix"
 msgid "See the full feature list →"
 msgstr "Voir la liste complète des fonctionnalités →"
 
-#: Models/Edit_Coupon.php:1283
+#: Models/Edit_Coupon.php:1285
 #: Models/Objects/ACFW_Settings.php:387
 msgid "Select a category"
 msgstr "Sélectionnez une catégorie"
 
-#: Models/Script_Loader.php:557
+#: Models/Script_Loader.php:560
 msgid "Select at least one category to display its coupons."
 msgstr "Sélectionnez au moins une catégorie pour afficher ses codes promo."
 
-#: Models/Script_Loader.php:564
+#: Models/Script_Loader.php:567
 msgid "Select categories"
 msgstr "Sélectionnez des catégories"
 
-#: Models/Cart_Conditions.php:686
+#: Models/Cart_Conditions.php:699
 msgid "Select product categories"
 msgstr "Sélectionnez les catégories de produits"
 
-#: Models/Cart_Conditions.php:703
-#: Models/Cart_Conditions.php:709
+#: Models/Cart_Conditions.php:716
+#: Models/Cart_Conditions.php:722
 msgid "Select user roles"
 msgstr "Sélectionnez les rôles d'utilisateur"
 
@@ -2487,7 +2489,7 @@ msgstr "La zone de livraison sélectionnée est déjà ajoutée."
 msgid "Sell Gift Cards"
 msgstr "Vendez des cartes cadeau"
 
-#: Models/Edit_Coupon.php:1047
+#: Models/Edit_Coupon.php:1049
 msgid "Separate categories with commas"
 msgstr "Catégories séparées par des virgules"
 
@@ -2506,7 +2508,7 @@ msgstr "Définir la période de réinitialisation du compteur de limite d'usage.
 #: Models/Admin_App.php:149
 #: Models/Admin_App.php:255
 #: Models/Admin_App.php:311
-#: Models/Bootstrap.php:380
+#: Models/Bootstrap.php:451
 msgid "Settings"
 msgstr "Paramètres"
 
@@ -2530,12 +2532,12 @@ msgid "Shipping Zone And Region (Premium)"
 msgstr "Zone et région de livraison (Premium)"
 
 #: data/coupon-fields/scheduler.php:48
-#: Models/Edit_Coupon.php:785
+#: Models/Edit_Coupon.php:787
 msgid "Show a custom error message to customers that try to apply this coupon after it has expired."
 msgstr "Affichez un message d’erreur personnalisé à vos client qui tentent d’utiliser ce code promo après qu’il ait expiré."
 
 #: data/coupon-fields/scheduler.php:35
-#: Models/Edit_Coupon.php:760
+#: Models/Edit_Coupon.php:762
 msgid "Show a custom error message to customers that try to apply this coupon before it is available."
 msgstr "Affichez un message d’erreur personnalisé à vos client qui tentent d’utiliser ce code promo avant qu’il soit valide."
 
@@ -2553,7 +2555,7 @@ msgstr "Affiche un message dans le panier avec un bouton d'application 1-clic lo
 msgid "Show a nice message before and after specific start/end dates so you can recapture lost sales."
 msgstr "Affiche un joli message avant et après les dates de début/fin définies de sorte que vous pouvez recapter ces ventes perdues."
 
-#: Models/Script_Loader.php:363
+#: Models/Script_Loader.php:366
 msgid "Show Help Content"
 msgstr "Donnez la permission de récupérer et afficher le contenu d’aide. Cliquez sur le bouton ci-dessous pour procéder."
 
@@ -2562,7 +2564,7 @@ msgstr "Donnez la permission de récupérer et afficher le contenu d’aide. Cli
 msgid "Simple BOGO deals only"
 msgstr "Offre BOGO simple uniquement"
 
-#: Models/Script_Loader.php:572
+#: Models/Script_Loader.php:575
 msgid "Single Advanced Coupon"
 msgstr "Code promo unique"
 
@@ -2593,12 +2595,12 @@ msgstr "Désolé, vous n'êtes pas autorisé à modifier les paramètres des opt
 msgid "Sort Coupons in Cart"
 msgstr "Trier les coupons dans le panier"
 
-#: Models/Admin_App.php:701
+#: Models/Admin_App.php:711
 msgid "Source"
 msgstr "Source"
 
-#: Models/Edit_Coupon.php:682
-#: Models/Edit_Coupon.php:689
+#: Models/Edit_Coupon.php:684
+#: Models/Edit_Coupon.php:691
 msgid "Specific Product/s"
 msgstr "Produit(s) spécifique(s)"
 
@@ -2612,7 +2614,7 @@ msgstr "Commencer le paramétrage"
 msgid "Status"
 msgstr "Statut"
 
-#: Models/Admin_App.php:729
+#: Models/Admin_App.php:739
 msgid "Store Credit Balance"
 msgstr "Solde de crédit boutique"
 
@@ -2620,11 +2622,11 @@ msgstr "Solde de crédit boutique"
 msgid "Store credit can be used to purchase items on this store."
 msgstr "Le crédit boutique peut être utilisé pour vos achats dans cette boutique."
 
-#: Models/Store_Credits/Checkout.php:989
+#: Models/Store_Credits/Checkout.php:1244
 msgid "Store credit discount has been removed."
 msgstr "La réduction en crédit boutique a été supprimée."
 
-#: Models/Store_Credits/Checkout.php:988
+#: Models/Store_Credits/Checkout.php:1243
 msgid "Store credit discount was applied successfully."
 msgstr "La réduction en crédit boutique a été appliquée avec succès."
 
@@ -2632,7 +2634,7 @@ msgstr "La réduction en crédit boutique a été appliquée avec succès."
 msgid "Store credit entry doesn't exist."
 msgstr "L’entrée de crédit boutique n’existe pas."
 
-#: Models/Admin_App.php:741
+#: Models/Admin_App.php:751
 msgid "Store Credit History"
 msgstr "Historique de crédit boutique"
 
@@ -2661,15 +2663,15 @@ msgstr "Crédits boutique ajoutés"
 msgid "Store Credits Dashboard"
 msgstr "Tableau de bord des crédits boutique"
 
-#: Models/Admin_App.php:697
+#: Models/Admin_App.php:707
 msgid "Store Credits Sources"
 msgstr "Sources des crédits boutique"
 
-#: Models/Admin_App.php:693
+#: Models/Admin_App.php:703
 msgid "Store Credits Statistics"
 msgstr "Statistiques des crédits boutique"
 
-#: Models/Admin_App.php:689
+#: Models/Admin_App.php:699
 msgid "Store Credits Status"
 msgstr "État des crédits boutique"
 
@@ -2679,7 +2681,7 @@ msgid "Store Credits Used"
 msgstr "Crédits boutique utilisés"
 
 #: data/coupon-fields/one-click-apply.php:41
-#: Models/Edit_Coupon.php:668
+#: Models/Edit_Coupon.php:670
 #: Models/Objects/ACFW_Settings.php:335
 #: views/coupons/view-cart-conditions-data-panel.php:72
 msgid "Success"
@@ -2705,21 +2707,21 @@ msgstr "Entrée de crédit boutique mise à jour avec succès."
 msgid "Sunday"
 msgstr "Dimanche"
 
-#: Models/Edit_Coupon.php:1036
+#: Models/Edit_Coupon.php:1038
 msgctxt "Taxonomy General Name"
 msgid "Coupon Categories"
 msgstr "Catégorie de code promo"
 
-#: Models/Edit_Coupon.php:1037
+#: Models/Edit_Coupon.php:1039
 msgctxt "Taxonomy Singular Name"
 msgid "Coupon Category"
 msgstr "Catégorie de code promo"
 
-#: Models/Edit_Coupon.php:747
+#: Models/Edit_Coupon.php:749
 msgid "The exact date the coupon will be available from. Based on the timezone in this WordPress installation's settings."
 msgstr "La date exacte à partir de laquelle le code promo sera valide. S’appuie sur la timezone de vos paramètres d’installation WordPress."
 
-#: Models/Edit_Coupon.php:772
+#: Models/Edit_Coupon.php:774
 msgid "The exact date the coupon will be expired. Based on the timezone in this WordPress installation's settings."
 msgstr "La date exacte à laquelle le code promo expirera. S’appuie sur la timezone de vos paramètres d’installation WordPress."
 
@@ -2738,7 +2740,7 @@ msgstr "Le message qui devrait être affiché pour les utilisateurs, s'ils ne so
 msgid "The prefix to be used before the coupon code. Eg. %s"
 msgstr "Le préfixe à utiliser avant le code de code promo. Par exemple: %s"
 
-#: Models/Admin_App.php:667
+#: Models/Admin_App.php:677
 msgid "The price entered is not valid"
 msgstr "Le prix entré n’est pas valide"
 
@@ -2753,7 +2755,7 @@ msgstr "Le montant fourni est invalide ou le solde de crédit boutique est insuf
 msgid "The provided ID is not a valid Advanced Coupons setting."
 msgstr "L’ID fourni n’est pas un paramètre valide d’Advanced Coupons."
 
-#: Models/Edit_Coupon.php:736
+#: Models/Edit_Coupon.php:738
 msgid "The scheduler gives you fine grained control over when this coupon is valid. Choose the start date & time, along with the end date & time. Optionally, show a WooCommerce notification message when the coupon is attempted to be applied outside of the allowed schedule."
 msgstr "Le planificateur offre un contrôle fin sur la validité des code promo. Choisissez une date et heure de début ainsi qu’une date et heure de fin. En option, montrez une notification WooCommerce lorsqu’on tente d’utiliser ce code promo hors de la période autorisée."
 
@@ -2770,7 +2772,7 @@ msgid "The tools you need to run these deals in your WooCommerce store"
 msgstr "Les outils dont vous avez besoin pour mettre en œuvre ces offres dans votre boutique WooCommerce"
 
 #: Models/Objects/Blocks/Checkout_Integration.php:113
-#: Models/Store_Credits/Checkout.php:536
+#: Models/Store_Credits/Checkout.php:570
 msgid "The total of your order changed, please click here to <a class=\"acfw-reapply-sc-discount\" href=\"#\">reapply the store credit discount</a>."
 msgstr "Le total de votre commande a changé, veuillez cliquer ici pour <a class=\"acfw-reapply-sc-discount\" href=\"#\">réappliquer la réduction via crédit boutique</a>."
 
@@ -2804,7 +2806,7 @@ msgstr "Une erreur est survenue au chargement des données de crédit boutique d
 msgid "There was an error loading store credit entries data."
 msgstr "Une erreur est survenue au chargement de données des entrées de crédit boutique."
 
-#: Models/Store_Credits/Calculate.php:501
+#: Models/Store_Credits/Calculate.php:522
 msgid "There was an error loading store credits data."
 msgstr "Une erreur est survenue au chargement des données de crédit boutique."
 
@@ -2825,7 +2827,7 @@ msgid "There was an error trying to load the content."
 msgstr "Une erreur est survenue au chargement du contenu."
 
 #: Models/Admin_App.php:482
-#: Models/Admin_App.php:1122
+#: Models/Admin_App.php:1132
 msgid "There was an error trying to process your request. Please refresh the page and try again."
 msgstr "Une erreur est survenue lors du traitement de votre requête. Veuillez rafraîchir la page et réessayer."
 
@@ -2833,12 +2835,12 @@ msgstr "Une erreur est survenue lors du traitement de votre requête. Veuillez r
 msgid "There was an error updating the store credit entry."
 msgstr "Une erreur est survenue à la mise à jour de l'entrée de crédit boutique."
 
-#: Models/Script_Loader.php:365
+#: Models/Script_Loader.php:368
 msgid "There was an issue trying to embed the video. Please click the image to watch the video directly in youtube.com"
 msgstr "Il y a eu un problème lors de l'inclusion de la vidéo. Veuillez cliquer sur l'image pour regarder la vidéo directement sur youtube.com"
 
 #. Translators: %s: Advanced Coupons premium pricing page URL.
-#: Models/Script_Loader.php:609
+#: Models/Script_Loader.php:612
 #, php-format
 msgid "This block is only available in the <a href=\"%s\" target=\"_blank\" rel=\"noopener noreferer\">Premium add-on for Advanced Coupons.</a>"
 msgstr "Ce bloc est disponible uniquement dans le <a href=\"%s\" target=\"_blank\" rel=\"noopener noreferer\">module Premium pour Advanced Coupons.</a>"
@@ -2847,13 +2849,13 @@ msgstr "Ce bloc est disponible uniquement dans le <a href=\"%s\" target=\"_blank
 msgid "This can also be combined with other features like Cart Conditions and Auto Apply to make products appear in the customer's cart like magic once conditions are met."
 msgstr "Cela peut aussi être combiné avec d'autres fonctionnalités comme les conditions de panier et afin de faire apparaître les produits dans le panier client comme par magie lorsque les conditions sont satisfaites."
 
-#: Models/Edit_Coupon.php:789
+#: Models/Edit_Coupon.php:791
 #: Models/Objects/ACFW_Settings.php:488
 #: Models/Scheduler.php:121
 msgid "This coupon has expired."
 msgstr "Ce code promo a expiré."
 
-#: Models/Edit_Coupon.php:764
+#: Models/Edit_Coupon.php:766
 #: Models/Objects/ACFW_Settings.php:479
 #: Models/Scheduler.php:118
 msgid "This coupon has not started yet."
@@ -2919,7 +2921,7 @@ msgstr "Total des crédits"
 msgid "Total Customer Spend (Premium)"
 msgstr "Le total des dépenses du client est (Premium)"
 
-#: Models/Cart_Conditions.php:715
+#: Models/Cart_Conditions.php:728
 msgid "Total number of cart items"
 msgstr "Nombre total de produits dans le panier"
 
@@ -2927,7 +2929,7 @@ msgstr "Nombre total de produits dans le panier"
 msgid "Total Paid"
 msgstr "Total payé"
 
-#: Models/Script_Loader.php:317
+#: Models/Script_Loader.php:319
 msgid "Trigger Quantity"
 msgstr "Déclencheur de quantité"
 
@@ -2935,7 +2937,7 @@ msgstr "Déclencheur de quantité"
 msgid "Tuesday"
 msgstr "Mardi"
 
-#: Models/Script_Loader.php:358
+#: Models/Script_Loader.php:361
 msgid "Tutorials & Guides"
 msgstr "Tutoriels & Guides"
 
@@ -2944,7 +2946,7 @@ msgstr "Tutoriels & Guides"
 msgid "Type"
 msgstr "Type"
 
-#: Models/Script_Loader.php:315
+#: Models/Script_Loader.php:317
 msgid "Type to search"
 msgstr "Entrez votre recherche"
 
@@ -2952,8 +2954,8 @@ msgstr "Entrez votre recherche"
 msgid "Unable to save store credit entry due to missing or invalid required parameters."
 msgstr "Impossible de sauvegarder une entrée de crédit boutique du fait de paramètres requis absents ou invalides."
 
-#: Models/Edit_Coupon.php:1128
-#: Models/Edit_Coupon.php:1309
+#: Models/Edit_Coupon.php:1130
+#: Models/Edit_Coupon.php:1311
 msgid "Uncategorized"
 msgstr "Non classé"
 
@@ -2984,7 +2986,7 @@ msgstr "Débloquez plus de fonctionnalités pour vos codes promo avec Advanced C
 msgid "Unlock the full power of Cart Conditions with <a href=\"%s\" target=\"_blank\" rel=\"norefer noopener\">Advanced Coupons Premium</a>. Restrict your coupons using these premium cart conditions."
 msgstr "Débloquez la pleine puissance des Conditions de Panier avec <a href=\"%s\" target=\"_blank\" rel=\"norefer noopener\">Advanced Coupons Premium</a>. Restreignez les code promo grâce à ces conditions de panier premium."
 
-#: Models/Edit_Coupon.php:1045
+#: Models/Edit_Coupon.php:1047
 msgid "Update Category"
 msgstr "Mettre à jour la catégorie"
 
@@ -3018,12 +3020,13 @@ msgid "Upgrade To Get Virtual Coupons"
 msgstr "Passer à la version Premium pour utiliser des codes promo virtuels"
 
 #: Models/Admin_App.php:409
-#: Models/Script_Loader.php:361
+#: Models/Script_Loader.php:364
 #: Models/Upsell.php:1255
 #: views/premium/view-license-placeholder-settings-page.php:22
 msgid "Upgrade To Premium"
 msgstr "Passer à la version Premium"
 
+#: Models/Admin_App.php:611
 #: Models/Coupon_Templates.php:161
 #: Models/Upsell.php:1105
 #: Models/Upsell.php:1844
@@ -3099,19 +3102,19 @@ msgid "Uses"
 msgstr "Utilisations"
 
 #. Translators: %1$s: Schedule start date, %2$s: Schedule end date.
-#: Models/Objects/Advanced_Coupon.php:986
+#: Models/Objects/Advanced_Coupon.php:1005
 #, php-format
 msgid "Valid from %1$s until %2$s"
 msgstr "Valide du %1$s au %2$s"
 
 #. Translators: %s: Schedule start date.
-#: Models/Objects/Advanced_Coupon.php:989
+#: Models/Objects/Advanced_Coupon.php:1008
 #, php-format
 msgid "Valid from %s"
 msgstr "Valide dès le %s"
 
 #. Translators: %s: Schedule end date.
-#: Models/Objects/Advanced_Coupon.php:992
+#: Models/Objects/Advanced_Coupon.php:1011
 #, php-format
 msgid "Valid until %s"
 msgstr "Valide jusqu'au %s"
@@ -3125,13 +3128,13 @@ msgstr "Version"
 msgid "View all"
 msgstr "Tout voir"
 
-#: Models/Edit_Coupon.php:1046
+#: Models/Edit_Coupon.php:1048
 msgid "View Category"
 msgstr "Voir la catégorie"
 
 #: Models/BOGO/Admin.php:244
-#: Models/BOGO/Frontend.php:544
-#: Models/Edit_Coupon.php:674
+#: Models/BOGO/Frontend.php:793
+#: Models/Edit_Coupon.php:676
 #: Models/Objects/ACFW_Settings.php:317
 msgid "View Deals"
 msgstr "Afficher les offres"
@@ -3151,7 +3154,7 @@ msgstr "Voir les licences →"
 msgid "View Order"
 msgstr "Voir la commande"
 
-#: Models/Admin_App.php:733
+#: Models/Admin_App.php:743
 msgid "View Stats"
 msgstr "Afficher les statistiques"
 
@@ -3167,7 +3170,7 @@ msgstr "Coupons virtuels (premium)"
 msgid "Virtual coupons are other codes that are also valid for this coupon. It’s great when you need lots of unique codes for the same deal."
 msgstr "Les codes promos virtuels sont d’autres codes également valides pour cette promo. Pratique lorsque vous avec besoin de multiples codes pour la même offre."
 
-#: Models/Script_Loader.php:592
+#: Models/Script_Loader.php:595
 msgid "Virtual coupons only"
 msgstr "Codes promo virtuels uniquement"
 
@@ -3197,7 +3200,7 @@ msgstr "Nous remarquons que vous utilisez Advanced Coupons depuis une quinzaine 
 msgid "Wednesday"
 msgstr "Mercredi"
 
-#: Models/Admin_App.php:606
+#: Models/Admin_App.php:616
 msgid "Week to Date"
 msgstr "Semaine courante"
 
@@ -3234,7 +3237,7 @@ msgstr "Moins de X heures après l'inscription du client (Premium)"
 msgid "WooCommerce Wholesale Prices"
 msgstr "WooCommerce Wholesale Prices"
 
-#: Models/Admin_App.php:618
+#: Models/Admin_App.php:628
 msgid "Year to Date"
 msgstr "Année courante"
 
@@ -3247,15 +3250,15 @@ msgstr "Vous utilisez actuellement Advanced Coupons pour WooCommerce (version gr
 msgid "You are currently using Advanced Coupons for WooCommerce Free on a GPL license. The free version includes a heap of great extra features for your WooCommerce coupons. The only requirement for the free version is that you have WooCommerce installed."
 msgstr "Vous utilisez actuellement Advanced Coupons for WooCommerce Free sous licence GPL. La version gratuite inclut un tas de fonctionnalités supplémentaires pour vos codes promo WooCommerce. La seule exigence pour la version gratuite est que vous ayez installé WooCommerce."
 
-#: Models/Admin_App.php:1030
+#: Models/Admin_App.php:1040
 #: Models/BOGO/Admin.php:300
-#: Models/BOGO/Admin.php:362
-#: Models/Cart_Conditions.php:609
+#: Models/BOGO/Admin.php:367
+#: Models/Cart_Conditions.php:622
 #: Models/Emails.php:272
 msgid "You are not allowed to do this"
 msgstr "Vous n'êtes pas autorisé à le faire"
 
-#: Models/Store_Credits/Checkout.php:969
+#: Models/Store_Credits/Checkout.php:1224
 msgid "You are not allowed to do this."
 msgstr "Vous n’êtes pas autorisé à faire cela."
 
@@ -3316,18 +3319,18 @@ msgstr "Vous avez enregistré les données sur un inédit de code promo. Pour vo
 msgid "You're using Advanced Coupons for WooCommerce Free - no license needed. Enjoy! 🙂"
 msgstr "Vous utilisez Advanced Coupons for WooCommerce Free - aucune licence n’est nécessaire. Profitez bien! 🙂"
 
-#: Models/Cart_Conditions.php:540
+#: Models/Cart_Conditions.php:547
 #: Models/Edit_Coupon.php:598
 msgid "Your current cart hasn't met the conditions set for this coupon."
 msgstr "Votre panier actuel ne satisfait pas les conditions fixées pour ce code promo."
 
 #: Models/BOGO/Admin.php:240
-#: Models/Edit_Coupon.php:673
+#: Models/Edit_Coupon.php:675
 #: Models/Objects/ACFW_Settings.php:309
 msgid "Your current cart is eligible to redeem deals"
 msgstr "Votre panier est éligible à des offres promotionnelles"
 
-#: Models/BOGO/Frontend.php:540
+#: Models/BOGO/Frontend.php:789
 msgid "Your current cart is eligible to redeem deals."
 msgstr "Votre panier est éligible à des offres promotionnelles."
 
@@ -3340,11 +3343,11 @@ msgstr "Votre licence actuelle d'Advanced Coupons:"
 msgid "Your customers will love being able to earn points for their orders so they can redeem them for coupons on future orders. Get set up and running in a few minutes."
 msgstr "Vos clients vous adorer pouvoir gagner avec leurs commande des points qu’ils pourront échanger contre des codes promo pour leurs futures commandes. Installé et fonctionnel en quelques minutes."
 
-#: Models/Script_Loader.php:561
+#: Models/Script_Loader.php:564
 msgid "Your store doesn't have any coupon categories"
 msgstr "Votre ecommerce n’a aucune catégorie de code promo."
 
-#: Models/Script_Loader.php:583
+#: Models/Script_Loader.php:586
 msgid "Z → A"
 msgstr "Z → A"
 
@@ -3368,7 +3371,7 @@ msgstr "🔍 S'intègre dans votre e-commerce existant"
 msgid "🚀️ Lots of options for customer to earn points"
 msgstr "🚀️ Plein d’options pour que vos clients gagnent des points"
 
-#: Helpers/Helper_Functions.php:1175
+#: Helpers/Helper_Functions.php:1209
 msgid "Invalid customer or email"
 msgstr ""
 
@@ -3497,65 +3500,65 @@ msgid "Click here to redeem"
 msgstr ""
 
 #. Translators: %s: list of available placeholder tags
-#: Models/Objects/Emails/Coupon.php:332
+#: Models/Objects/Emails/Coupon.php:342
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:394
 #, php-format
 msgid "Available placeholders: %s"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:335
+#: Models/Objects/Emails/Coupon.php:345
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:399
 msgid "Enable/Disable"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:337
+#: Models/Objects/Emails/Coupon.php:347
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:401
 msgid "Enable this email"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:341
+#: Models/Objects/Emails/Coupon.php:351
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:405
 msgid "Subject"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:349
+#: Models/Objects/Emails/Coupon.php:359
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:413
 msgid "Email heading"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:357
+#: Models/Objects/Emails/Coupon.php:367
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:421
 #: Models/Send_Coupon.php:114
 #: Models/Send_Coupon.php:116
 msgid "Message"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:365
+#: Models/Objects/Emails/Coupon.php:375
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:429
 msgid "Button text"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:373
+#: Models/Objects/Emails/Coupon.php:383
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:437
 msgid "Additional content"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:374
+#: Models/Objects/Emails/Coupon.php:384
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:438
 msgid "Text to appear below the main email content."
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:376
+#: Models/Objects/Emails/Coupon.php:386
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:440
 msgid "N/A"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:382
+#: Models/Objects/Emails/Coupon.php:392
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:446
 msgid "Email type"
 msgstr ""
 
-#: Models/Objects/Emails/Coupon.php:384
+#: Models/Objects/Emails/Coupon.php:394
 #: Models/Objects/Emails/Store_Credit_Adjustment.php:448
 msgid "Choose which format of email to send."
 msgstr ""
@@ -3599,11 +3602,11 @@ msgstr ""
 msgid "If any products from the following categories are in the cart, they will be eligible for \"Get\" portion of the BOGO deal."
 msgstr ""
 
-#: Models/Script_Loader.php:308
+#: Models/Script_Loader.php:310
 msgid "If the quantity of all products in the cart is met, they will be eligible for \"Get\" portion of the BOGO deal."
 msgstr ""
 
-#: Models/Store_Credits/Checkout.php:367
+#: Models/Store_Credits/Checkout.php:369
 msgid "Store Credit Discount"
 msgstr ""
 
@@ -3681,7 +3684,7 @@ msgstr ""
 msgid "BOGO (Buy One, Get One) style deals let you define a \"Buy\" Type which says what activates the deal, and a \"Get\" type that says what the customer will get when fulfilling the deal."
 msgstr ""
 
-#: views/coupons/view-bogo-deals-data-panel.php:84
+#: views/coupons/view-bogo-deals-data-panel.php:100
 msgid "Notice shown when BOGO deal is eligible, but \"Get\" products are not in the cart:"
 msgstr ""
 
@@ -3697,7 +3700,7 @@ msgstr ""
 msgid "Store Credit Used"
 msgstr ""
 
-#: Models/Cart_Conditions.php:725
+#: Models/Cart_Conditions.php:738
 msgid "Include Tax?"
 msgstr ""
 
@@ -3714,7 +3717,7 @@ msgid "The provided URL is not valid."
 msgstr ""
 
 #. Translators: %s: Customer's store credit balance
-#: Models/Script_Loader.php:415
+#: Models/Script_Loader.php:418
 #, php-format
 msgid "Enter the amount of store credits to apply. Customer's store credits balance is %s"
 msgstr ""
@@ -4011,7 +4014,7 @@ msgid "Cart Weight (Premium)"
 msgstr ""
 
 #. Translators: %s is the coupon code.
-#: Models/BOGO/Frontend.php:117
+#: Models/BOGO/Frontend.php:131
 #, php-format
 msgid "Sorry, coupon \"%s\" cannot be used in conjunction with the other coupons already applied."
 msgstr ""
@@ -4529,7 +4532,7 @@ msgid "Search coupons and/or coupon categories&hellip;"
 msgstr ""
 
 #. Translators: %d is the number of years.
-#: Helpers/Helper_Functions.php:1550
+#: Helpers/Helper_Functions.php:1585
 #, php-format
 msgid "%d year ago"
 msgid_plural "%d years ago"
@@ -4537,7 +4540,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. Translators: %d is the number of months.
-#: Helpers/Helper_Functions.php:1554
+#: Helpers/Helper_Functions.php:1589
 #, php-format
 msgid "%d month ago"
 msgid_plural "%d months ago"
@@ -4545,7 +4548,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. Translators: %d is the number of days.
-#: Helpers/Helper_Functions.php:1558
+#: Helpers/Helper_Functions.php:1593
 #, php-format
 msgid "%d day ago"
 msgid_plural "%d days ago"
@@ -4553,7 +4556,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. Translators: %d is the number of hours.
-#: Helpers/Helper_Functions.php:1562
+#: Helpers/Helper_Functions.php:1597
 #, php-format
 msgid "%d hour ago"
 msgid_plural "%d hours ago"
@@ -4561,7 +4564,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. Translators: %d is the number of minutes.
-#: Helpers/Helper_Functions.php:1566
+#: Helpers/Helper_Functions.php:1601
 #, php-format
 msgid "%d minute ago"
 msgid_plural "%d minutes ago"
@@ -4569,7 +4572,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. Translators: This refers to a very short time interval (less than a minute).
-#: Helpers/Helper_Functions.php:1569
+#: Helpers/Helper_Functions.php:1604
 msgid "just now"
 msgstr ""
 
@@ -4611,27 +4614,27 @@ msgstr ""
 msgid "[Remove]"
 msgstr ""
 
-#: Models/Admin_App.php:675
+#: Models/Admin_App.php:685
 msgid "Add Note"
 msgstr ""
 
-#: Models/Admin_App.php:679
+#: Models/Admin_App.php:689
 msgid "Enter a note for this adjustment"
 msgstr ""
 
-#: Models/Admin_App.php:776
+#: Models/Admin_App.php:786
 msgid "AT LEAST"
 msgstr ""
 
-#: Models/Admin_App.php:780
+#: Models/Admin_App.php:790
 msgid "ALL"
 msgstr ""
 
-#: Models/Admin_App.php:784
+#: Models/Admin_App.php:794
 msgid "Within a period"
 msgstr ""
 
-#: Models/Admin_App.php:788
+#: Models/Admin_App.php:798
 msgid "Number of orders"
 msgstr ""
 
@@ -4647,11 +4650,11 @@ msgstr ""
 msgid "Can only be applied once the conditions match"
 msgstr ""
 
-#: advanced-coupons-for-woocommerce-free.php:244
+#: advanced-coupons-for-woocommerce-free.php:246
 msgid "Click here to activate →"
 msgstr ""
 
-#: advanced-coupons-for-woocommerce-free.php:247
+#: advanced-coupons-for-woocommerce-free.php:249
 msgid "Click here to install from WordPress.org repo →"
 msgstr ""
 
@@ -5087,11 +5090,12 @@ msgstr ""
 msgid "This tool has everything you need to create advanced, high-performing campaigns that drive results!"
 msgstr ""
 
-#: Models/Admin_App.php:848
+#: Models/Admin_App.php:858
 #: views/getting-started/index.php:244
 #: views/getting-started/index.php:287
 #: views/getting-started/index.php:322
 #: views/notices/view-saveto-wishlist-notice.php:124
+#: views/notices/view-storeagent-notice.php:124
 msgid "Learn More"
 msgstr ""
 
@@ -5374,11 +5378,11 @@ msgstr ""
 msgid "Once the \"Buy\" portion of the BOGO deal is satisfied, grant the following discounts on additional products belonging to the following categories in the cart. If multiple items are present and eligible for the discount, the cheapest product will get the discount first. You can configure which product to be discounted in the additional settings option."
 msgstr ""
 
-#: Models/Script_Loader.php:309
+#: Models/Script_Loader.php:311
 msgid "Once the \"Buy\" portion of the BOGO deal is satisfied, grant the following discount on any product in the cart. If multiple items are present and eligible for the discount, the cheapest product will get the discount first. You can configure which product to be discounted in the additional settings option."
 msgstr ""
 
-#: Models/Script_Loader.php:603
+#: Models/Script_Loader.php:606
 msgid "Hide expired coupons"
 msgstr ""
 
@@ -5487,31 +5491,31 @@ msgstr ""
 msgid "AI-powered automation for WooCommerce stores with intelligent agents."
 msgstr ""
 
-#: Models/Script_Loader.php:310
+#: Models/Script_Loader.php:312
 msgid "Once the \"Buy\" portion of the BOGO deal is satisfied, grant the following discounts on the same product(s) already in the cart. You can configure which product to be discounted in the additional settings option."
 msgstr ""
 
-#: Models/Script_Loader.php:369
+#: Models/Script_Loader.php:372
 msgid "Create New Coupon"
 msgstr ""
 
-#: Models/Script_Loader.php:370
+#: Models/Script_Loader.php:373
 msgid "Choose how you'd like to create your coupon. Start from scratch or use a pre-built template to save time."
 msgstr ""
 
-#: Models/Script_Loader.php:371
+#: Models/Script_Loader.php:374
 msgid "Create Coupon Manually"
 msgstr ""
 
-#: Models/Script_Loader.php:372
+#: Models/Script_Loader.php:375
 msgid "Build your coupon from the ground up with complete control over every setting and option."
 msgstr ""
 
-#: Models/Script_Loader.php:373
+#: Models/Script_Loader.php:376
 msgid "Choose Coupon Template"
 msgstr ""
 
-#: Models/Script_Loader.php:374
+#: Models/Script_Loader.php:377
 msgid "Select from pre-configured templates to quickly create common coupon types with proven settings."
 msgstr ""
 
@@ -5569,7 +5573,7 @@ msgstr ""
 msgid "Adds a wishlist button to product and shop pages so customers can save items, manage their wishlist, and return later to purchase, helping boost engagement and sales."
 msgstr ""
 
-#: Models/Admin_App.php:683
+#: Models/Admin_App.php:693
 msgid "Send email notification to customer"
 msgstr ""
 
@@ -5609,7 +5613,7 @@ msgstr ""
 msgid "decreased"
 msgstr ""
 
-#: Models/Store_Credits/Checkout.php:961
+#: Models/Store_Credits/Checkout.php:1216
 msgid "You must be logged in to redeem store credits."
 msgstr ""
 
@@ -5644,141 +5648,141 @@ msgstr ""
 msgid "Your New Balance"
 msgstr ""
 
-#: Models/Admin_App.php:810
+#: Models/Admin_App.php:820
 msgid "Generate Coupon with AI"
 msgstr ""
 
-#: Models/Admin_App.php:811
+#: Models/Admin_App.php:821
 msgid "Describe the promotion you want to create and let AI generate a coupon template for you."
 msgstr ""
 
-#: Models/Admin_App.php:812
+#: Models/Admin_App.php:822
 msgid "e.g., \"20% off for first-time customers who spend over $50\""
 msgstr ""
 
-#: Models/Admin_App.php:813
+#: Models/Admin_App.php:823
 #: Models/Coupon_Templates.php:164
-#: Models/Script_Loader.php:375
+#: Models/Script_Loader.php:378
 msgid "Generate with AI"
 msgstr ""
 
-#: Models/Admin_App.php:814
+#: Models/Admin_App.php:824
 msgid "Continue with AI Template"
 msgstr ""
 
-#: Models/Admin_App.php:815
+#: Models/Admin_App.php:825
 msgid "Generating..."
 msgstr ""
 
-#: Models/Admin_App.php:816
+#: Models/Admin_App.php:826
 msgid "Note: Currently does not support BOGO, shipping overrides, or adding products."
 msgstr ""
 
-#: Models/Admin_App.php:817
+#: Models/Admin_App.php:827
 msgid "Example prompts:"
 msgstr ""
 
-#: Models/Admin_App.php:819
+#: Models/Admin_App.php:829
 msgid "20% off for first-time customers on orders over $50"
 msgstr ""
 
-#: Models/Admin_App.php:820
+#: Models/Admin_App.php:830
 msgid "10% discount for VIP members on all products"
 msgstr ""
 
-#: Models/Admin_App.php:821
+#: Models/Admin_App.php:831
 msgid "$15 off on Electronics category for orders above $100"
 msgstr ""
 
-#: Models/Admin_App.php:822
+#: Models/Admin_App.php:832
 msgid "25% off for newsletter subscribers this weekend"
 msgstr ""
 
-#: Models/Admin_App.php:823
+#: Models/Admin_App.php:833
 msgid "30% discount on Fall collection for returning customers"
 msgstr ""
 
-#: Models/Admin_App.php:824
+#: Models/Admin_App.php:834
 msgid "Buy from Home Decor category and get 15% off"
 msgstr ""
 
-#: Models/Admin_App.php:825
+#: Models/Admin_App.php:835
 msgid "$20 off for wholesale customers on orders over $200"
 msgstr ""
 
-#: Models/Admin_App.php:826
+#: Models/Admin_App.php:836
 msgid "10% off site-wide for loyalty program members"
 msgstr ""
 
-#: Models/Admin_App.php:827
+#: Models/Admin_App.php:837
 msgid "40% discount on Clearance items for all customers"
 msgstr ""
 
-#: Models/Admin_App.php:828
+#: Models/Admin_App.php:838
 msgid "15% off for customers who spent over $500 in the past"
 msgstr ""
 
-#: Models/Admin_App.php:829
+#: Models/Admin_App.php:839
 msgid "$10 off on first purchase for new registered users"
 msgstr ""
 
-#: Models/Admin_App.php:830
+#: Models/Admin_App.php:840
 msgid "20% discount on Apparel category this month only"
 msgstr ""
 
-#: Models/Admin_App.php:832
+#: Models/Admin_App.php:842
 msgid "Please provide a more detailed description (at least 10 characters)."
 msgstr ""
 
-#: Models/Admin_App.php:833
+#: Models/Admin_App.php:843
 msgid "Failed to generate coupon. Please try again."
 msgstr ""
 
-#: Models/Admin_App.php:836
+#: Models/Admin_App.php:846
 msgid "Create Coupons with AI"
 msgstr ""
 
-#: Models/Admin_App.php:837
+#: Models/Admin_App.php:847
 msgid "Generate ready-to-use coupons in seconds just by describing your promotion. Powered by StoreAgent AI — a free plugin that brings AI Coupon Generation, Product Descriptions, Review Summaries, and more to your WooCommerce store."
 msgstr ""
 
-#: Models/Admin_App.php:838
+#: Models/Admin_App.php:848
 msgid "Install StoreAgent AI (Free)"
 msgstr ""
 
-#: Models/Admin_App.php:839
+#: Models/Admin_App.php:849
 msgid "StoreAgent AI installed and activated successfully!"
 msgstr ""
 
-#: Models/Admin_App.php:840
+#: Models/Admin_App.php:850
 msgid "Failed to install StoreAgent AI. Please try again."
 msgstr ""
 
-#: Models/Admin_App.php:841
+#: Models/Admin_App.php:851
 msgid "Almost There! Activate StoreAgent AI"
 msgstr ""
 
-#: Models/Admin_App.php:842
+#: Models/Admin_App.php:852
 msgid "StoreAgent AI is installed and ready to go. Activate it to start generating coupons with AI in just a few clicks."
 msgstr ""
 
-#: Models/Admin_App.php:843
+#: Models/Admin_App.php:853
 msgid "Activate StoreAgent AI"
 msgstr ""
 
-#: Models/Admin_App.php:844
+#: Models/Admin_App.php:854
 msgid "StoreAgent AI activated successfully!"
 msgstr ""
 
-#: Models/Admin_App.php:845
+#: Models/Admin_App.php:855
 msgid "One Last Step — Connect StoreAgent AI"
 msgstr ""
 
-#: Models/Admin_App.php:846
+#: Models/Admin_App.php:856
 msgid "Connect your store to StoreAgent AI to unlock AI-powered coupon generation and other smart features for your WooCommerce store."
 msgstr ""
 
-#: Models/Admin_App.php:847
+#: Models/Admin_App.php:857
 msgid "Connect StoreAgent AI"
 msgstr ""
 
@@ -5887,6 +5891,7 @@ msgid "Activate"
 msgstr ""
 
 #: Models/Notices/SaveTo_Wishlist_Notice.php:181
+#: Models/Notices/StoreAgent_Notice.php:155
 msgid "Insufficient permissions."
 msgstr ""
 
@@ -5926,7 +5931,7 @@ msgstr ""
 msgid "The cleanup has been completed."
 msgstr ""
 
-#: Models/Script_Loader.php:376
+#: Models/Script_Loader.php:379
 msgid "Use AI to generate a coupon based on a natural language description of your promotion."
 msgstr ""
 
@@ -5943,10 +5948,12 @@ msgid "Let customers save their favorite products and come back to buy later. Ou
 msgstr ""
 
 #: views/notices/view-saveto-wishlist-notice.php:150
+#: views/notices/view-storeagent-notice.php:150
 msgid "Installing..."
 msgstr ""
 
 #: views/notices/view-saveto-wishlist-notice.php:164
+#: views/notices/view-storeagent-notice.php:159
 msgid "Activated! Reloading..."
 msgstr ""
 
@@ -6004,4 +6011,192 @@ msgstr ""
 
 #: Models/Upsell.php:2180
 msgid "Once installed, you can create product labels and badges in minutes. Draw attention to your best deals and watch your conversions grow."
+msgstr ""
+
+#: Models/Admin_App.php:604
+msgid "Bulk Adjust"
+msgstr ""
+
+#: Models/Admin_App.php:609
+msgid "Bulk Adjust Store Credits"
+msgstr ""
+
+#: Models/Admin_App.php:610
+msgid "Adjust store credit balances in bulk for groups of customers based on filters such as user roles, balance ranges, registration date, and last order date. This feature is available in the Premium version."
+msgstr ""
+
+#. Translators: 1: residual unpaid amount, 2: customer's available store credit balance, 3: order total after tax recalculation
+#: Models/Store_Credits/Checkout.php:1063
+#, php-format
+msgid "Store credit balance (%2$s) is insufficient to fully cover the order total (%3$s) after tax recalculation. Residual unpaid amount: %1$s — please collect via another payment method or top up the customer's store credit balance."
+msgstr ""
+
+#: Models/Abilities.php:69
+msgid "Abilities for the Advanced Coupons plugin family."
+msgstr ""
+
+#: Models/Abilities.php:85
+msgid "List coupons"
+msgstr ""
+
+#: Models/Abilities.php:86
+msgid "Retrieve a filtered list of WooCommerce coupons with their core details."
+msgstr ""
+
+#: Models/Abilities.php:119
+msgid "Get coupon"
+msgstr ""
+
+#: Models/Abilities.php:120
+msgid "Retrieve the full configuration of a single coupon, including Advanced Coupons settings."
+msgstr ""
+
+#: Models/Abilities.php:145
+msgid "Create coupon"
+msgstr ""
+
+#: Models/Abilities.php:146
+msgid "Create a new WooCommerce coupon with optional Advanced Coupons configuration."
+msgstr ""
+
+#: Models/Abilities.php:180
+msgid "Update coupon"
+msgstr ""
+
+#: Models/Abilities.php:181
+msgid "Update an existing coupon. Only the fields provided are changed."
+msgstr ""
+
+#: Models/Abilities.php:215
+msgid "Delete coupon"
+msgstr ""
+
+#: Models/Abilities.php:216
+msgid "Move a coupon to the trash."
+msgstr ""
+
+#: Models/Abilities.php:242
+msgid "Set coupon URL trigger"
+msgstr ""
+
+#: Models/Abilities.php:243
+msgid "Enable or disable the URL coupon trigger and its related settings on a coupon."
+msgstr ""
+
+#: Models/Abilities.php:275
+msgid "Set coupon schedule"
+msgstr ""
+
+#: Models/Abilities.php:276
+msgid "Enable or disable the date range schedule on a coupon and set its start and end dates."
+msgstr ""
+
+#: Models/Abilities.php:308
+msgid "Get coupons summary"
+msgstr ""
+
+#: Models/Abilities.php:309
+msgid "Retrieve coupon usage and discount summary metrics for a date range."
+msgstr ""
+
+#: Models/Abilities.php:551
+msgid "A coupon code is required."
+msgstr ""
+
+#: Models/Abilities.php:555
+msgid "A coupon with this code already exists."
+msgstr ""
+
+#: Models/Abilities.php:591
+msgid "Another coupon already uses that code."
+msgstr ""
+
+#: Models/Abilities.php:644
+msgid "The URL Coupons module is not enabled."
+msgstr ""
+
+#: Models/Abilities.php:699
+msgid "The Scheduler module is not enabled."
+msgstr ""
+
+#: Models/Abilities.php:833
+msgid "A coupon id or code is required."
+msgstr ""
+
+#: Models/Abilities.php:837
+msgid "Coupon not found."
+msgstr ""
+
+#: Models/Abilities.php:842
+msgid "You do not have permission to access this coupon."
+msgstr ""
+
+#. Translators: %s is the product name.
+#: Models/BOGO/Frontend.php:666
+#, php-format
+msgid "\"%s\" was removed from your cart because the deal no longer applies."
+msgstr ""
+
+#. Translators: 1: quantity removed, 2: product name.
+#: Models/BOGO/Frontend.php:668
+#, php-format
+msgid "%1$d × \"%2$s\" was removed from your cart because the deal no longer applies."
+msgstr ""
+
+#: Models/BOGO/Frontend.php:671
+msgid "A deal item was removed from your cart because the deal no longer applies."
+msgstr ""
+
+#. Translators: %d is the quantity removed.
+#: Models/BOGO/Frontend.php:673
+#, php-format
+msgid "%d deal item(s) were removed from your cart because the deal no longer applies."
+msgstr ""
+
+#: Models/Notices/StoreAgent_Notice.php:133
+msgid "Install Now"
+msgstr ""
+
+#: Models/Script_Loader.php:308
+msgid "If any products from the following brands are in the cart, they will be eligible for \"Get\" portion of the BOGO deal."
+msgstr ""
+
+#: Models/Script_Loader.php:309
+msgid "Once the \"Buy\" portion of the BOGO deal is satisfied, grant the following discounts on additional products belonging to the following brands in the cart. If multiple items are present and eligible for the discount, the cheapest product will get the discount first. You can configure which product to be discounted in the additional settings option."
+msgstr ""
+
+#: Models/Script_Loader.php:324
+msgid "Product Brands"
+msgstr ""
+
+#: views/coupons/view-bogo-deals-data-panel.php:83
+msgid "When the deal no longer applies:"
+msgstr ""
+
+#: views/coupons/view-bogo-deals-data-panel.php:87
+msgid "Keep the item in the cart at its original price"
+msgstr ""
+
+#: views/coupons/view-bogo-deals-data-panel.php:88
+msgid "Default. When the deal stops qualifying, the deal item stays in the cart and reverts to its original price."
+msgstr ""
+
+#: views/coupons/view-bogo-deals-data-panel.php:92
+msgid "Remove the free item from the cart"
+msgstr ""
+
+#: views/coupons/view-bogo-deals-data-panel.php:93
+msgid "When the deal stops qualifying, the deal-granted quantity is removed from the cart instead of reverting to the original price. Quantities the customer added independently of the deal are kept."
+msgstr ""
+
+#: views/notices/view-storeagent-notice.php:106
+msgid "StoreAgent"
+msgstr ""
+
+#: views/notices/view-storeagent-notice.php:110
+msgid "Boost Your Store with AI-Powered Customer Support"
+msgstr ""
+
+#: views/notices/view-storeagent-notice.php:113
+msgid "Want to cut down on repetitive support questions and give your customers instant answers? Our sister plugin, StoreAgent, adds an AI-powered chat assistant to your store. It learns from your products and policies to deliver accurate, 24/7 support—saving you time and boosting conversions."
 msgstr ""

@@ -69,8 +69,7 @@ class BatchableApiClient extends WC_Connect_API_Client_Live {
 	 *
 	 * Body shape sent on the wire:
 	 *   `{ async, email_receipt, payment_method_id, shipments: [{ order_id, origin,
-	 *      destination, packages, features_supported_by_client, shipment_options,
-	 *      is_return }] }`
+	 *      destination, packages, shipment_options, is_return }] }`
 	 * Only one HTTP call is made — no parallel dispatch, no per-order fan-out.
 	 *
 	 * @param array $body Multi-shipment payload. Must contain a non-empty `shipments`

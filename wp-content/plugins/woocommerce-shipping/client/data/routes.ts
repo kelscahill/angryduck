@@ -34,6 +34,9 @@ export const getShipmentsPath = ( orderId: string ) =>
 export const getLabelPurchasePath = ( orderId: number ) =>
 	`${ NAMESPACE }/label/purchase/${ orderId }`;
 
+export const getBatchLabelPurchasePath = () =>
+	`${ NAMESPACE }/label/purchase/batch`;
+
 export const getAccountSettingsPath = () => `${ NAMESPACE }/account/settings`;
 
 export const getLabelsStatusPath = ( orderId: number, labelId: number ) =>

@@ -152,7 +152,7 @@ class Edit_Coupon extends Base_Model implements Model_Interface, Initializable_I
         $wc_coupon_submenus = array_filter(
             $submenu['woocommerce'],
             function ( $s ) {
-            return strpos( $s[2], Plugin_Constants::COUPON_CAT_TAXONOMY ) !== false;
+            return str_contains( $s[2], Plugin_Constants::COUPON_CAT_TAXONOMY );
             }
         );
 
@@ -662,6 +662,8 @@ class Edit_Coupon extends Base_Model implements Model_Interface, Initializable_I
         $notice_btn_text = $bogo_deals['notice_settings']['button_text'] ?? '';
         $notice_btn_url  = $bogo_deals['notice_settings']['button_url'] ?? '';
         $notice_type     = $bogo_deals['notice_settings']['notice_type'] ?? 'global';
+
+        $remove_unqualified_deal = $bogo_deals['remove_unqualified_deal'] ?? 'keep';
 
         $notice_types = array(
             'notice'  => __( 'Info', 'advanced-coupons-for-woocommerce-free' ),
@@ -1314,7 +1316,7 @@ class Edit_Coupon extends Base_Model implements Model_Interface, Initializable_I
 
         $default_term = get_term_by( 'name', $default_cat_name, Plugin_Constants::COUPON_CAT_TAXONOMY );
 
-        update_option( Plugin_Constants::DEFAULT_COUPON_CATEGORY, $default_term->term_id );
+        update_option( Plugin_Constants::DEFAULT_COUPON_CATEGORY, $default_term->term_id, false );
 
         $query = new \WP_Query(
             array(
@@ -1566,6 +1568,47 @@ class Edit_Coupon extends Base_Model implements Model_Interface, Initializable_I
     }
 
     /**
+     * AJAX search product brand.
+     *
+     * @since 4.7.4
+     * @access public
+     */
+    public function ajax_search_product_brands() {
+        check_ajax_referer( 'search-products', 'security' );
+
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_die( -1 );
+        }
+
+        $taxonomy = $this->_helper_functions->get_product_brand_taxonomy();
+
+        if ( ! $taxonomy || ! isset( $_GET['term'] ) || empty( $_GET['term'] ) ) {
+            wp_die();
+        }
+
+        $exclude_ids = isset( $_GET['exclude'] ) && is_array( $_GET['exclude'] ) ? array_map( 'intval', $_GET['exclude'] ) : array();
+        $search      = sanitize_text_field( wp_unslash( $_GET['term'] ) );
+
+        $args = array(
+            'taxonomy'   => $taxonomy,
+            'hide_empty' => false,
+            'exclude'    => $exclude_ids,
+            'search'     => $search,
+        );
+
+        $terms   = get_terms( $args );
+        $options = array();
+
+        if ( ! is_wp_error( $terms ) ) {
+            foreach ( $terms as $term ) {
+                $options[ $term->term_id ] = $term->name . ' (' . $term->slug . ')';
+            }
+        }
+
+        wp_send_json( apply_filters( 'acfw_json_search_product_brands_response', $options ) );
+    }
+
+    /**
      * AJAX search for simple and variable products.
      *
      * @since 1.0
@@ -1636,6 +1679,7 @@ class Edit_Coupon extends Base_Model implements Model_Interface, Initializable_I
         add_action( 'wp_ajax_acfw_search_free_products', array( $this, 'ajax_search_products' ) );
         add_action( 'wp_ajax_acfw_search_products', array( $this, 'ajax_search_products' ) );
         add_action( 'wp_ajax_acfw_search_product_category', array( $this, 'ajax_search_product_category' ) );
+        add_action( 'wp_ajax_acfw_search_product_brands', array( $this, 'ajax_search_product_brands' ) );
         add_action( 'wp_ajax_acfw_search_products', array( $this, 'ajax_search_simple_variable_products' ) );
     }
 

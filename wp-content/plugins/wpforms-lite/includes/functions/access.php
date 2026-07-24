@@ -115,6 +115,23 @@ function wpforms_get_license_key(): string {
 }
 
 /**
+ * Determine whether the current site has a valid (active, non-error) WPForms license.
+ *
+ * @since 2.0.0
+ *
+ * @return bool True when a license key is present and the license is not expired, disabled, or invalid.
+ */
+function wpforms_is_license_valid(): bool {
+
+	$license = (array) get_option( 'wpforms_license', [] );
+
+	return ! empty( wpforms_get_license_key() ) &&
+		empty( $license['is_expired'] ) &&
+		empty( $license['is_disabled'] ) &&
+		empty( $license['is_invalid'] );
+}
+
+/**
  * Get when WPForms was first installed.
  *
  * @since 1.6.0
@@ -242,7 +259,7 @@ function wpforms_current_user_can( $caps = [], $id = 0 ): bool {
 	 * @param array|string $caps     Capability name(s).
 	 * @param int          $id       ID of the specific object to check against if capability is a "meta" cap.
 	 */
-	$results[ $hash ] = apply_filters( 'wpforms_current_user_can', $user_can, $caps, $id );
+	$results[ $hash ] = (bool) apply_filters( 'wpforms_current_user_can', $user_can, $caps, $id );
 
 	return $results[ $hash ];
 }

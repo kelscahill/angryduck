@@ -9,7 +9,10 @@ namespace Automattic\WCShipping\LabelPurchase;
 
 use Automattic\WCShipping\Connect\WC_Connect_Functions;
 use Automattic\WCShipping\Connect\WC_Connect_Service_Settings_Store;
+use Automattic\WCShipping\Fulfillments\ShippingFulfillment;
+use Automattic\WCShipping\Fulfillments\ShippingFulfillmentsDataStore;
 use Automattic\WCShipping\FeatureFlags\FeatureFlags;
+use Automattic\WCShipping\Utils;
 use Automattic\WCShipping\WCShippingRESTController;
 use WC_Order;
 use WP_Error;
@@ -49,12 +52,22 @@ class OrdersShippingContextRESTController extends WCShippingRESTController {
 	private $settings_store;
 
 	/**
+	 * Fulfillment data store. Used to prevent duplicate labels for orders
+	 * that already have purchased labels.
+	 *
+	 * @var ShippingFulfillmentsDataStore
+	 */
+	private $shipping_fulfillments_data_store;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param WC_Connect_Service_Settings_Store|null $settings_store Optional settings store used for the legacy invalid-JSON recovery branch in the package-meta parser.
+	 * @param WC_Connect_Service_Settings_Store|null $settings_store                  Optional settings store used for the legacy invalid-JSON recovery branch in the package-meta parser.
+	 * @param ShippingFulfillmentsDataStore|null     $shipping_fulfillments_data_store Optional fulfillment data store.
 	 */
-	public function __construct( ?WC_Connect_Service_Settings_Store $settings_store = null ) {
-		$this->settings_store = $settings_store;
+	public function __construct( ?WC_Connect_Service_Settings_Store $settings_store = null, ?ShippingFulfillmentsDataStore $shipping_fulfillments_data_store = null ) {
+		$this->settings_store                   = $settings_store;
+		$this->shipping_fulfillments_data_store = $shipping_fulfillments_data_store ?? new ShippingFulfillmentsDataStore();
 	}
 
 	/**
@@ -63,7 +76,7 @@ class OrdersShippingContextRESTController extends WCShippingRESTController {
 	 * @return void
 	 */
 	public function register_routes() {
-		if ( ! FeatureFlags::is_bulk_labels_enabled() ) {
+		if ( ! FeatureFlags::is_bulk_labels_enabled() || ! Utils::should_use_fulfillment_api() ) {
 			return;
 		}
 
@@ -137,6 +150,19 @@ class OrdersShippingContextRESTController extends WCShippingRESTController {
 				continue;
 			}
 
+			$fulfillments = $this->get_order_fulfillments( $order );
+
+			if ( $this->order_already_has_shipping_label( $fulfillments ) || $this->order_is_fully_fulfilled( $fulfillments ) ) {
+				$records[] = array(
+					'order_id' => $order_id,
+					'error'    => array(
+						'code'    => 'order_already_fulfilled',
+						'message' => __( 'This order already has a shipping label or is fulfilled.', 'woocommerce-shipping' ),
+					),
+				);
+				continue;
+			}
+
 			$records[] = array_merge(
 				$this->build_order_context( $order ),
 				array( 'error' => null )
@@ -144,6 +170,86 @@ class OrdersShippingContextRESTController extends WCShippingRESTController {
 		}
 
 		return new WP_REST_Response( $records, 200 );
+	}
+
+	/**
+	 * Check if an order already has a purchased shipping label.
+	 *
+	 * @param ShippingFulfillment[] $fulfillments Fulfillment records for the order.
+	 * @return bool
+	 */
+	private function order_already_has_shipping_label( array $fulfillments ): bool {
+		foreach ( $fulfillments as $fulfillment ) {
+			if ( ! $fulfillment instanceof ShippingFulfillment ) {
+				continue;
+			}
+
+			if ( $this->labels_contain_active_purchase( $fulfillment->get_labels() ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Load fulfillment records for an order once per request row.
+	 *
+	 * @param WC_Order $order Order object.
+	 * @return ShippingFulfillment[]
+	 */
+	private function get_order_fulfillments( WC_Order $order ): array {
+		try {
+			return $this->shipping_fulfillments_data_store->read_fulfillments( WC_Order::class, (string) $order->get_id() );
+		} catch ( \Exception $e ) {
+			return array();
+		}
+	}
+
+	/**
+	 * Check if an order is already fully fulfilled.
+	 *
+	 * @param ShippingFulfillment[] $fulfillments Fulfillment records for the order.
+	 * @return bool
+	 */
+	private function order_is_fully_fulfilled( array $fulfillments ): bool {
+		if ( empty( $fulfillments ) ) {
+			return false;
+		}
+
+		foreach ( $fulfillments as $fulfillment ) {
+			if ( ! $fulfillment instanceof ShippingFulfillment || ! $fulfillment->get_is_fulfilled() ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if labels contain a non-refunded purchased label.
+	 *
+	 * @param array $labels Label records.
+	 * @return bool
+	 */
+	private function labels_contain_active_purchase( array $labels ): bool {
+		foreach ( $labels as $label ) {
+			if ( ! is_array( $label ) ) {
+				continue;
+			}
+
+			$is_refunded = ! empty( $label['refund'] );
+			if ( $is_refunded ) {
+				continue;
+			}
+
+			$status = $label['status'] ?? null;
+			if ( in_array( $status, array( 'PURCHASED', 'PURCHASE_IN_PROGRESS' ), true ) || ! empty( $label['tracking'] ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

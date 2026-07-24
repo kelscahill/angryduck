@@ -5,7 +5,7 @@ License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 Tags: SEO, XML sitemap, Content analysis, Readability, Schema
 Tested up to: 7.0
-Stable tag: 27.6
+Stable tag: 28.1
 Requires PHP: 7.4
 
 Improve your SEO with real-time feedback, schema, and clear guidance. Upgrade for AI tools, Google Docs integration, and 24/7 support, no hidden fees.
@@ -303,40 +303,33 @@ Your question has most likely been answered on our help center: [yoast.com/help/
 
 == Changelog ==
 
-= 27.6 =
+= 28.1 =
 
-Release date: 2026-05-12
+Release date: 2026-07-21
 
-Introduces Yoast AI Content Planner to Yoast SEO Premium, giving five site-specific post ideas and a structured starter draft the moment you open a new post. Haven't used your free AI sparks yet? Give it a try on us. [Read the full release post here](https://yoa.st/56n).
-
-#### Enhancements
-
-* Adds the Content Planner feature, which allows users to get AI-powered content suggestions and structured outlines for new posts directly from the block editor. This is available as part of the free sparks allowance in Yoast SEO Free.
-
-#### Other
-
-* Improves documentation in a docblock. Props to [@MukundaKatta](https://github.com/MukundaKatta).
-* Introduces a shared contributor guide for humans and AI coding tools.
-
-= 27.5 =
-
-Release date: 2026-04-28
-
-Introduces Yoast SEO Abilities API, allowing AI tools, dashboards, and automated workflows to automatically read SEO, readability, and inclusive language scores from your most recent posts. Read more in the [release post](https://yoa.st/56j). 
+Yoast SEO 28.1 redesigns the Bulk editor into a focused workspace with new search and status filters, so you can find and fix titles and meta descriptions across posts, pages, and custom post types in one place. [Read the full release post here](https://yoa.st/57c).
 
 #### Enhancements
 
-* Adds a Yoast ability for retrieving scores for Yoast analyses for recent posts, using the Abilities API.
-* Adds Qatar to the list of available countries for the Semrush related keyphrase suggestions.
+* Redesigns the bulk editor page, which allows users to edit Metadata for multiple posts at once.
+
+= 28.0 =
+
+Release date: 2026-07-06
+
+Yoast SEO now works smoothly with Elementor's version 4 release. [Read the full release post here](https://yoa.st/578).
+
+#### Enhancements
+
+* Improves the compatibility with the atomic editor in Elementor V4.
 
 #### Bugfixes
 
-* Fixes a bug where the AI Generator's "Generate with AI" feature failed after a site's domain was changed, because stale callback URLs remained registered with the Yoast API from the original domain.
+* Fixes a bug where raw `type` and `id` attributes were written on a link instead of `data-type` and `data-id`, when the link was added by selecting a suggestion in the block editor link popover.
 
 #### Other
 
-* Introduces a performance increase when calculating if the SEO optimization is completed for internal links. Props to [@adconecto](https://github.com/adconecto).
-* Removes the schemamap line from the `robots.txt` file.
+* Updates the guzzlehttp/guzzle and guzzlehttp/psr7 dependencies to patched releases that address known security advisories.
 
 = Earlier versions =
 For the changelog of earlier versions, please refer to [the changelog on yoast.com](https://yoa.st/yoast-seo-changelog).

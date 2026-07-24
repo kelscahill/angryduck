@@ -109,6 +109,21 @@ class CheckoutService {
 	}
 
 	/**
+	 * Is this a classic checkout update_order_review request?
+	 *
+	 * @return bool
+	 */
+	public static function is_update_order_review_request(): bool {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only request context check.
+		if ( ! isset( $_REQUEST['wc-ajax'] ) ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only request context check.
+		return 'update_order_review' === wc_clean( wp_unslash( $_REQUEST['wc-ajax'] ) );
+	}
+
+	/**
 	 * Validate the shipping address.
 	 *
 	 * @return array
@@ -179,6 +194,13 @@ class CheckoutService {
 
 			foreach ( $address_normalization_response['errors'] as $message ) {
 				$response['notices'][] = new StoreNotice(
+					/**
+					 * Filters the checkout address normalization error message.
+					 *
+					 * @since 2.3.10
+					 *
+					 * @param string $message Address normalization error message.
+					 */
 					apply_filters( 'woocommerce_shipping_address_normalization_response_error_message', $message ),
 					StoreNoticeTypes::WARNING
 				);

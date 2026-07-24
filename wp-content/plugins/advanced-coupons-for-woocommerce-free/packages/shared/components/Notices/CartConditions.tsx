@@ -35,14 +35,16 @@ export default function () {
 
   const restCartCouponError = getRestCartCouponError(couponError);
 
-  if (restCartCouponError && validationError) {
-    // Override message error.
-    dispatch(VALIDATION_STORE_KEY).setValidationErrors({
-      coupon: {
-        message: ' ',
-        hidden: false,
-      },
-    });
+  if (restCartCouponError) {
+    if (validationError) {
+      // Override WooCommerce's default validation message to prevent a duplicate notice.
+      dispatch(VALIDATION_STORE_KEY).setValidationErrors({
+        coupon: {
+          message: ' ',
+          hidden: false,
+        },
+      });
+    }
 
     // Show error on notice banner.
     const errorMessage = (restCartCouponError as { code: string; message: string }).message || '';

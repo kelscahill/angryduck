@@ -170,6 +170,14 @@ export function useRatesState( {
 	>( allShipmentRates ?? { 0: null } );
 
 	const [ isFetching, setIsFetching ] = useState( false );
+	/**
+	 * Counter that increments only when the merchant explicitly triggers a rate
+	 * fetch (clicking "Get rates" or changing shipment inputs). It deliberately
+	 * does NOT change for system-driven refetches (e.g. the auto-fetch that
+	 * runs after a failed purchase resets rates), so purchase/status error
+	 * notices stay visible until the merchant actually acts on the failure.
+	 */
+	const [ userRateFetchNonce, setUserRateFetchNonce ] = useState( 0 );
 	const [ errors, setErrors ] = useState<
 		Record<
 			string | 'endpoint',
@@ -358,12 +366,21 @@ export function useRatesState( {
 		async (
 			pkg: ( Package | CustomPackage ) & {
 				isLetter?: boolean;
-			}
+			},
+			{ userInitiated = true }: { userInitiated?: boolean } = {}
 		) => {
 			// Early return when all origin addresses are unverified (or none exist).
 			const originAddresses = select( addressStore ).getOriginAddresses();
 			if ( areAllOriginsUnverified( originAddresses ) ) {
 				return;
+			}
+
+			// Mark that the merchant explicitly requested rates so dependent
+			// notices (purchase/status errors) can clear themselves. System
+			// refetches pass `userInitiated: false` and are intentionally
+			// excluded.
+			if ( userInitiated ) {
+				setUserRateFetchNonce( ( nonce ) => nonce + 1 );
 			}
 
 			setIsFetching( true );
@@ -470,49 +487,6 @@ export function useRatesState( {
 			getCurrentShipmentDate,
 		]
 	);
-
-	/**
-	 * Updates the rates based on the current package data
-	 */
-	const updateRates = useCallback( () => {
-		// Not updating if still fetching and to prevent a double fetch at render, or if totalWeight is 0.
-		if (
-			isFetching ||
-			typeof availableRates === 'undefined' ||
-			totalWeight === 0 ||
-			! Number.isFinite( parseFloat( `${ totalWeight }` ) ) // If any error occurs, totalWeight will be a string, null or undefined, so we need to convert it to a number.
-		) {
-			return;
-		}
-
-		const pkg = getPackageForRequest();
-
-		/**
-		 * Excluding the boxWeight and name fields from the check boxWeight is
-		 * not a mandatory field since it can be 0, and we always use totalWeight
-		 * name is not a mandatory field since it's only used for custom packages
-		 */
-		if ( ! pkg ) {
-			return;
-		}
-		// eslint-disable-next-line no-unused-vars
-		const { name, boxWeight, isUserDefined, ...mandatoryFields } = pkg;
-
-		// Max weight is not a mandatory field since it can be 0, and if it's 0 it won't affect isAnyFieldEmpty
-		if ( 'maxWeight' in mandatoryFields ) {
-			delete mandatoryFields.maxWeight;
-		}
-
-		const isAnyFieldEmpty = Object.values< string | boolean >(
-			mandatoryFields
-		).some( ( field ) => ! field && typeof field !== 'boolean' );
-		if ( ! isAnyFieldEmpty ) {
-			fetchRates( pkg );
-		}
-		// Adding isFetching to the dependencies array causes an intinite loop
-		// as is being updated by fetchRates
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ fetchRates, availableRates, getPackageForRequest, totalWeight ] );
 
 	/**
 	 * Sort Rates when filter dropdown is used.
@@ -649,6 +623,68 @@ export function useRatesState( {
 		[ selectRate, currentShipmentId ]
 	);
 
+	/**
+	 * Updates the rates based on the current package data
+	 */
+	const updateRates = useCallback(
+		async ( { preserveSelection = false } = {} ) => {
+			// Not updating if still fetching and to prevent a double fetch at render, or if totalWeight is 0.
+			if (
+				isFetching ||
+				typeof availableRates === 'undefined' ||
+				totalWeight === 0 ||
+				! Number.isFinite( parseFloat( `${ totalWeight }` ) ) // If any error occurs, totalWeight will be a string, null or undefined, so we need to convert it to a number.
+			) {
+				return;
+			}
+
+			const pkg = getPackageForRequest();
+
+			/**
+			 * Excluding the boxWeight and name fields from the check boxWeight is
+			 * not a mandatory field since it can be 0, and we always use totalWeight
+			 * name is not a mandatory field since it's only used for custom packages
+			 */
+			if ( ! pkg ) {
+				return;
+			}
+			// eslint-disable-next-line no-unused-vars
+			const { name, boxWeight, isUserDefined, ...mandatoryFields } = pkg;
+
+			// Max weight is not a mandatory field since it can be 0, and if it's 0 it won't affect isAnyFieldEmpty
+			if ( 'maxWeight' in mandatoryFields ) {
+				delete mandatoryFields.maxWeight;
+			}
+
+			const isAnyFieldEmpty = Object.values< string | boolean >(
+				mandatoryFields
+			).some( ( field ) => ! field && typeof field !== 'boolean' );
+			if ( ! isAnyFieldEmpty ) {
+				const selectedRateBeforeRefresh = preserveSelection
+					? getSelectedRate()
+					: null;
+
+				await fetchRates( pkg );
+
+				if ( selectedRateBeforeRefresh ) {
+					matchAndSelectRate( selectedRateBeforeRefresh );
+				}
+			}
+			// Adding isFetching to the dependencies array causes an intinite loop
+			// as is being updated by fetchRates
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+		},
+		[
+			availableRates,
+			fetchRates,
+			getPackageForRequest,
+			getSelectedRate,
+			isFetching,
+			matchAndSelectRate,
+			totalWeight,
+		]
+	);
+
 	return {
 		selectedRates,
 		selectRates,
@@ -656,6 +692,7 @@ export function useRatesState( {
 		getSelectedRate,
 		removeSelectedRate,
 		isFetching,
+		userRateFetchNonce,
 		updateRates,
 		fetchRates,
 		resetRates,

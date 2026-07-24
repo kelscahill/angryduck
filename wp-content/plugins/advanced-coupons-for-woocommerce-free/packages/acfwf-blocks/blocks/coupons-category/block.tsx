@@ -15,7 +15,7 @@ import {
   withSpokenMessages
 } from "@wordpress/components";
 // @ts-ignore
-import { BlockControls, InspectorControls } from "@wordpress/block-editor";
+import { BlockControls, InspectorControls, useBlockProps } from "@wordpress/block-editor";
 
 // Components
 import CouponCategoriesControl from "../../components/CouponCategoriesControl";
@@ -63,6 +63,8 @@ const CouponsByCategoryBlock = (props: IProps) => {
   const [categories, setCategories]: [ICategory[], any] = useState([]);
   const hasCategories = attributes.categories.length > 0;
 
+  const blockProps = useBlockProps();
+
   return (
     <>
       <BlockControls>
@@ -90,92 +92,94 @@ const CouponsByCategoryBlock = (props: IProps) => {
         </PanelBody>
       </InspectorControls>
 
-      {isEditing ? (
+      <div {...blockProps}>
+        {isEditing ? (
 
-        <Placeholder
-          label={couponsCategoryTexts.title}
-          className="acfw-block-coupons-grid acfw-block-coupons-category"
-        >
-          {couponsCategoryTexts.description}
-          <div className="wc-block-coupon-category__selection fullwidth-field">
-            <CouponCategoriesControl
-              categories={categories}
-              setCategories={setCategories}
-              selected={attributes.categories}
-              onChange={(ids = []) => {
-                setAttributes({categories: ids});
-              }}
-            />
-          </div>
-          <div className="order-by__selection one-third-col">
-            <SelectControl
-              label={orderTypeFieldTexts.label}
-              value={attributes.order_by}
-              options={orderByOptions}
-              onChange={(value) => setAttributes({order_by: value})}
-            />
-          </div>
-          <div className="items-count__range one-third-col">
-            <RangeControl
-              label={numberofItemsFieldLabel}
-              value={attributes.count}
-              onChange={(value) => {
-                const newValue = clamp(value, layoutDefaults.minCount, layoutDefaults.maxCount);
-                setAttributes({
-                  count: newValue
-                });
-              }}
-              min={layoutDefaults.minCount}
-              max={layoutDefaults.maxCount}
-            />
-          </div>
-          <div className="column-count__range one-third-col">
-            <RangeControl
-              label={numberofColumnsFieldLabel}
-              value={attributes.columns}
-              onChange={(value) => {
-                const newValue = clamp(value, layoutDefaults.minColumns, layoutDefaults.maxColumns);
-                setAttributes({
-                  columns: newValue
-                });
-              }}
-              min={layoutDefaults.minColumns}
-              max={layoutDefaults.maxColumns}
-            />
-          </div>
-          <Button
-            isPrimary
-            onClick={() => setIsEditing(false)}
+          <Placeholder
+            label={couponsCategoryTexts.title}
+            className="acfw-block-coupons-grid acfw-block-coupons-category"
           >
-            {doneBtnText}
-          </Button>
-        </Placeholder>
-
-      ) : (
-        <>
-          {hasCategories ? (
-            <ServerSideRender 
-              block={name}
-              attributes={attributes}
-              EmptyResponsePlaceholder={() => (
-                <Placeholder
-                  label={couponsCategoryTexts.title}
-                  className="acfw-block-coupons-grid acfw-block-coupons-category"
-                >
-                  {couponsCategoryTexts.emptyDesc}
-                </Placeholder>
-              )}
-            />
-          ) : (
-            <Placeholder
-              label={couponsCategoryTexts.title}
-              className="acfw-block-coupons-grid acfw-block-coupons-category"
+            {couponsCategoryTexts.description}
+            <div className="wc-block-coupon-category__selection fullwidth-field">
+              <CouponCategoriesControl
+                categories={categories}
+                setCategories={setCategories}
+                selected={attributes.categories}
+                onChange={(ids = []) => {
+                  setAttributes({categories: ids});
+                }}
+              />
+            </div>
+            <div className="order-by__selection one-third-col">
+              <SelectControl
+                label={orderTypeFieldTexts.label}
+                value={attributes.order_by}
+                options={orderByOptions}
+                onChange={(value) => setAttributes({order_by: value})}
+              />
+            </div>
+            <div className="items-count__range one-third-col">
+              <RangeControl
+                label={numberofItemsFieldLabel}
+                value={attributes.count}
+                onChange={(value) => {
+                  const newValue = clamp(value, layoutDefaults.minCount, layoutDefaults.maxCount);
+                  setAttributes({
+                    count: newValue
+                  });
+                }}
+                min={layoutDefaults.minCount}
+                max={layoutDefaults.maxCount}
+              />
+            </div>
+            <div className="column-count__range one-third-col">
+              <RangeControl
+                label={numberofColumnsFieldLabel}
+                value={attributes.columns}
+                onChange={(value) => {
+                  const newValue = clamp(value, layoutDefaults.minColumns, layoutDefaults.maxColumns);
+                  setAttributes({
+                    columns: newValue
+                  });
+                }}
+                min={layoutDefaults.minColumns}
+                max={layoutDefaults.maxColumns}
+              />
+            </div>
+            <Button
+              isPrimary
+              onClick={() => setIsEditing(false)}
             >
-              <p>{couponsCategoryTexts.selectDesc}</p>
-            </Placeholder>
-          )}
-        </>
-      )}
+              {doneBtnText}
+            </Button>
+          </Placeholder>
+
+        ) : (
+          <>
+            {hasCategories ? (
+              <ServerSideRender
+                block={name}
+                attributes={attributes}
+                EmptyResponsePlaceholder={() => (
+                  <Placeholder
+                    label={couponsCategoryTexts.title}
+                    className="acfw-block-coupons-grid acfw-block-coupons-category"
+                  >
+                    {couponsCategoryTexts.emptyDesc}
+                  </Placeholder>
+                )}
+              />
+            ) : (
+              <Placeholder
+                label={couponsCategoryTexts.title}
+                className="acfw-block-coupons-grid acfw-block-coupons-category"
+              >
+                <p>{couponsCategoryTexts.selectDesc}</p>
+              </Placeholder>
+            )}
+          </>
+        )}
+      </div>
 
     </>
   );

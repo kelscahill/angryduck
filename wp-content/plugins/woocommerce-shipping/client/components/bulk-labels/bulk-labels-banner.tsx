@@ -9,27 +9,27 @@ import { __, sprintf, _n } from '@wordpress/i18n';
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { envelope } from '@wordpress/icons';
 import { getBulkLabelsMaxOrders } from 'data/bulk-labels';
+import {
+	getOrderCheckboxes,
+	getSelectedOrderIds,
+} from './utils/order-selection';
 import type { ReactNode } from 'react';
 import './style.scss';
 
 interface StatusTextArgs {
 	hasSelection: boolean;
 	exceedsBulkCap: boolean;
-	eligible: number;
-	needsAttention: number;
-	summary: string;
+	selected: number;
 }
 
 const getStatusText = ( {
 	hasSelection,
 	exceedsBulkCap,
-	eligible,
-	needsAttention,
-	summary,
+	selected,
 }: StatusTextArgs ): ReactNode => {
 	if ( ! hasSelection ) {
 		return __(
-			'Select unfulfilled orders to start purchasing shipping labels',
+			'Select orders to start purchasing shipping labels',
 			'woocommerce-shipping'
 		);
 	}
@@ -45,62 +45,17 @@ const getStatusText = ( {
 		);
 	}
 
-	const ready = __( 'Ready to fulfill in bulk', 'woocommerce-shipping' );
-	if ( eligible === 0 && needsAttention === 0 ) {
-		return ready;
-	}
-
-	return `${ ready } — ${ summary }.`;
-};
-
-const ORDER_CHECKBOX_SELECTOR =
-	'#the-list input[type="checkbox"][name="id[]"], #the-list input[type="checkbox"][name="post[]"]';
-
-const getOrderCheckboxes = (): HTMLInputElement[] =>
-	Array.from(
-		document.querySelectorAll< HTMLInputElement >( ORDER_CHECKBOX_SELECTOR )
-	);
-
-const getSelectedOrderIds = (): string[] => {
-	const checkboxes = getOrderCheckboxes();
-	return Array.from( checkboxes )
-		.filter( ( cb ) => cb.checked )
-		.map( ( cb ) => cb.value );
-};
-
-const getOrderStatusFromRow = ( orderId: string ): string | null => {
-	const checkbox = document.querySelector< HTMLInputElement >(
-		`#the-list input[type="checkbox"][value="${ orderId }"]`
-	);
-	const row = checkbox?.closest( 'tr' );
-	if ( ! row ) {
-		return null;
-	}
-
-	const statusMark = row.querySelector< HTMLElement >(
-		'.order-status .order-label, mark.order-status'
-	);
-	if ( statusMark ) {
-		const classList = Array.from( statusMark.classList );
-		const statusClass = classList.find( ( c ) =>
-			c.startsWith( 'status-' )
-		);
-		if ( statusClass ) {
-			return statusClass.replace( 'status-', '' );
-		}
-	}
-
-	return null;
-};
-
-const ELIGIBLE_STATUSES = new Set( [ 'processing', 'on-hold', 'pending' ] );
-
-const isOrderEligible = ( orderId: string ): boolean => {
-	const status = getOrderStatusFromRow( orderId );
-	if ( ! status ) {
-		return true;
-	}
-	return ELIGIBLE_STATUSES.has( status );
+	const ready = __( 'Ready to review in bulk', 'woocommerce-shipping' );
+	return `${ ready } — ${ sprintf(
+		/* translators: %d: number of selected orders */
+		_n(
+			'%d selected order',
+			'%d selected orders',
+			selected,
+			'woocommerce-shipping'
+		),
+		selected
+	) }.`;
 };
 
 const deselectAllOrders = () => {
@@ -164,45 +119,6 @@ export const BulkLabelsBanner = ( {
 		};
 	}, [ syncSelection ] );
 
-	const eligible = selectedIds.filter( isOrderEligible );
-	const needsAttention = selectedIds.length - eligible.length;
-
-	const getSummary = (): string => {
-		const parts: string[] = [];
-
-		if ( eligible.length > 0 ) {
-			parts.push(
-				sprintf(
-					/* translators: %d: number of eligible orders */
-					_n(
-						'%d eligible for shipping labels',
-						'%d eligible for shipping labels',
-						eligible.length,
-						'woocommerce-shipping'
-					),
-					eligible.length
-				)
-			);
-		}
-
-		if ( needsAttention > 0 ) {
-			parts.push(
-				sprintf(
-					/* translators: %d: number of orders needing attention */
-					_n(
-						'%d needs attention',
-						'%d need attention',
-						needsAttention,
-						'woocommerce-shipping'
-					),
-					needsAttention
-				)
-			);
-		}
-
-		return parts.join( ', ' );
-	};
-
 	const handleDeselectAll = () => {
 		deselectAllOrders();
 		setSelectedIds( [] );
@@ -225,7 +141,7 @@ export const BulkLabelsBanner = ( {
 				 * Conditional hooks are not allowed in React and cause an error.
 				 */
 				__(
-					'Unfulfilled orders selected and ready to fulfill in bulk',
+					'Orders selected and ready to review in bulk',
 					'woocommerce-shipping'
 				)
 			}
@@ -267,9 +183,7 @@ export const BulkLabelsBanner = ( {
 							{ getStatusText( {
 								hasSelection,
 								exceedsBulkCap,
-								eligible: eligible.length,
-								needsAttention,
-								summary: getSummary(),
+								selected: selectedIds.length,
 							} ) }
 						</FlexItem>
 					</Flex>
@@ -288,10 +202,10 @@ export const BulkLabelsBanner = ( {
 								}
 							>
 								{ sprintf(
-									/* translators: %d: number of shipping labels to create */
+									/* translators: %d: number of selected orders to review for bulk labels */
 									_n(
-										'Create %d shipping label',
-										'Create %d shipping labels',
+										'Review %d selected order',
+										'Review %d selected orders',
 										selectedIds.length,
 										'woocommerce-shipping'
 									),

@@ -1,6 +1,7 @@
 import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useCallback, useState } from '@wordpress/element';
+import type { ReactNode } from 'react';
 import { Label, Rate } from 'types';
 import { canRefundLabel } from 'utils';
 import { RefundConfirmation } from './refund-confirmation';
@@ -10,6 +11,8 @@ interface RefundShipmentProps {
 	selectedRate: { rate: Rate; parent: Rate | null } | null | undefined;
 	isBusy: boolean;
 	isDisabled: boolean;
+	className?: string;
+	children?: ReactNode;
 }
 
 export const RefundShipment = ( {
@@ -17,6 +20,8 @@ export const RefundShipment = ( {
 	selectedRate,
 	isBusy,
 	isDisabled,
+	className,
+	children,
 }: RefundShipmentProps ) => {
 	const [ isRefunding, setIsRefunding ] = useState( false );
 	const toggleRefund = useCallback(
@@ -31,7 +36,11 @@ export const RefundShipment = ( {
 	const isNonRefundable = caveats.includes( 'non-refundable' );
 	// Determine what to render based on computed values
 	if ( isNonRefundable ) {
-		return <>{ __( 'Label is non-refundable', 'woocommerce-shipping' ) }</>;
+		return (
+			<span className={ className }>
+				{ __( 'Label is non-refundable', 'woocommerce-shipping' ) }
+			</span>
+		);
 	}
 
 	const canRefund = canRefundLabel( label ); // eslint-disable-line
@@ -51,8 +60,9 @@ export const RefundShipment = ( {
 				aria-busy={ isBusy }
 				disabled={ isDisabled }
 				aria-disabled={ isDisabled }
+				className={ className }
 			>
-				{ __( 'Request refund', 'woocommerce-shipping' ) }
+				{ children ?? __( 'Request refund', 'woocommerce-shipping' ) }
 			</Button>
 		</>
 	);

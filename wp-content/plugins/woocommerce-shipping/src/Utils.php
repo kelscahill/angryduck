@@ -99,17 +99,24 @@ class Utils {
 
 	/**
 	 * Filter out dev-only dependencies that are injected by build tools during HMR
-	 * but are not registered as WordPress script handles.
+	 * when WordPress hasn't registered them as script handles.
 	 *
 	 * @param array $dependencies The dependencies array from an asset.php file.
 	 * @return array Filtered dependencies.
 	 */
 	public static function filter_dev_dependencies( array $dependencies ): array {
+		$dev_only_handles = array( 'wp-react-refresh-runtime', 'wp-react-refresh-entry' );
+
 		return array_values(
 			array_filter(
 				$dependencies,
-				static function ( $dep ) {
-					return 'wp-react-refresh-runtime' !== $dep;
+				static function ( $dep ) use ( $dev_only_handles ) {
+					// Keep registered handles; only strip dev-only ones WordPress doesn't know about.
+					if ( in_array( $dep, $dev_only_handles, true ) ) {
+						return wp_script_is( $dep, 'registered' );
+					}
+
+					return true;
 				}
 			)
 		);

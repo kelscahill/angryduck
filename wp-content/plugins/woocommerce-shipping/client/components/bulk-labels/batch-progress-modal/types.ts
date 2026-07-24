@@ -9,6 +9,18 @@
  */
 
 import type { LabelPrintFulfillmentRef } from 'types';
+import type {
+	BatchPurchaseEntry,
+	BatchPurchaseErrorEntry,
+	BatchPurchaseSuccessEntry,
+} from 'data/bulk-labels';
+
+export type {
+	BatchPurchaseEntry,
+	BatchPurchaseResponse,
+	BatchPurchaseErrorEntry,
+	BatchPurchaseSuccessEntry,
+} from 'data/bulk-labels';
 
 /**
  * Error code used when the modal is closed before every order in the
@@ -142,38 +154,6 @@ export type BatchPurchaseErrorCode =
 	| typeof PARTIAL_LABEL_LOSS_ERROR_CODE
 	| typeof UNKNOWN_RESPONSE_ERROR_CODE
 	| ( string & {} );
-
-/**
- * Shape of the per-order entry returned by the batch endpoint.
- */
-export interface BatchPurchaseSuccessEntry {
-	labels: {
-		label_id: number;
-		fulfillment_id?: number;
-		rate?: number;
-		[ key: string ]: unknown;
-	}[];
-	success: true;
-}
-
-export interface BatchPurchaseErrorEntry {
-	error: {
-		code: BatchPurchaseErrorCode;
-		message: string;
-	};
-}
-
-export type BatchPurchaseEntry =
-	| BatchPurchaseSuccessEntry
-	| BatchPurchaseErrorEntry;
-
-/**
- * Top-level response from `POST /wcshipping/v1/label/purchase/batch`.
- * Keys are `order_<id>` (or `invalid_order_<index>` for malformed
- * rows). The string prefix keeps the JSON object-shaped regardless of
- * the numeric `order_id` so JS consumers don't need numeric coercion.
- */
-export type BatchPurchaseResponse = Record< string, BatchPurchaseEntry >;
 
 export const isBatchSuccessEntry = (
 	entry: BatchPurchaseEntry

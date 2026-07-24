@@ -1,12 +1,13 @@
-import { useMemo } from '@wordpress/element';
-import { useEntityRecords, store as coreDataStore } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
+import { useEffect, useMemo, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
+import { addQueryArgs } from '@wordpress/url';
 import {
 	buildBatchSummary,
 	buildBulkPurchaseOrders,
 	findLargestAddressGroup,
 } from './display';
 import { ORDERS_SHIPPING_CONTEXT_ENTITY } from './constants';
+import { toError } from './store';
 import { useAutoAssignedPackages } from './use-auto-assigned-packages';
 import type {
 	AddressGrouping,
@@ -45,47 +46,55 @@ export const useBulkPurchaseOrders = (
 	const idsKey = orderIds.join( ',' );
 	const hasIds = orderIds.length > 0;
 
-	// Pass an empty query when there are no IDs. core-data will resolve
-	// with an empty record set rather than leaving the resolver pending
-	// forever (which would happen if we passed `null`).
-	const query = useMemo(
-		() => ( hasIds ? { ids: orderIds } : {} ),
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- key covers the array contents
-		[ idsKey, hasIds ]
-	);
+	const [ records, setRecords ] =
+		useState< OrderShippingContextRecord[] >( EMPTY_RECORDS );
+	const [ isShippingContextResolving, setIsShippingContextResolving ] =
+		useState( false );
+	const [ error, setError ] = useState< Error | null >( null );
 
-	const { records, hasResolved } =
-		useEntityRecords< OrderShippingContextRecord >(
-			ORDERS_SHIPPING_CONTEXT_ENTITY.kind,
-			ORDERS_SHIPPING_CONTEXT_ENTITY.name,
-			query
-		);
+	useEffect( () => {
+		if ( ! hasIds ) {
+			setRecords( EMPTY_RECORDS );
+			setError( null );
+			setIsShippingContextResolving( false );
+			return;
+		}
 
-	// Read the real resolver error (cap exceeded, network failure, etc.)
-	// rather than a generic 'ERROR' status string. The modal needs the
-	// message and the code to render something useful.
-	const error = useSelect(
-		( select ) => {
-			if ( ! hasIds ) {
-				return null;
-			}
-			const err = (
-				select as ( store: typeof coreDataStore ) => {
-					getResolutionError: (
-						name: string,
-						args: unknown[]
-					) => Error | unknown;
+		let isCurrent = true;
+		setRecords( EMPTY_RECORDS );
+		setError( null );
+		setIsShippingContextResolving( true );
+
+		void apiFetch< OrderShippingContextRecord[] >( {
+			path: addQueryArgs( ORDERS_SHIPPING_CONTEXT_ENTITY.baseURL, {
+				ids: orderIds,
+			} ),
+		} )
+			.then( ( nextRecords ) => {
+				if ( ! isCurrent ) {
+					return;
 				}
-			 )( coreDataStore ).getResolutionError( 'getEntityRecords', [
-				ORDERS_SHIPPING_CONTEXT_ENTITY.kind,
-				ORDERS_SHIPPING_CONTEXT_ENTITY.name,
-				query,
-			] );
-			return err instanceof Error ? err : null;
-		},
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- key covers the array contents
-		[ idsKey, hasIds ]
-	);
+				setRecords(
+					Array.isArray( nextRecords ) ? nextRecords : EMPTY_RECORDS
+				);
+			} )
+			.catch( ( fetchError ) => {
+				if ( ! isCurrent ) {
+					return;
+				}
+				setError( toError( fetchError ) );
+			} )
+			.finally( () => {
+				if ( isCurrent ) {
+					setIsShippingContextResolving( false );
+				}
+			} );
+
+		return () => {
+			isCurrent = false;
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- idsKey covers orderIds contents.
+	}, [ idsKey, hasIds ] );
 
 	const safeRecords = useMemo( () => records ?? EMPTY_RECORDS, [ records ] );
 	const usableRecords = useMemo(
@@ -127,7 +136,8 @@ export const useBulkPurchaseOrders = (
 		// fetch and the box-packer auto-assign call have settled, so the
 		// table doesn't flash placeholder packages before the suggestion
 		// arrives.
-		isResolving: hasIds && ( ! hasResolved || isAutoAssignResolving ),
+		isResolving:
+			hasIds && ( isShippingContextResolving || isAutoAssignResolving ),
 		// Surface a failed auto-assign as a modal-level error rather than
 		// letting rows fall back to placeholder packages and read as
 		// "ready". The shipping-context error takes precedence since

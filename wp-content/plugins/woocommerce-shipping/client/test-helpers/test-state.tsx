@@ -53,6 +53,19 @@ export const ProvideTestState = ( {
 		email: 'email@mail.com',
 		isVerified: true,
 	} );
+	const getShipmentDestination = () => ( {
+		company: '',
+		country: 'US',
+		state: 'CA',
+		firstName: 'Jane',
+		lastName: 'Customer',
+		address1: '456 Market St',
+		address2: '',
+		city: 'San Francisco',
+		postcode: '94105',
+		phone: '1234567890',
+		email: 'customer@mail.com',
+	} );
 	const customs = useCustomsState(
 		'0',
 		shipments,
@@ -60,7 +73,7 @@ export const ProvideTestState = ( {
 		() => [],
 		() => [],
 		getShipmentOrigin,
-		() => getShipmentOrigin()
+		getShipmentDestination
 	);
 
 	const getCurrentShipmentDate = jest.fn();
@@ -94,6 +107,7 @@ export const ProvideTestState = ( {
 					0: {},
 				},
 				getShipmentOrigin,
+				getShipmentDestination,
 				getCurrentShipmentIsReturn: () => false,
 				selections: {
 					0: [ { id: 0 } ],

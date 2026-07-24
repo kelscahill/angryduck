@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit4f260f66c5efb1327188b19bb84c6027
+class ComposerStaticInit01ec7d5549eab212e4ce3230e637bb98
 {
     public static $files = array (
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
@@ -2971,14 +2971,25 @@ class ComposerStaticInit4f260f66c5efb1327188b19bb84c6027
         'WPForms\\Vendor\\apimatic\\jsonmapper\\JsonMapperException' => __DIR__ . '/../..' . '/vendor_prefixed/apimatic/jsonmapper/src/JsonMapperException.php',
         'WPForms\\Vendor\\apimatic\\jsonmapper\\OneOfValidationException' => __DIR__ . '/../..' . '/vendor_prefixed/apimatic/jsonmapper/src/OneOfValidationException.php',
         'WPForms\\Vendor\\apimatic\\jsonmapper\\TypeCombination' => __DIR__ . '/../..' . '/vendor_prefixed/apimatic/jsonmapper/src/TypeCombination.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\ElementReference\\Resolver' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/ElementReference/Resolver.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\ElementReference\\Subject' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/ElementReference/Subject.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\ElementReference\\Usage' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/ElementReference/Usage.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\Exceptions\\NestingException' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/Exceptions/NestingException.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\Helper' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/Helper.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\Sanitizer' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/Sanitizer.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\data\\AllowedAttributes' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/data/AllowedAttributes.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\data\\AllowedTags' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/data/AllowedTags.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\data\\AttributeInterface' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/data/AttributeInterface.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\data\\TagInterface' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/data/TagInterface.php',
+        'WPForms\\Vendor\\enshrined\\svgSanitize\\data\\XPath' => __DIR__ . '/../..' . '/vendor_prefixed/enshrined/svg-sanitize/src/data/XPath.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit4f260f66c5efb1327188b19bb84c6027::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit4f260f66c5efb1327188b19bb84c6027::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit4f260f66c5efb1327188b19bb84c6027::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit01ec7d5549eab212e4ce3230e637bb98::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit01ec7d5549eab212e4ce3230e637bb98::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit01ec7d5549eab212e4ce3230e637bb98::$classMap;
 
         }, null, ClassLoader::class);
     }

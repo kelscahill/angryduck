@@ -225,9 +225,11 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
                 apply_filters(
                     'acfw_store_credits_discount_session',
                     array(
-                        'amount'     => $amount,
-                        'cart_total' => $cart_total,
-                        'currency'   => get_woocommerce_currency(),
+                        'amount'         => $amount,
+                        'cart_total'     => $cart_total,
+                        'subtotal'       => \WC()->cart->get_subtotal(),
+                        'shipping_total' => \WC()->cart->get_shipping_total(),
+                        'currency'       => get_woocommerce_currency(),
                     )
                 )
             );
@@ -527,6 +529,38 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
 
         // Remove the store credit discount when the new calculated cart total value is less then the applied discount value.
         if ( $sc_data['amount'] > $cart_total ) {
+            /**
+             * When the SC was applied to cover the full order total (amount == cart_total at apply time),
+             * do not remove the SC. Instead, return $0 to keep the full-order SC effective.
+             *
+             * This handles cases where a dynamic tax plugin (e.g. TaxJar) recalculates taxes to $0
+             * after the SC discount brings the cart total to $0 — triggering a second
+             * calculate_totals() cycle where cart_total is only the pre-tax subtotal. Without this
+             * guard, ACFW would see sc_amount > new_cart_total and incorrectly remove the SC,
+             * making it impossible for customers to apply a full-cart store credit when TaxJar
+             * (or a similar plugin) is active.
+             */
+            $is_full_order_sc = isset( $sc_data['cart_total'] ) && 0 === (int) ( wc_add_number_precision( $sc_data['cart_total'] ) - wc_add_number_precision( $sc_data['amount'] ) );
+
+            if ( $is_full_order_sc ) {
+                /**
+                 * Only bypass removal when the cart subtotal + shipping hasn't changed.
+                 * If only tax changed (TaxJar zeroing taxes after a $0 total), the non-tax
+                 * portion stays the same and we keep the SC applied. If shipping or products
+                 * actually changed, the totals will differ and we fall through to remove the SC.
+                 */
+                $stored_non_tax_total  = isset( $sc_data['subtotal'], $sc_data['shipping_total'] )
+                    ? $sc_data['subtotal'] + $sc_data['shipping_total']
+                    : null;
+                $current_non_tax_total = $cart->get_subtotal() + $cart->get_shipping_total();
+                $is_only_tax_changed   = null !== $stored_non_tax_total
+                    && 0 === (int) ( wc_add_number_precision( $stored_non_tax_total ) - wc_add_number_precision( $current_non_tax_total ) );
+
+                if ( $is_only_tax_changed ) {
+                    return is_cart() ? $cart_total : 0.0;
+                }
+            }
+
             \WC()->session->set( Plugin_Constants::STORE_CREDITS_SESSION_CHANGED_NOTICE, true );
             \WC()->session->set( Plugin_Constants::STORE_CREDITS_SESSION, null );
 
@@ -552,6 +586,75 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
     }
 
     /**
+     * Re-apply the SC deduction to the cart total when a dynamic tax plugin (e.g. TaxJar)
+     * overwrites WC()->cart->total in woocommerce_after_calculate_totals, which runs AFTER
+     * our woocommerce_calculated_total filter has already subtracted the SC amount.
+     *
+     * This only restores the display total on the cart object — it must NOT mutate the SC
+     * session data, because downstream code (deduct_store_credits_discount_from_balance and
+     * the admin order UI) relies on $sc_data['cart_total'] remaining the snapshot taken at
+     * SC-apply time.
+     *
+     * @since 4.7.3
+     * @access public
+     *
+     * @param \WC_Cart $cart Cart object.
+     */
+    public function enforce_store_credit_after_tax_recalculation( $cart ) {
+        // Scope strictly to cart/checkout flows (frontend, AJAX, REST/Block checkout). A plain
+        // wp-admin page render that incidentally triggers cart recalculation should not have
+        // its cart total silently adjusted by this hook.
+        if ( is_admin() && ! wp_doing_ajax() && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+            return;
+        }
+
+        // Keep the pre-SC total visible on the cart page (mirrors apply_store_credit_discount).
+        if ( is_cart() ) {
+            return;
+        }
+
+        $sc_data = \WC()->session->get( Plugin_Constants::STORE_CREDITS_SESSION, null );
+        if ( ! $sc_data || ! isset( $sc_data['amount'], $sc_data['cart_total'], $sc_data['subtotal'], $sc_data['shipping_total'], $sc_data['currency'] ) ) {
+            return;
+        }
+
+        if ( get_woocommerce_currency() !== $sc_data['currency'] ) {
+            return;
+        }
+
+        $sc_amount          = (float) $sc_data['amount'];
+        $session_cart_total = (float) $sc_data['cart_total'];
+        $cart_total         = (float) $cart->total;
+
+        if ( $sc_amount <= 0 ) {
+            return;
+        }
+
+        // Only act when the TaxJar signature is clear: products and shipping unchanged.
+        // If non-tax components differ, something else changed and apply_store_credit_discount
+        // will have already handled (or removed) the SC via its own logic.
+        $stored_non_tax  = (float) $sc_data['subtotal'] + (float) $sc_data['shipping_total'];
+        $current_non_tax = (float) $cart->get_subtotal() + (float) $cart->get_shipping_total();
+        if ( 0 !== (int) ( wc_add_number_precision( $stored_non_tax ) - wc_add_number_precision( $current_non_tax ) ) ) {
+            return;
+        }
+
+        // If cart->total is already within a cent of the SC-applied target (session cart_total - sc_amount),
+        // our deduction is intact. Skip to avoid double-application.
+        $expected_applied_precision = wc_add_number_precision( $session_cart_total ) - wc_add_number_precision( $sc_amount );
+        if ( abs( wc_add_number_precision( $cart_total ) - $expected_applied_precision ) < 1 ) {
+            return;
+        }
+
+        // Otherwise, cart->total has been overwritten by a late recalculation (e.g. TaxJar).
+        // Re-apply SC against the current cart->total (which now includes the corrected tax).
+        $new_total_precision = wc_add_number_precision( $cart_total ) - wc_add_number_precision( $sc_amount );
+        $new_total           = (float) wc_remove_number_precision( max( 0, $new_total_precision ) );
+
+        $cart->set_total( $new_total );
+    }
+
+    /**
      * Deduct store credits discount from user's balance when order is processed.
      *
      * @since 4.0
@@ -572,6 +675,14 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
 
         /**
          * Save the discount amount the user/order based currency so we don't need to convert them on the backend.
+         *
+         * Note: for Block checkout this meta was already written earlier by
+         * `save_store_credits_order_meta_via_store_api` on `woocommerce_store_api_checkout_update_order_meta`
+         * (needed there so payment-method validation sees the post-SC order total). Overwriting it here
+         * is intentional — it keeps this function authoritative for classic checkout (which has no
+         * earlier hook) and is a no-op for Block since the session values are the same. The
+         * re-read after `calculate_totals(true)` below still picks up any upward adjustment done by
+         * `deduct_store_credits_discount_from_order_total` regardless of which path got us here.
          */
         $meta_data = array(
             'amount'     => $sc_data['amount'], // user currency based amount.
@@ -587,7 +698,10 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
         // recalculate order totals so the store credit payment is deducted from the order total.
         $order->calculate_totals( true );
 
-        $amount = floatval( $meta_data['raw_amount'] );
+        // Re-read meta in case deduct_store_credits_discount_from_order_total() adjusted the SC amount
+        // (e.g. when a dynamic tax plugin recalculates taxes at the order level, increasing the order total).
+        $updated_meta = $order->get_meta( Plugin_Constants::STORE_CREDITS_ORDER_PAID, true );
+        $amount       = floatval( is_array( $updated_meta ) && isset( $updated_meta['raw_amount'] ) ? $updated_meta['raw_amount'] : $meta_data['raw_amount'] );
 
         // create store credit entry object.
         $store_credit_entry = $this->create_discount_store_credit_entry( $amount, $order );
@@ -623,6 +737,65 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
 
         // store credit after tax support.
         $this->deduct_store_credits_discount_from_balance( $order->get_id(), array(), $order );
+    }
+
+    /**
+     * Save store credit meta and recalculate order total during the Block Store API draft-order
+     * creation phase, before payment-method validation runs.
+     *
+     * `woocommerce_store_api_checkout_update_order_meta` fires inside `create_or_update_draft_order`
+     * (WC Blocks `StoreApi/Routes/V1/Checkout.php:704`) — BEFORE `update_order_from_request` calls
+     * `get_request_payment_method()` (line 463 → CheckoutTrait.php:145) which throws
+     * "No payment method provided" when `$order->needs_payment()` is true.
+     *
+     * By persisting the STORE_CREDITS_ORDER_PAID meta early and triggering `$order->calculate_totals()`,
+     * the order-level deduction at `deduct_store_credits_discount_from_order_total`
+     * (`woocommerce_order_after_calculate_totals` priority 100) runs and brings the order total to its
+     * real post-SC value. `$order->needs_payment()` then correctly defaults to false for full-SC carts
+     * (0 < 0 is false) without needing a session-based filter that isn't reliable inside the REST flow.
+     *
+     * For partial SC, the order total becomes the non-zero post-SC amount, payment validation
+     * proceeds normally, and `deduct_store_credits_discount_from_balance_via_store_api` still runs
+     * later to deduct from the customer balance and clear session state.
+     *
+     * @since 4.7.3
+     * @access public
+     *
+     * @param \WC_Order $order Order object.
+     */
+    public function save_store_credits_order_meta_via_store_api( $order ) {
+        if ( ! $order instanceof \WC_Order ) {
+            return;
+        }
+
+        $sc_data = \WC()->session ? \WC()->session->get( Plugin_Constants::STORE_CREDITS_SESSION, null ) : null;
+        if ( ! $sc_data || ! isset( $sc_data['amount'], $sc_data['cart_total'] ) ) {
+            return;
+        }
+
+        if ( $order->has_status( array( 'failed', 'cancelled' ) ) ) {
+            return;
+        }
+
+        // Skip if meta already saved (e.g. Store API called multiple times during the same request).
+        $existing = $order->get_meta( Plugin_Constants::STORE_CREDITS_ORDER_PAID, true );
+        if ( is_array( $existing ) && ! empty( $existing ) ) {
+            return;
+        }
+
+        $meta_data = array(
+            'amount'     => $sc_data['amount'],
+            'raw_amount' => apply_filters( 'acfw_filter_amount', $sc_data['amount'], true ),
+            'cart_total' => $sc_data['cart_total'],
+            'currency'   => $order->get_currency(),
+        );
+
+        $order->update_meta_data( Plugin_Constants::STORE_CREDITS_ORDER_PAID, $meta_data );
+        $order->save_meta_data();
+
+        // Recalculate so `deduct_store_credits_discount_from_order_total` can bring the order
+        // total down to its real post-SC value before payment validation runs.
+        $order->calculate_totals( true );
     }
 
     /**
@@ -814,7 +987,7 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
         foreach ( $total_rows as $key => $total_row ) {
 
             // skip if the row is not for refunds.
-            if ( strpos( $key, 'refund_' ) === false ) {
+            if ( ! str_contains( $key, 'refund_' ) ) {
                 continue;
             }
 
@@ -851,8 +1024,54 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
         // apply the changes made by WC during the calculation so we can re-use those data.
         $order->apply_changes();
 
-        $precision_discount = wc_add_number_precision( $order->get_discount_total( 'edit' ) ) + wc_add_number_precision( $sc_data['amount'] );
-        $precision_total    = wc_add_number_precision( $order->get_total( 'edit' ) ) - wc_add_number_precision( $sc_data['amount'] );
+        $sc_amount   = (float) $sc_data['amount'];
+        $order_total = (float) $order->get_total( 'edit' );
+
+        /**
+         * When the SC was a full-order cover and the order total increased after recalculation
+         * (e.g. a dynamic tax plugin like TaxJar recalculated taxes at the order level),
+         * adjust the SC amount upward to cover the new total, capped at the customer's balance.
+         * Without a dynamic tax plugin, order-level tax matches cart-level tax exactly,
+         * so this adjustment never triggers.
+         */
+        $is_full_order_sc = isset( $sc_data['cart_total'] )
+            && 0 === (int) ( wc_add_number_precision( $sc_data['cart_total'] ) - wc_add_number_precision( $sc_data['amount'] ) );
+
+        if ( $is_full_order_sc && $order_total > $sc_amount ) {
+            $customer_id = $order->get_customer_id();
+            $balance     = (float) apply_filters( 'acfw_filter_amount', \ACFWF()->Store_Credits_Calculate->get_customer_balance( $customer_id ) );
+            $sc_amount   = min( $order_total, $balance );
+
+            $sc_data['amount']     = $sc_amount;
+            $sc_data['raw_amount'] = apply_filters( 'acfw_filter_amount', $sc_amount, true );
+            $order->update_meta_data( Plugin_Constants::STORE_CREDITS_ORDER_PAID, $sc_data );
+
+            // When the customer's available balance can't fully absorb the upward tax shift,
+            // the order ends up with a residual unpaid amount even though the customer placed it
+            // from a $0 cart. Surface this via an order note so admins can follow up — the
+            // payment-method UI was hidden client-side, so the customer can't pay the gap from
+            // the receipt page. Guarded by a meta flag because this hook can fire on subsequent
+            // recalculations and we only want to log once per order.
+            $residual_precision = wc_add_number_precision( $order_total ) - wc_add_number_precision( $sc_amount );
+
+            if ( $residual_precision > 0 && ! $order->get_meta( '_acfw_sc_residual_noted', true ) ) {
+                $residual = (float) wc_remove_number_precision( $residual_precision );
+
+                $order->add_order_note(
+                    sprintf(
+                        /* Translators: 1: residual unpaid amount, 2: customer's available store credit balance, 3: order total after tax recalculation */
+                        __( 'Store credit balance (%2$s) is insufficient to fully cover the order total (%3$s) after tax recalculation. Residual unpaid amount: %1$s — please collect via another payment method or top up the customer\'s store credit balance.', 'advanced-coupons-for-woocommerce-free' ),
+                        wc_price( $residual, array( 'currency' => $order->get_currency() ) ),
+                        wc_price( $balance, array( 'currency' => $order->get_currency() ) ),
+                        wc_price( $order_total, array( 'currency' => $order->get_currency() ) )
+                    )
+                );
+                $order->update_meta_data( '_acfw_sc_residual_noted', '1' );
+            }
+        }
+
+        $precision_discount = wc_add_number_precision( $order->get_discount_total( 'edit' ) ) + wc_add_number_precision( $sc_amount );
+        $precision_total    = wc_add_number_precision( $order_total ) - wc_add_number_precision( $sc_amount );
 
         $order->set_discount_total( wc_remove_number_precision( $precision_discount ) );
         $order->set_total( wc_remove_number_precision( $precision_total ) );
@@ -905,7 +1124,7 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
         $order->calculate_totals( true );
 
         // create order cancelled store credit entry.
-        $this->_create_order_cancelled_store_credit_entry( $order );
+        $this->_create_order_cancelled_store_credit_entry( $order, $sc_paid );
 
         // update users cached balance value.
         \ACFWF()->Store_Credits_Calculate->get_customer_balance( get_current_user_id(), true );
@@ -930,6 +1149,42 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
         }
 
         return $value;
+    }
+
+    /**
+     * Mark the cart as not needing payment when store credits fully cover it.
+     *
+     * The Block checkout reads `needs_payment` from the Store API cart endpoint (derived from
+     * `WC_Cart::needs_payment()` which applies this filter). Without this override a cart whose
+     * total has been zeroed by `apply_store_credit_discount` / `enforce_store_credit_after_tax_recalculation`
+     * still has its payment-method UI hidden (total is $0) while the checkout POST continues to
+     * require a payment method — leaving Block checkout stuck on "No payment method provided".
+     *
+     * @since 4.7.3
+     * @access public
+     *
+     * @param bool     $needs_payment True if the cart needs payment.
+     * @param \WC_Cart $cart          Cart object.
+     * @return bool Filtered value.
+     */
+    public function allow_cart_zero_total_with_store_credits( $needs_payment, $cart ) {
+        if ( ! $needs_payment ) {
+            return $needs_payment;
+        }
+
+        $sc_data = \WC()->session ? \WC()->session->get( Plugin_Constants::STORE_CREDITS_SESSION, null ) : null;
+        if (
+            $sc_data
+            && isset( $sc_data['amount'] )
+            && (float) $sc_data['amount'] > 0
+            && wc_add_number_precision( (float) $cart->total ) <= 0
+        ) {
+            // Precision-int comparison respects the store's currency decimals (e.g. 2 for USD,
+            // 3 for BHD/JOD/KWD) — a cart total at or below the smallest currency unit counts as zero.
+            return false; // Full SC covers the cart — no payment needed.
+        }
+
+        return $needs_payment;
     }
 
     /*
@@ -1109,14 +1364,23 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
      * Create an order cancelled store credit entry.
      *
      * @since 4.5.2
+     * @since 4.7.3 Use raw_amount from order meta instead of summing all ledger entries to prevent over-refund after apply/remove cycles.
      * @access private
      *
-     * @param \WC_Order $order Order object.
+     * @param \WC_Order   $order   Order object.
+     * @param array|false $sc_paid Store credits order paid meta data.
      * @return Store_Credit_Entry Store credit entry object.
      */
-    private function _create_order_cancelled_store_credit_entry( \WC_Order $order ) {
+    private function _create_order_cancelled_store_credit_entry( \WC_Order $order, $sc_paid = false ) {
         $store_credit_entry = new Store_Credit_Entry();
-        $amount             = \ACFWF()->Store_Credits_Calculate->get_total_store_credits_discount_for_order( $order->get_id() );
+
+        // Use the raw_amount from order meta (current/last applied amount) to avoid over-counting
+        // from multiple apply/remove cycles in the ledger.
+        if ( is_array( $sc_paid ) && isset( $sc_paid['raw_amount'] ) ) {
+            $amount = floatval( $sc_paid['raw_amount'] );
+        } else {
+            $amount = \ACFWF()->Store_Credits_Calculate->get_total_store_credits_discount_for_order( $order->get_id() );
+        }
 
         $store_credit_entry->set_prop( 'amount', $amount );
         $store_credit_entry->set_prop( 'user_id', $order->get_customer_id() );
@@ -1195,20 +1459,23 @@ class Checkout extends Base_Model implements Model_Interface, Initializable_Inte
 
         // store credit after tax.
         add_filter( 'woocommerce_calculated_total', array( $this, 'apply_store_credit_discount' ), 1001, 2 );
+        add_action( 'woocommerce_after_calculate_totals', array( $this, 'enforce_store_credit_after_tax_recalculation' ), 9999, 1 );
         add_action( 'woocommerce_checkout_order_processed', array( $this, 'deduct_store_credits_discount_from_balance' ), 10, 3 );
         add_filter( 'woocommerce_get_order_item_totals', array( $this, 'display_order_review_store_credits_discount_total' ), 10, 2 );
         add_filter( 'woocommerce_get_order_item_totals', array( $this, 'display_order_review_paid_in_store_credits' ), 10, 2 );
         add_filter( 'woocommerce_get_order_item_totals', array( $this, 'update_order_refunded_as_store_credits_labels' ), 10, 2 );
         add_action( 'woocommerce_review_order_before_order_total', array( $this, 'display_store_credits_discount_row' ) );
         add_filter( 'woocommerce_order_needs_payment', array( $this, 'allow_placing_order_on_zero_total_with_store_credits' ), 10, 2 );
+        add_filter( 'woocommerce_cart_needs_payment', array( $this, 'allow_cart_zero_total_with_store_credits' ), 10, 2 );
         add_action( 'woocommerce_after_register_post_type', array( $this, 'recalculate_order_totals_after_checkout_complete' ) );
-        add_action( 'woocommerce_order_after_calculate_totals', array( $this, 'deduct_store_credits_discount_from_order_total' ), 10, 2 );
+        add_action( 'woocommerce_order_after_calculate_totals', array( $this, 'deduct_store_credits_discount_from_order_total' ), 100, 2 );
 
         // Misc tasks.
         add_action( 'woocommerce_after_register_post_type', array( $this, 'recalculate_order_totals_after_checkout_complete' ) );
         add_action( 'woocommerce_order_status_changed', array( $this, 'readd_customer_store_credits_for_failed_orders' ), 10, 4 );
 
         // Checkout blocks support.
+        add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'save_store_credits_order_meta_via_store_api' ), 10, 1 );
         add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'deduct_store_credits_discount_from_balance_via_store_api' ), 10, 1 );
     }
 }

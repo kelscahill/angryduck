@@ -193,7 +193,7 @@ class Bootstrap extends Base_Model implements Model_Interface {
 
         // Help settings section options.
         if ( ! get_option( Plugin_Constants::CLEAN_UP_PLUGIN_OPTIONS, false ) ) {
-            update_option( Plugin_Constants::CLEAN_UP_PLUGIN_OPTIONS, 'no' );
+            update_option( Plugin_Constants::CLEAN_UP_PLUGIN_OPTIONS, 'no', false );
         }
     }
 
@@ -230,6 +230,9 @@ class Bootstrap extends Base_Model implements Model_Interface {
         // Initialize settings options.
         $this->_initialize_plugin_settings_options();
 
+        // Reconcile autoload flags for plugin options (handles existing installs).
+        $this->_set_plugin_options_autoload();
+
         // Execute 'activate' contract of models implementing ACFWF\Interfaces\Activatable_Interface.
         foreach ( $this->_activatables as $activatable ) {
             if ( $activatable instanceof Activatable_Interface ) {
@@ -255,6 +258,74 @@ class Bootstrap extends Base_Model implements Model_Interface {
             $now = new \DateTime( 'now', new \DateTimeZone( 'UTC' ) );
             update_option( Plugin_Constants::INSTALLATION_DATE, $now->format( 'Y-m-d H:i:s' ) );
         }
+    }
+
+    /**
+     * Reconcile the autoload flag on plugin options that should not autoload.
+     *
+     * The $autoload arg of update_option() is honored only on insert, so existing
+     * installs need an explicit migration. Runs on activation and on every version
+     * bump (via Bootstrap::initialize() -> activate_plugin()).
+     *
+     * @since 4.7.3
+     * @access private
+     *
+     * @global wpdb $wpdb
+     */
+    private function _set_plugin_options_autoload() {
+        global $wpdb;
+
+        $option_names = array(
+            Plugin_Constants::SHOW_GETTING_STARTED_NOTICE,
+            Plugin_Constants::SHOW_UPGRADE_NOTICE,
+            Plugin_Constants::SHOW_ALLOW_USAGE_NOTICE,
+            Plugin_Constants::SAVETO_NOTICE_SHOW_AFTER,
+            Plugin_Constants::SAVETO_NOTICE_DISMISSED,
+            Plugin_Constants::CLEAN_UP_PLUGIN_OPTIONS,
+            Plugin_Constants::STORE_CREDITS_DB_CREATED,
+            Plugin_Constants::USAGE_CRON_CONFIG,
+            Plugin_Constants::USAGE_LAST_CHECKIN,
+            Plugin_Constants::TOTAL_CREATED_WITH_COUPON_TEMPLATES,
+            Plugin_Constants::MOST_POPULAR_TEMPLATES,
+            Plugin_Constants::ALLOW_FETCH_CONTENT_REMOTE,
+            Plugin_Constants::DEFAULT_COUPON_CATEGORY,
+            Plugin_Constants::STORE_CREDITS_EXPIRY_CHECK_DATE,
+            $this->_constants->RECENT_COUPON_TEMPLATES,
+            'acfwf_feature_counts_initialized',
+            'acfwf_bogo_migrate_coupon_type',
+        );
+
+        // Per-term feature counts: enumerate dynamically. Option name format from
+        // Feature_Custom_Taxonomy::_get_feature_count_option_key() is
+        // "{$prefix}_feature_taxonomy_count_{$slug}", where $prefix defaults to 'acfwf'.
+        // Sites/plugins that filter `acfw_feature_count_option_prefix` to a different
+        // value must reconcile those rows themselves.
+        $feature_count_keys = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'acfwf_feature_taxonomy_count_%'" );
+        $option_names       = array_merge( $option_names, (array) $feature_count_keys );
+
+        // WP 6.7+: canonical bulk API; accepts boolean autoload directly.
+        if ( function_exists( 'wp_set_options_autoload' ) ) {
+            wp_set_options_autoload( $option_names, false );
+            return;
+        }
+
+        // WP 6.4 - 6.6: pre-`wp_set_options_autoload()` bulk API.
+        if ( function_exists( 'wp_set_option_autoload_values' ) ) {
+            wp_set_option_autoload_values( array_fill_keys( $option_names, false ) );
+            return;
+        }
+
+        // WP < 6.4: direct UPDATE with the only autoload value the column accepts pre-6.7.
+        foreach ( $option_names as $option_name ) {
+            $wpdb->update(
+                $wpdb->options,
+                array( 'autoload' => 'no' ),
+                array( 'option_name' => $option_name ),
+                array( '%s' ),
+                array( '%s' )
+            );
+        }
+        wp_cache_delete( 'alloptions', 'options' );
     }
 
     /**
@@ -400,6 +471,9 @@ class Bootstrap extends Base_Model implements Model_Interface {
 
             // Declare that the plugin is compatible with the cart and checkout blocks feature.
             \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', $this->_constants->MAIN_PLUGIN_FILE_PATH, true );
+
+            // Declare that the plugin is compatible with the product instance caching feature.
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'product_instance_caching', $this->_constants->MAIN_PLUGIN_FILE_PATH, true );
         }
     }
 

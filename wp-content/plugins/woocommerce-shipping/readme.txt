@@ -5,9 +5,9 @@ Requires Plugins: woocommerce
 Requires PHP: 7.4
 Requires at least: 6.9
 Tested up to: 7.0
-WC requires at least: 10.6
-WC tested up to: 10.8
-Stable tag: 2.3.5
+WC requires at least: 10.7
+WC tested up to: 10.9
+Stable tag: 2.3.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -128,9 +128,37 @@ Absolutely! You can read our Terms of Service [here](https://wordpress.com/tos).
 
 == Changelog ==
 
+= 2.3.11 - 2026-07-16 =
+* Fix   - Stop prompting to "Connect your store" when the site is already connected to WordPress.com but the WooCommerce Shipping terms have not been accepted yet; show a terms-acceptance screen instead.
+* Tweak - Update the @wordpress/ui package to 0.16.1 to stay compatible with upcoming Gutenberg and WordPress 7.1 changes.
+* Tweak - Hide the customs product details fields and show an explanatory notice when the content type is Documents, since document mailings don't include a customs item declaration.
+
+= 2.3.10 - 2026-06-30 =
+* Fix   - Improve spacing around the FedEx recipient phone number notice on the label purchase screen.
+* Fix   - Prevent classic checkout address validation warnings from causing repeated update_order_review failure loops, and keep them visible when the billing address is used for shipping.
+
+= 2.3.9 - 2026-06-22 =
+* Fix   - Keep classic checkout address validation notice styling when moving notices near address fields.
+* Tweak - WooCommerce 10.9 Compatibility.
+
+= 2.3.8 - 2026-06-17 =
+* Tweak - Refresh the purchased shipping label panel layout and actions.
+* Fix   - Keep today selectable in the ship date picker across timezones.
+
+= 2.3.7 - 2026-06-09 =
+* Fix   - Keep the label purchase error notice visible after a failed purchase instead of clearing it during the automatic rate refresh.
+* Fix   - Default the ship date to today each time the label purchase flow opens instead of carrying over a remembered date.
+* Tweak - Move checkout address validation notices closer to the shipping address fields.
+
+= 2.3.6 - 2026-06-08 =
+* Fix   - Require recipient phone numbers before purchasing FedEx labels.
+* Tweak - Simplify the SCAN Forms history empty-state message.
+
 = 2.3.5 - 2026-05-25 =
 * Add   - Register an initial read-only WordPress ability for WooCommerce Shipping label reports.
 * Fix   - Prevent fatal DivisionByZeroError in MigrationController when no legacy WCS&T labels exist.
+* Fix   - Strip null-valued client fields before address normalization so company-only sender addresses no longer hit `"destination.first_name" is not allowed` 400 from the connect server.
+* Tweak - Forward the address role (origin vs. destination) to the normalization endpoint so origin saves no longer travel the wire labeled as destinations.
 
 = 2.3.4 - 2026-05-20 =
 * Tweak - WordPress 7.0 Compatibility.

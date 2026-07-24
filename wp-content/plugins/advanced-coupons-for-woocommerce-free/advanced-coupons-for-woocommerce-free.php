@@ -4,13 +4,13 @@
  * Plugin Name: Advanced Coupons for WooCommerce Free
  * Plugin URI: https://advancedcouponsplugin.com
  * Description: Advanced Coupons for WooCommerce (Free Version) gives WooCommerce store owners extra coupon features so they can market their stores better.
- * Version: 4.7.2
+ * Version: 4.7.4
  * Author: Rymera Web Co
  * Author URI: https://rymera.com.au
- * Requires at least: 5.8
+ * Requires at least: 5.9
  * Tested up to: 7.0
  * WC requires at least: 4.0
- * WC tested up to: 10.6
+ * WC tested up to: 10.9.3
  *
  * Text Domain: advanced-coupons-for-woocommerce-free
  * Domain Path: /languages/
@@ -29,6 +29,7 @@ use ACFWF\Abstracts\Abstract_Main_Plugin_Class;
 use ACFWF\Helpers\Helper_Functions;
 use ACFWF\Helpers\Plugin_Constants;
 use ACFWF\Interfaces\Model_Interface;
+use ACFWF\Models\Abilities;
 use ACFWF\Models\Admin_App;
 use ACFWF\Models\BOGO\Admin as BOGO_Admin;
 use ACFWF\Models\BOGO\Frontend as BOGO_Frontend;
@@ -42,6 +43,7 @@ use ACFWF\Models\Edit_Coupon;
 use ACFWF\Models\Help_Links;
 use ACFWF\Models\Notices;
 use ACFWF\Models\Notices\SaveTo_Wishlist_Notice;
+use ACFWF\Models\Notices\StoreAgent_Notice;
 use ACFWF\Models\Order_Details;
 use ACFWF\Models\Role_Restrictions;
 use ACFWF\Models\Emails;
@@ -79,7 +81,7 @@ use ACFWF\Models\Third_Party_Integrations\Speed_Optimizer;
  */
 spl_autoload_register(
     function ( $class_name ) {
-        if ( strpos( $class_name, 'ACFWF\\' ) === 0 ) { // Only do autoload for our plugin files.
+        if ( str_starts_with( $class_name, 'ACFWF\\' ) ) { // Only do autoload for our plugin files.
             $class_file = str_replace( array( '\\', 'ACFWF' . DIRECTORY_SEPARATOR ), array( DIRECTORY_SEPARATOR, '' ), $class_name ) . '.php';
             require_once plugin_dir_path( __FILE__ ) . $class_file;
         }
@@ -447,8 +449,11 @@ class ACFWF extends Abstract_Main_Plugin_Class { // phpcs:ignore
         ACFWF\Models\Coupon_Templates::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
         ACFWF\Models\Send_Coupon::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
         SaveTo_Wishlist_Notice::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
+        StoreAgent_Notice::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
 
         General::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
+
+        Abilities::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
 
         $store_credits_calculate = Store_Credits_Calculate::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );
         Store_Credits_Registry::get_instance( $this, $this->Plugin_Constants, $this->Helper_Functions );

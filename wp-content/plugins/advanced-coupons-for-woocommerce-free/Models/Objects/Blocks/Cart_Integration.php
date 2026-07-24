@@ -37,6 +37,18 @@ class Cart_Integration extends Base_Model implements IntegrationInterface {
      * @access public
      */
     public function initialize() {
+        /**
+         * Skip script/style registration on admin requests so the integration
+         * stylesheet is not injected into the WP 7.0+ block editor iframe.
+         * WordPress 7.0 only accepts iframe styles declared via block.json or
+         * enqueued through `enqueue_block_assets`; the cart block's custom UI
+         * only renders on the frontend, so admin pages can fall back to the
+         * core WC cart block preview without our custom CSS.
+         */
+        if ( is_admin() ) {
+            return;
+        }
+
         $this->register_scripts();
     }
 
@@ -52,6 +64,7 @@ class Cart_Integration extends Base_Model implements IntegrationInterface {
         $vite_app = new Vite_App(
             'acfwf-wc-cart-block-integration', // Don't forget to register this handle in the get_script_handles() or get_editor_script_handles() method.
             'packages/acfwf-cart-block/index.tsx',
+            array( 'wc-blocks-checkout', 'wc-blocks-data-store', 'wc-settings' )
         );
         $vite_app->register();
     }

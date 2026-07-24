@@ -1,13 +1,17 @@
 import * as Sentry from '@sentry/react';
 
+const REPLAY_SAMPLE_RATE = 0.005;
+
 export const initSentry = () => {
 	Sentry.init( {
 		dsn: 'https://971a8d22e72fade3cc3bc7ee7c0c2093@o248881.ingest.us.sentry.io/4506903329046528',
 		integrations: [ Sentry.replayIntegration() ],
 		environment: window.wcShippingSettings?.environment,
 		release: 'wcshipping@' + window.wcShippingSettings?.version,
-		replaysSessionSampleRate: 0.1,
-		replaysOnErrorSampleRate: 0.3,
+		// Keep Replay volume low so wc-shipping does not exhaust the shared
+		// Sentry Replay budget. 0.005 = 0.5% of sessions.
+		replaysSessionSampleRate: REPLAY_SAMPLE_RATE,
+		replaysOnErrorSampleRate: REPLAY_SAMPLE_RATE,
 		// Only send errors to Sentry that comes WooCommerce or WooCommerce Shipping
 		allowUrls: [
 			/woocommerce\/assets\//, // Match woocommerce assets

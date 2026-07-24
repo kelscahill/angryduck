@@ -51,7 +51,7 @@ class Speed_Optimizer extends Base_Model implements Model_Interface {
     public function force_load_frontend_js_speed_optimizer() {
         $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 
-        return strpos( $request_uri, 'siteground-optimizer' ) !== false;
+        return str_contains( $request_uri, 'siteground-optimizer' );
     }
 
     /*

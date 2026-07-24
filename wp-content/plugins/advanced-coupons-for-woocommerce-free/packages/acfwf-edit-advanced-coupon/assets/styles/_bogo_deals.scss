@@ -235,8 +235,16 @@
 
           label {
             float: none;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 4px;
             margin: 0;
+            white-space: nowrap;
+
+            .woocommerce-help-tip {
+              flex: 0 0 auto;
+              margin: 0;
+            }
           }
         }
 

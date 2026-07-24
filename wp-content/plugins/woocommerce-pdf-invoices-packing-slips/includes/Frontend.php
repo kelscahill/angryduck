@@ -183,22 +183,31 @@ class Frontend {
 	 * Retrieve formatted invoice number for a given order
 	 *
 	 * @param \WC_Abstract_Order|\WC_Order $order
-	 *
 	 * @return string
 	 */
 	private function get_invoice_number( $order ): string {
-		$this->disable_storing_document_settings();
-		$invoice        = wcpdf_get_document( 'invoice', $order );
 		$invoice_number = '';
 
-		if ( $invoice ) {
-			$number = $invoice->get_number();
-			if ( ! empty( $number ) ) {
-				$invoice_number = $number->get_formatted();
-			}
-		}
+		$this->disable_storing_document_settings();
 
-		$this->restore_storing_document_settings();
+		try {
+			$invoice = wcpdf_get_document( 'invoice', $order );
+
+			if ( ! $invoice || ! is_callable( array( $invoice, 'get_number' ) ) ) {
+				return '';
+			}
+
+			$number = $invoice->get_number();
+
+			if ( ! empty( $number ) ) {
+				$invoice_number = is_callable( array( $number, 'get_formatted' ) )
+					? $number->get_formatted()
+					: (string) $number;
+			}
+
+		} finally {
+			$this->restore_storing_document_settings();
+		}
 
 		return $invoice_number;
 	}
@@ -227,8 +236,13 @@ class Frontend {
 			'document_type' => 'invoice',
 		), $atts );
 
+		$values['order_id']      = absint( $values['order_id'] );
+		$values['document_type'] = sanitize_key( $values['document_type'] );
+		$has_explicit_order_id   = ! empty( $values['order_id'] );
+
 		$is_document_type_valid = false;
 		$documents              = WPO_WCPDF()->documents->get_documents();
+
 		foreach ( $documents as $document ) {
 			if ( $document->get_type() === $values['document_type'] ) {
 				$is_document_type_valid = true;
@@ -252,7 +266,9 @@ class Frontend {
 		}
 
 		// Get $order
-		if ( empty( $values['order_id'] ) ) {
+		$order = null;
+
+		if ( ! $has_explicit_order_id ) {
 			if ( is_checkout() && is_wc_endpoint_url( 'order-received' ) && isset( $wp->query_vars['order-received'] ) ) {
 				$order = wc_get_order( $wp->query_vars['order-received'] );
 			} elseif ( is_account_page() && is_wc_endpoint_url( 'view-order' ) && isset( $wp->query_vars['view-order'] ) ) {
@@ -263,6 +279,10 @@ class Frontend {
 		}
 
 		if ( empty( $order ) || ! is_object( $order ) ) {
+			return '';
+		}
+
+		if ( $has_explicit_order_id && ! $this->current_user_can_access_shortcode_order( $order, $values['document_type'] ) ) {
 			return '';
 		}
 
@@ -821,6 +841,21 @@ class Frontend {
 		 * @param string         $raw_value
 		 */
 		return apply_filters( 'wpo_ips_checkout_field_vat_validate', true, $vat, $raw_value );
+	}
+
+	/**
+	 * Check whether the current user can use a shortcode with an explicit order ID.
+	 *
+	 * @param \WC_Abstract_Order $order
+	 * @param string             $document_type
+	 * @return bool
+	 */
+	protected function current_user_can_access_shortcode_order( \WC_Abstract_Order $order, string $document_type ): bool {
+		if ( WPO_WCPDF()->admin->user_can_manage_document( $document_type ) ) {
+			return true;
+		}
+
+		return is_user_logged_in() && current_user_can( 'view_order', $order->get_id() );
 	}
 
 }
